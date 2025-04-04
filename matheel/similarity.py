@@ -52,3 +52,14 @@ def get_sim_list(zipped_file, Ws, Wl, Wj, model_name,  threshold, number_results
 
     similarity_df = pd.DataFrame(pairs_results)
     return similarity_df.head(number_results)
+
+def calculate_similarity(code1, code2, Ws, Wl, Wj, model_name):
+    model = load_model(model_name)
+    embedding1 = model.encode(code1)
+    embedding2 = model.encode(code2)
+    sim_similarity = util.cos_sim(embedding1, embedding2).item()
+    lev_ratio = Levenshtein.normalized_similarity(code1, code2)
+    jaro_winkler_ratio = JaroWinkler.normalized_similarity(code1, code2)
+    overall_similarity = Ws * sim_similarity + Wl * lev_ratio + Wj * jaro_winkler_ratio
+
+    return overall_similarity
