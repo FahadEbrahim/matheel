@@ -9,18 +9,12 @@ import zipfile
 import os
 import io
 from gradio_huggingfacehub_search import HuggingfaceHubSearch
-from matheel.similarity import get_sim_list
+from matheel.similarity import get_sim_list, calculate_similarity
 
-def calculate_similarity(code1, code2, Ws, Wl, Wj, model_name):
-    model = SentenceTransformer(model_name)
-    embedding1 = model.encode(code1)
-    embedding2 = model.encode(code2)
-    sim_similarity = util.cos_sim(embedding1, embedding2).item()
-    lev_ratio = Levenshtein.normalized_similarity(code1, code2)
-    jaro_winkler_ratio = JaroWinkler.normalized_similarity(code1, code2)
-    overall_similarity = Ws * sim_similarity + Wl * lev_ratio + Wj * jaro_winkler_ratio
+def calculate_similarity_gradio(code1, code2, Ws, Wl, Wj, model_name):
+    result = calculate_similarity(code1, code2, Ws, Wl, Wj, model_name)
 
-    return "The similarity score between the two codes is: %.2f" % overall_similarity
+    return "The similarity score between the two codes is: %.2f" % result
 
 def get_sim_list_gradio(zipped_file,Ws, Wl, Wj, model_name,threshold,number_results):
     result = get_sim_list(zipped_file,Ws, Wl, Wj, model_name,threshold,number_results)
@@ -38,7 +32,6 @@ with gr.Blocks() as demo:
                 label="Pre-Trained Model to use for Embeddings",
                 placeholder="Search for Pre-Trained models on Hugging Face",
                 search_type="model",
-                #value = "huggingface/CodeBERTa-small-v1"
             )
 
         # Accordion for weights and models
@@ -64,7 +57,7 @@ with gr.Blocks() as demo:
 
         # Button to trigger the similarity calculation
         calculate_btn = gr.Button("Calculate Similarity")
-        calculate_btn.click(calculate_similarity, inputs=[code1, code2, Ws, Wl, Wj, model_dropdown], outputs=output)
+        calculate_btn.click(calculate_similarity_gradio, inputs=[code1, code2, Ws, Wl, Wj, model_dropdown], outputs=output)
 
     # Tab for file upload and DataFrame output
     with gr.Tab("Code Collection Pair Similarity"):
@@ -75,7 +68,6 @@ with gr.Blocks() as demo:
                 label="Pre-Trained Model to use for Embeddings",
                 placeholder="Search for Pre-Trained models on Hugging Face",
                 search_type="model",
-                #value = "huggingface/CodeBERTa-small-v1"
             )
 
         with gr.Accordion("Weights and Models", open=False):
