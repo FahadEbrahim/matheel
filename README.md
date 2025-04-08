@@ -32,7 +32,7 @@ pip install matheel
 Compare files within a compressed ZIP archive:
 
 ```bash
-matheel codes.zip --model buelfhood/unixcoder-base-unimodal-ST --threshold 0.5 --num 100
+matheel compare codes.zip --model buelfhood/unixcoder-base-unimodal-ST --threshold 0.5 --num 100
 ```
 
 ### Python API Usage
@@ -40,7 +40,7 @@ matheel codes.zip --model buelfhood/unixcoder-base-unimodal-ST --threshold 0.5 -
 To calculate similarities programmatically:
 
 ```python
-from Matheel.similarity import get_sim_list
+from matheel.similarity import get_sim_list
 
 # Define parameters
 zip_file = "sample_codes.zip"
