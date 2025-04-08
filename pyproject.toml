@@ -1,3 +1,34 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "matheel"
+version = "0.1.6"
+authors = [
+  { name = "Fahad Ebrahim" }
+]
+description = "Matheel: A CLI and Python package for source-code similarity detection."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "CC-BY-NC-4.0"
+
+dependencies = [
+    "click",
+    "pandas",
+    "numpy",
+    "rapidfuzz",
+    "sentence-transformers",
+    "sentencepiece"
+]
+
+[project.urls]
+Homepage = "https://github.com/FahadEbrahim/matheel"
+Source = "https://github.com/FahadEbrahim/matheel"
+
+[project.scripts]
+matheel = "matheel.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["matheel*"]
+exclude = ["gradio_app*"]
