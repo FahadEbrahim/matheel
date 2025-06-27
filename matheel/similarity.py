@@ -20,9 +20,10 @@ def paraphrase_mining_with_combined_score(
     weight_semantic: float,
     weight_levenshtein: float,
     weight_jaro_winkler: float,
+    k: int = 100,
 ):
     embeddings = model.encode(sentences, convert_to_tensor=True)
-    paraphrases = util.paraphrase_mining_embeddings(embeddings, score_function=util.cos_sim)
+    paraphrases = util.paraphrase_mining_embeddings(embeddings, score_function=util.cos_sim,top_k=k)
 
     results = []
     for score, i, j in paraphrases:
