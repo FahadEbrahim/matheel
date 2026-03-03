@@ -17,6 +17,12 @@ def main():
 @click.option('--ws', default=0.7, help='Semantic Similarity Weight')
 @click.option('--wl', default=0.3, help='Levenshtein Distance Weight')
 @click.option('--wj', default=0.0, help='Jaro-Winkler Distance Weight')
+@click.option(
+    '--feature-weight',
+    'feature_weights',
+    multiple=True,
+    help='Optional normalized feature weights as name=value. Example: --feature-weight semantic=0.5 --feature-weight code_metric=0.5',
+)
 @click.option('--model', default='uclanlp/plbart-java-cs', help='Sentence Transformer Model')
 @click.option(
     '--preprocess-mode',
@@ -30,11 +36,18 @@ def main():
     type=click.Choice(available_chunking_methods()),
     default='none',
     show_default=True,
-    help='Split code into chunks before embedding.',
+    help='Split code into chunks before embedding. Chonkie-backed methods are used automatically when installed.',
 )
 @click.option('--chunk-size', default=200, show_default=True, help='Chunk size for line/token/character chunking.')
 @click.option('--chunk-overlap', default=0, show_default=True, help='Chunk overlap.')
 @click.option('--max-chunks', default=0, show_default=True, help='Limit chunks per file. 0 keeps all chunks.')
+@click.option('--chunk-language', default='text', show_default=True, help='Language hint for language-aware chunkers such as Chonkie CodeChunker.')
+@click.option(
+    '--chunker-option',
+    'chunker_options',
+    multiple=True,
+    help='Extra chunker option as name=value. Repeat to pass multiple options.',
+)
 @click.option(
     '--chunk-aggregation',
     type=click.Choice(available_chunk_aggregations()),
@@ -57,11 +70,11 @@ def main():
 @click.option(
     '--vector-backend',
     type=click.Choice(available_vector_backends()),
-    default='transformer',
+    default='auto',
     show_default=True,
-    help='Semantic vector backend.',
+    help='Vector backend. Auto inspects Hugging Face model metadata and routes to sentence-transformers, model2vec, or PyLate.',
 )
-@click.option('--static-vector-dim', default=256, show_default=True, help='Hashed static vector dimension.')
+@click.option('--static-vector-dim', default=256, show_default=True, help='Fallback hashed static vector dimension.')
 @click.option('--no-static-vector-lowercase', is_flag=True, help='Keep original token casing for static vectors.')
 @click.option('--no-multivector-bidirectional', is_flag=True, help='Use one-way late interaction instead of averaging both directions.')
 @click.option(
@@ -78,12 +91,15 @@ def compare(
     ws,
     wl,
     wj,
+    feature_weights,
     model,
     preprocess_mode,
     chunking_method,
     chunk_size,
     chunk_overlap,
     max_chunks,
+    chunk_language,
+    chunker_options,
     chunk_aggregation,
     code_metric,
     code_metric_weight,
@@ -99,7 +115,7 @@ def compare(
     threshold,
     num,
 ):
-    """Bulk similarity from a ZIP file or a directory."""
+    """Bulk similarity from a ZIP archive or a directory."""
     results = get_sim_list(
         source_path,
         ws,
@@ -108,11 +124,14 @@ def compare(
         model,
         threshold,
         num,
+        feature_weights=feature_weights,
         preprocess_mode=preprocess_mode,
         chunking_method=chunking_method,
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         max_chunks=max_chunks,
+        chunk_language=chunk_language,
+        chunker_options=chunker_options,
         chunk_aggregation=chunk_aggregation,
         code_metric=code_metric,
         code_metric_weight=code_metric_weight,

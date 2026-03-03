@@ -7,14 +7,21 @@ import pandas as pd
 from rapidfuzz.distance import JaroWinkler, Levenshtein
 
 from .code_metrics import parse_component_weights, prepare_crystalbleu_context, score_code_metric_pair
+from .feature_weights import combine_weighted_scores, resolve_feature_weights
+from .model_routing import (
+    backend_is_multivector,
+    load_hf_model_info,
+    resolve_vector_backend,
+)
 from .preprocessing import preprocess_code
 from .vectors import (
-    available_vector_backends,
     build_multivector_embeddings,
     build_static_hash_vectors,
+    build_chunked_single_vectors,
+    encode_single_vectors,
+    load_vector_model,
     multivector_similarity,
 )
-from .chunking import chunk_text
 
 
 DEFAULT_MODEL_NAME = "uclanlp/plbart-java-cs"
@@ -72,6 +79,22 @@ def load_model(model_name, device="auto"):
     return SentenceTransformer(model_name or DEFAULT_MODEL_NAME, device=normalize_device(device))
 
 
+def load_backend_model(model_name, vector_backend="auto", device="auto"):
+    normalized_device = normalize_device(device)
+    try:
+        return load_vector_model(
+            model_name or DEFAULT_MODEL_NAME,
+            vector_backend=vector_backend,
+            device=normalized_device,
+        )
+    except ImportError:
+        if vector_backend == "model2vec":
+            return None
+        if vector_backend == "pylate":
+            return load_model(model_name or DEFAULT_MODEL_NAME, device=normalized_device)
+        raise
+
+
 def resolve_file_path(file_path):
     if isinstance(file_path, os.PathLike):
         return os.fspath(file_path)
@@ -112,6 +135,7 @@ def read_zip_source(zip_path):
             name for name in archive.namelist()
             if not name.endswith("/") and not is_hidden_name(name)
         ]
+        file_names.sort()
         codes = [archive.read(name).decode("utf-8", errors="ignore") for name in file_names]
     return file_names, codes
 
@@ -145,10 +169,12 @@ def validate_code_metric_options(code_metric_weight, codebleu_component_weights)
     )
 
 
-def validate_vector_options(vector_backend, static_vector_dim):
-    backend = (vector_backend or "transformer").strip().lower()
-    if backend not in available_vector_backends():
-        raise ValueError(f"Unsupported vector backend: {vector_backend}")
+def validate_vector_options(vector_backend, static_vector_dim, model_name=None, model_info=None):
+    backend = resolve_vector_backend(
+        vector_backend,
+        model_name=model_name or DEFAULT_MODEL_NAME,
+        model_info=model_info,
+    )
     return backend, max(8, int(static_vector_dim or 0))
 
 
@@ -162,10 +188,14 @@ def cosine_similarity(left, right):
     return float(np.clip(score, -1.0, 1.0))
 
 
-def semantic_similarity(embedding1, embedding2, vector_backend="transformer", multivector_bidirectional=True):
-    backend = (vector_backend or "transformer").strip().lower()
-    if backend == "multivector":
-        return multivector_similarity(embedding1, embedding2, bidirectional=multivector_bidirectional)
+def semantic_similarity(embedding1, embedding2, vector_backend="sentence_transformers", multivector_bidirectional=True):
+    if backend_is_multivector(vector_backend):
+        return multivector_similarity(
+            embedding1,
+            embedding2,
+            bidirectional=multivector_bidirectional,
+            vector_backend=vector_backend,
+        )
     return cosine_similarity(embedding1, embedding2)
 
 
@@ -186,26 +216,8 @@ def prepare_code(code, preprocess_mode="none"):
     return preprocess_code(code, mode=preprocess_mode)
 
 
-def build_document_embedding(
-    model,
-    code,
-    chunking_method="none",
-    chunk_size=200,
-    chunk_overlap=0,
-    max_chunks=0,
-    chunk_aggregation="mean",
-):
-    chunks = chunk_text(
-        code,
-        method=chunking_method,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        max_chunks=max_chunks,
-    )
-    if len(chunks) == 1:
-        return np.asarray(model.encode(chunks[0], convert_to_numpy=True), dtype=float)
-    chunk_embeddings = model.encode(chunks, convert_to_numpy=True)
-    return aggregate_chunk_embeddings(chunk_embeddings, chunk_aggregation=chunk_aggregation)
+def _should_use_chunking(chunking_method):
+    return (chunking_method or "none").strip().lower() not in ("none", "document")
 
 
 def build_document_embeddings(
@@ -216,18 +228,21 @@ def build_document_embeddings(
     chunk_overlap=0,
     max_chunks=0,
     chunk_aggregation="mean",
-    vector_backend="transformer",
+    chunk_language="text",
+    chunker_options=None,
+    vector_backend="sentence_transformers",
     static_vector_dim=256,
     static_vector_lowercase=True,
 ):
     if not codes:
         return []
 
-    backend = (vector_backend or "transformer").strip().lower()
-    if backend == "static_hash":
+    if vector_backend == "static_hash":
+        return build_static_hash_vectors(codes, dim=static_vector_dim, lowercase=static_vector_lowercase)
+    if vector_backend == "model2vec" and model is None:
         return build_static_hash_vectors(codes, dim=static_vector_dim, lowercase=static_vector_lowercase)
 
-    if backend == "multivector":
+    if backend_is_multivector(vector_backend):
         return build_multivector_embeddings(
             model,
             codes,
@@ -235,26 +250,59 @@ def build_document_embeddings(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap,
             max_chunks=max_chunks,
+            chunk_language=chunk_language,
+            chunker_options=chunker_options,
         )
 
-    if (chunking_method or "none").strip().lower() in ("none", "document"):
-        vectors = model.encode(codes, convert_to_numpy=True)
-        if len(codes) == 1:
-            return [np.asarray(vectors, dtype=float)]
-        return [np.asarray(vector, dtype=float) for vector in vectors]
-
-    return [
-        build_document_embedding(
+    if not _should_use_chunking(chunking_method):
+        return encode_single_vectors(
             model,
-            code,
-            chunking_method=chunking_method,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            max_chunks=max_chunks,
-            chunk_aggregation=chunk_aggregation,
+            codes,
+            vector_backend=vector_backend,
+            static_vector_dim=static_vector_dim,
+            static_vector_lowercase=static_vector_lowercase,
         )
-        for code in codes
+
+    chunk_vectors = build_chunked_single_vectors(
+        model,
+        codes,
+        chunking_method=chunking_method,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        max_chunks=max_chunks,
+        chunk_language=chunk_language,
+        chunker_options=chunker_options,
+    )
+    return [
+        aggregate_chunk_embeddings(item, chunk_aggregation=chunk_aggregation)
+        for item in chunk_vectors
     ]
+
+
+def build_feature_scores(
+    code1,
+    code2,
+    embedding1,
+    embedding2,
+    code_metric_score=0.0,
+    vector_backend="sentence_transformers",
+    multivector_bidirectional=True,
+    extra_feature_scores=None,
+):
+    feature_scores = {
+        "semantic": semantic_similarity(
+            embedding1,
+            embedding2,
+            vector_backend=vector_backend,
+            multivector_bidirectional=multivector_bidirectional,
+        ),
+        "levenshtein": Levenshtein.normalized_similarity(code1, code2),
+        "jaro_winkler": JaroWinkler.normalized_similarity(code1, code2),
+        "code_metric": float(code_metric_score),
+    }
+    for name, value in (extra_feature_scores or {}).items():
+        feature_scores[str(name)] = float(value)
+    return feature_scores
 
 
 def combined_similarity_from_embeddings(
@@ -262,29 +310,23 @@ def combined_similarity_from_embeddings(
     code2,
     embedding1,
     embedding2,
-    weight_semantic,
-    weight_levenshtein,
-    weight_jaro_winkler,
+    feature_weights,
     code_metric_score=0.0,
-    code_metric_weight=0.0,
-    vector_backend="transformer",
+    vector_backend="sentence_transformers",
     multivector_bidirectional=True,
+    extra_feature_scores=None,
 ):
-    semantic_score = semantic_similarity(
+    feature_scores = build_feature_scores(
+        code1,
+        code2,
         embedding1,
         embedding2,
+        code_metric_score=code_metric_score,
         vector_backend=vector_backend,
         multivector_bidirectional=multivector_bidirectional,
+        extra_feature_scores=extra_feature_scores,
     )
-    levenshtein_score = Levenshtein.normalized_similarity(code1, code2)
-    jaro_winkler_score = JaroWinkler.normalized_similarity(code1, code2)
-    combined_score = (
-        weight_semantic * semantic_score
-        + weight_levenshtein * levenshtein_score
-        + weight_jaro_winkler * jaro_winkler_score
-        + code_metric_weight * float(code_metric_score)
-    )
-    return float(combined_score)
+    return combine_weighted_scores(feature_scores, feature_weights)
 
 
 def paraphrase_mining_with_combined_score(
@@ -294,14 +336,19 @@ def paraphrase_mining_with_combined_score(
     weight_levenshtein,
     weight_jaro_winkler,
     k=100,
+    feature_weights=None,
 ):
+    resolved_feature_weights = resolve_feature_weights(
+        weight_semantic,
+        weight_levenshtein,
+        weight_jaro_winkler,
+        feature_weights=feature_weights,
+    )
     embeddings = build_document_embeddings(model, list(sentences))
     results = rank_code_pairs(
         list(sentences),
         embeddings,
-        weight_semantic,
-        weight_levenshtein,
-        weight_jaro_winkler,
+        resolved_feature_weights,
     )
     limit = max(0, int(k or 0))
     if limit:
@@ -312,24 +359,24 @@ def paraphrase_mining_with_combined_score(
 def rank_code_pairs(
     codes,
     embeddings,
-    weight_semantic,
-    weight_levenshtein,
-    weight_jaro_winkler,
+    feature_weights,
     code_metric="none",
-    code_metric_weight=0.0,
     code_language="java",
     code_metric_bidirectional=True,
     codebleu_component_weights=None,
     crystalbleu_context=None,
     crystalbleu_max_order=4,
     crystalbleu_trivial_ngram_count=500,
-    vector_backend="transformer",
+    vector_backend="sentence_transformers",
     multivector_bidirectional=True,
 ):
     results = []
+    code_metric_name = (code_metric or "none").strip().lower()
+    use_code_metric = code_metric_name not in ("none", "") and feature_weights.get("code_metric", 0.0) > 0.0
+
     for i, j in combinations(range(len(codes)), 2):
         code_metric_score = 0.0
-        if float(code_metric_weight) > 0.0 and (code_metric or "none").strip().lower() not in ("none", ""):
+        if use_code_metric:
             code_metric_score = score_code_metric_pair(
                 codes[i],
                 codes[j],
@@ -348,11 +395,8 @@ def rank_code_pairs(
             codes[j],
             embeddings[i],
             embeddings[j],
-            weight_semantic,
-            weight_levenshtein,
-            weight_jaro_winkler,
+            feature_weights,
             code_metric_score=code_metric_score,
-            code_metric_weight=code_metric_weight,
             vector_backend=vector_backend,
             multivector_bidirectional=multivector_bidirectional,
         )
@@ -374,6 +418,8 @@ def get_sim_list(
     chunk_overlap=0,
     max_chunks=0,
     chunk_aggregation="mean",
+    chunk_language="text",
+    chunker_options=None,
     code_metric="none",
     code_metric_weight=0.0,
     code_language="java",
@@ -381,21 +427,37 @@ def get_sim_list(
     codebleu_component_weights=None,
     crystalbleu_max_order=4,
     crystalbleu_trivial_ngram_count=500,
-    vector_backend="transformer",
+    vector_backend="auto",
     static_vector_dim=256,
     static_vector_lowercase=True,
     multivector_bidirectional=True,
     device="auto",
+    feature_weights=None,
 ):
     weight_semantic, weight_levenshtein, weight_jaro_winkler = validate_weights(Ws, Wl, Wj)
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
         codebleu_component_weights,
     )
-    vector_backend, static_vector_dim = validate_vector_options(vector_backend, static_vector_dim)
+    model_info = None
+    if (vector_backend or "auto").strip().lower() in ("", "auto"):
+        model_info = load_hf_model_info(model_name or DEFAULT_MODEL_NAME)
+    vector_backend, static_vector_dim = validate_vector_options(
+        vector_backend,
+        static_vector_dim,
+        model_name=model_name,
+        model_info=model_info,
+    )
+    resolved_feature_weights = resolve_feature_weights(
+        weight_semantic,
+        weight_levenshtein,
+        weight_jaro_winkler,
+        code_metric_weight=code_metric_weight,
+        feature_weights=feature_weights,
+    )
     file_names, raw_codes = extract_and_read_source(zipped_file)
     codes = [prepare_code(code, preprocess_mode=preprocess_mode) for code in raw_codes]
-    model = None if vector_backend == "static_hash" else load_model(model_name, device=device)
+    model = load_backend_model(model_name, vector_backend=vector_backend, device=device)
     embeddings = build_document_embeddings(
         model,
         codes,
@@ -404,21 +466,20 @@ def get_sim_list(
         chunk_overlap=chunk_overlap,
         max_chunks=max_chunks,
         chunk_aggregation=chunk_aggregation,
+        chunk_language=chunk_language,
+        chunker_options=chunker_options,
         vector_backend=vector_backend,
         static_vector_dim=static_vector_dim,
         static_vector_lowercase=static_vector_lowercase,
     )
     crystalbleu_context = None
-    if (code_metric or "none").strip().lower() == "crystalbleu" and code_metric_weight > 0.0:
+    if (code_metric or "none").strip().lower() == "crystalbleu" and resolved_feature_weights.get("code_metric", 0.0) > 0.0:
         crystalbleu_context = prepare_crystalbleu_context(codes, max_order=crystalbleu_max_order)
     code_pairs = rank_code_pairs(
         codes,
         embeddings,
-        weight_semantic,
-        weight_levenshtein,
-        weight_jaro_winkler,
+        resolved_feature_weights,
         code_metric=code_metric,
-        code_metric_weight=code_metric_weight,
         code_language=code_language,
         code_metric_bidirectional=code_metric_bidirectional,
         codebleu_component_weights=component_weights,
@@ -433,7 +494,7 @@ def get_sim_list(
         {
             "file_name_1": file_names[i],
             "file_name_2": file_names[j],
-            "similarity_score": round(score, 2),
+            "similarity_score": round(score, 4),
         }
         for score, i, j in code_pairs
         if score >= float(threshold)
@@ -456,6 +517,8 @@ def calculate_similarity(
     chunk_overlap=0,
     max_chunks=0,
     chunk_aggregation="mean",
+    chunk_language="text",
+    chunker_options=None,
     code_metric="none",
     code_metric_weight=0.0,
     code_language="java",
@@ -463,21 +526,37 @@ def calculate_similarity(
     codebleu_component_weights=None,
     crystalbleu_max_order=4,
     crystalbleu_trivial_ngram_count=500,
-    vector_backend="transformer",
+    vector_backend="auto",
     static_vector_dim=256,
     static_vector_lowercase=True,
     multivector_bidirectional=True,
     device="auto",
+    feature_weights=None,
 ):
     weight_semantic, weight_levenshtein, weight_jaro_winkler = validate_weights(Ws, Wl, Wj)
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
         codebleu_component_weights,
     )
-    vector_backend, static_vector_dim = validate_vector_options(vector_backend, static_vector_dim)
+    model_info = None
+    if (vector_backend or "auto").strip().lower() in ("", "auto"):
+        model_info = load_hf_model_info(model_name or DEFAULT_MODEL_NAME)
+    vector_backend, static_vector_dim = validate_vector_options(
+        vector_backend,
+        static_vector_dim,
+        model_name=model_name,
+        model_info=model_info,
+    )
+    resolved_feature_weights = resolve_feature_weights(
+        weight_semantic,
+        weight_levenshtein,
+        weight_jaro_winkler,
+        code_metric_weight=code_metric_weight,
+        feature_weights=feature_weights,
+    )
     prepared_code1 = prepare_code(code1, preprocess_mode=preprocess_mode)
     prepared_code2 = prepare_code(code2, preprocess_mode=preprocess_mode)
-    model = None if vector_backend == "static_hash" else load_model(model_name, device=device)
+    model = load_backend_model(model_name, vector_backend=vector_backend, device=device)
     embeddings = build_document_embeddings(
         model,
         [prepared_code1, prepared_code2],
@@ -486,12 +565,14 @@ def calculate_similarity(
         chunk_overlap=chunk_overlap,
         max_chunks=max_chunks,
         chunk_aggregation=chunk_aggregation,
+        chunk_language=chunk_language,
+        chunker_options=chunker_options,
         vector_backend=vector_backend,
         static_vector_dim=static_vector_dim,
         static_vector_lowercase=static_vector_lowercase,
     )
     code_metric_score = 0.0
-    if code_metric_weight > 0.0 and (code_metric or "none").strip().lower() not in ("none", ""):
+    if (code_metric or "none").strip().lower() not in ("none", "") and resolved_feature_weights.get("code_metric", 0.0) > 0.0:
         code_metric_score = score_code_metric_pair(
             prepared_code1,
             prepared_code2,
@@ -507,11 +588,8 @@ def calculate_similarity(
         prepared_code2,
         embeddings[0],
         embeddings[1],
-        weight_semantic,
-        weight_levenshtein,
-        weight_jaro_winkler,
+        resolved_feature_weights,
         code_metric_score=code_metric_score,
-        code_metric_weight=code_metric_weight,
         vector_backend=vector_backend,
         multivector_bidirectional=multivector_bidirectional,
     )

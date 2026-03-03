@@ -31,16 +31,24 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
         [
             "compare",
             str(archive_path),
+            "--feature-weight",
+            "semantic=0.5",
+            "--feature-weight",
+            "code_metric=0.5",
             "--preprocess-mode",
             "basic",
             "--chunking-method",
-            "tokens",
+            "code",
             "--chunk-size",
             "50",
             "--chunk-overlap",
             "10",
             "--max-chunks",
             "4",
+            "--chunk-language",
+            "python",
+            "--chunker-option",
+            "include_line_numbers=true",
             "--chunk-aggregation",
             "max",
             "--code-metric",
@@ -56,7 +64,7 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
             "--crystalbleu-trivial-ngram-count",
             "40",
             "--vector-backend",
-            "multivector",
+            "auto",
             "--static-vector-dim",
             "512",
             "--device",
@@ -67,11 +75,14 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     )
 
     assert result.exit_code == 0
+    assert captured["kwargs"]["feature_weights"] == ("semantic=0.5", "code_metric=0.5")
     assert captured["kwargs"]["preprocess_mode"] == "basic"
-    assert captured["kwargs"]["chunking_method"] == "tokens"
+    assert captured["kwargs"]["chunking_method"] == "code"
     assert captured["kwargs"]["chunk_size"] == 50
     assert captured["kwargs"]["chunk_overlap"] == 10
     assert captured["kwargs"]["max_chunks"] == 4
+    assert captured["kwargs"]["chunk_language"] == "python"
+    assert captured["kwargs"]["chunker_options"] == ("include_line_numbers=true",)
     assert captured["kwargs"]["chunk_aggregation"] == "max"
     assert captured["kwargs"]["code_metric"] == "codebleu"
     assert captured["kwargs"]["code_metric_weight"] == 0.4
@@ -79,7 +90,7 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert captured["kwargs"]["codebleu_component_weights"] == "0.4,0.3,0.2,0.1"
     assert captured["kwargs"]["crystalbleu_max_order"] == 3
     assert captured["kwargs"]["crystalbleu_trivial_ngram_count"] == 40
-    assert captured["kwargs"]["vector_backend"] == "multivector"
+    assert captured["kwargs"]["vector_backend"] == "auto"
     assert captured["kwargs"]["static_vector_dim"] == 512
     assert captured["kwargs"]["device"] == "cpu"
     assert captured["kwargs"]["static_vector_lowercase"] is False

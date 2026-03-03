@@ -1,27 +1,10 @@
-This is the repository for the demonstration paper "Matheel: A Hybrid Source Code Plagiarism Detection Software".
-
 # Matheel
 
-Matheel is a Python package for source-code similarity analysis. It keeps a simple, function-based interface while supporting preprocessing, chunking, multiple vector backends, and code-aware metrics.
-
-## Features
-
-- Semantic similarity with transformer embeddings, static hashed vectors, or multivector late interaction.
-- Lexical similarity with Levenshtein and Jaro-Winkler components.
-- Optional code-aware scoring with `CodeBLEU`-style components and `CrystalBLEU`.
-- Shared core reused by the CLI, Python API, and Gradio app.
-- Comparison suite for running multiple configurations and writing publication-friendly summary tables.
+Matheel is a simple, function-based Python package and CLI for source-code similarity. It combines semantic embeddings, lexical similarity, chunking, preprocessing, and code-aware metrics without forcing a class-heavy API.
 
 ## Installation
 
-Use Python `3.10` to `3.12`. For Apple Silicon, a clean Python `3.12` virtual environment is the safest default.
-
-Example local setup:
-
-```bash
-python3.12 -m venv .venv
-. .venv/bin/activate
-```
+Use Python `3.10` to `3.12`.
 
 Base install:
 
@@ -29,92 +12,110 @@ Base install:
 pip install matheel
 ```
 
-Install optional CodeBLEU package support:
+Optional extras:
 
 ```bash
 pip install "matheel[metrics]"
-```
-
-Install development tools:
-
-```bash
+pip install "matheel[chunking]"
+pip install "matheel[model2vec]"
+pip install "matheel[pylate]"
 pip install "matheel[dev]"
 ```
 
-## CLI Usage
+## Supported Languages
 
-Basic comparison over a ZIP archive or a directory:
+- Chunking is language-agnostic by default because it can split any text.
+- `CodeBLEU`-style metrics are intentionally scoped to `Java`, `Python`, `C`, and `C++`.
+- Generic preprocessing works across languages, but code-aware metrics are most defensible in that four-language scope.
+
+## Supported Methods
+
+Similarity features:
+
+- `semantic`
+- `levenshtein`
+- `jaro_winkler`
+- `code_metric`
+
+Code metrics:
+
+- `codebleu`
+- `codebleu_ngram`
+- `codebleu_weighted_ngram`
+- `codebleu_syntax`
+- `codebleu_dataflow`
+- `crystalbleu`
+
+Chunking methods:
+
+- Built-in: `none`, `lines`, `tokens`, `characters`
+- Chonkie-backed when installed: `code`, `codechunker`, `chonkie_code`, `chonkie_token`, `chonkie_word`, `chonkie_sentence`, `chonkie_recursive`
+
+Vector backends:
+
+- `auto`
+- `sentence_transformers`
+- `model2vec`
+- `pylate`
+- `static_hash`
+
+`auto` inspects Hugging Face model metadata and routes to the correct backend when the model exposes a known library.
+
+## CLI
+
+Compare a directory or ZIP archive:
 
 ```bash
 matheel compare codes/ \
-  --model Salesforce/codet5p-110m-embedding \
+  --model sentence-transformers/all-MiniLM-L6-v2 \
+  --vector-backend auto \
+  --feature-weight semantic=0.6 \
+  --feature-weight levenshtein=0.2 \
+  --feature-weight jaro_winkler=0.1 \
+  --feature-weight code_metric=0.1 \
   --preprocess-mode basic \
-  --chunking-method tokens \
-  --chunk-size 120 \
-  --vector-backend multivector \
+  --chunking-method code \
+  --chunk-language python \
+  --chunker-option include_line_numbers=true \
   --code-metric codebleu \
-  --code-metric-weight 0.2 \
+  --code-language python \
   --threshold 0.5 \
-  --num 50
+  --num 25
 ```
 
-Run a comparison suite from a JSON config file:
+Run multiple configurations:
 
 ```bash
 matheel compare-suite codes/ runs.json \
   --summary-out results/summary.csv \
-  --details-dir results/runs \
-  --format csv
+  --details-dir results/runs
 ```
 
-Example `runs.json`:
+## Python API
 
-```json
-[
-  {
-    "run_name": "baseline",
-    "model_name": "Salesforce/codet5p-110m-embedding",
-    "number_results": 25
-  },
-  {
-    "run_name": "mv_codebleu",
-    "model_name": "Salesforce/codet5p-110m-embedding",
-    "chunking_method": "tokens",
-    "chunk_size": 120,
-    "vector_backend": "multivector",
-    "code_metric": "codebleu",
-    "code_metric_weight": 0.2,
-    "number_results": 25
-  }
-]
-```
-
-## Python API Usage
-
-Pairwise similarity:
+Pairwise scoring:
 
 ```python
 from matheel.similarity import calculate_similarity
 
 score = calculate_similarity(
-    "int value = 1;",
-    "int value = 1;",
+    "def add(a, b):\n    return a + b\n",
+    "def add(x, y):\n    return x + y\n",
     0.7,
     0.2,
     0.1,
-    "Salesforce/codet5p-110m-embedding",
+    "sentence-transformers/all-MiniLM-L6-v2",
+    vector_backend="auto",
     preprocess_mode="basic",
-    vector_backend="multivector",
-    chunking_method="tokens",
-    chunk_size=120,
+    chunking_method="code",
+    chunk_language="python",
     code_metric="codebleu",
-    code_metric_weight=0.2,
+    code_language="python",
+    feature_weights={"semantic": 0.5, "code_metric": 0.5},
 )
-
-print(score)
 ```
 
-Archive-wide ranking from a ZIP file or a directory:
+Directory or ZIP ranking:
 
 ```python
 from matheel.similarity import get_sim_list
@@ -124,66 +125,36 @@ results = get_sim_list(
     0.7,
     0.2,
     0.1,
-    "Salesforce/codet5p-110m-embedding",
-    0.5,
+    "sentence-transformers/all-MiniLM-L6-v2",
+    0.4,
     50,
-    preprocess_mode="basic",
-    chunking_method="tokens",
+    vector_backend="auto",
+    chunking_method="chonkie_token",
     chunk_size=120,
-    vector_backend="multivector",
-    code_metric="crystalbleu",
-    code_metric_weight=0.15,
+    chunk_overlap=20,
+    feature_weights="semantic=0.7,levenshtein=0.15,jaro_winkler=0.15",
 )
-
-print(results)
 ```
 
-Comparison suite:
+## Hugging Face Routing
 
-```python
-from matheel.comparison_suite import run_comparison_suite
+Matheel can inspect Hugging Face model metadata and route automatically:
 
-summary, results_by_run = run_comparison_suite(
-    "sample_codes",
-    [
-        {"run_name": "baseline", "model_name": "Salesforce/codet5p-110m-embedding"},
-        {
-            "run_name": "static_codebleu",
-            "model_name": "Salesforce/codet5p-110m-embedding",
-            "vector_backend": "static_hash",
-            "static_vector_dim": 512,
-            "code_metric": "codebleu",
-            "code_metric_weight": 0.2,
-        },
-    ],
-    summary_out="results/summary.csv",
-    details_dir="results/runs",
-)
+- `sentence-transformers` models go to the Sentence Transformers path
+- `model2vec` models go to the model2vec static path
+- `PyLate` models go to the multivector late-interaction path
 
-print(summary)
-```
+If metadata is unavailable, Matheel falls back to simple name and tag heuristics, then defaults to the Sentence Transformers path.
 
-## Gradio App
+## Docs and Examples
 
-The `gradio_app/` folder contains the Gradio interface.
+- Usage guide: [docs/usage.md](docs/usage.md)
+- Example run configs: [examples/runs/basic_runs.json](examples/runs/basic_runs.json)
 
-- CLI and Python API can read either a ZIP archive or a directory.
-- Gradio keeps the upload flow ZIP-only.
+## Gradio
 
-## Notes
-
-- Chunking is universal because it only splits text. Preprocessing is mostly generic, with comment/directive handling that is safest for Java, Python, C, and C++ style syntax.
-- For publication claims, the code-aware metrics should be treated as officially scoped to `Java`, `Python`, `C`, and `C++`. `CodeBLEU`-style weighting is most defensible in that limited language set.
-- `static_hash` is a lightweight dependency-free semantic backend for fast baselines.
-- `multivector` reuses the selected embedding model over chunks and scores them with late-interaction MaxSim.
-- CodeBLEU works with a local fallback implementation by default and uses the optional `codebleu` package automatically when installed.
+The Gradio demo stays in `gradio_app/`. The core package and CLI can read either a ZIP archive or a directory. The Gradio upload flow remains ZIP-based.
 
 ## License
 
 This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International License](https://creativecommons.org/licenses/by-nc/4.0/).
-
-## Acknowledgement
-
-- The demo uses code written by SBERT. [Webpage](https://www.sbert.net/index.html), [Repo](https://github.com/UKPLab/sentence-transformers).
-- The code is built with Gradio. [Webpage](https://www.gradio.app/), [Repo](https://github.com/gradio-app/gradio).
-- The code uses RapidFuzz for edit distance. [Webpage](https://rapidfuzz.github.io/RapidFuzz/), [Repo](https://github.com/rapidfuzz/RapidFuzz).

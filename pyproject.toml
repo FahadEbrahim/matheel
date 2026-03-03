@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "matheel"
-version = "0.2.0"
+version = "0.2.1"
 authors = [
   { name = "Fahad Ebrahim" }
 ]
@@ -23,8 +23,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-metrics = [
-    "codebleu"
+chunking = [
+    "chonkie"
+]
+chunking_code = [
+    "chonkie[code]"
+]
+metrics = []
+model2vec = [
+    "model2vec"
+]
+pylate = [
+    "pylate"
 ]
 gradio = [
     "gradio>=5,<6",
@@ -47,3 +57,6 @@ exclude = ["gradio_app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: real-model tests that use actual embedding backends and cached/downloaded model weights",
+]

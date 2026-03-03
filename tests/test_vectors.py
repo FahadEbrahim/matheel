@@ -2,8 +2,8 @@ from matheel.vectors import build_static_hash_vector, multivector_similarity
 
 
 def test_static_hash_vector_is_normalized_for_same_token_bag():
-    left = build_static_hash_vector("Alpha beta alpha", dim=64, lowercase=True)
-    right = build_static_hash_vector("alpha Alpha beta", dim=64, lowercase=True)
+    left = build_static_hash_vector("def add(a, b):\n    return a + b\n", dim=64, lowercase=True)
+    right = build_static_hash_vector("def add(b, a):\n    return b + a\n", dim=64, lowercase=True)
 
     assert round(float(left.dot(right)), 6) == 1.0
 

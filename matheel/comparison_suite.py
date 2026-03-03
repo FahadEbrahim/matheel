@@ -72,7 +72,7 @@ def summary_row_from_results(run_name, options, results):
             "top_file_1": "",
             "top_file_2": "",
             "top_score": 0.0,
-            "vector_backend": options.get("vector_backend", "transformer"),
+            "vector_backend": options.get("vector_backend", "auto"),
             "code_metric": options.get("code_metric", "none"),
             "chunking_method": options.get("chunking_method", "none"),
         }
@@ -90,7 +90,7 @@ def summary_row_from_results(run_name, options, results):
         "top_file_1": str(top_row["file_name_1"]),
         "top_file_2": str(top_row["file_name_2"]),
         "top_score": float(top_row["similarity_score"]),
-        "vector_backend": options.get("vector_backend", "transformer"),
+        "vector_backend": options.get("vector_backend", "auto"),
         "code_metric": options.get("code_metric", "none"),
         "chunking_method": options.get("chunking_method", "none"),
     }
