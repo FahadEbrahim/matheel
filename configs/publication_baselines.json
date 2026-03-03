@@ -1,0 +1,31 @@
+[
+  {
+    "run_name": "baseline_transformer",
+    "model_name": "Salesforce/codet5p-110m-embedding",
+    "Ws": 0.7,
+    "Wl": 0.3,
+    "Wj": 0.0,
+    "threshold": 0.0,
+    "number_results": 50,
+    "preprocess_mode": "basic",
+    "chunking_method": "none",
+    "vector_backend": "transformer",
+    "code_metric": "none",
+    "code_language": "java"
+  },
+  {
+    "run_name": "baseline_static_hash",
+    "model_name": "Salesforce/codet5p-110m-embedding",
+    "Ws": 0.7,
+    "Wl": 0.3,
+    "Wj": 0.0,
+    "threshold": 0.0,
+    "number_results": 50,
+    "preprocess_mode": "basic",
+    "chunking_method": "none",
+    "vector_backend": "static_hash",
+    "static_vector_dim": 512,
+    "code_metric": "none",
+    "code_language": "java"
+  }
+]

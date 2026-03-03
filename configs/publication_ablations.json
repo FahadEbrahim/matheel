@@ -1,0 +1,38 @@
+[
+  {
+    "run_name": "mv_codebleu_java",
+    "model_name": "Salesforce/codet5p-110m-embedding",
+    "Ws": 0.65,
+    "Wl": 0.2,
+    "Wj": 0.0,
+    "threshold": 0.0,
+    "number_results": 50,
+    "preprocess_mode": "basic",
+    "chunking_method": "tokens",
+    "chunk_size": 120,
+    "chunk_overlap": 20,
+    "vector_backend": "multivector",
+    "code_metric": "codebleu",
+    "code_metric_weight": 0.15,
+    "code_language": "java"
+  },
+  {
+    "run_name": "mv_crystalbleu_python",
+    "model_name": "Salesforce/codet5p-110m-embedding",
+    "Ws": 0.65,
+    "Wl": 0.2,
+    "Wj": 0.0,
+    "threshold": 0.0,
+    "number_results": 50,
+    "preprocess_mode": "basic",
+    "chunking_method": "tokens",
+    "chunk_size": 120,
+    "chunk_overlap": 20,
+    "vector_backend": "multivector",
+    "code_metric": "crystalbleu",
+    "code_metric_weight": 0.15,
+    "code_language": "python",
+    "crystalbleu_max_order": 4,
+    "crystalbleu_trivial_ngram_count": 200
+  }
+]

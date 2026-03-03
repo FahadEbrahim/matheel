@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "matheel"
-version = "0.1.8"
+version = "0.2.0"
 authors = [
   { name = "Fahad Ebrahim" }
 ]
 description = "Matheel: A CLI and Python package for source-code similarity detection."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10,<3.13"
 license = "CC-BY-NC-4.0"
 
 dependencies = [
@@ -20,6 +20,18 @@ dependencies = [
     "rapidfuzz",
     "sentence-transformers",
     "sentencepiece"
+]
+
+[project.optional-dependencies]
+metrics = [
+    "codebleu"
+]
+gradio = [
+    "gradio>=5,<6",
+    "gradio-huggingfacehub-search==0.0.8"
+]
+dev = [
+    "pytest>=8,<9"
 ]
 
 [project.urls]
@@ -32,3 +44,6 @@ matheel = "matheel.cli:main"
 [tool.setuptools.packages.find]
 include = ["matheel*"]
 exclude = ["gradio_app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
