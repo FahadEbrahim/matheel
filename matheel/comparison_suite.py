@@ -9,14 +9,16 @@ from .similarity import DEFAULT_MODEL_NAME, get_sim_list
 
 
 _SLUG_RE = re.compile(r"[^a-zA-Z0-9._-]+")
-_LEGACY_WEIGHT_KEY_MAP = {
-    "ws": "semantic",
-    "Ws": "semantic",
-    "wl": "levenshtein",
-    "Wl": "levenshtein",
-    "wj": "jaro_winkler",
-    "Wj": "jaro_winkler",
-}
+_SCORE_DECIMALS = 4
+_SCORE_FIELDS = (
+    "mean_score",
+    "median_score",
+    "max_score",
+    "min_score",
+    "std_score",
+    "top_score",
+    "similarity_score",
+)
 
 
 def load_run_configs(config_path):
@@ -61,12 +63,10 @@ def normalize_run_config(config, index=1):
 
 
 def _normalize_run_feature_weights(options):
-    resolved = parse_feature_weights(options.get("feature_weights"))
+    for legacy_key in ("ws", "wl", "wj", "Ws", "Wl", "Wj"):
+        options.pop(legacy_key, None)
 
-    for legacy_key, feature_name in _LEGACY_WEIGHT_KEY_MAP.items():
-        if legacy_key not in options:
-            continue
-        resolved[feature_name] = float(options.pop(legacy_key))
+    resolved = parse_feature_weights(options.get("feature_weights"))
 
     if resolved:
         options["feature_weights"] = resolved
@@ -98,14 +98,14 @@ def summary_row_from_results(run_name, options, results):
     return {
         "run_name": run_name,
         "pair_count": int(len(results)),
-        "mean_score": float(scores.mean()),
-        "median_score": float(scores.median()),
-        "max_score": float(scores.max()),
-        "min_score": float(scores.min()),
-        "std_score": float(scores.std(ddof=0)),
+        "mean_score": round(float(scores.mean()), _SCORE_DECIMALS),
+        "median_score": round(float(scores.median()), _SCORE_DECIMALS),
+        "max_score": round(float(scores.max()), _SCORE_DECIMALS),
+        "min_score": round(float(scores.min()), _SCORE_DECIMALS),
+        "std_score": round(float(scores.std(ddof=0)), _SCORE_DECIMALS),
         "top_file_1": str(top_row["file_name_1"]),
         "top_file_2": str(top_row["file_name_2"]),
-        "top_score": float(top_row["similarity_score"]),
+        "top_score": round(float(top_row["similarity_score"]), _SCORE_DECIMALS),
         "vector_backend": options.get("vector_backend", "auto"),
         "code_metric": options.get("code_metric", "none"),
         "chunking_method": options.get("chunking_method", "none"),
@@ -118,24 +118,34 @@ def _slugify(value):
     return slug or "run"
 
 
+def _rounded_score_frame(frame):
+    rounded = frame.copy()
+    for column in _SCORE_FIELDS:
+        if column in rounded.columns:
+            rounded[column] = rounded[column].astype(float).round(_SCORE_DECIMALS)
+    return rounded
+
+
 def write_summary(summary, output_path, output_format="csv"):
+    summary = _rounded_score_frame(summary)
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     fmt = (output_format or path.suffix.lstrip(".") or "csv").lower()
     if fmt == "json":
         path.write_text(summary.to_json(orient="records", indent=2), encoding="utf-8")
         return path
-    summary.to_csv(path, index=False)
+    summary.to_csv(path, index=False, float_format=f"%.{_SCORE_DECIMALS}f")
     return path
 
 
 def write_run_details(run_name, results, details_dir):
     if details_dir is None:
         return None
+    results = _rounded_score_frame(results)
     target_dir = Path(details_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
     target_path = target_dir / f"{_slugify(run_name)}.csv"
-    results.to_csv(target_path, index=False)
+    results.to_csv(target_path, index=False, float_format=f"%.{_SCORE_DECIMALS}f")
     return target_path
 
 
@@ -153,7 +163,7 @@ def run_comparison_suite(
     for run in normalized_runs:
         run_name = run["run_name"]
         options = dict(run["options"])
-        results = get_sim_list(zipped_file, **options)
+        results = _rounded_score_frame(get_sim_list(zipped_file, **options))
         result_frames[run_name] = results
         write_run_details(run_name, results, details_dir=details_dir)
         summary_rows.append(summary_row_from_results(run_name, options, results))

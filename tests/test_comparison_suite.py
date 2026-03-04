@@ -25,12 +25,15 @@ def test_load_run_configs_accepts_runs_wrapper(tmp_path):
     assert runs[0]["options"]["number_results"] == 5
 
 
-def test_load_run_configs_maps_lowercase_weight_aliases(tmp_path):
+def test_load_run_configs_supports_feature_weights_dict(tmp_path):
     config_path = tmp_path / "runs.json"
     config_path.write_text(
         json.dumps(
             [
-                {"run_name": "baseline", "ws": 0.1, "wl": 0.2, "wj": 0.7},
+                {
+                    "run_name": "baseline",
+                    "feature_weights": {"semantic": 0.1, "levenshtein": 0.2, "jaro_winkler": 0.7},
+                },
             ]
         ),
         encoding="utf-8",
@@ -46,11 +49,13 @@ def test_load_run_configs_maps_lowercase_weight_aliases(tmp_path):
 
 
 def test_parse_run_configs_accepts_json_text():
-    runs = parse_run_configs('[{"run_name":"baseline","model":"demo-model","ws":0.2}]')
+    runs = parse_run_configs(
+        '[{"run_name":"baseline","model":"demo-model","feature_weights":"semantic=0.2,code_metric=0.8"}]'
+    )
 
     assert runs[0]["run_name"] == "baseline"
     assert runs[0]["options"]["model_name"] == "demo-model"
-    assert runs[0]["options"]["feature_weights"] == {"semantic": 0.2}
+    assert runs[0]["options"]["feature_weights"] == {"semantic": 0.2, "code_metric": 0.8}
 
 
 def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):
@@ -58,13 +63,13 @@ def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):
         if kwargs["model_name"] == "strong-model":
             return pd.DataFrame(
                 [
-                    {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 0.95},
-                    {"file_name_1": "a.py", "file_name_2": "c.py", "similarity_score": 0.60},
+                    {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 0.9876543},
+                    {"file_name_1": "a.py", "file_name_2": "c.py", "similarity_score": 0.1234567},
                 ]
             )
         return pd.DataFrame(
             [
-                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 0.40},
+                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 0.4000001},
             ]
         )
 
@@ -87,3 +92,13 @@ def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):
     assert (details_dir / "strong.csv").exists()
     assert (details_dir / "weak.csv").exists()
     assert set(result_frames.keys()) == {"strong", "weak"}
+    assert summary.loc[0, "mean_score"] == 0.5556
+    assert summary.loc[0, "top_score"] == 0.9877
+    assert result_frames["strong"].iloc[0]["similarity_score"] == 0.9877
+
+    summary_text = summary_path.read_text(encoding="utf-8")
+    strong_details_text = (details_dir / "strong.csv").read_text(encoding="utf-8")
+    assert "0.9876543" not in summary_text
+    assert "0.9877" in summary_text
+    assert "0.9876543" not in strong_details_text
+    assert "0.9877" in strong_details_text

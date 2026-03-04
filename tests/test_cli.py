@@ -63,6 +63,43 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
             "3",
             "--crystalbleu-trivial-ngram-count",
             "40",
+            "--ruby-max-order",
+            "5",
+            "--ruby-mode",
+            "string",
+            "--ruby-tokenizer",
+            "tranx",
+            "--ruby-denominator",
+            "mean",
+            "--ruby-graph-timeout-seconds",
+            "0.5",
+            "--no-ruby-graph-use-edge-cost",
+            "--no-ruby-graph-include-leaf-edges",
+            "--ruby-tree-max-nodes",
+            "90",
+            "--ruby-tree-max-depth",
+            "6",
+            "--ruby-tree-max-children",
+            "4",
+            "--tsed-delete-cost",
+            "2",
+            "--tsed-insert-cost",
+            "3",
+            "--tsed-rename-cost",
+            "4",
+            "--codebertscore-model",
+            "microsoft/codebert-base",
+            "--codebertscore-num-layers",
+            "7",
+            "--codebertscore-batch-size",
+            "8",
+            "--codebertscore-max-length",
+            "256",
+            "--codebertscore-device",
+            "cpu",
+            "--codebertscore-idf",
+            "--codebertscore-nthreads",
+            "2",
             "--vector-backend",
             "auto",
             "--similarity-function",
@@ -94,6 +131,26 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert captured["kwargs"]["codebleu_component_weights"] == "0.4,0.3,0.2,0.1"
     assert captured["kwargs"]["crystalbleu_max_order"] == 3
     assert captured["kwargs"]["crystalbleu_trivial_ngram_count"] == 40
+    assert captured["kwargs"]["ruby_max_order"] == 5
+    assert captured["kwargs"]["ruby_mode"] == "string"
+    assert captured["kwargs"]["ruby_tokenizer"] == "tranx"
+    assert captured["kwargs"]["ruby_denominator"] == "mean"
+    assert captured["kwargs"]["ruby_graph_timeout_seconds"] == 0.5
+    assert captured["kwargs"]["ruby_graph_use_edge_cost"] is False
+    assert captured["kwargs"]["ruby_graph_include_leaf_edges"] is False
+    assert captured["kwargs"]["ruby_tree_max_nodes"] == 90
+    assert captured["kwargs"]["ruby_tree_max_depth"] == 6
+    assert captured["kwargs"]["ruby_tree_max_children"] == 4
+    assert captured["kwargs"]["tsed_delete_cost"] == 2.0
+    assert captured["kwargs"]["tsed_insert_cost"] == 3.0
+    assert captured["kwargs"]["tsed_rename_cost"] == 4.0
+    assert captured["kwargs"]["codebertscore_model"] == "microsoft/codebert-base"
+    assert captured["kwargs"]["codebertscore_num_layers"] == 7
+    assert captured["kwargs"]["codebertscore_batch_size"] == 8
+    assert captured["kwargs"]["codebertscore_max_length"] == 256
+    assert captured["kwargs"]["codebertscore_device"] == "cpu"
+    assert captured["kwargs"]["codebertscore_idf"] is True
+    assert captured["kwargs"]["codebertscore_nthreads"] == 2
     assert captured["kwargs"]["vector_backend"] == "auto"
     assert captured["kwargs"]["similarity_function"] == "dot"
     assert captured["kwargs"]["static_vector_dim"] == 512

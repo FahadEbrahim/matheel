@@ -11,7 +11,7 @@ RUNS = [
     {
         "run_name": "dense_baseline",
         "options": {
-            "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+            "model_name": "huggingface/CodeBERTa-small-v1",
             "vector_backend": "sentence_transformers",
             "feature_weights": {
                 "semantic": 0.7,
@@ -22,7 +22,7 @@ RUNS = [
     {
         "run_name": "code_metric_blend",
         "options": {
-            "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+            "model_name": "huggingface/CodeBERTa-small-v1",
             "vector_backend": "sentence_transformers",
             "preprocess_mode": "basic",
             "chunking_method": "none",

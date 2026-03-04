@@ -2,17 +2,7 @@ import inspect
 
 
 _BASE_METHODS = ("none",)
-_LEGACY_METHODS = ("lines", "tokens", "characters")
 _CHONKIE_METHODS = (
-    "code",
-    "codechunker",
-    "chonkie_code",
-    "chonkie_token",
-    "chonkie_sentence",
-    "chonkie_recursive",
-    "chonkie_fast",
-)
-_CHONKIE_PUBLIC_METHODS = (
     "code",
     "chonkie_token",
     "chonkie_sentence",
@@ -21,8 +11,6 @@ _CHONKIE_PUBLIC_METHODS = (
 )
 _CHONKIE_CLASS_NAMES = {
     "code": "CodeChunker",
-    "codechunker": "CodeChunker",
-    "chonkie_code": "CodeChunker",
     "chonkie_token": "TokenChunker",
     "chonkie_sentence": "SentenceChunker",
     "chonkie_recursive": "RecursiveChunker",
@@ -30,8 +18,6 @@ _CHONKIE_CLASS_NAMES = {
 }
 _CHONKIE_PARAMETER_NAMES = {
     "code": ("chunk_size", "language", "include_nodes", "tokenizer"),
-    "codechunker": ("chunk_size", "language", "include_nodes", "tokenizer"),
-    "chonkie_code": ("chunk_size", "language", "include_nodes", "tokenizer"),
     "chonkie_token": ("chunk_size", "chunk_overlap", "tokenizer"),
     "chonkie_sentence": (
         "chunk_size",
@@ -49,12 +35,12 @@ _CHONKIE_PARAMETER_NAMES = {
 
 
 def available_chunking_methods():
-    return _BASE_METHODS + _CHONKIE_PUBLIC_METHODS
+    return _BASE_METHODS + _CHONKIE_METHODS
 
 
 def chunker_parameter_names(method):
     selected_method = (method or "").strip().lower()
-    if selected_method in ("none", "document") or selected_method in _LEGACY_METHODS:
+    if selected_method == "none":
         return ()
     return _CHONKIE_PARAMETER_NAMES.get(selected_method, ())
 
@@ -282,14 +268,8 @@ def chunk_text(
 ):
     selected_method = (method or "none").strip().lower()
 
-    if selected_method in ("none", "document"):
+    if selected_method == "none":
         chunks = [text or ""]
-    elif selected_method == "lines":
-        chunks = chunk_by_lines(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    elif selected_method == "tokens":
-        chunks = chunk_by_tokens(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    elif selected_method == "characters":
-        chunks = chunk_by_characters(text, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     elif selected_method in _CHONKIE_METHODS:
         return _chunk_with_chonkie(
             text,

@@ -23,6 +23,7 @@ def _vectorize(text):
 
 
 def test_get_sim_list_uses_preprocessed_code(tmp_path, monkeypatch):
+    pytest.importorskip("chonkie")
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
@@ -36,24 +37,20 @@ def test_get_sim_list_uses_preprocessed_code(tmp_path, monkeypatch):
 
     raw_results = similarity.get_sim_list(
         archive_path,
-        0.0,
-        1.0,
-        0.0,
-        "fake",
-        0.0,
-        10,
+        model_name="fake",
+        threshold=0.0,
+        number_results=10,
+        feature_weights={"semantic": 0.0, "levenshtein": 1.0, "jaro_winkler": 0.0},
         vector_backend="sentence_transformers",
     )
     clean_results = similarity.get_sim_list(
         archive_path,
-        0.0,
-        1.0,
-        0.0,
-        "fake",
-        0.0,
-        10,
+        model_name="fake",
+        threshold=0.0,
+        number_results=10,
+        feature_weights={"semantic": 0.0, "levenshtein": 1.0, "jaro_winkler": 0.0},
         preprocess_mode="basic",
-        chunking_method="tokens",
+        chunking_method="chonkie_token",
         chunk_size=2,
         chunk_overlap=1,
         vector_backend="sentence_transformers",
@@ -64,6 +61,7 @@ def test_get_sim_list_uses_preprocessed_code(tmp_path, monkeypatch):
 
 
 def test_get_sim_list_accepts_directory_source(tmp_path, monkeypatch):
+    pytest.importorskip("chonkie")
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
@@ -78,14 +76,12 @@ def test_get_sim_list_accepts_directory_source(tmp_path, monkeypatch):
 
     clean_results = similarity.get_sim_list(
         source_dir,
-        0.0,
-        1.0,
-        0.0,
-        "fake",
-        0.0,
-        10,
+        model_name="fake",
+        threshold=0.0,
+        number_results=10,
+        feature_weights={"semantic": 0.0, "levenshtein": 1.0, "jaro_winkler": 0.0},
         preprocess_mode="basic",
-        chunking_method="tokens",
+        chunking_method="chonkie_token",
         chunk_size=2,
         chunk_overlap=1,
         vector_backend="sentence_transformers",
@@ -98,6 +94,7 @@ def test_get_sim_list_accepts_directory_source(tmp_path, monkeypatch):
 
 
 def test_calculate_similarity_supports_chunking(monkeypatch):
+    pytest.importorskip("chonkie")
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
@@ -107,11 +104,9 @@ def test_calculate_similarity_supports_chunking(monkeypatch):
     score = similarity.calculate_similarity(
         "def add(a, b):\n    total = a + b\n    return total\n",
         "def add(a, b):\n    total = a + b\n    return total\n",
-        1.0,
-        0.0,
-        0.0,
-        "fake",
-        chunking_method="tokens",
+        model_name="fake",
+        feature_weights={"semantic": 1.0},
+        chunking_method="chonkie_token",
         chunk_size=2,
         chunk_overlap=1,
         max_chunks=2,
@@ -132,10 +127,8 @@ def test_calculate_similarity_supports_code_metric_without_semantic_weights(monk
     score = similarity.calculate_similarity(
         "int value = 1;",
         "int value = 1;",
-        0.0,
-        0.0,
-        0.0,
-        "fake",
+        model_name="fake",
+        feature_weights={"code_metric": 1.0},
         code_metric="codebleu",
         code_metric_weight=1.0,
         vector_backend="sentence_transformers",
@@ -148,20 +141,12 @@ def test_calculate_similarity_supports_custom_levenshtein_weights():
     default_score = similarity.calculate_similarity(
         "abcd",
         "abxcd",
-        0.0,
-        1.0,
-        0.0,
-        "unused",
         vector_backend="static_hash",
         feature_weights={"levenshtein": 1.0},
     )
     heavier_insertion_score = similarity.calculate_similarity(
         "abcd",
         "abxcd",
-        0.0,
-        1.0,
-        0.0,
-        "unused",
         vector_backend="static_hash",
         feature_weights={"levenshtein": 1.0},
         levenshtein_weights=(3, 1, 1),
@@ -174,20 +159,12 @@ def test_calculate_similarity_supports_custom_jaro_winkler_prefix_weight():
     default_score = similarity.calculate_similarity(
         "prefixAlpha",
         "prefixBeta",
-        0.0,
-        0.0,
-        1.0,
-        "unused",
         vector_backend="static_hash",
         feature_weights={"jaro_winkler": 1.0},
     )
     stronger_prefix_score = similarity.calculate_similarity(
         "prefixAlpha",
         "prefixBeta",
-        0.0,
-        0.0,
-        1.0,
-        "unused",
         vector_backend="static_hash",
         feature_weights={"jaro_winkler": 1.0},
         jaro_winkler_prefix_weight=0.25,
@@ -200,10 +177,7 @@ def test_calculate_similarity_supports_static_hash_backend():
     score = similarity.calculate_similarity(
         "def add(a, b):\n    return a + b\n",
         "def add(b, a):\n    return b + a\n",
-        1.0,
-        0.0,
-        0.0,
-        "unused",
+        feature_weights={"semantic": 1.0},
         vector_backend="static_hash",
         static_vector_dim=64,
     )
@@ -215,10 +189,7 @@ def test_calculate_similarity_supports_alternative_similarity_functions():
     dot_score = similarity.calculate_similarity(
         "def add(a, b):\n    return a + b\n",
         "def add(a, b):\n    return a + b\n",
-        1.0,
-        0.0,
-        0.0,
-        "unused",
+        feature_weights={"semantic": 1.0},
         vector_backend="static_hash",
         similarity_function="dot",
         static_vector_dim=64,
@@ -226,10 +197,7 @@ def test_calculate_similarity_supports_alternative_similarity_functions():
     euclidean_score = similarity.calculate_similarity(
         "def add(a, b):\n    return a + b\n",
         "def add(a, b):\n    return a + b\n",
-        1.0,
-        0.0,
-        0.0,
-        "unused",
+        feature_weights={"semantic": 1.0},
         vector_backend="static_hash",
         similarity_function="euclidean",
         static_vector_dim=64,
@@ -249,10 +217,8 @@ def test_calculate_similarity_falls_back_when_model2vec_is_unavailable(monkeypat
     score = similarity.calculate_similarity(
         "def add(a, b):\n    return a + b\n",
         "def add(b, a):\n    return b + a\n",
-        1.0,
-        0.0,
-        0.0,
-        "Jarbas/m2v-256-paraphrase-multilingual-MiniLM-L12-v2",
+        model_name="Jarbas/m2v-256-paraphrase-multilingual-MiniLM-L12-v2",
+        feature_weights={"semantic": 1.0},
         vector_backend="model2vec",
         static_vector_dim=64,
     )
@@ -270,14 +236,9 @@ def test_calculate_similarity_supports_multivector_backend(monkeypatch):
     score = similarity.calculate_similarity(
         "def normalize(name):\n    return name.strip().lower()\n",
         "def normalize(name):\n    return name.strip().lower()\n",
-        1.0,
-        0.0,
-        0.0,
-        "fake",
+        model_name="fake",
+        feature_weights={"semantic": 1.0},
         vector_backend="pylate",
-        chunking_method="tokens",
-        chunk_size=2,
-        chunk_overlap=0,
     )
 
     assert score == pytest.approx(1.0)
@@ -293,10 +254,7 @@ def test_calculate_similarity_normalizes_custom_feature_weights(monkeypatch):
     score = similarity.calculate_similarity(
         "public int square(int value) {\n    return value * value;\n}\n",
         "public int square(int value) {\n    return value * value;\n}\n",
-        5.0,
-        0.0,
-        0.0,
-        "fake",
+        model_name="fake",
         vector_backend="sentence_transformers",
         feature_weights={"semantic": 3.0, "levenshtein": 1.0},
     )
@@ -326,10 +284,8 @@ def test_calculate_similarity_passes_similarity_and_pooling_to_loader(monkeypatc
     score = similarity.calculate_similarity(
         "def clean_name(name):\n    return name.strip().lower()\n",
         "def clean_name(name):\n    return name.strip().lower()\n",
-        1.0,
-        0.0,
-        0.0,
-        "fake",
+        model_name="fake",
+        feature_weights={"semantic": 1.0},
         vector_backend="sentence_transformers",
         similarity_function="manhattan",
         pooling_method="max",
@@ -383,12 +339,10 @@ def test_get_sim_list_auto_backend_uses_routing(tmp_path, monkeypatch):
 
     results = similarity.get_sim_list(
         source_dir,
-        1.0,
-        0.0,
-        0.0,
-        "sentence-transformers/all-MiniLM-L6-v2",
-        0.0,
-        5,
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        threshold=0.0,
+        number_results=5,
+        feature_weights={"semantic": 1.0},
         vector_backend="auto",
     )
 

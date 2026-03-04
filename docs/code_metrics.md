@@ -10,6 +10,34 @@ Matheel includes built-in code-aware metrics that can be blended into the final 
 - `codebleu_component_weights`
 - `crystalbleu_max_order`
 - `crystalbleu_trivial_ngram_count`
+- `ruby_max_order`
+- `ruby_epsilon`
+- `ruby_mode`
+- `ruby_tokenizer`
+- `ruby_denominator`
+- `ruby_graph_timeout_seconds`
+- `ruby_graph_use_edge_cost`
+- `ruby_graph_include_leaf_edges`
+- `ruby_tree_max_nodes`
+- `ruby_tree_max_depth`
+- `ruby_tree_max_children`
+- `tsed_delete_cost`
+- `tsed_insert_cost`
+- `tsed_rename_cost`
+- `tsed_max_nodes`
+- `tsed_max_depth`
+- `tsed_max_children`
+- `codebertscore_model`
+- `codebertscore_num_layers`
+- `codebertscore_batch_size`
+- `codebertscore_max_length`
+- `codebertscore_device`
+- `codebertscore_lang`
+- `codebertscore_idf`
+- `codebertscore_rescale_with_baseline`
+- `codebertscore_use_fast_tokenizer`
+- `codebertscore_nthreads`
+- `codebertscore_verbose`
 
 ## Supported Metrics
 
@@ -20,6 +48,9 @@ Matheel includes built-in code-aware metrics that can be blended into the final 
 - `codebleu_syntax`
 - `codebleu_dataflow`
 - `crystalbleu`
+- `ruby`
+- `tsed`
+- `codebertscore`
 
 ## Language Scope
 
@@ -30,7 +61,8 @@ For the strongest and safest interpretation, CodeBLEU-style metrics are scoped t
 - `c`
 - `cpp`
 
-CrystalBLEU is token-based and generally broader, but those four languages are still the best-documented scope for code-aware evaluation.
+RUBY and TSED follow the same language scope (`java`, `python`, `c`, `cpp`).
+CodeBERTScore is language-agnostic at runtime, but use the same four-language scope for consistent code-level comparisons.
 
 ## Metric Details
 
@@ -72,6 +104,62 @@ CrystalBLEU discounts frequent “trivial” n-grams.
 
 For very small toy examples, set `crystalbleu_trivial_ngram_count` lower than the default or even `0`, otherwise tiny inputs may collapse toward `0.0`.
 
+### RUBY
+
+RUBY uses a staged similarity strategy:
+
+1. graph similarity (when optional graph dependencies are available)
+2. tree similarity
+3. string similarity as a deterministic fallback
+
+`ruby_mode` controls this behavior (`auto`, `graph`, `tree`, `string`, `ngram`).
+
+- `ruby_max_order`
+  Maximum n-gram order (used when `ruby_mode=ngram`).
+- `ruby_epsilon`
+  Small smoothing value for n-gram mode edge cases.
+- `ruby_tokenizer`
+  Tokenizer used by string mode (`tranx` or `regex`).
+- `ruby_denominator`
+  String-mode normalization denominator (`max` or `mean`).
+- `ruby_graph_timeout_seconds`
+  Per-step timeout for graph-edit search.
+- `ruby_graph_use_edge_cost`
+  Include edge insertion/deletion costs in graph mode.
+- `ruby_graph_include_leaf_edges`
+  Add sequential leaf edges in graph mode.
+- `ruby_tree_max_nodes`, `ruby_tree_max_depth`, `ruby_tree_max_children`
+  Parse-budget controls for tree/graph modes.
+
+### TSED
+
+TSED compares syntax trees using tree edit distance.
+
+- `tsed_delete_cost`
+- `tsed_insert_cost`
+- `tsed_rename_cost`
+- `tsed_max_nodes`
+- `tsed_max_depth`
+- `tsed_max_children`
+
+TSED requires optional dependencies (`apted` and a tree-sitter runtime package).
+
+### CodeBERTScore
+
+CodeBERTScore uses transformer token alignment to score similarity.
+
+- `codebertscore_model`
+- `codebertscore_num_layers`
+- `codebertscore_batch_size`
+- `codebertscore_max_length`
+- `codebertscore_device`
+- `codebertscore_lang`
+- `codebertscore_idf`
+- `codebertscore_rescale_with_baseline`
+- `codebertscore_use_fast_tokenizer`
+- `codebertscore_nthreads`
+- `codebertscore_verbose`
+
 ## Blending Into Final Score
 
 To use code metrics as part of the final score:
@@ -94,4 +182,14 @@ score = calculate_similarity(
     feature_weights={"semantic": 0.8, "code_metric": 0.2},
 )
 print(score)
+
+codebertscore_only = calculate_similarity(
+    "def add(a, b): return a + b",
+    "def sum_two(x, y): return x + y",
+    code_metric="codebertscore",
+    code_metric_weight=1.0,
+    codebertscore_model="microsoft/codebert-base",
+    feature_weights={"code_metric": 1.0},
+)
+print(codebertscore_only)
 ```

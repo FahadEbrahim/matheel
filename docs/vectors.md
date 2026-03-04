@@ -122,7 +122,7 @@ from matheel.similarity import calculate_similarity
 score = calculate_similarity(
     "def add(a, b): return a + b",
     "def add(x, y): return x + y",
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_name="huggingface/CodeBERTa-small-v1",
     vector_backend="sentence_transformers",
     max_token_length=256,
     similarity_function="dot",

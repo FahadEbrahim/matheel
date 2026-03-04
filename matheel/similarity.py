@@ -6,7 +6,14 @@ import numpy as np
 import pandas as pd
 from rapidfuzz.distance import JaroWinkler, Levenshtein
 
-from .code_metrics import parse_component_weights, prepare_crystalbleu_context, score_code_metric_pair
+from .code_metrics import (
+    parse_component_weights,
+    prepare_codebertscore_context,
+    prepare_crystalbleu_context,
+    prepare_ruby_context,
+    prepare_tsed_context,
+    score_code_metric_pair,
+)
 from .feature_weights import combine_weighted_scores, resolve_feature_weights
 from .model_routing import (
     backend_is_multivector,
@@ -31,7 +38,7 @@ from .vectors import (
 )
 
 
-DEFAULT_MODEL_NAME = "uclanlp/plbart-java-cs"
+DEFAULT_MODEL_NAME = "huggingface/CodeBERTa-small-v1"
 RESULT_COLUMNS = ["file_name_1", "file_name_2", "similarity_score"]
 
 
@@ -242,14 +249,6 @@ def _validate_weight(name, value):
     return numeric_value
 
 
-def validate_weights(weight_semantic, weight_levenshtein, weight_jaro_winkler):
-    return (
-        _validate_weight("Ws", weight_semantic),
-        _validate_weight("Wl", weight_levenshtein),
-        _validate_weight("Wj", weight_jaro_winkler),
-    )
-
-
 def validate_code_metric_options(code_metric_weight, codebleu_component_weights):
     return (
         _validate_weight("code_metric_weight", code_metric_weight),
@@ -326,7 +325,7 @@ def prepare_code(code, preprocess_mode="none"):
 
 
 def _should_use_chunking(chunking_method):
-    return (chunking_method or "none").strip().lower() not in ("none", "document")
+    return (chunking_method or "none").strip().lower() != "none"
 
 
 def build_document_embeddings(
@@ -459,21 +458,13 @@ def combined_similarity_from_embeddings(
 def paraphrase_mining_with_combined_score(
     model,
     sentences,
-    weight_semantic=None,
-    weight_levenshtein=None,
-    weight_jaro_winkler=None,
     k=100,
     feature_weights=None,
     similarity_function="cosine",
     pooling_method="mean",
     max_token_length=None,
 ):
-    resolved_feature_weights = resolve_feature_weights(
-        weight_semantic,
-        weight_levenshtein,
-        weight_jaro_winkler,
-        feature_weights=feature_weights,
-    )
+    resolved_feature_weights = resolve_feature_weights(feature_weights=feature_weights)
     model = configure_model_max_token_length(model, max_token_length=max_token_length)
     embeddings = build_document_embeddings(
         model,
@@ -503,6 +494,37 @@ def rank_code_pairs(
     crystalbleu_context=None,
     crystalbleu_max_order=4,
     crystalbleu_trivial_ngram_count=50,
+    ruby_context=None,
+    ruby_max_order=4,
+    ruby_epsilon=1e-12,
+    ruby_mode="auto",
+    ruby_tokenizer="tranx",
+    ruby_denominator="max",
+    ruby_graph_timeout_seconds=1.0,
+    ruby_graph_use_edge_cost=True,
+    ruby_graph_include_leaf_edges=True,
+    ruby_tree_max_nodes=180,
+    ruby_tree_max_depth=10,
+    ruby_tree_max_children=8,
+    tsed_context=None,
+    tsed_delete_cost=1.0,
+    tsed_insert_cost=1.0,
+    tsed_rename_cost=1.0,
+    tsed_max_nodes=180,
+    tsed_max_depth=10,
+    tsed_max_children=8,
+    codebertscore_context=None,
+    codebertscore_model="microsoft/codebert-base",
+    codebertscore_num_layers=None,
+    codebertscore_batch_size=16,
+    codebertscore_max_length=0,
+    codebertscore_device="auto",
+    codebertscore_lang=None,
+    codebertscore_idf=False,
+    codebertscore_rescale_with_baseline=False,
+    codebertscore_use_fast_tokenizer=False,
+    codebertscore_nthreads=4,
+    codebertscore_verbose=False,
     vector_backend="sentence_transformers",
     multivector_bidirectional=False,
     similarity_function="cosine",
@@ -528,6 +550,37 @@ def rank_code_pairs(
                 prediction_index=j,
                 crystalbleu_max_order=crystalbleu_max_order,
                 crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
+                ruby_context=ruby_context,
+                ruby_max_order=ruby_max_order,
+                ruby_epsilon=ruby_epsilon,
+                ruby_mode=ruby_mode,
+                ruby_tokenizer=ruby_tokenizer,
+                ruby_denominator=ruby_denominator,
+                ruby_graph_timeout_seconds=ruby_graph_timeout_seconds,
+                ruby_graph_use_edge_cost=ruby_graph_use_edge_cost,
+                ruby_graph_include_leaf_edges=ruby_graph_include_leaf_edges,
+                ruby_tree_max_nodes=ruby_tree_max_nodes,
+                ruby_tree_max_depth=ruby_tree_max_depth,
+                ruby_tree_max_children=ruby_tree_max_children,
+                tsed_context=tsed_context,
+                tsed_delete_cost=tsed_delete_cost,
+                tsed_insert_cost=tsed_insert_cost,
+                tsed_rename_cost=tsed_rename_cost,
+                tsed_max_nodes=tsed_max_nodes,
+                tsed_max_depth=tsed_max_depth,
+                tsed_max_children=tsed_max_children,
+                codebertscore_context=codebertscore_context,
+                codebertscore_model=codebertscore_model,
+                codebertscore_num_layers=codebertscore_num_layers,
+                codebertscore_batch_size=codebertscore_batch_size,
+                codebertscore_max_length=codebertscore_max_length,
+                codebertscore_device=codebertscore_device,
+                codebertscore_lang=codebertscore_lang,
+                codebertscore_idf=codebertscore_idf,
+                codebertscore_rescale_with_baseline=codebertscore_rescale_with_baseline,
+                codebertscore_use_fast_tokenizer=codebertscore_use_fast_tokenizer,
+                codebertscore_nthreads=codebertscore_nthreads,
+                codebertscore_verbose=codebertscore_verbose,
             )
         score = combined_similarity_from_embeddings(
             codes[i],
@@ -548,9 +601,6 @@ def rank_code_pairs(
 
 def get_sim_list(
     zipped_file,
-    Ws=None,
-    Wl=None,
-    Wj=None,
     model_name=DEFAULT_MODEL_NAME,
     threshold=0.0,
     number_results=10,
@@ -569,6 +619,34 @@ def get_sim_list(
     codebleu_component_weights=None,
     crystalbleu_max_order=4,
     crystalbleu_trivial_ngram_count=50,
+    ruby_max_order=4,
+    ruby_epsilon=1e-12,
+    ruby_mode="auto",
+    ruby_tokenizer="tranx",
+    ruby_denominator="max",
+    ruby_graph_timeout_seconds=1.0,
+    ruby_graph_use_edge_cost=True,
+    ruby_graph_include_leaf_edges=True,
+    ruby_tree_max_nodes=180,
+    ruby_tree_max_depth=10,
+    ruby_tree_max_children=8,
+    tsed_delete_cost=1.0,
+    tsed_insert_cost=1.0,
+    tsed_rename_cost=1.0,
+    tsed_max_nodes=180,
+    tsed_max_depth=10,
+    tsed_max_children=8,
+    codebertscore_model="microsoft/codebert-base",
+    codebertscore_num_layers=None,
+    codebertscore_batch_size=16,
+    codebertscore_max_length=0,
+    codebertscore_device="auto",
+    codebertscore_lang=None,
+    codebertscore_idf=False,
+    codebertscore_rescale_with_baseline=False,
+    codebertscore_use_fast_tokenizer=False,
+    codebertscore_nthreads=4,
+    codebertscore_verbose=False,
     vector_backend="auto",
     similarity_function="cosine",
     static_vector_dim=256,
@@ -601,11 +679,8 @@ def get_sim_list(
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
     resolved_feature_weights = resolve_feature_weights(
-        Ws,
-        Wl,
-        Wj,
-        code_metric_weight=code_metric_weight,
         feature_weights=feature_weights,
+        code_metric_weight=code_metric_weight,
     )
     file_names, raw_codes = extract_and_read_source(zipped_file)
     codes = [prepare_code(code, preprocess_mode=preprocess_mode) for code in raw_codes]
@@ -632,9 +707,35 @@ def get_sim_list(
         static_vector_lowercase=static_vector_lowercase,
         pooling_method=selected_pooling,
     )
+    code_metric_name = (code_metric or "none").strip().lower()
+    use_code_metric = code_metric_name not in ("none", "") and resolved_feature_weights.get("code_metric", 0.0) > 0.0
     crystalbleu_context = None
-    if (code_metric or "none").strip().lower() == "crystalbleu" and resolved_feature_weights.get("code_metric", 0.0) > 0.0:
+    ruby_context = None
+    tsed_context = None
+    codebertscore_context = None
+    if use_code_metric and code_metric_name == "crystalbleu":
         crystalbleu_context = prepare_crystalbleu_context(codes, max_order=crystalbleu_max_order)
+    if use_code_metric and code_metric_name == "ruby":
+        ruby_context = prepare_ruby_context(
+            codes,
+            language=code_language,
+            max_order=ruby_max_order,
+            tokenizer=ruby_tokenizer,
+            tree_max_nodes=ruby_tree_max_nodes,
+            tree_max_depth=ruby_tree_max_depth,
+            tree_max_children=ruby_tree_max_children,
+            graph_include_leaf_edges=ruby_graph_include_leaf_edges,
+        )
+    if use_code_metric and code_metric_name == "tsed":
+        tsed_context = prepare_tsed_context(
+            codes,
+            language=code_language,
+            max_nodes=tsed_max_nodes,
+            max_depth=tsed_max_depth,
+            max_children=tsed_max_children,
+        )
+    if use_code_metric and code_metric_name == "codebertscore":
+        codebertscore_context = prepare_codebertscore_context(codes)
     code_pairs = rank_code_pairs(
         codes,
         embeddings,
@@ -646,6 +747,37 @@ def get_sim_list(
         crystalbleu_context=crystalbleu_context,
         crystalbleu_max_order=crystalbleu_max_order,
         crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
+        ruby_context=ruby_context,
+        ruby_max_order=ruby_max_order,
+        ruby_epsilon=ruby_epsilon,
+        ruby_mode=ruby_mode,
+        ruby_tokenizer=ruby_tokenizer,
+        ruby_denominator=ruby_denominator,
+        ruby_graph_timeout_seconds=ruby_graph_timeout_seconds,
+        ruby_graph_use_edge_cost=ruby_graph_use_edge_cost,
+        ruby_graph_include_leaf_edges=ruby_graph_include_leaf_edges,
+        ruby_tree_max_nodes=ruby_tree_max_nodes,
+        ruby_tree_max_depth=ruby_tree_max_depth,
+        ruby_tree_max_children=ruby_tree_max_children,
+        tsed_context=tsed_context,
+        tsed_delete_cost=tsed_delete_cost,
+        tsed_insert_cost=tsed_insert_cost,
+        tsed_rename_cost=tsed_rename_cost,
+        tsed_max_nodes=tsed_max_nodes,
+        tsed_max_depth=tsed_max_depth,
+        tsed_max_children=tsed_max_children,
+        codebertscore_context=codebertscore_context,
+        codebertscore_model=codebertscore_model,
+        codebertscore_num_layers=codebertscore_num_layers,
+        codebertscore_batch_size=codebertscore_batch_size,
+        codebertscore_max_length=codebertscore_max_length,
+        codebertscore_device=codebertscore_device,
+        codebertscore_lang=codebertscore_lang,
+        codebertscore_idf=codebertscore_idf,
+        codebertscore_rescale_with_baseline=codebertscore_rescale_with_baseline,
+        codebertscore_use_fast_tokenizer=codebertscore_use_fast_tokenizer,
+        codebertscore_nthreads=codebertscore_nthreads,
+        codebertscore_verbose=codebertscore_verbose,
         vector_backend=vector_backend,
         multivector_bidirectional=multivector_bidirectional,
         similarity_function=selected_similarity,
@@ -670,9 +802,6 @@ def get_sim_list(
 def calculate_similarity(
     code1,
     code2,
-    Ws=None,
-    Wl=None,
-    Wj=None,
     model_name=DEFAULT_MODEL_NAME,
     preprocess_mode="none",
     chunking_method="none",
@@ -689,6 +818,34 @@ def calculate_similarity(
     codebleu_component_weights=None,
     crystalbleu_max_order=4,
     crystalbleu_trivial_ngram_count=50,
+    ruby_max_order=4,
+    ruby_epsilon=1e-12,
+    ruby_mode="auto",
+    ruby_tokenizer="tranx",
+    ruby_denominator="max",
+    ruby_graph_timeout_seconds=1.0,
+    ruby_graph_use_edge_cost=True,
+    ruby_graph_include_leaf_edges=True,
+    ruby_tree_max_nodes=180,
+    ruby_tree_max_depth=10,
+    ruby_tree_max_children=8,
+    tsed_delete_cost=1.0,
+    tsed_insert_cost=1.0,
+    tsed_rename_cost=1.0,
+    tsed_max_nodes=180,
+    tsed_max_depth=10,
+    tsed_max_children=8,
+    codebertscore_model="microsoft/codebert-base",
+    codebertscore_num_layers=None,
+    codebertscore_batch_size=16,
+    codebertscore_max_length=0,
+    codebertscore_device="auto",
+    codebertscore_lang=None,
+    codebertscore_idf=False,
+    codebertscore_rescale_with_baseline=False,
+    codebertscore_use_fast_tokenizer=False,
+    codebertscore_nthreads=4,
+    codebertscore_verbose=False,
     vector_backend="auto",
     similarity_function="cosine",
     static_vector_dim=256,
@@ -721,11 +878,8 @@ def calculate_similarity(
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
     resolved_feature_weights = resolve_feature_weights(
-        Ws,
-        Wl,
-        Wj,
-        code_metric_weight=code_metric_weight,
         feature_weights=feature_weights,
+        code_metric_weight=code_metric_weight,
     )
     prepared_code1 = prepare_code(code1, preprocess_mode=preprocess_mode)
     prepared_code2 = prepare_code(code2, preprocess_mode=preprocess_mode)
@@ -763,6 +917,34 @@ def calculate_similarity(
             component_weights=component_weights,
             crystalbleu_max_order=crystalbleu_max_order,
             crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
+            ruby_max_order=ruby_max_order,
+            ruby_epsilon=ruby_epsilon,
+            ruby_mode=ruby_mode,
+            ruby_tokenizer=ruby_tokenizer,
+            ruby_denominator=ruby_denominator,
+            ruby_graph_timeout_seconds=ruby_graph_timeout_seconds,
+            ruby_graph_use_edge_cost=ruby_graph_use_edge_cost,
+            ruby_graph_include_leaf_edges=ruby_graph_include_leaf_edges,
+            ruby_tree_max_nodes=ruby_tree_max_nodes,
+            ruby_tree_max_depth=ruby_tree_max_depth,
+            ruby_tree_max_children=ruby_tree_max_children,
+            tsed_delete_cost=tsed_delete_cost,
+            tsed_insert_cost=tsed_insert_cost,
+            tsed_rename_cost=tsed_rename_cost,
+            tsed_max_nodes=tsed_max_nodes,
+            tsed_max_depth=tsed_max_depth,
+            tsed_max_children=tsed_max_children,
+            codebertscore_model=codebertscore_model,
+            codebertscore_num_layers=codebertscore_num_layers,
+            codebertscore_batch_size=codebertscore_batch_size,
+            codebertscore_max_length=codebertscore_max_length,
+            codebertscore_device=codebertscore_device,
+            codebertscore_lang=codebertscore_lang,
+            codebertscore_idf=codebertscore_idf,
+            codebertscore_rescale_with_baseline=codebertscore_rescale_with_baseline,
+            codebertscore_use_fast_tokenizer=codebertscore_use_fast_tokenizer,
+            codebertscore_nthreads=codebertscore_nthreads,
+            codebertscore_verbose=codebertscore_verbose,
         )
     return combined_similarity_from_embeddings(
         prepared_code1,

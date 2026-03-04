@@ -8,7 +8,7 @@ def test_normalize_feature_weights_scales_to_one():
 
 
 def test_resolve_feature_weights_accepts_string_overrides():
-    resolved = resolve_feature_weights(0.7, 0.2, 0.1, feature_weights="semantic=2,code_metric=2")
+    resolved = resolve_feature_weights(feature_weights="semantic=2,code_metric=2")
 
     assert resolved == {"semantic": 0.5, "code_metric": 0.5}
 

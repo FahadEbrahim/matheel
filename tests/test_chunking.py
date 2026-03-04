@@ -15,23 +15,16 @@ def test_public_chunking_methods_are_chonkie_first():
     )
 
 
-def test_legacy_line_chunking_still_works_for_compatibility():
+def test_legacy_line_chunking_is_removed():
     text = "a\nb\nc\nd"
 
-    assert chunk_text(text, method="lines", chunk_size=2, chunk_overlap=1) == [
-        "a\nb",
-        "b\nc",
-        "c\nd",
-        "d",
-    ]
+    with pytest.raises(ValueError):
+        chunk_text(text, method="lines", chunk_size=2, chunk_overlap=1)
 
 
-def test_legacy_character_chunking_still_works_for_compatibility():
-    assert chunk_text("abcdef", method="characters", chunk_size=3, chunk_overlap=1) == [
-        "abc",
-        "cde",
-        "ef",
-    ]
+def test_legacy_character_chunking_is_removed():
+    with pytest.raises(ValueError):
+        chunk_text("abcdef", method="characters", chunk_size=3, chunk_overlap=1)
 
 
 def test_code_chunker_requires_chonkie_when_unavailable(monkeypatch):
@@ -58,8 +51,8 @@ def test_parse_chunker_options_supports_strings():
 
 def test_chunker_parameter_names_exposes_native_chonkie_methods():
     assert chunker_parameter_names("code") == ("chunk_size", "language", "include_nodes", "tokenizer")
-    assert chunker_parameter_names("codechunker") == ("chunk_size", "language", "include_nodes", "tokenizer")
-    assert chunker_parameter_names("chonkie_code") == ("chunk_size", "language", "include_nodes", "tokenizer")
+    assert chunker_parameter_names("codechunker") == ()
+    assert chunker_parameter_names("chonkie_code") == ()
     assert chunker_parameter_names("chonkie_token") == ("chunk_size", "chunk_overlap", "tokenizer")
     assert chunker_parameter_names("chonkie_fast") == (
         "chunk_size",

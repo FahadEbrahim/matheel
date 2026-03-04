@@ -37,7 +37,7 @@ Minimal example:
   {
     "run_name": "dense_baseline",
     "options": {
-      "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+      "model_name": "huggingface/CodeBERTa-small-v1",
       "vector_backend": "auto",
       "feature_weights": {
         "semantic": 0.7,
@@ -54,7 +54,6 @@ The suite normalizes a few convenience aliases:
 
 - `model` -> `model_name`
 - `num` -> `number_results`
-- legacy `ws`, `wl`, `wj` -> `feature_weights`
 
 If no weights are supplied, the suite applies Matheel’s default feature blend.
 
@@ -86,6 +85,7 @@ One row per run, including:
   Writes one CSV per run with the detailed ranked pairs.
 - `output_format`
   `csv` or `json` for the summary file.
+- Numeric score fields are rounded to 4 decimal places in suite output artifacts.
 
 ## Python Example
 
@@ -96,7 +96,7 @@ runs = [
     {
         "run_name": "dense_baseline",
         "options": {
-            "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+            "model_name": "huggingface/CodeBERTa-small-v1",
             "vector_backend": "sentence_transformers",
             "feature_weights": {"semantic": 0.7, "levenshtein": 0.3},
         },
@@ -104,7 +104,7 @@ runs = [
     {
         "run_name": "code_metric_blend",
         "options": {
-            "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+            "model_name": "huggingface/CodeBERTa-small-v1",
             "vector_backend": "sentence_transformers",
             "chunking_method": "code",
             "chunk_language": "java",

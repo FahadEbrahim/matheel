@@ -18,6 +18,7 @@ from matheel.code_metrics import available_code_metric_languages, available_code
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
 from matheel.similarity import (
+    DEFAULT_MODEL_NAME,
     available_runtime_devices,
     calculate_similarity,
     get_sim_list,
@@ -27,7 +28,7 @@ from matheel.vectors import available_pooling_methods, available_similarity_func
 
 
 DEVICE_CHOICES = ("auto",) + available_runtime_devices()
-DEFAULT_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+DEFAULT_MODEL = DEFAULT_MODEL_NAME
 CHUNK_LANGUAGE_CHOICES = [
     "text",
     "python",
@@ -195,7 +196,7 @@ def update_code_preparation_sections(selected_steps):
 def update_code_metric_sections(code_metric):
     normalized = (code_metric or "codebleu").strip().lower()
     return (
-        gr.update(visible=normalized == "codebleu"),
+        gr.update(visible=normalized.startswith("codebleu")),
         gr.update(visible=normalized == "crystalbleu"),
     )
 
@@ -323,7 +324,7 @@ def suite_rows_to_configs(rows):
             )
 
         effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
-        if code_metric == "codebleu" and feature_weights.get("code_metric", 0.0) > 0:
+        if code_metric.startswith("codebleu") and feature_weights.get("code_metric", 0.0) > 0:
             effective_codebleu_component_weights = validate_codebleu_component_weights_text(
                 row.get("codebleu_component_weights") or "0.25,0.25,0.25,0.25"
             )
@@ -511,7 +512,7 @@ def build_suite_run_row_data(
         _, normalized_levenshtein_weights = validate_levenshtein_weights_text(levenshtein_weights)
 
     normalized_codebleu_weights = "0.25,0.25,0.25,0.25"
-    if normalized_code_metric == "codebleu":
+    if normalized_code_metric.startswith("codebleu"):
         normalized_codebleu_weights = validate_codebleu_component_weights_text(codebleu_component_weights)
 
     feature_weights = build_feature_weights(
@@ -904,7 +905,7 @@ def calculate_similarity_gradio(
         effective_levenshtein_weights, _ = validate_levenshtein_weights_text(levenshtein_weights)
 
     effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
-    if effective_code_metric == "codebleu":
+    if effective_code_metric.startswith("codebleu"):
         effective_codebleu_component_weights = validate_codebleu_component_weights_text(
             codebleu_component_weights
         )
@@ -1004,7 +1005,7 @@ def get_sim_list_gradio(
         effective_levenshtein_weights, _ = validate_levenshtein_weights_text(levenshtein_weights)
 
     effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
-    if effective_code_metric == "codebleu":
+    if effective_code_metric.startswith("codebleu"):
         effective_codebleu_component_weights = validate_codebleu_component_weights_text(
             codebleu_component_weights
         )
@@ -1133,7 +1134,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                             )
                         with gr.Group(visible=False) as pair_code_group:
                             pair_code_metric = gr.Dropdown(
-                                choices=["codebleu", "crystalbleu"],
+                                choices=[metric for metric in available_code_metrics() if metric != "none"],
                                 value="codebleu",
                                 label="Code Metric",
                             )
@@ -1349,7 +1350,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                             )
                         with gr.Group(visible=False) as collection_code_group:
                             collection_code_metric = gr.Dropdown(
-                                choices=["codebleu", "crystalbleu"],
+                                choices=[metric for metric in available_code_metrics() if metric != "none"],
                                 value="codebleu",
                                 label="Code Metric",
                             )
@@ -1585,7 +1586,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                             )
                         with gr.Group(visible=False) as suite_code_group:
                             suite_code_metric = gr.Dropdown(
-                                choices=["codebleu", "crystalbleu"],
+                                choices=[metric for metric in available_code_metrics() if metric != "none"],
                                 value="codebleu",
                                 label="Code Metric",
                             )

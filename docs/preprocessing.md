@@ -14,21 +14,25 @@ Preprocessing modifies code text before lexical, semantic, or code-aware scoring
   Normalizes newlines, trims trailing whitespace, and removes blank lines.
 - `basic`
   Removes block comments, removes line comments, drops blank lines, and collapses repeated whitespace.
-- `synsem_basic`
-  Currently behaves the same as `basic`.
+- `advanced`
+  Applies `basic`, strips import-like lines, normalizes string/number literals, canonicalizes identifiers, and collapses whitespace.
 
 ## What It Changes
 
 - `/* ... */` block comments are removed.
 - `// ...` line comments are removed.
 - `# ...` comments are removed, except common C/C++ preprocessor directives such as `#include` and `#define`.
-- Excess whitespace is collapsed in the `basic` modes.
+- Import-like lines (`import`, `from ... import`, `package`, `#include`, `using namespace`) are stripped in `advanced`.
+- String and numeric literals are normalized to placeholders in `advanced`.
+- Non-keyword identifiers are canonicalized (`id1`, `id2`, ...) in `advanced`.
+- Excess whitespace is collapsed in `basic` and `advanced`.
 
 ## When To Use It
 
 - Use `none` when formatting, comments, or whitespace are meaningful for your task.
 - Use `normalize` when you want stable layout without removing comments.
 - Use `basic` for most code-similarity runs where comments and formatting should not dominate.
+- Use `advanced` when you need stronger normalization across identifier renames and literal changes.
 
 ## Python Example
 

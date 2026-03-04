@@ -9,21 +9,21 @@ def main():
     levenshtein_only = calculate_similarity(
         LEFT,
         RIGHT,
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_name="huggingface/CodeBERTa-small-v1",
         vector_backend="sentence_transformers",
         feature_weights={"levenshtein": 1.0},
     )
     jaro_only = calculate_similarity(
         LEFT,
         RIGHT,
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_name="huggingface/CodeBERTa-small-v1",
         vector_backend="sentence_transformers",
         feature_weights={"jaro_winkler": 1.0},
     )
     blended = calculate_similarity(
         LEFT,
         RIGHT,
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_name="huggingface/CodeBERTa-small-v1",
         vector_backend="sentence_transformers",
         feature_weights={
             "semantic": 0.4,

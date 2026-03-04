@@ -16,7 +16,13 @@ Full optional install:
 pip install "matheel[all]"
 ```
 
-## Quick Smoke Test
+Metrics-only optional install:
+
+```bash
+pip install "matheel[metrics]"
+```
+
+## Quick Check
 
 The repository root includes `sample_pairs.zip`, a small Java archive you can use immediately.
 
@@ -24,7 +30,7 @@ CLI:
 
 ```bash
 matheel compare sample_pairs.zip \
-  --model sentence-transformers/all-MiniLM-L6-v2 \
+  --model huggingface/CodeBERTa-small-v1 \
   --feature-weight semantic=0.7 \
   --feature-weight levenshtein=0.3
 ```
@@ -36,7 +42,7 @@ from matheel.similarity import get_sim_list
 
 results = get_sim_list(
     "sample_pairs.zip",
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_name="huggingface/CodeBERTa-small-v1",
     feature_weights={"semantic": 0.7, "levenshtein": 0.3},
 )
 print(results.head())

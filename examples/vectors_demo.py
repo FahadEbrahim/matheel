@@ -13,14 +13,14 @@ def main():
     print("Pooling methods:", available_pooling_methods())
     print()
 
-    capabilities = infer_model_capabilities("sentence-transformers/all-MiniLM-L6-v2")
+    capabilities = infer_model_capabilities("huggingface/CodeBERTa-small-v1")
     print("Auto routing hint:", capabilities)
     print()
 
     score = calculate_similarity(
         LEFT,
         RIGHT,
-        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_name="huggingface/CodeBERTa-small-v1",
         vector_backend="sentence_transformers",
         similarity_function="dot",
         pooling_method="max",

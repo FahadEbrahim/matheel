@@ -70,9 +70,7 @@ def _assert_similar_code_scores_higher(model_name, vector_backend, **kwargs):
     similar_score = _score_or_skip(
         code1=_SIMILAR_CODE_LEFT,
         code2=_SIMILAR_CODE_RIGHT,
-        Ws=1.0,
-        Wl=0.0,
-        Wj=0.0,
+        feature_weights={"semantic": 1.0},
         model_name=model_name,
         vector_backend=vector_backend,
         device="cpu",
@@ -81,9 +79,7 @@ def _assert_similar_code_scores_higher(model_name, vector_backend, **kwargs):
     different_score = _score_or_skip(
         code1=_SIMILAR_CODE_LEFT,
         code2=_DIFFERENT_CODE,
-        Ws=1.0,
-        Wl=0.0,
-        Wj=0.0,
+        feature_weights={"semantic": 1.0},
         model_name=model_name,
         vector_backend=vector_backend,
         device="cpu",
@@ -114,10 +110,11 @@ def test_real_model2vec_static_model_uses_code():
 
 def test_real_pylate_multivector_model_uses_code():
     pytest.importorskip("pylate")
+    pytest.importorskip("chonkie")
     _assert_similar_code_scores_higher(
         _MULTIVECTOR_MODEL,
         "pylate",
-        chunking_method="tokens",
+        chunking_method="chonkie_token",
         chunk_size=32,
         chunk_overlap=8,
     )

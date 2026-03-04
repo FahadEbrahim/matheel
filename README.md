@@ -17,6 +17,7 @@ Optional extras:
 ```bash
 pip install "matheel[chunking]"
 pip install "matheel[chunking_code]"
+pip install "matheel[metrics]"
 pip install "matheel[model2vec]"
 pip install "matheel[pylate]"
 pip install "matheel[gradio]"
@@ -24,17 +25,17 @@ pip install "matheel[all]"
 pip install "matheel[dev]"
 ```
 
-`matheel[all]` installs the currently supported optional backends in one command: Chonkie code chunking, model2vec, PyLate, and the Gradio app dependencies.
+`matheel[all]` installs the currently supported optional backends in one command: Chonkie code chunking, metrics runtime dependencies (RUBY graph/tree, TSED, CodeBERTScore), model2vec, PyLate, and the Gradio app dependencies.
 
 ## Quick Start
 
-The repo includes a small Java archive at `sample_pairs.zip` for smoke tests.
+The repo includes a small Java archive at `sample_pairs.zip` for quick validation.
 
 CLI:
 
 ```bash
 matheel compare sample_pairs.zip \
-  --model sentence-transformers/all-MiniLM-L6-v2 \
+  --model huggingface/CodeBERTa-small-v1 \
   --feature-weight semantic=0.7 \
   --feature-weight levenshtein=0.3 \
   --threshold 0.2 \
@@ -48,7 +49,7 @@ from matheel.similarity import get_sim_list
 
 results = get_sim_list(
     "sample_pairs.zip",
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_name="huggingface/CodeBERTa-small-v1",
     threshold=0.2,
     number_results=10,
     feature_weights={
@@ -82,6 +83,11 @@ Code metrics:
 - `codebleu_syntax`
 - `codebleu_dataflow`
 - `crystalbleu`
+- `ruby`
+- `tsed`
+- `codebertscore`
+
+`ruby` now uses a full staged implementation (`graph -> tree -> string`), with optional runtime dependencies enabled via `matheel[metrics]`.
 
 Chunking methods:
 
@@ -128,7 +134,7 @@ Compare a directory or ZIP archive:
 
 ```bash
 matheel compare codes/ \
-  --model sentence-transformers/all-MiniLM-L6-v2 \
+  --model huggingface/CodeBERTa-small-v1 \
   --vector-backend auto \
   --max-token-length 256 \
   --feature-weight semantic=0.6 \
@@ -165,7 +171,7 @@ from matheel.similarity import calculate_similarity
 score = calculate_similarity(
     "def add(a, b):\n    return a + b\n",
     "def add(x, y):\n    return x + y\n",
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_name="huggingface/CodeBERTa-small-v1",
     vector_backend="auto",
     max_token_length=256,
     similarity_function="dot",
@@ -186,7 +192,7 @@ from matheel.similarity import get_sim_list
 
 results = get_sim_list(
     "sample_codes",
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    model_name="huggingface/CodeBERTa-small-v1",
     threshold=0.4,
     number_results=50,
     vector_backend="auto",
@@ -229,7 +235,7 @@ The `docs/` folder is already structured well for a later GitHub Pages setup if 
 
 ## Examples
 
-- Quick archive smoke test: [examples/sample_pairs_demo.py](examples/sample_pairs_demo.py)
+- Quick archive check: [examples/sample_pairs_demo.py](examples/sample_pairs_demo.py)
 - Preprocessing: [examples/preprocessing_demo.py](examples/preprocessing_demo.py)
 - Chunking: [examples/chunking_demo.py](examples/chunking_demo.py)
 - Vector backends: [examples/vectors_demo.py](examples/vectors_demo.py)
