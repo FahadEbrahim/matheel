@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+import pytest
 
 from matheel.comparison_suite import load_run_configs, parse_run_configs, run_comparison_suite
 
@@ -56,6 +57,13 @@ def test_parse_run_configs_accepts_json_text():
     assert runs[0]["run_name"] == "baseline"
     assert runs[0]["options"]["model_name"] == "demo-model"
     assert runs[0]["options"]["feature_weights"] == {"semantic": 0.2, "code_metric": 0.8}
+
+
+def test_parse_run_configs_rejects_legacy_weight_keys():
+    with pytest.raises(ValueError, match="Legacy weight keys"):
+        parse_run_configs(
+            '[{"run_name":"legacy","options":{"ws":0.7,"wl":0.3}}]'
+        )
 
 
 def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):

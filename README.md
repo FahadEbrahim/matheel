@@ -245,7 +245,7 @@ The `docs/` folder is already structured well for a later GitHub Pages setup if 
 
 ## Gradio
 
-The Gradio demo stays in `gradio_app/`. The core package and CLI can read either a ZIP archive or a directory. The Gradio upload flow remains ZIP-based.
+The Gradio demo stays in `gradio_app/` and is aligned with the Hugging Face Space setup. The UI supports CodeBLEU, CrystalBLEU, RUBY, TSED, and CodeBERTScore, with metric-specific advanced JSON options. The core package and CLI can read either a ZIP archive or a directory; the Gradio upload flow remains ZIP-based.
 
 ## License
 

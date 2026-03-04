@@ -10,3 +10,18 @@ pinned: false
 # Matheel Framework
 
 Interactive code-similarity analysis with configurable embedding, lexical, chunking, preprocessing, and code-aware metrics.
+
+This Space is aligned with `matheel==0.3.0` and includes:
+
+- Code metrics: CodeBLEU, CrystalBLEU, RUBY, TSED, CodeBERTScore
+- Per-metric advanced parameters (JSON editors in the UI)
+- Advanced preprocessing mode support
+- Public chunking methods:
+  - `none`
+  - `code`
+  - `chonkie_token`
+  - `chonkie_sentence`
+  - `chonkie_recursive`
+  - `chonkie_fast`
+
+Default embedding model: `huggingface/CodeBERTa-small-v1`.

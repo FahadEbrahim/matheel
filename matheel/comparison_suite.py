@@ -63,8 +63,12 @@ def normalize_run_config(config, index=1):
 
 
 def _normalize_run_feature_weights(options):
-    for legacy_key in ("ws", "wl", "wj", "Ws", "Wl", "Wj"):
-        options.pop(legacy_key, None)
+    legacy_weight_keys = [key for key in ("ws", "wl", "wj", "Ws", "Wl", "Wj") if key in options]
+    if legacy_weight_keys:
+        keys = ", ".join(sorted(legacy_weight_keys))
+        raise ValueError(
+            f"Legacy weight keys are no longer supported ({keys}). Use feature_weights instead."
+        )
 
     resolved = parse_feature_weights(options.get("feature_weights"))
 
