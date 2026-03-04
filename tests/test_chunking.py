@@ -8,8 +8,6 @@ def test_public_chunking_methods_are_chonkie_first():
     assert available_chunking_methods() == (
         "none",
         "code",
-        "codechunker",
-        "chonkie_code",
         "chonkie_token",
         "chonkie_sentence",
         "chonkie_recursive",
@@ -60,6 +58,8 @@ def test_parse_chunker_options_supports_strings():
 
 def test_chunker_parameter_names_exposes_native_chonkie_methods():
     assert chunker_parameter_names("code") == ("chunk_size", "language", "include_nodes", "tokenizer")
+    assert chunker_parameter_names("codechunker") == ("chunk_size", "language", "include_nodes", "tokenizer")
+    assert chunker_parameter_names("chonkie_code") == ("chunk_size", "language", "include_nodes", "tokenizer")
     assert chunker_parameter_names("chonkie_token") == ("chunk_size", "chunk_overlap", "tokenizer")
     assert chunker_parameter_names("chonkie_fast") == (
         "chunk_size",

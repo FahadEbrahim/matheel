@@ -12,6 +12,13 @@ _CHONKIE_METHODS = (
     "chonkie_recursive",
     "chonkie_fast",
 )
+_CHONKIE_PUBLIC_METHODS = (
+    "code",
+    "chonkie_token",
+    "chonkie_sentence",
+    "chonkie_recursive",
+    "chonkie_fast",
+)
 _CHONKIE_CLASS_NAMES = {
     "code": "CodeChunker",
     "codechunker": "CodeChunker",
@@ -42,7 +49,7 @@ _CHONKIE_PARAMETER_NAMES = {
 
 
 def available_chunking_methods():
-    return _BASE_METHODS + _CHONKIE_METHODS
+    return _BASE_METHODS + _CHONKIE_PUBLIC_METHODS
 
 
 def chunker_parameter_names(method):
