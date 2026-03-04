@@ -24,7 +24,11 @@ from matheel.similarity import (
     get_sim_list,
     inspect_model_settings,
 )
-from matheel.vectors import available_pooling_methods, available_similarity_functions
+from matheel.vectors import (
+    available_pooling_methods,
+    available_similarity_functions,
+    detect_model_max_token_length,
+)
 
 
 DEVICE_CHOICES = ("auto",) + available_runtime_devices()
@@ -48,6 +52,7 @@ DEFAULT_RUBY_GRAPH_TIMEOUT = 1.0
 DEFAULT_TSED_COSTS = "1,1,1"
 DEFAULT_CODEBERTSCORE_MODEL = "microsoft/codebert-base"
 DEFAULT_CODEBERTSCORE_MAX_LENGTH = 0
+DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE = 512
 
 
 def build_feature_weights(
@@ -203,17 +208,39 @@ def resolve_metric_kwargs(
             "tsed_rename_cost": rename_cost,
         }
     if normalized == "codebertscore":
-        model_name = str(codebertscore_model or DEFAULT_CODEBERTSCORE_MODEL).strip()
-        if not model_name:
-            raise gr.Error("CodeBERTScore model must not be empty.")
-        max_length = int(float(codebertscore_max_length or DEFAULT_CODEBERTSCORE_MAX_LENGTH))
-        if max_length < 0:
-            raise gr.Error("CodeBERTScore max length must be 0 or a positive integer.")
+        model_name, max_length, _ = resolve_codebertscore_model_length(
+            codebertscore_model,
+            codebertscore_max_length,
+        )
         return {
             "codebertscore_model": model_name,
             "codebertscore_max_length": max_length,
         }
     return {}
+
+
+def resolve_codebertscore_model_length(model_name, max_length):
+    resolved_model = str(model_name or DEFAULT_CODEBERTSCORE_MODEL).strip()
+    if not resolved_model:
+        raise gr.Error("CodeBERTScore model must not be empty.")
+    requested = int(float(max_length or DEFAULT_CODEBERTSCORE_MAX_LENGTH))
+    if requested < 0:
+        raise gr.Error("CodeBERTScore max length must be 0 or a positive integer.")
+    detected = max(8, int(detect_model_max_token_length(model_name=resolved_model)))
+    if requested == 0:
+        selected = 0
+    else:
+        selected = min(requested, detected)
+    return resolved_model, selected, detected
+
+
+def sync_codebertscore_model_settings_gradio(model_name, codebertscore_max_length):
+    current = max(0, int(float(codebertscore_max_length or DEFAULT_CODEBERTSCORE_MAX_LENGTH)))
+    try:
+        _, selected, detected = resolve_codebertscore_model_length(model_name, current)
+    except Exception:
+        return gr.update(minimum=0, maximum=max(current, DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE), value=current)
+    return gr.update(minimum=0, maximum=detected, value=selected)
 
 
 def profile_status_html(message):
@@ -1356,7 +1383,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 )
                                 pair_codebertscore_max_length = gr.Slider(
                                     0,
-                                    2048,
+                                    DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE,
                                     value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
                                     step=1,
                                     label="CodeBERTScore Max Length (0 = model default)",
@@ -1424,6 +1451,11 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     pair_tsed_group,
                     pair_codebertscore_group,
                 ],
+            )
+            pair_codebertscore_model.change(
+                sync_codebertscore_model_settings_gradio,
+                inputs=[pair_codebertscore_model, pair_codebertscore_max_length],
+                outputs=[pair_codebertscore_max_length],
             )
 
             pair_run.click(
@@ -1614,7 +1646,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 )
                                 collection_codebertscore_max_length = gr.Slider(
                                     0,
-                                    2048,
+                                    DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE,
                                     value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
                                     step=1,
                                     label="CodeBERTScore Max Length (0 = model default)",
@@ -1694,6 +1726,11 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     collection_tsed_group,
                     collection_codebertscore_group,
                 ],
+            )
+            collection_codebertscore_model.change(
+                sync_codebertscore_model_settings_gradio,
+                inputs=[collection_codebertscore_model, collection_codebertscore_max_length],
+                outputs=[collection_codebertscore_max_length],
             )
 
             collection_run.click(
@@ -1892,7 +1929,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 )
                                 suite_codebertscore_max_length = gr.Slider(
                                     0,
-                                    2048,
+                                    DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE,
                                     value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
                                     step=1,
                                     label="CodeBERTScore Max Length (0 = model default)",
@@ -2000,6 +2037,11 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_tsed_group,
                     suite_codebertscore_group,
                 ],
+            )
+            suite_codebertscore_model.change(
+                sync_codebertscore_model_settings_gradio,
+                inputs=[suite_codebertscore_model, suite_codebertscore_max_length],
+                outputs=[suite_codebertscore_max_length],
             )
 
             suite_add_run.click(
