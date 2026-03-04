@@ -24,12 +24,6 @@ pip install "matheel[all]"
 pip install "matheel[dev]"
 ```
 
-Tested Python 3.12 constraints:
-
-```bash
-pip install -c constraints/py312.txt .
-```
-
 `matheel[all]` installs the currently supported optional backends in one command: Chonkie code chunking, model2vec, PyLate, and the Gradio app dependencies.
 
 ## Quick Start
