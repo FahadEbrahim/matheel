@@ -86,7 +86,7 @@ Code metrics:
 Chunking methods:
 
 - `none`
-- Chonkie-backed when installed: `code`, `codechunker`, `chonkie_code`, `chonkie_token`, `chonkie_sentence`, `chonkie_recursive`, `chonkie_fast`
+- Chonkie-backed when installed: `code`, `chonkie_token`, `chonkie_sentence`, `chonkie_recursive`, `chonkie_fast`
 
 Vector backends:
 

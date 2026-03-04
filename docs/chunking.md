@@ -17,8 +17,6 @@ Chunking splits a file into smaller pieces before embedding. This is useful when
 - `none`
   No chunking. The whole file is treated as one document.
 - `code`
-- `codechunker`
-- `chonkie_code`
   Code-aware chunking through Chonkie’s code chunker.
 - `chonkie_token`
   Token-based chunking.
@@ -56,6 +54,7 @@ pip install "matheel[chunking_code]"
 
 - Chunking is language-agnostic at the interface level.
 - Code-aware chunkers become stronger when `chunk_language` matches the source language.
+- `codechunker` and `chonkie_code` still work as compatibility aliases, but `code` is the public name.
 - If a Chonkie-backed method is selected and Chonkie is not installed, Matheel raises an import error instead of silently switching methods.
 
 ## CLI Example

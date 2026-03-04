@@ -16,12 +16,6 @@ Full optional install:
 pip install "matheel[all]"
 ```
 
-For reproducible local work from the repo on Python 3.12:
-
-```bash
-pip install -c constraints/py312.txt .
-```
-
 ## Quick Smoke Test
 
 The repository root includes `sample_pairs.zip`, a small Java archive you can use immediately.
