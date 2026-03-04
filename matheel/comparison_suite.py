@@ -4,10 +4,19 @@ from pathlib import Path
 
 import pandas as pd
 
+from .feature_weights import default_feature_weights, parse_feature_weights
 from .similarity import DEFAULT_MODEL_NAME, get_sim_list
 
 
 _SLUG_RE = re.compile(r"[^a-zA-Z0-9._-]+")
+_LEGACY_WEIGHT_KEY_MAP = {
+    "ws": "semantic",
+    "Ws": "semantic",
+    "wl": "levenshtein",
+    "Wl": "levenshtein",
+    "wj": "jaro_winkler",
+    "Wj": "jaro_winkler",
+}
 
 
 def load_run_configs(config_path):
@@ -42,21 +51,28 @@ def normalize_run_config(config, index=1):
         options["model_name"] = options.pop("model")
     if "num" in options and "number_results" not in options:
         options["number_results"] = options.pop("num")
-    if "ws" in options and "Ws" not in options:
-        options["Ws"] = options.pop("ws")
-    if "wl" in options and "Wl" not in options:
-        options["Wl"] = options.pop("wl")
-    if "wj" in options and "Wj" not in options:
-        options["Wj"] = options.pop("wj")
+    _normalize_run_feature_weights(options)
 
     options.setdefault("model_name", DEFAULT_MODEL_NAME)
-    options.setdefault("Ws", 0.7)
-    options.setdefault("Wl", 0.3)
-    options.setdefault("Wj", 0.0)
     options.setdefault("threshold", 0.0)
     options.setdefault("number_results", 10)
 
     return {"run_name": run_name, "options": options}
+
+
+def _normalize_run_feature_weights(options):
+    resolved = parse_feature_weights(options.get("feature_weights"))
+
+    for legacy_key, feature_name in _LEGACY_WEIGHT_KEY_MAP.items():
+        if legacy_key not in options:
+            continue
+        resolved[feature_name] = float(options.pop(legacy_key))
+
+    if resolved:
+        options["feature_weights"] = resolved
+        return
+
+    options["feature_weights"] = default_feature_weights()
 
 
 def summary_row_from_results(run_name, options, results):

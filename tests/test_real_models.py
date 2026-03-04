@@ -98,6 +98,8 @@ def test_real_sentence_transformer_dense_model_uses_code():
     _assert_similar_code_scores_higher(
         _DENSE_MODEL,
         "sentence_transformers",
+        similarity_function="dot",
+        pooling_method="max",
     )
 
 

@@ -38,9 +38,11 @@ def test_load_run_configs_maps_lowercase_weight_aliases(tmp_path):
 
     runs = load_run_configs(config_path)
 
-    assert runs[0]["options"]["Ws"] == 0.1
-    assert runs[0]["options"]["Wl"] == 0.2
-    assert runs[0]["options"]["Wj"] == 0.7
+    assert runs[0]["options"]["feature_weights"] == {
+        "semantic": 0.1,
+        "levenshtein": 0.2,
+        "jaro_winkler": 0.7,
+    }
 
 
 def test_parse_run_configs_accepts_json_text():
@@ -48,7 +50,7 @@ def test_parse_run_configs_accepts_json_text():
 
     assert runs[0]["run_name"] == "baseline"
     assert runs[0]["options"]["model_name"] == "demo-model"
-    assert runs[0]["options"]["Ws"] == 0.2
+    assert runs[0]["options"]["feature_weights"] == {"semantic": 0.2}
 
 
 def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):

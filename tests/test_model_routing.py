@@ -1,10 +1,26 @@
-from matheel.model_routing import infer_model_backend, infer_model_capabilities, resolve_vector_backend
+from matheel.model_routing import (
+    available_vector_backends,
+    infer_model_backend,
+    infer_model_capabilities,
+    resolve_vector_backend,
+)
 
 
 class FakeModelInfo:
     def __init__(self, library_name="", tags=None):
         self.library_name = library_name
         self.tags = list(tags or [])
+
+
+def test_available_vector_backends_hides_deprecated_static_hash():
+    assert available_vector_backends() == ("auto", "sentence_transformers", "model2vec", "pylate")
+    assert available_vector_backends(include_deprecated=True) == (
+        "auto",
+        "sentence_transformers",
+        "model2vec",
+        "pylate",
+        "static_hash",
+    )
 
 
 def test_infer_model_backend_prefers_library_name():

@@ -65,12 +65,16 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
             "40",
             "--vector-backend",
             "auto",
+            "--similarity-function",
+            "dot",
             "--static-vector-dim",
             "512",
+            "--max-token-length",
+            "128",
+            "--pooling-method",
+            "max",
             "--device",
             "cpu",
-            "--no-static-vector-lowercase",
-            "--no-multivector-bidirectional",
         ],
     )
 
@@ -91,10 +95,11 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert captured["kwargs"]["crystalbleu_max_order"] == 3
     assert captured["kwargs"]["crystalbleu_trivial_ngram_count"] == 40
     assert captured["kwargs"]["vector_backend"] == "auto"
+    assert captured["kwargs"]["similarity_function"] == "dot"
     assert captured["kwargs"]["static_vector_dim"] == 512
+    assert captured["kwargs"]["max_token_length"] == 128
+    assert captured["kwargs"]["pooling_method"] == "max"
     assert captured["kwargs"]["device"] == "cpu"
-    assert captured["kwargs"]["static_vector_lowercase"] is False
-    assert captured["kwargs"]["multivector_bidirectional"] is False
 
 
 def test_compare_command_accepts_directory_source(tmp_path, monkeypatch):

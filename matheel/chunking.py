@@ -1,7 +1,8 @@
 import inspect
 
 
-_BASE_METHODS = ("none", "lines", "tokens", "characters")
+_BASE_METHODS = ("none",)
+_LEGACY_METHODS = ("lines", "tokens", "characters")
 _CHONKIE_METHODS = (
     "code",
     "codechunker",
@@ -19,15 +20,6 @@ _CHONKIE_CLASS_NAMES = {
     "chonkie_sentence": "SentenceChunker",
     "chonkie_recursive": "RecursiveChunker",
     "chonkie_fast": "FastChunker",
-}
-_CHONKIE_FALLBACK_METHODS = {
-    "code": "lines",
-    "codechunker": "lines",
-    "chonkie_code": "lines",
-    "chonkie_token": "tokens",
-    "chonkie_sentence": "lines",
-    "chonkie_recursive": "characters",
-    "chonkie_fast": "lines",
 }
 _CHONKIE_PARAMETER_NAMES = {
     "code": ("chunk_size", "language", "include_nodes", "tokenizer"),
@@ -55,7 +47,7 @@ def available_chunking_methods():
 
 def chunker_parameter_names(method):
     selected_method = (method or "").strip().lower()
-    if selected_method in ("none", "document", "lines", "tokens", "characters"):
+    if selected_method in ("none", "document") or selected_method in _LEGACY_METHODS:
         return ()
     return _CHONKIE_PARAMETER_NAMES.get(selected_method, ())
 
@@ -260,15 +252,9 @@ def _chunk_with_chonkie(text, method, chunk_size, chunk_overlap, max_chunks=0, c
         chunker_options=chunker_options,
     )
     if chunker is None:
-        fallback_method = _CHONKIE_FALLBACK_METHODS.get(method, "tokens")
-        return chunk_text(
-            text,
-            method=fallback_method,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            max_chunks=max_chunks,
-            chunk_language=chunk_language,
-            chunker_options=chunker_options,
+        raise ImportError(
+            "Chonkie is required for chunking methods other than 'none'. "
+            "Install the 'chunking' or 'chunking_code' optional dependency."
         )
 
     chunks = _normalize_chunk_output_items(_call_chunker(chunker, text or ""))

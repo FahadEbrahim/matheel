@@ -18,9 +18,16 @@ from .vectors import (
     build_multivector_embeddings,
     build_static_hash_vectors,
     build_chunked_single_vectors,
+    configure_model_max_token_length,
+    configure_sentence_transformer_pooling,
+    detect_model_max_token_length,
     encode_single_vectors,
     load_vector_model,
     multivector_similarity,
+    normalize_pooling_method_name,
+    resolve_max_token_length,
+    normalize_similarity_function_name,
+    single_vector_similarity,
 )
 
 
@@ -73,26 +80,107 @@ def normalize_device(device):
     return requested
 
 
-def load_model(model_name, device="auto"):
-    from sentence_transformers import SentenceTransformer
+def load_model(
+    model_name,
+    device="auto",
+    similarity_function="cosine",
+    pooling_method="mean",
+    max_token_length=None,
+):
+    return load_vector_model(
+        model_name or DEFAULT_MODEL_NAME,
+        device=normalize_device(device),
+        vector_backend="sentence_transformers",
+        similarity_function=similarity_function,
+        pooling_method=pooling_method,
+        max_token_length=max_token_length,
+    )
 
-    return SentenceTransformer(model_name or DEFAULT_MODEL_NAME, device=normalize_device(device))
 
-
-def load_backend_model(model_name, vector_backend="auto", device="auto"):
+def load_backend_model(
+    model_name,
+    vector_backend="auto",
+    device="auto",
+    similarity_function="cosine",
+    pooling_method="mean",
+    max_token_length=None,
+):
     normalized_device = normalize_device(device)
+    selected_similarity = normalize_similarity_function_name(similarity_function)
+    selected_pooling = normalize_pooling_method_name(pooling_method)
     try:
         return load_vector_model(
             model_name or DEFAULT_MODEL_NAME,
             vector_backend=vector_backend,
             device=normalized_device,
+            similarity_function=selected_similarity,
+            pooling_method=selected_pooling,
+            max_token_length=max_token_length,
         )
     except ImportError:
         if vector_backend == "model2vec":
             return None
         if vector_backend == "pylate":
-            return load_model(model_name or DEFAULT_MODEL_NAME, device=normalized_device)
+            return load_model(
+                model_name or DEFAULT_MODEL_NAME,
+                device=normalized_device,
+                similarity_function=selected_similarity,
+                pooling_method=selected_pooling,
+                max_token_length=max_token_length,
+            )
         raise
+
+
+def inspect_model_settings(
+    model_name,
+    vector_backend="auto",
+    device="auto",
+    similarity_function="cosine",
+    pooling_method="mean",
+    max_token_length=None,
+):
+    model_key = model_name or DEFAULT_MODEL_NAME
+    requested_backend = (vector_backend or "auto").strip() or "auto"
+    normalized_device = normalize_device(device)
+    selected_similarity = normalize_similarity_function_name(similarity_function)
+    selected_pooling = normalize_pooling_method_name(pooling_method)
+
+    model_info = None
+    if requested_backend.lower() == "auto":
+        model_info = load_hf_model_info(model_key)
+    resolved_backend = resolve_vector_backend(
+        requested_backend,
+        model_name=model_key,
+        model_info=model_info,
+    )
+
+    detected_max_token_length = detect_model_max_token_length(
+        model_name=model_key,
+    )
+    configured_max_token_length = resolve_max_token_length(
+        max_token_length,
+        detected_max_token_length=detected_max_token_length,
+    )
+
+    return {
+        "model_name": model_key,
+        "requested_vector_backend": requested_backend,
+        "resolved_vector_backend": resolved_backend,
+        "runtime_device": normalized_device,
+        "similarity_function": selected_similarity,
+        "pooling_method": selected_pooling,
+        "detected_max_token_length": int(detected_max_token_length),
+        "configured_max_token_length": (
+            int(configured_max_token_length)
+            if configured_max_token_length is not None
+            else None
+        ),
+        "supports_custom_max_token_length": resolved_backend in (
+            "sentence_transformers",
+            "model2vec",
+            "pylate",
+        ),
+    }
 
 
 def resolve_file_path(file_path):
@@ -169,6 +257,27 @@ def validate_code_metric_options(code_metric_weight, codebleu_component_weights)
     )
 
 
+def validate_edit_distance_options(levenshtein_weights=None, jaro_winkler_prefix_weight=0.1):
+    if levenshtein_weights in (None, ""):
+        parsed_levenshtein_weights = (1, 1, 1)
+    elif isinstance(levenshtein_weights, str):
+        values = [item.strip() for item in levenshtein_weights.split(",") if item.strip()]
+        if len(values) != 3:
+            raise ValueError("levenshtein_weights must contain exactly 3 values: insert, delete, substitute.")
+        parsed_levenshtein_weights = tuple(max(1, int(float(value))) for value in values)
+    else:
+        values = list(levenshtein_weights)
+        if len(values) != 3:
+            raise ValueError("levenshtein_weights must contain exactly 3 values: insert, delete, substitute.")
+        parsed_levenshtein_weights = tuple(max(1, int(float(value))) for value in values)
+
+    prefix_weight = float(jaro_winkler_prefix_weight)
+    if prefix_weight < 0 or prefix_weight > 0.25:
+        raise ValueError("jaro_winkler_prefix_weight must be between 0.0 and 0.25.")
+
+    return parsed_levenshtein_weights, prefix_weight
+
+
 def validate_vector_options(vector_backend, static_vector_dim, model_name=None, model_info=None):
     backend = resolve_vector_backend(
         vector_backend,
@@ -178,17 +287,13 @@ def validate_vector_options(vector_backend, static_vector_dim, model_name=None, 
     return backend, max(8, int(static_vector_dim or 0))
 
 
-def cosine_similarity(left, right):
-    left_vector = np.asarray(left, dtype=float)
-    right_vector = np.asarray(right, dtype=float)
-    denominator = np.linalg.norm(left_vector) * np.linalg.norm(right_vector)
-    if denominator <= 0:
-        return 0.0
-    score = np.dot(left_vector, right_vector) / denominator
-    return float(np.clip(score, -1.0, 1.0))
-
-
-def semantic_similarity(embedding1, embedding2, vector_backend="sentence_transformers", multivector_bidirectional=True):
+def semantic_similarity(
+    embedding1,
+    embedding2,
+    vector_backend="sentence_transformers",
+    multivector_bidirectional=False,
+    similarity_function="cosine",
+):
     if backend_is_multivector(vector_backend):
         return multivector_similarity(
             embedding1,
@@ -196,7 +301,11 @@ def semantic_similarity(embedding1, embedding2, vector_backend="sentence_transfo
             bidirectional=multivector_bidirectional,
             vector_backend=vector_backend,
         )
-    return cosine_similarity(embedding1, embedding2)
+    return single_vector_similarity(
+        embedding1,
+        embedding2,
+        similarity_function=similarity_function,
+    )
 
 
 def aggregate_chunk_embeddings(chunk_embeddings, chunk_aggregation="mean"):
@@ -233,6 +342,7 @@ def build_document_embeddings(
     vector_backend="sentence_transformers",
     static_vector_dim=256,
     static_vector_lowercase=True,
+    pooling_method="mean",
 ):
     if not codes:
         return []
@@ -253,6 +363,9 @@ def build_document_embeddings(
             chunk_language=chunk_language,
             chunker_options=chunker_options,
         )
+
+    if vector_backend == "sentence_transformers" and model is not None:
+        model = configure_sentence_transformer_pooling(model, pooling_method=pooling_method)
 
     if not _should_use_chunking(chunking_method):
         return encode_single_vectors(
@@ -286,8 +399,11 @@ def build_feature_scores(
     embedding2,
     code_metric_score=0.0,
     vector_backend="sentence_transformers",
-    multivector_bidirectional=True,
+    multivector_bidirectional=False,
     extra_feature_scores=None,
+    similarity_function="cosine",
+    levenshtein_weights=(1, 1, 1),
+    jaro_winkler_prefix_weight=0.1,
 ):
     feature_scores = {
         "semantic": semantic_similarity(
@@ -295,9 +411,14 @@ def build_feature_scores(
             embedding2,
             vector_backend=vector_backend,
             multivector_bidirectional=multivector_bidirectional,
+            similarity_function=similarity_function,
         ),
-        "levenshtein": Levenshtein.normalized_similarity(code1, code2),
-        "jaro_winkler": JaroWinkler.normalized_similarity(code1, code2),
+        "levenshtein": Levenshtein.normalized_similarity(code1, code2, weights=levenshtein_weights),
+        "jaro_winkler": JaroWinkler.normalized_similarity(
+            code1,
+            code2,
+            prefix_weight=jaro_winkler_prefix_weight,
+        ),
         "code_metric": float(code_metric_score),
     }
     for name, value in (extra_feature_scores or {}).items():
@@ -313,8 +434,11 @@ def combined_similarity_from_embeddings(
     feature_weights,
     code_metric_score=0.0,
     vector_backend="sentence_transformers",
-    multivector_bidirectional=True,
+    multivector_bidirectional=False,
     extra_feature_scores=None,
+    similarity_function="cosine",
+    levenshtein_weights=(1, 1, 1),
+    jaro_winkler_prefix_weight=0.1,
 ):
     feature_scores = build_feature_scores(
         code1,
@@ -325,6 +449,9 @@ def combined_similarity_from_embeddings(
         vector_backend=vector_backend,
         multivector_bidirectional=multivector_bidirectional,
         extra_feature_scores=extra_feature_scores,
+        similarity_function=similarity_function,
+        levenshtein_weights=levenshtein_weights,
+        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
     )
     return combine_weighted_scores(feature_scores, feature_weights)
 
@@ -332,11 +459,14 @@ def combined_similarity_from_embeddings(
 def paraphrase_mining_with_combined_score(
     model,
     sentences,
-    weight_semantic,
-    weight_levenshtein,
-    weight_jaro_winkler,
+    weight_semantic=None,
+    weight_levenshtein=None,
+    weight_jaro_winkler=None,
     k=100,
     feature_weights=None,
+    similarity_function="cosine",
+    pooling_method="mean",
+    max_token_length=None,
 ):
     resolved_feature_weights = resolve_feature_weights(
         weight_semantic,
@@ -344,11 +474,17 @@ def paraphrase_mining_with_combined_score(
         weight_jaro_winkler,
         feature_weights=feature_weights,
     )
-    embeddings = build_document_embeddings(model, list(sentences))
+    model = configure_model_max_token_length(model, max_token_length=max_token_length)
+    embeddings = build_document_embeddings(
+        model,
+        list(sentences),
+        pooling_method=pooling_method,
+    )
     results = rank_code_pairs(
         list(sentences),
         embeddings,
         resolved_feature_weights,
+        similarity_function=similarity_function,
     )
     limit = max(0, int(k or 0))
     if limit:
@@ -362,13 +498,16 @@ def rank_code_pairs(
     feature_weights,
     code_metric="none",
     code_language="java",
-    code_metric_bidirectional=True,
+    code_metric_bidirectional=False,
     codebleu_component_weights=None,
     crystalbleu_context=None,
     crystalbleu_max_order=4,
-    crystalbleu_trivial_ngram_count=500,
+    crystalbleu_trivial_ngram_count=50,
     vector_backend="sentence_transformers",
-    multivector_bidirectional=True,
+    multivector_bidirectional=False,
+    similarity_function="cosine",
+    levenshtein_weights=(1, 1, 1),
+    jaro_winkler_prefix_weight=0.1,
 ):
     results = []
     code_metric_name = (code_metric or "none").strip().lower()
@@ -399,6 +538,9 @@ def rank_code_pairs(
             code_metric_score=code_metric_score,
             vector_backend=vector_backend,
             multivector_bidirectional=multivector_bidirectional,
+            similarity_function=similarity_function,
+            levenshtein_weights=levenshtein_weights,
+            jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
         )
         results.append((score, i, j))
     return sorted(results, reverse=True)
@@ -406,12 +548,12 @@ def rank_code_pairs(
 
 def get_sim_list(
     zipped_file,
-    Ws,
-    Wl,
-    Wj,
-    model_name,
-    threshold,
-    number_results,
+    Ws=None,
+    Wl=None,
+    Wj=None,
+    model_name=DEFAULT_MODEL_NAME,
+    threshold=0.0,
+    number_results=10,
     preprocess_mode="none",
     chunking_method="none",
     chunk_size=200,
@@ -423,21 +565,29 @@ def get_sim_list(
     code_metric="none",
     code_metric_weight=0.0,
     code_language="java",
-    code_metric_bidirectional=True,
+    code_metric_bidirectional=False,
     codebleu_component_weights=None,
     crystalbleu_max_order=4,
-    crystalbleu_trivial_ngram_count=500,
+    crystalbleu_trivial_ngram_count=50,
     vector_backend="auto",
+    similarity_function="cosine",
     static_vector_dim=256,
     static_vector_lowercase=True,
-    multivector_bidirectional=True,
+    pooling_method="mean",
+    multivector_bidirectional=False,
     device="auto",
     feature_weights=None,
+    max_token_length=None,
+    levenshtein_weights=None,
+    jaro_winkler_prefix_weight=0.1,
 ):
-    weight_semantic, weight_levenshtein, weight_jaro_winkler = validate_weights(Ws, Wl, Wj)
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
         codebleu_component_weights,
+    )
+    levenshtein_weights, jaro_winkler_prefix_weight = validate_edit_distance_options(
+        levenshtein_weights,
+        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
     )
     model_info = None
     if (vector_backend or "auto").strip().lower() in ("", "auto"):
@@ -448,16 +598,25 @@ def get_sim_list(
         model_name=model_name,
         model_info=model_info,
     )
+    selected_similarity = normalize_similarity_function_name(similarity_function)
+    selected_pooling = normalize_pooling_method_name(pooling_method)
     resolved_feature_weights = resolve_feature_weights(
-        weight_semantic,
-        weight_levenshtein,
-        weight_jaro_winkler,
+        Ws,
+        Wl,
+        Wj,
         code_metric_weight=code_metric_weight,
         feature_weights=feature_weights,
     )
     file_names, raw_codes = extract_and_read_source(zipped_file)
     codes = [prepare_code(code, preprocess_mode=preprocess_mode) for code in raw_codes]
-    model = load_backend_model(model_name, vector_backend=vector_backend, device=device)
+    model = load_backend_model(
+        model_name,
+        vector_backend=vector_backend,
+        device=device,
+        similarity_function=selected_similarity,
+        pooling_method=selected_pooling,
+        max_token_length=max_token_length,
+    )
     embeddings = build_document_embeddings(
         model,
         codes,
@@ -471,6 +630,7 @@ def get_sim_list(
         vector_backend=vector_backend,
         static_vector_dim=static_vector_dim,
         static_vector_lowercase=static_vector_lowercase,
+        pooling_method=selected_pooling,
     )
     crystalbleu_context = None
     if (code_metric or "none").strip().lower() == "crystalbleu" and resolved_feature_weights.get("code_metric", 0.0) > 0.0:
@@ -488,6 +648,9 @@ def get_sim_list(
         crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
         vector_backend=vector_backend,
         multivector_bidirectional=multivector_bidirectional,
+        similarity_function=selected_similarity,
+        levenshtein_weights=levenshtein_weights,
+        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
     )
 
     pairs_results = [
@@ -507,10 +670,10 @@ def get_sim_list(
 def calculate_similarity(
     code1,
     code2,
-    Ws,
-    Wl,
-    Wj,
-    model_name,
+    Ws=None,
+    Wl=None,
+    Wj=None,
+    model_name=DEFAULT_MODEL_NAME,
     preprocess_mode="none",
     chunking_method="none",
     chunk_size=200,
@@ -522,21 +685,29 @@ def calculate_similarity(
     code_metric="none",
     code_metric_weight=0.0,
     code_language="java",
-    code_metric_bidirectional=True,
+    code_metric_bidirectional=False,
     codebleu_component_weights=None,
     crystalbleu_max_order=4,
-    crystalbleu_trivial_ngram_count=500,
+    crystalbleu_trivial_ngram_count=50,
     vector_backend="auto",
+    similarity_function="cosine",
     static_vector_dim=256,
     static_vector_lowercase=True,
-    multivector_bidirectional=True,
+    pooling_method="mean",
+    multivector_bidirectional=False,
     device="auto",
     feature_weights=None,
+    max_token_length=None,
+    levenshtein_weights=None,
+    jaro_winkler_prefix_weight=0.1,
 ):
-    weight_semantic, weight_levenshtein, weight_jaro_winkler = validate_weights(Ws, Wl, Wj)
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
         codebleu_component_weights,
+    )
+    levenshtein_weights, jaro_winkler_prefix_weight = validate_edit_distance_options(
+        levenshtein_weights,
+        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
     )
     model_info = None
     if (vector_backend or "auto").strip().lower() in ("", "auto"):
@@ -547,16 +718,25 @@ def calculate_similarity(
         model_name=model_name,
         model_info=model_info,
     )
+    selected_similarity = normalize_similarity_function_name(similarity_function)
+    selected_pooling = normalize_pooling_method_name(pooling_method)
     resolved_feature_weights = resolve_feature_weights(
-        weight_semantic,
-        weight_levenshtein,
-        weight_jaro_winkler,
+        Ws,
+        Wl,
+        Wj,
         code_metric_weight=code_metric_weight,
         feature_weights=feature_weights,
     )
     prepared_code1 = prepare_code(code1, preprocess_mode=preprocess_mode)
     prepared_code2 = prepare_code(code2, preprocess_mode=preprocess_mode)
-    model = load_backend_model(model_name, vector_backend=vector_backend, device=device)
+    model = load_backend_model(
+        model_name,
+        vector_backend=vector_backend,
+        device=device,
+        similarity_function=selected_similarity,
+        pooling_method=selected_pooling,
+        max_token_length=max_token_length,
+    )
     embeddings = build_document_embeddings(
         model,
         [prepared_code1, prepared_code2],
@@ -570,6 +750,7 @@ def calculate_similarity(
         vector_backend=vector_backend,
         static_vector_dim=static_vector_dim,
         static_vector_lowercase=static_vector_lowercase,
+        pooling_method=selected_pooling,
     )
     code_metric_score = 0.0
     if (code_metric or "none").strip().lower() not in ("none", "") and resolved_feature_weights.get("code_metric", 0.0) > 0.0:
@@ -592,4 +773,7 @@ def calculate_similarity(
         code_metric_score=code_metric_score,
         vector_backend=vector_backend,
         multivector_bidirectional=multivector_bidirectional,
+        similarity_function=selected_similarity,
+        levenshtein_weights=levenshtein_weights,
+        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
     )

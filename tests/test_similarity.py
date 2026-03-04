@@ -1,6 +1,7 @@
 import zipfile
 
 import numpy as np
+import pytest
 
 from matheel import similarity
 
@@ -25,7 +26,7 @@ def test_get_sim_list_uses_preprocessed_code(tmp_path, monkeypatch):
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto": FakeModel(),
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
     )
 
     archive_path = tmp_path / "codes.zip"
@@ -66,7 +67,7 @@ def test_get_sim_list_accepts_directory_source(tmp_path, monkeypatch):
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto": FakeModel(),
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
     )
 
     source_dir = tmp_path / "codes"
@@ -100,7 +101,7 @@ def test_calculate_similarity_supports_chunking(monkeypatch):
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto": FakeModel(),
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
     )
 
     score = similarity.calculate_similarity(
@@ -118,14 +119,14 @@ def test_calculate_similarity_supports_chunking(monkeypatch):
         vector_backend="sentence_transformers",
     )
 
-    assert score == 1.0
+    assert score == pytest.approx(1.0)
 
 
 def test_calculate_similarity_supports_code_metric_without_semantic_weights(monkeypatch):
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto": FakeModel(),
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
     )
 
     score = similarity.calculate_similarity(
@@ -140,7 +141,59 @@ def test_calculate_similarity_supports_code_metric_without_semantic_weights(monk
         vector_backend="sentence_transformers",
     )
 
-    assert score == 1.0
+    assert score == pytest.approx(1.0)
+
+
+def test_calculate_similarity_supports_custom_levenshtein_weights():
+    default_score = similarity.calculate_similarity(
+        "abcd",
+        "abxcd",
+        0.0,
+        1.0,
+        0.0,
+        "unused",
+        vector_backend="static_hash",
+        feature_weights={"levenshtein": 1.0},
+    )
+    heavier_insertion_score = similarity.calculate_similarity(
+        "abcd",
+        "abxcd",
+        0.0,
+        1.0,
+        0.0,
+        "unused",
+        vector_backend="static_hash",
+        feature_weights={"levenshtein": 1.0},
+        levenshtein_weights=(3, 1, 1),
+    )
+
+    assert heavier_insertion_score < default_score
+
+
+def test_calculate_similarity_supports_custom_jaro_winkler_prefix_weight():
+    default_score = similarity.calculate_similarity(
+        "prefixAlpha",
+        "prefixBeta",
+        0.0,
+        0.0,
+        1.0,
+        "unused",
+        vector_backend="static_hash",
+        feature_weights={"jaro_winkler": 1.0},
+    )
+    stronger_prefix_score = similarity.calculate_similarity(
+        "prefixAlpha",
+        "prefixBeta",
+        0.0,
+        0.0,
+        1.0,
+        "unused",
+        vector_backend="static_hash",
+        feature_weights={"jaro_winkler": 1.0},
+        jaro_winkler_prefix_weight=0.25,
+    )
+
+    assert stronger_prefix_score > default_score
 
 
 def test_calculate_similarity_supports_static_hash_backend():
@@ -155,14 +208,42 @@ def test_calculate_similarity_supports_static_hash_backend():
         static_vector_dim=64,
     )
 
-    assert score == 1.0
+    assert score == pytest.approx(1.0)
+
+
+def test_calculate_similarity_supports_alternative_similarity_functions():
+    dot_score = similarity.calculate_similarity(
+        "def add(a, b):\n    return a + b\n",
+        "def add(a, b):\n    return a + b\n",
+        1.0,
+        0.0,
+        0.0,
+        "unused",
+        vector_backend="static_hash",
+        similarity_function="dot",
+        static_vector_dim=64,
+    )
+    euclidean_score = similarity.calculate_similarity(
+        "def add(a, b):\n    return a + b\n",
+        "def add(a, b):\n    return a + b\n",
+        1.0,
+        0.0,
+        0.0,
+        "unused",
+        vector_backend="static_hash",
+        similarity_function="euclidean",
+        static_vector_dim=64,
+    )
+
+    assert dot_score == pytest.approx(1.0)
+    assert euclidean_score == pytest.approx(0.0)
 
 
 def test_calculate_similarity_falls_back_when_model2vec_is_unavailable(monkeypatch):
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto": None,
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: None,
     )
 
     score = similarity.calculate_similarity(
@@ -176,14 +257,14 @@ def test_calculate_similarity_falls_back_when_model2vec_is_unavailable(monkeypat
         static_vector_dim=64,
     )
 
-    assert score == 1.0
+    assert score == pytest.approx(1.0)
 
 
 def test_calculate_similarity_supports_multivector_backend(monkeypatch):
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto": FakeModel(),
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
     )
 
     score = similarity.calculate_similarity(
@@ -199,14 +280,14 @@ def test_calculate_similarity_supports_multivector_backend(monkeypatch):
         chunk_overlap=0,
     )
 
-    assert score == 1.0
+    assert score == pytest.approx(1.0)
 
 
 def test_calculate_similarity_normalizes_custom_feature_weights(monkeypatch):
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto": FakeModel(),
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
     )
 
     score = similarity.calculate_similarity(
@@ -220,14 +301,73 @@ def test_calculate_similarity_normalizes_custom_feature_weights(monkeypatch):
         feature_weights={"semantic": 3.0, "levenshtein": 1.0},
     )
 
-    assert score == 1.0
+    assert score == pytest.approx(1.0)
+
+
+def test_calculate_similarity_passes_similarity_and_pooling_to_loader(monkeypatch):
+    captured = {}
+
+    def fake_load_backend_model(
+        model_name,
+        vector_backend="auto",
+        device="auto",
+        similarity_function="cosine",
+        pooling_method="mean",
+        max_token_length=None,
+    ):
+        captured["similarity_function"] = similarity_function
+        captured["pooling_method"] = pooling_method
+        captured["max_token_length"] = max_token_length
+        return FakeModel()
+
+    monkeypatch.setattr(similarity, "load_backend_model", fake_load_backend_model)
+    monkeypatch.setattr(similarity, "configure_sentence_transformer_pooling", lambda model, pooling_method="mean": model)
+
+    score = similarity.calculate_similarity(
+        "def clean_name(name):\n    return name.strip().lower()\n",
+        "def clean_name(name):\n    return name.strip().lower()\n",
+        1.0,
+        0.0,
+        0.0,
+        "fake",
+        vector_backend="sentence_transformers",
+        similarity_function="manhattan",
+        pooling_method="max",
+    )
+
+    assert score == 0.0
+    assert captured["similarity_function"] == "manhattan"
+    assert captured["pooling_method"] == "max"
+    assert captured["max_token_length"] is None
+
+
+def test_inspect_model_settings_reports_detected_and_configured_max_token_length(monkeypatch):
+    monkeypatch.setattr(similarity, "load_hf_model_info", lambda model_name: None)
+    monkeypatch.setattr(similarity, "detect_model_max_token_length", lambda model=None, model_name=None, default=512: 256)
+
+    settings = similarity.inspect_model_settings(
+        "sentence-transformers/all-MiniLM-L6-v2",
+        vector_backend="sentence_transformers",
+        device="cpu",
+        similarity_function="dot",
+        pooling_method="max",
+        max_token_length=512,
+    )
+
+    assert settings["resolved_vector_backend"] == "sentence_transformers"
+    assert settings["runtime_device"] == "cpu"
+    assert settings["similarity_function"] == "dot"
+    assert settings["pooling_method"] == "max"
+    assert settings["detected_max_token_length"] == 256
+    assert settings["configured_max_token_length"] == 256
+    assert settings["supports_custom_max_token_length"] is True
 
 
 def test_get_sim_list_auto_backend_uses_routing(tmp_path, monkeypatch):
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto": FakeModel(),
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
     )
     monkeypatch.setattr(similarity, "load_hf_model_info", lambda model_name: object())
     monkeypatch.setattr(

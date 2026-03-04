@@ -1,0 +1,19 @@
+# Tested Python 3.12 environment for matheel v0.2.2 work-in-progress.
+# This captures the dependency set used for the fast suite and real-model checks.
+
+click==8.3.1
+huggingface-hub==0.36.2
+numpy==2.4.2
+pandas==3.0.1
+rapidfuzz==3.14.3
+sentence-transformers==5.1.1
+sentencepiece==0.2.1
+tokenizers==0.22.2
+torch==2.9.0
+transformers==4.56.2
+
+chonkie==1.5.6
+model2vec==0.7.0
+pylate==1.4.0
+tree-sitter==0.25.2
+tree-sitter-language-pack==0.13.0

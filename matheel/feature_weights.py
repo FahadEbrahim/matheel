@@ -1,3 +1,10 @@
+_DEFAULT_LEGACY_WEIGHTS = {
+    "semantic": 0.7,
+    "levenshtein": 0.3,
+    "jaro_winkler": 0.0,
+}
+
+
 def available_default_features():
     return ("semantic", "levenshtein", "jaro_winkler", "code_metric")
 
@@ -23,6 +30,14 @@ def legacy_feature_weights(weight_semantic, weight_levenshtein, weight_jaro_wink
         "jaro_winkler": _validate_weight_value("Wj", weight_jaro_winkler),
         "code_metric": _validate_weight_value("code_metric_weight", code_metric_weight),
     }
+
+
+def default_feature_weights(code_metric_weight=0.0):
+    resolved = dict(_DEFAULT_LEGACY_WEIGHTS)
+    numeric_code_metric = _validate_weight_value("code_metric_weight", code_metric_weight)
+    if numeric_code_metric > 0:
+        resolved["code_metric"] = numeric_code_metric
+    return normalize_feature_weights(resolved)
 
 
 def _iter_weight_entries(feature_weights):
@@ -78,20 +93,31 @@ def normalize_feature_weights(feature_weights):
 
 
 def resolve_feature_weights(
-    weight_semantic,
-    weight_levenshtein,
-    weight_jaro_winkler,
+    weight_semantic=None,
+    weight_levenshtein=None,
+    weight_jaro_winkler=None,
     code_metric_weight=0.0,
     feature_weights=None,
 ):
-    resolved = legacy_feature_weights(
-        weight_semantic,
-        weight_levenshtein,
-        weight_jaro_winkler,
-        code_metric_weight=code_metric_weight,
-    )
-    resolved.update(parse_feature_weights(feature_weights))
-    return normalize_feature_weights(resolved)
+    parsed_feature_weights = parse_feature_weights(feature_weights)
+    if parsed_feature_weights:
+        if (
+            "code_metric" not in parsed_feature_weights
+            and _validate_weight_value("code_metric_weight", code_metric_weight) > 0
+        ):
+            parsed_feature_weights["code_metric"] = _validate_weight_value("code_metric_weight", code_metric_weight)
+        return normalize_feature_weights(parsed_feature_weights)
+
+    if any(value is not None for value in (weight_semantic, weight_levenshtein, weight_jaro_winkler)):
+        resolved = legacy_feature_weights(
+            _DEFAULT_LEGACY_WEIGHTS["semantic"] if weight_semantic is None else weight_semantic,
+            _DEFAULT_LEGACY_WEIGHTS["levenshtein"] if weight_levenshtein is None else weight_levenshtein,
+            _DEFAULT_LEGACY_WEIGHTS["jaro_winkler"] if weight_jaro_winkler is None else weight_jaro_winkler,
+            code_metric_weight=code_metric_weight,
+        )
+        return normalize_feature_weights(resolved)
+
+    return default_feature_weights(code_metric_weight=code_metric_weight)
 
 
 def combine_weighted_scores(feature_scores, feature_weights):

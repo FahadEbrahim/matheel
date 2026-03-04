@@ -14,11 +14,15 @@ _BACKEND_ALIASES = {
     "colbert": "pylate",
     "static_hash": "static_hash",
 }
+_PUBLIC_VECTOR_BACKENDS = ("auto", "sentence_transformers", "model2vec", "pylate")
+_DEPRECATED_VECTOR_BACKENDS = ("static_hash",)
 _HF_MODEL_INFO_CACHE = {}
 
 
-def available_vector_backends():
-    return ("auto", "sentence_transformers", "model2vec", "pylate", "static_hash")
+def available_vector_backends(include_deprecated=False):
+    if include_deprecated:
+        return _PUBLIC_VECTOR_BACKENDS + _DEPRECATED_VECTOR_BACKENDS
+    return _PUBLIC_VECTOR_BACKENDS
 
 
 def normalize_vector_backend_name(name):

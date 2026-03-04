@@ -1,62 +1,66 @@
 # Usage Guide
 
-## Feature Weights
+This page is the quick-start entry point. The detailed parameter guides live in the topic pages linked below.
 
-Matheel blends feature scores with normalized weights.
+## Install
 
-You can keep the legacy `Ws`, `Wl`, and `Wj` arguments, or pass arbitrary feature weights:
-
-```python
-feature_weights = {
-    "semantic": 0.5,
-    "levenshtein": 0.2,
-    "jaro_winkler": 0.1,
-    "code_metric": 0.2,
-}
-```
-
-The final weights are normalized automatically, so the total score stays in a bounded range as long as each feature score is also bounded.
-
-## Chunking
-
-Built-in chunking works without extra dependencies:
-
-- `lines`
-- `tokens`
-- `characters`
-
-With `matheel[chunking]`, Matheel will prefer Chonkie chunkers:
-
-- `code` / `codechunker`
-- `chonkie_token`
-- `chonkie_word`
-- `chonkie_sentence`
-- `chonkie_recursive`
-
-Extra chunker-specific options can be passed as `name=value` pairs:
+Base install:
 
 ```bash
-matheel compare codes/ \
-  --chunking-method code \
-  --chunk-language java \
-  --chunker-option include_line_numbers=true
+pip install matheel
 ```
 
-## Backend Routing
+Full optional install:
 
-Use `vector_backend=auto` when the model is hosted on Hugging Face and exposes a known library:
+```bash
+pip install "matheel[all]"
+```
 
-- `sentence-transformers` -> dense single-vector path
-- `model2vec` -> static embedding path
-- `PyLate` -> multivector late-interaction path
+For reproducible local work from the repo on Python 3.12:
 
-If the optional backend library is not installed, Matheel falls back to the simplest compatible local path.
+```bash
+pip install -c constraints/py312.txt .
+```
 
-## Directory Inputs
+## Quick Smoke Test
 
-CLI and Python API accept either:
+The repository root includes `sample_pairs.zip`, a small Java archive you can use immediately.
 
-- a directory
-- a ZIP archive
+CLI:
 
-The Gradio app remains ZIP-only for uploads.
+```bash
+matheel compare sample_pairs.zip \
+  --model sentence-transformers/all-MiniLM-L6-v2 \
+  --feature-weight semantic=0.7 \
+  --feature-weight levenshtein=0.3
+```
+
+Python:
+
+```python
+from matheel.similarity import get_sim_list
+
+results = get_sim_list(
+    "sample_pairs.zip",
+    model_name="sentence-transformers/all-MiniLM-L6-v2",
+    feature_weights={"semantic": 0.7, "levenshtein": 0.3},
+)
+print(results.head())
+```
+
+## Documentation Map
+
+- [docs/index.md](index.md)
+- [docs/preprocessing.md](preprocessing.md)
+- [docs/chunking.md](chunking.md)
+- [docs/vectors.md](vectors.md)
+- [docs/lexical.md](lexical.md)
+- [docs/code_metrics.md](code_metrics.md)
+- [docs/comparison_suite.md](comparison_suite.md)
+
+## Interface Notes
+
+- CLI and Python API accept either a directory or a ZIP archive.
+- Gradio remains ZIP-only for uploads.
+- `feature_weights` is the canonical scoring input.
+- `vector_backend=auto` uses Hugging Face metadata and tag heuristics when available.

@@ -1,9 +1,1 @@
-gradio
-sentence-transformers
-numpy
-pandas
-rapidfuzz
-sentencepiece
-pydantic==2.10.6
-matheel
-gradio-huggingfacehub-search==0.0.8
+-e ..[all]

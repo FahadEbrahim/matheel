@@ -352,13 +352,13 @@ def score_code_metric_pair(
     prediction,
     metric_name="none",
     language="java",
-    bidirectional=True,
+    bidirectional=False,
     component_weights=None,
     crystalbleu_context=None,
     reference_index=None,
     prediction_index=None,
     crystalbleu_max_order=4,
-    crystalbleu_trivial_ngram_count=500,
+    crystalbleu_trivial_ngram_count=50,
 ):
     metric_key = (metric_name or "none").strip().lower()
     if metric_key in ("none", ""):

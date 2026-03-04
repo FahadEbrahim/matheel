@@ -1,10 +1,23 @@
 import pytest
 
 from matheel import chunking
-from matheel.chunking import chunk_text, chunker_parameter_names, parse_chunker_options
+from matheel.chunking import available_chunking_methods, chunk_text, chunker_parameter_names, parse_chunker_options
 
 
-def test_line_chunking_supports_overlap():
+def test_public_chunking_methods_are_chonkie_first():
+    assert available_chunking_methods() == (
+        "none",
+        "code",
+        "codechunker",
+        "chonkie_code",
+        "chonkie_token",
+        "chonkie_sentence",
+        "chonkie_recursive",
+        "chonkie_fast",
+    )
+
+
+def test_legacy_line_chunking_still_works_for_compatibility():
     text = "a\nb\nc\nd"
 
     assert chunk_text(text, method="lines", chunk_size=2, chunk_overlap=1) == [
@@ -15,7 +28,7 @@ def test_line_chunking_supports_overlap():
     ]
 
 
-def test_character_chunking_supports_overlap():
+def test_legacy_character_chunking_still_works_for_compatibility():
     assert chunk_text("abcdef", method="characters", chunk_size=3, chunk_overlap=1) == [
         "abc",
         "cde",
@@ -23,19 +36,18 @@ def test_character_chunking_supports_overlap():
     ]
 
 
-def test_code_chunker_falls_back_cleanly_without_chonkie(monkeypatch):
+def test_code_chunker_requires_chonkie_when_unavailable(monkeypatch):
     monkeypatch.setattr(chunking, "_load_chonkie_class", lambda class_name: None)
 
-    chunks = chunk_text(
-        "line1\nline2\nline3",
-        method="code",
-        chunk_size=2,
-        chunk_overlap=1,
-        chunk_language="python",
-        chunker_options=("include_line_numbers=true",),
-    )
-
-    assert chunks == ["line1\nline2", "line2\nline3", "line3"]
+    with pytest.raises(ImportError):
+        chunk_text(
+            "line1\nline2\nline3",
+            method="code",
+            chunk_size=2,
+            chunk_overlap=1,
+            chunk_language="python",
+            chunker_options=("include_line_numbers=true",),
+        )
 
 
 def test_parse_chunker_options_supports_strings():
