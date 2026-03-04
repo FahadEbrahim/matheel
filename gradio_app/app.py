@@ -43,43 +43,11 @@ CHUNK_LANGUAGE_CHOICES = [
 ]
 PREPROCESSING_UI_CHOICES = [mode for mode in available_preprocess_modes() if mode != "none"]
 CHONKIE_UI_METHODS = [method for method in available_chunking_methods() if method != "none"]
-RUBY_DEFAULT_OPTIONS = {
-    "ruby_max_order": 4,
-    "ruby_epsilon": 1e-12,
-    "ruby_mode": "auto",
-    "ruby_tokenizer": "tranx",
-    "ruby_denominator": "max",
-    "ruby_graph_timeout_seconds": 1.0,
-    "ruby_graph_use_edge_cost": True,
-    "ruby_graph_include_leaf_edges": True,
-    "ruby_tree_max_nodes": 180,
-    "ruby_tree_max_depth": 10,
-    "ruby_tree_max_children": 8,
-}
-TSED_DEFAULT_OPTIONS = {
-    "tsed_delete_cost": 1.0,
-    "tsed_insert_cost": 1.0,
-    "tsed_rename_cost": 1.0,
-    "tsed_max_nodes": 180,
-    "tsed_max_depth": 10,
-    "tsed_max_children": 8,
-}
-CODEBERTSCORE_DEFAULT_OPTIONS = {
-    "codebertscore_model": "microsoft/codebert-base",
-    "codebertscore_num_layers": 0,
-    "codebertscore_batch_size": 16,
-    "codebertscore_max_length": 0,
-    "codebertscore_device": "auto",
-    "codebertscore_lang": "",
-    "codebertscore_idf": False,
-    "codebertscore_rescale_with_baseline": False,
-    "codebertscore_use_fast_tokenizer": False,
-    "codebertscore_nthreads": 4,
-    "codebertscore_verbose": False,
-}
-RUBY_OPTIONS_TEMPLATE = json.dumps(RUBY_DEFAULT_OPTIONS, indent=2)
-TSED_OPTIONS_TEMPLATE = json.dumps(TSED_DEFAULT_OPTIONS, indent=2)
-CODEBERTSCORE_OPTIONS_TEMPLATE = json.dumps(CODEBERTSCORE_DEFAULT_OPTIONS, indent=2)
+DEFAULT_RUBY_MODE = "auto"
+DEFAULT_RUBY_GRAPH_TIMEOUT = 1.0
+DEFAULT_TSED_COSTS = "1,1,1"
+DEFAULT_CODEBERTSCORE_MODEL = "microsoft/codebert-base"
+DEFAULT_CODEBERTSCORE_MAX_LENGTH = 0
 
 
 def build_feature_weights(
@@ -189,112 +157,62 @@ def validate_codebleu_component_weights_text(raw_text):
     return format_weight_values(normalized)
 
 
-def parse_metric_options_text(raw_text, defaults, label):
+def validate_tsed_costs_text(raw_text):
     text = str(raw_text or "").strip()
-    if not text:
-        return dict(defaults)
-    try:
-        payload = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise gr.Error(f"{label} must be valid JSON.") from exc
-    if not isinstance(payload, dict):
-        raise gr.Error(f"{label} must be a JSON object.")
-    unsupported = sorted(set(payload).difference(defaults))
-    if unsupported:
-        keys = ", ".join(unsupported)
-        raise gr.Error(f"{label} contains unsupported keys: {keys}")
-    merged = dict(defaults)
-    merged.update(payload)
-    return merged
+    parts = [part.strip() for part in text.split(",") if part.strip()]
+    if len(parts) != 3:
+        raise gr.Error("TSED costs must contain exactly 3 comma-separated values.")
+
+    values = []
+    for part in parts:
+        try:
+            value = float(part)
+        except ValueError as exc:
+            raise gr.Error("TSED costs must contain only numeric values.") from exc
+        if not math.isfinite(value) or value < 0:
+            raise gr.Error("TSED costs must be non-negative.")
+        values.append(value)
+    return tuple(values), format_weight_values(values)
 
 
-def _coerce_bool(value, label):
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, (int, float)):
-        return bool(value)
-    normalized = str(value or "").strip().lower()
-    if normalized in ("true", "1", "yes", "on"):
-        return True
-    if normalized in ("false", "0", "no", "off", ""):
-        return False
-    raise gr.Error(f"{label} must be a boolean.")
-
-
-def _coerce_choice(value, label, choices):
-    normalized = str(value or "").strip().lower()
-    if normalized not in choices:
-        allowed = ", ".join(choices)
-        raise gr.Error(f"{label} must be one of: {allowed}.")
-    return normalized
-
-
-def resolve_ruby_options(raw_text):
-    options = parse_metric_options_text(raw_text, RUBY_DEFAULT_OPTIONS, "RUBY options")
-    return {
-        "ruby_max_order": max(1, int(float(options["ruby_max_order"]))),
-        "ruby_epsilon": max(1e-16, float(options["ruby_epsilon"])),
-        "ruby_mode": _coerce_choice(options["ruby_mode"], "ruby_mode", ("auto", "graph", "tree", "string", "ngram")),
-        "ruby_tokenizer": _coerce_choice(options["ruby_tokenizer"], "ruby_tokenizer", ("tranx", "regex")),
-        "ruby_denominator": _coerce_choice(options["ruby_denominator"], "ruby_denominator", ("max", "mean")),
-        "ruby_graph_timeout_seconds": max(0.1, float(options["ruby_graph_timeout_seconds"])),
-        "ruby_graph_use_edge_cost": _coerce_bool(options["ruby_graph_use_edge_cost"], "ruby_graph_use_edge_cost"),
-        "ruby_graph_include_leaf_edges": _coerce_bool(
-            options["ruby_graph_include_leaf_edges"], "ruby_graph_include_leaf_edges"
-        ),
-        "ruby_tree_max_nodes": max(32, int(float(options["ruby_tree_max_nodes"]))),
-        "ruby_tree_max_depth": max(2, int(float(options["ruby_tree_max_depth"]))),
-        "ruby_tree_max_children": max(1, int(float(options["ruby_tree_max_children"]))),
-    }
-
-
-def resolve_tsed_options(raw_text):
-    options = parse_metric_options_text(raw_text, TSED_DEFAULT_OPTIONS, "TSED options")
-    return {
-        "tsed_delete_cost": max(0.0, float(options["tsed_delete_cost"])),
-        "tsed_insert_cost": max(0.0, float(options["tsed_insert_cost"])),
-        "tsed_rename_cost": max(0.0, float(options["tsed_rename_cost"])),
-        "tsed_max_nodes": max(32, int(float(options["tsed_max_nodes"]))),
-        "tsed_max_depth": max(2, int(float(options["tsed_max_depth"]))),
-        "tsed_max_children": max(1, int(float(options["tsed_max_children"]))),
-    }
-
-
-def resolve_codebertscore_options(raw_text):
-    options = parse_metric_options_text(raw_text, CODEBERTSCORE_DEFAULT_OPTIONS, "CodeBERTScore options")
-    num_layers = int(float(options["codebertscore_num_layers"]))
-    max_length = int(float(options["codebertscore_max_length"]))
-    nthreads = int(float(options["codebertscore_nthreads"]))
-    batch_size = int(float(options["codebertscore_batch_size"]))
-    device = _coerce_choice(options["codebertscore_device"], "codebertscore_device", DEVICE_CHOICES)
-    return {
-        "codebertscore_model": str(options["codebertscore_model"] or "microsoft/codebert-base").strip()
-        or "microsoft/codebert-base",
-        "codebertscore_num_layers": (None if num_layers <= 0 else num_layers),
-        "codebertscore_batch_size": max(1, batch_size),
-        "codebertscore_max_length": max(0, max_length),
-        "codebertscore_device": device,
-        "codebertscore_lang": str(options["codebertscore_lang"] or "").strip() or None,
-        "codebertscore_idf": _coerce_bool(options["codebertscore_idf"], "codebertscore_idf"),
-        "codebertscore_rescale_with_baseline": _coerce_bool(
-            options["codebertscore_rescale_with_baseline"], "codebertscore_rescale_with_baseline"
-        ),
-        "codebertscore_use_fast_tokenizer": _coerce_bool(
-            options["codebertscore_use_fast_tokenizer"], "codebertscore_use_fast_tokenizer"
-        ),
-        "codebertscore_nthreads": max(1, nthreads),
-        "codebertscore_verbose": _coerce_bool(options["codebertscore_verbose"], "codebertscore_verbose"),
-    }
-
-
-def resolve_metric_kwargs(code_metric, ruby_options, tsed_options, codebertscore_options):
+def resolve_metric_kwargs(
+    code_metric,
+    ruby_mode,
+    ruby_graph_timeout_seconds,
+    tsed_costs,
+    codebertscore_model,
+    codebertscore_max_length,
+):
     normalized = (code_metric or "none").strip().lower()
     if normalized == "ruby":
-        return resolve_ruby_options(ruby_options)
+        mode = str(ruby_mode or DEFAULT_RUBY_MODE).strip().lower()
+        if mode not in ("auto", "graph", "tree", "string", "ngram"):
+            raise gr.Error("RUBY mode must be one of: auto, graph, tree, string, ngram.")
+        timeout_seconds = float(ruby_graph_timeout_seconds)
+        if not math.isfinite(timeout_seconds) or timeout_seconds < 0.1:
+            raise gr.Error("RUBY graph timeout must be at least 0.1 seconds.")
+        return {
+            "ruby_mode": mode,
+            "ruby_graph_timeout_seconds": timeout_seconds,
+        }
     if normalized == "tsed":
-        return resolve_tsed_options(tsed_options)
+        (delete_cost, insert_cost, rename_cost), _ = validate_tsed_costs_text(tsed_costs)
+        return {
+            "tsed_delete_cost": delete_cost,
+            "tsed_insert_cost": insert_cost,
+            "tsed_rename_cost": rename_cost,
+        }
     if normalized == "codebertscore":
-        return resolve_codebertscore_options(codebertscore_options)
+        model_name = str(codebertscore_model or DEFAULT_CODEBERTSCORE_MODEL).strip()
+        if not model_name:
+            raise gr.Error("CodeBERTScore model must not be empty.")
+        max_length = int(float(codebertscore_max_length or DEFAULT_CODEBERTSCORE_MAX_LENGTH))
+        if max_length < 0:
+            raise gr.Error("CodeBERTScore max length must be 0 or a positive integer.")
+        return {
+            "codebertscore_model": model_name,
+            "codebertscore_max_length": max_length,
+        }
     return {}
 
 
@@ -421,9 +339,11 @@ SUITE_COLUMNS = [
     "codebleu_component_weights",
     "crystalbleu_max_order",
     "crystalbleu_trivial_ngram_count",
-    "ruby_options",
-    "tsed_options",
-    "codebertscore_options",
+    "ruby_mode",
+    "ruby_graph_timeout_seconds",
+    "tsed_costs",
+    "codebertscore_model",
+    "codebertscore_max_length",
     "semantic_weight",
     "levenshtein_weight",
     "levenshtein_weights",
@@ -481,13 +401,22 @@ def suite_rows_to_configs(rows):
             effective_codebleu_component_weights = validate_codebleu_component_weights_text(
                 row.get("codebleu_component_weights") or "0.25,0.25,0.25,0.25"
             )
-        ruby_options = str(row.get("ruby_options") or RUBY_OPTIONS_TEMPLATE).strip() or RUBY_OPTIONS_TEMPLATE
-        tsed_options = str(row.get("tsed_options") or TSED_OPTIONS_TEMPLATE).strip() or TSED_OPTIONS_TEMPLATE
-        codebertscore_options = (
-            str(row.get("codebertscore_options") or CODEBERTSCORE_OPTIONS_TEMPLATE).strip()
-            or CODEBERTSCORE_OPTIONS_TEMPLATE
+        ruby_mode = str(row.get("ruby_mode") or DEFAULT_RUBY_MODE).strip() or DEFAULT_RUBY_MODE
+        ruby_graph_timeout_seconds = float(row.get("ruby_graph_timeout_seconds") or DEFAULT_RUBY_GRAPH_TIMEOUT)
+        tsed_costs = str(row.get("tsed_costs") or DEFAULT_TSED_COSTS).strip() or DEFAULT_TSED_COSTS
+        codebertscore_model = (
+            str(row.get("codebertscore_model") or DEFAULT_CODEBERTSCORE_MODEL).strip()
+            or DEFAULT_CODEBERTSCORE_MODEL
         )
-        metric_kwargs = resolve_metric_kwargs(code_metric, ruby_options, tsed_options, codebertscore_options)
+        codebertscore_max_length = int(float(row.get("codebertscore_max_length") or DEFAULT_CODEBERTSCORE_MAX_LENGTH))
+        metric_kwargs = resolve_metric_kwargs(
+            code_metric,
+            ruby_mode,
+            ruby_graph_timeout_seconds,
+            tsed_costs,
+            codebertscore_model,
+            codebertscore_max_length,
+        )
 
         options = {
             "model_name": str(row.get("model_name") or DEFAULT_MODEL).strip() or DEFAULT_MODEL,
@@ -511,6 +440,10 @@ def suite_rows_to_configs(rows):
             "crystalbleu_trivial_ngram_count": max(
                 0, int(float(row.get("crystalbleu_trivial_ngram_count") or 50))
             ),
+            "ruby_mode": ruby_mode,
+            "ruby_graph_timeout_seconds": ruby_graph_timeout_seconds,
+            "codebertscore_model": codebertscore_model,
+            "codebertscore_max_length": codebertscore_max_length,
             "levenshtein_weights": effective_levenshtein_weights,
             "jaro_winkler_prefix_weight": max(
                 0.0, min(0.25, float(row.get("jaro_winkler_prefix_weight") or 0.1))
@@ -640,9 +573,11 @@ def build_suite_run_row_data(
     codebleu_component_weights,
     crystalbleu_max_order,
     crystalbleu_trivial_ngram_count,
-    ruby_options,
-    tsed_options,
-    codebertscore_options,
+    ruby_mode,
+    ruby_graph_timeout_seconds,
+    tsed_costs,
+    codebertscore_model,
+    codebertscore_max_length,
     selected_preparation,
     preprocess_mode,
     chunking_method,
@@ -678,21 +613,26 @@ def build_suite_run_row_data(
     normalized_codebleu_weights = "0.25,0.25,0.25,0.25"
     if normalized_code_metric.startswith("codebleu"):
         normalized_codebleu_weights = validate_codebleu_component_weights_text(codebleu_component_weights)
-    normalized_ruby_options = str(ruby_options or RUBY_OPTIONS_TEMPLATE).strip() or RUBY_OPTIONS_TEMPLATE
-    normalized_tsed_options = str(tsed_options or TSED_OPTIONS_TEMPLATE).strip() or TSED_OPTIONS_TEMPLATE
-    normalized_codebertscore_options = (
-        str(codebertscore_options or CODEBERTSCORE_OPTIONS_TEMPLATE).strip() or CODEBERTSCORE_OPTIONS_TEMPLATE
-    )
-    if normalized_code_metric == "ruby":
-        normalized_ruby_options = json.dumps(resolve_ruby_options(normalized_ruby_options), indent=2)
+    normalized_ruby_mode = str(ruby_mode or DEFAULT_RUBY_MODE).strip().lower() or DEFAULT_RUBY_MODE
+    normalized_ruby_timeout = float(ruby_graph_timeout_seconds or DEFAULT_RUBY_GRAPH_TIMEOUT)
+    normalized_tsed_costs_raw = str(tsed_costs or DEFAULT_TSED_COSTS).strip() or DEFAULT_TSED_COSTS
     if normalized_code_metric == "tsed":
-        normalized_tsed_options = json.dumps(resolve_tsed_options(normalized_tsed_options), indent=2)
-    if normalized_code_metric == "codebertscore":
-        normalized_codebertscore_options = json.dumps(
-            resolve_codebertscore_options(normalized_codebertscore_options),
-            indent=2,
-            default=str,
-        )
+        _, normalized_tsed_costs = validate_tsed_costs_text(normalized_tsed_costs_raw)
+    else:
+        normalized_tsed_costs = normalized_tsed_costs_raw
+    normalized_codebertscore_model = (
+        str(codebertscore_model or DEFAULT_CODEBERTSCORE_MODEL).strip() or DEFAULT_CODEBERTSCORE_MODEL
+    )
+    normalized_codebertscore_max_length = int(float(codebertscore_max_length or DEFAULT_CODEBERTSCORE_MAX_LENGTH))
+
+    resolve_metric_kwargs(
+        normalized_code_metric,
+        normalized_ruby_mode,
+        normalized_ruby_timeout,
+        normalized_tsed_costs,
+        normalized_codebertscore_model,
+        normalized_codebertscore_max_length,
+    )
 
     feature_weights = build_feature_weights(
         "Embedding" in selected,
@@ -726,9 +666,11 @@ def build_suite_run_row_data(
         "codebleu_component_weights": normalized_codebleu_weights,
         "crystalbleu_max_order": max(1, int(float(crystalbleu_max_order or 4))),
         "crystalbleu_trivial_ngram_count": max(0, int(float(crystalbleu_trivial_ngram_count or 50))),
-        "ruby_options": normalized_ruby_options,
-        "tsed_options": normalized_tsed_options,
-        "codebertscore_options": normalized_codebertscore_options,
+        "ruby_mode": normalized_ruby_mode,
+        "ruby_graph_timeout_seconds": normalized_ruby_timeout,
+        "tsed_costs": normalized_tsed_costs,
+        "codebertscore_model": normalized_codebertscore_model,
+        "codebertscore_max_length": max(0, normalized_codebertscore_max_length),
         "semantic_weight": feature_weights.get("semantic", 0.0),
         "levenshtein_weight": feature_weights.get("levenshtein", 0.0),
         "levenshtein_weights": normalized_levenshtein_weights,
@@ -760,9 +702,11 @@ def append_suite_run_gradio(
     codebleu_component_weights,
     crystalbleu_max_order,
     crystalbleu_trivial_ngram_count,
-    ruby_options,
-    tsed_options,
-    codebertscore_options,
+    ruby_mode,
+    ruby_graph_timeout_seconds,
+    tsed_costs,
+    codebertscore_model,
+    codebertscore_max_length,
     selected_preparation,
     preprocess_mode,
     chunking_method,
@@ -795,9 +739,11 @@ def append_suite_run_gradio(
         codebleu_component_weights,
         crystalbleu_max_order,
         crystalbleu_trivial_ngram_count,
-        ruby_options,
-        tsed_options,
-        codebertscore_options,
+        ruby_mode,
+        ruby_graph_timeout_seconds,
+        tsed_costs,
+        codebertscore_model,
+        codebertscore_max_length,
         selected_preparation,
         preprocess_mode,
         chunking_method,
@@ -912,9 +858,11 @@ def run_suite_gradio(
     codebleu_component_weights,
     crystalbleu_max_order,
     crystalbleu_trivial_ngram_count,
-    ruby_options,
-    tsed_options,
-    codebertscore_options,
+    ruby_mode,
+    ruby_graph_timeout_seconds,
+    tsed_costs,
+    codebertscore_model,
+    codebertscore_max_length,
     selected_preparation,
     preprocess_mode,
     chunking_method,
@@ -965,9 +913,11 @@ def run_suite_gradio(
             codebleu_component_weights,
             crystalbleu_max_order,
             crystalbleu_trivial_ngram_count,
-            ruby_options,
-            tsed_options,
-            codebertscore_options,
+            ruby_mode,
+            ruby_graph_timeout_seconds,
+            tsed_costs,
+            codebertscore_model,
+            codebertscore_max_length,
             selected_preparation,
             preprocess_mode,
             chunking_method,
@@ -1074,9 +1024,11 @@ def calculate_similarity_gradio(
     codebleu_component_weights,
     crystalbleu_max_order,
     crystalbleu_trivial_ngram_count,
-    ruby_options,
-    tsed_options,
-    codebertscore_options,
+    ruby_mode,
+    ruby_graph_timeout_seconds,
+    tsed_costs,
+    codebertscore_model,
+    codebertscore_max_length,
     selected_preparation,
     preprocess_mode,
     chunking_method,
@@ -1108,9 +1060,11 @@ def calculate_similarity_gradio(
         )
     metric_kwargs = resolve_metric_kwargs(
         effective_code_metric,
-        ruby_options,
-        tsed_options,
-        codebertscore_options,
+        ruby_mode,
+        ruby_graph_timeout_seconds,
+        tsed_costs,
+        codebertscore_model,
+        codebertscore_max_length,
     )
 
     feature_weights = build_feature_weights(
@@ -1179,9 +1133,11 @@ def get_sim_list_gradio(
     codebleu_component_weights,
     crystalbleu_max_order,
     crystalbleu_trivial_ngram_count,
-    ruby_options,
-    tsed_options,
-    codebertscore_options,
+    ruby_mode,
+    ruby_graph_timeout_seconds,
+    tsed_costs,
+    codebertscore_model,
+    codebertscore_max_length,
     selected_preparation,
     preprocess_mode,
     chunking_method,
@@ -1218,9 +1174,11 @@ def get_sim_list_gradio(
         )
     metric_kwargs = resolve_metric_kwargs(
         effective_code_metric,
-        ruby_options,
-        tsed_options,
-        codebertscore_options,
+        ruby_mode,
+        ruby_graph_timeout_seconds,
+        tsed_costs,
+        codebertscore_model,
+        codebertscore_max_length,
     )
 
     feature_weights = build_feature_weights(
@@ -1373,22 +1331,35 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     0, 500, value=50, label="Ignored Frequent N-grams", step=5
                                 )
                             with gr.Group(visible=False) as pair_ruby_group:
-                                pair_ruby_options = gr.Textbox(
-                                    value=RUBY_OPTIONS_TEMPLATE,
-                                    lines=11,
-                                    label="RUBY Options (JSON)",
+                                pair_ruby_mode = gr.Dropdown(
+                                    choices=["auto", "graph", "tree", "string", "ngram"],
+                                    value=DEFAULT_RUBY_MODE,
+                                    label="RUBY Mode",
+                                )
+                                pair_ruby_graph_timeout_seconds = gr.Number(
+                                    value=DEFAULT_RUBY_GRAPH_TIMEOUT,
+                                    precision=2,
+                                    label="Graph Timeout (seconds)",
                                 )
                             with gr.Group(visible=False) as pair_tsed_group:
-                                pair_tsed_options = gr.Textbox(
-                                    value=TSED_OPTIONS_TEMPLATE,
-                                    lines=7,
-                                    label="TSED Options (JSON)",
+                                pair_tsed_costs = gr.Textbox(
+                                    value=DEFAULT_TSED_COSTS,
+                                    label="Insert, Delete, Rename Costs",
+                                    placeholder="1,1,1",
                                 )
                             with gr.Group(visible=False) as pair_codebertscore_group:
-                                pair_codebertscore_options = gr.Textbox(
-                                    value=CODEBERTSCORE_OPTIONS_TEMPLATE,
-                                    lines=11,
-                                    label="CodeBERTScore Options (JSON)",
+                                pair_codebertscore_model = HuggingfaceHubSearch(
+                                    value=DEFAULT_CODEBERTSCORE_MODEL,
+                                    label="CodeBERTScore Model",
+                                    placeholder="Search Hugging Face models",
+                                    search_type="model",
+                                )
+                                pair_codebertscore_max_length = gr.Slider(
+                                    0,
+                                    2048,
+                                    value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
+                                    step=1,
+                                    label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
                     with gr.Accordion("Code Preparation", open=False):
@@ -1478,9 +1449,11 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     pair_codebleu_component_weights,
                     pair_crystalbleu_max_order,
                     pair_crystalbleu_trivial_ngram_count,
-                    pair_ruby_options,
-                    pair_tsed_options,
-                    pair_codebertscore_options,
+                    pair_ruby_mode,
+                    pair_ruby_graph_timeout_seconds,
+                    pair_tsed_costs,
+                    pair_codebertscore_model,
+                    pair_codebertscore_max_length,
                     pair_code_preparation,
                     pair_preprocess_mode,
                     pair_chunking_method,
@@ -1616,22 +1589,35 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     0, 500, value=50, label="Ignored Frequent N-grams", step=5
                                 )
                             with gr.Group(visible=False) as collection_ruby_group:
-                                collection_ruby_options = gr.Textbox(
-                                    value=RUBY_OPTIONS_TEMPLATE,
-                                    lines=11,
-                                    label="RUBY Options (JSON)",
+                                collection_ruby_mode = gr.Dropdown(
+                                    choices=["auto", "graph", "tree", "string", "ngram"],
+                                    value=DEFAULT_RUBY_MODE,
+                                    label="RUBY Mode",
+                                )
+                                collection_ruby_graph_timeout_seconds = gr.Number(
+                                    value=DEFAULT_RUBY_GRAPH_TIMEOUT,
+                                    precision=2,
+                                    label="Graph Timeout (seconds)",
                                 )
                             with gr.Group(visible=False) as collection_tsed_group:
-                                collection_tsed_options = gr.Textbox(
-                                    value=TSED_OPTIONS_TEMPLATE,
-                                    lines=7,
-                                    label="TSED Options (JSON)",
+                                collection_tsed_costs = gr.Textbox(
+                                    value=DEFAULT_TSED_COSTS,
+                                    label="Insert, Delete, Rename Costs",
+                                    placeholder="1,1,1",
                                 )
                             with gr.Group(visible=False) as collection_codebertscore_group:
-                                collection_codebertscore_options = gr.Textbox(
-                                    value=CODEBERTSCORE_OPTIONS_TEMPLATE,
-                                    lines=11,
-                                    label="CodeBERTScore Options (JSON)",
+                                collection_codebertscore_model = HuggingfaceHubSearch(
+                                    value=DEFAULT_CODEBERTSCORE_MODEL,
+                                    label="CodeBERTScore Model",
+                                    placeholder="Search Hugging Face models",
+                                    search_type="model",
+                                )
+                                collection_codebertscore_max_length = gr.Slider(
+                                    0,
+                                    2048,
+                                    value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
+                                    step=1,
+                                    label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
                     with gr.Accordion("Code Preparation", open=False):
@@ -1732,9 +1718,11 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     collection_codebleu_component_weights,
                     collection_crystalbleu_max_order,
                     collection_crystalbleu_trivial_ngram_count,
-                    collection_ruby_options,
-                    collection_tsed_options,
-                    collection_codebertscore_options,
+                    collection_ruby_mode,
+                    collection_ruby_graph_timeout_seconds,
+                    collection_tsed_costs,
+                    collection_codebertscore_model,
+                    collection_codebertscore_max_length,
                     collection_code_preparation,
                     collection_preprocess_mode,
                     collection_chunking_method,
@@ -1780,7 +1768,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
 
             with gr.Row():
                 with gr.Column(scale=8):
-                    gr.Markdown("1. Set the current configuration. 2. Save Run to append it. 3. Repeat if needed. 4. Run the suite. If nothing is saved, the current configuration runs once.")
+                    gr.Markdown("1. Set the current configuration. 2. Save Run to append it. 3. Repeat if needed. 4. Run the suite.")
                     suite_file = gr.File(label="Code Collection (.zip)", file_types=[".zip"])
                     suite_summary = gr.HTML(value=empty_suite_summary_html())
                     suite_output = gr.Dataframe(
@@ -1879,22 +1867,35 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     0, 500, value=50, label="Ignored Frequent N-grams", step=5
                                 )
                             with gr.Group(visible=False) as suite_ruby_group:
-                                suite_ruby_options = gr.Textbox(
-                                    value=RUBY_OPTIONS_TEMPLATE,
-                                    lines=11,
-                                    label="RUBY Options (JSON)",
+                                suite_ruby_mode = gr.Dropdown(
+                                    choices=["auto", "graph", "tree", "string", "ngram"],
+                                    value=DEFAULT_RUBY_MODE,
+                                    label="RUBY Mode",
+                                )
+                                suite_ruby_graph_timeout_seconds = gr.Number(
+                                    value=DEFAULT_RUBY_GRAPH_TIMEOUT,
+                                    precision=2,
+                                    label="Graph Timeout (seconds)",
                                 )
                             with gr.Group(visible=False) as suite_tsed_group:
-                                suite_tsed_options = gr.Textbox(
-                                    value=TSED_OPTIONS_TEMPLATE,
-                                    lines=7,
-                                    label="TSED Options (JSON)",
+                                suite_tsed_costs = gr.Textbox(
+                                    value=DEFAULT_TSED_COSTS,
+                                    label="Insert, Delete, Rename Costs",
+                                    placeholder="1,1,1",
                                 )
                             with gr.Group(visible=False) as suite_codebertscore_group:
-                                suite_codebertscore_options = gr.Textbox(
-                                    value=CODEBERTSCORE_OPTIONS_TEMPLATE,
-                                    lines=11,
-                                    label="CodeBERTScore Options (JSON)",
+                                suite_codebertscore_model = HuggingfaceHubSearch(
+                                    value=DEFAULT_CODEBERTSCORE_MODEL,
+                                    label="CodeBERTScore Model",
+                                    placeholder="Search Hugging Face models",
+                                    search_type="model",
+                                )
+                                suite_codebertscore_max_length = gr.Slider(
+                                    0,
+                                    2048,
+                                    value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
+                                    step=1,
+                                    label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
                     with gr.Accordion("Code Preparation", open=False):
@@ -1971,7 +1972,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_details_download = gr.File(label="Details ZIP")
                     suite_runs_download = gr.File(label="Run JSON")
                     suite_status = gr.HTML(
-                        value=profile_status_html("Save Run appends the current configuration. Run Comparison Suite executes the saved list, or the current configuration once if the list is empty.")
+                        value=profile_status_html("Save Run appends the current configuration. Run Comparison Suite executes the saved list.")
                     )
 
             suite_features.change(
@@ -2023,9 +2024,11 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_codebleu_component_weights,
                     suite_crystalbleu_max_order,
                     suite_crystalbleu_trivial_ngram_count,
-                    suite_ruby_options,
-                    suite_tsed_options,
-                    suite_codebertscore_options,
+                    suite_ruby_mode,
+                    suite_ruby_graph_timeout_seconds,
+                    suite_tsed_costs,
+                    suite_codebertscore_model,
+                    suite_codebertscore_max_length,
                     suite_code_preparation,
                     suite_preprocess_mode,
                     suite_chunking_method,
@@ -2068,9 +2071,11 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_codebleu_component_weights,
                     suite_crystalbleu_max_order,
                     suite_crystalbleu_trivial_ngram_count,
-                    suite_ruby_options,
-                    suite_tsed_options,
-                    suite_codebertscore_options,
+                    suite_ruby_mode,
+                    suite_ruby_graph_timeout_seconds,
+                    suite_tsed_costs,
+                    suite_codebertscore_model,
+                    suite_codebertscore_max_length,
                     suite_code_preparation,
                     suite_preprocess_mode,
                     suite_chunking_method,

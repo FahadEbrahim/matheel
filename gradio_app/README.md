@@ -14,7 +14,7 @@ Interactive code-similarity analysis with configurable embedding, lexical, chunk
 This Space is aligned with `matheel==0.3.0` and includes:
 
 - Code metrics: CodeBLEU, CrystalBLEU, RUBY, TSED, CodeBERTScore
-- Per-metric advanced parameters (JSON editors in the UI)
+- Per-metric advanced parameters via dedicated UI fields
 - Advanced preprocessing mode support
 - Public chunking methods:
   - `none`
