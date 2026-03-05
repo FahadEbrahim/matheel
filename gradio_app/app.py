@@ -63,37 +63,32 @@ DEFAULT_UI_FEATURE_WEIGHTS = {
 
 def build_feature_weights(
     use_semantic,
+    semantic_weight,
     use_levenshtein,
+    levenshtein_weight,
     use_jaro_winkler,
+    jaro_winkler_weight,
     code_metric,
+    code_metric_weight,
 ):
     weights = {}
     fallback_names = []
 
     if use_semantic:
-        weights["semantic"] = DEFAULT_UI_FEATURE_WEIGHTS["semantic"]
+        weights["semantic"] = max(0.0, float(semantic_weight))
         fallback_names.append("semantic")
     if use_levenshtein:
-        weights["levenshtein"] = DEFAULT_UI_FEATURE_WEIGHTS["levenshtein"]
+        weights["levenshtein"] = max(0.0, float(levenshtein_weight))
         fallback_names.append("levenshtein")
     if use_jaro_winkler:
-        weights["jaro_winkler"] = DEFAULT_UI_FEATURE_WEIGHTS["jaro_winkler"]
+        weights["jaro_winkler"] = max(0.0, float(jaro_winkler_weight))
         fallback_names.append("jaro_winkler")
 
     if (code_metric or "none") != "none":
-        weights["code_metric"] = DEFAULT_UI_FEATURE_WEIGHTS["code_metric"]
+        weights["code_metric"] = max(0.0, float(code_metric_weight))
         fallback_names.append("code_metric")
 
     return normalize_feature_weights_map(weights, fallback_names=fallback_names)
-
-
-def _is_truthy(value):
-    if isinstance(value, bool):
-        return value
-    if value is None:
-        return False
-    text = str(value).strip().lower()
-    return text in {"1", "true", "yes", "y", "on"}
 
 
 def normalize_feature_weights_map(weights, fallback_names=None):
@@ -371,6 +366,7 @@ SUITE_COLUMNS = [
     "chunk_language",
     "chunker_options",
     "code_metric",
+    "code_metric_weight",
     "code_language",
     "codebleu_component_weights",
     "crystalbleu_max_order",
@@ -380,10 +376,10 @@ SUITE_COLUMNS = [
     "tsed_costs",
     "codebertscore_model",
     "codebertscore_max_length",
-    "use_embedding",
-    "use_levenshtein",
+    "semantic_weight",
+    "levenshtein_weight",
     "levenshtein_weights",
-    "use_jaro_winkler",
+    "jaro_winkler_weight",
     "jaro_winkler_prefix_weight",
     "threshold",
     "number_results",
@@ -416,12 +412,15 @@ def suite_rows_to_configs(rows):
     for index, row in frame.iterrows():
         run_name = str(row.get("run_name", "")).strip() or f"run_{index + 1}"
         code_metric = str(row.get("code_metric", "none") or "none").strip() or "none"
-        feature_weights = build_feature_weights(
-            _is_truthy(row.get("use_embedding")),
-            _is_truthy(row.get("use_levenshtein")),
-            _is_truthy(row.get("use_jaro_winkler")),
-            code_metric if code_metric != "none" else "none",
-        )
+        raw_feature_weights = {
+            "semantic": max(0.0, float(row.get("semantic_weight") or 0)),
+            "levenshtein": max(0.0, float(row.get("levenshtein_weight") or 0)),
+            "jaro_winkler": max(0.0, float(row.get("jaro_winkler_weight") or 0)),
+        }
+        code_metric_weight = max(0.0, float(row.get("code_metric_weight") or 0))
+        if code_metric != "none" and code_metric_weight > 0:
+            raw_feature_weights["code_metric"] = code_metric_weight
+        feature_weights = normalize_feature_weights_map(raw_feature_weights)
 
         effective_levenshtein_weights = "1,1,1"
         if feature_weights.get("levenshtein", 0.0) > 0:
@@ -595,9 +594,13 @@ def build_suite_run_row_data(
     similarity_function,
     pooling_method,
     max_token_length,
+    semantic_weight,
+    levenshtein_weight,
+    jaro_winkler_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
     code_metric,
+    code_metric_weight,
     code_language,
     codebleu_component_weights,
     crystalbleu_max_order,
@@ -665,9 +668,13 @@ def build_suite_run_row_data(
 
     feature_weights = build_feature_weights(
         "Embedding" in selected,
+        semantic_weight,
         "Levenshtein" in selected,
+        levenshtein_weight,
         "Jaro-Winkler" in selected,
+        jaro_winkler_weight,
         normalized_code_metric,
+        code_metric_weight,
     )
 
     row = {
@@ -686,6 +693,7 @@ def build_suite_run_row_data(
         "chunk_language": str(chunk_language or "text").strip() or "text",
         "chunker_options": str(chunker_options or "").strip(),
         "code_metric": normalized_code_metric,
+        "code_metric_weight": feature_weights.get("code_metric", 0.0),
         "code_language": str(code_language or "python").strip() or "python",
         "codebleu_component_weights": normalized_codebleu_weights,
         "crystalbleu_max_order": max(1, int(float(crystalbleu_max_order or 4))),
@@ -695,10 +703,10 @@ def build_suite_run_row_data(
         "tsed_costs": normalized_tsed_costs,
         "codebertscore_model": normalized_codebertscore_model,
         "codebertscore_max_length": max(0, normalized_codebertscore_max_length),
-        "use_embedding": "Embedding" in selected,
-        "use_levenshtein": "Levenshtein" in selected,
+        "semantic_weight": feature_weights.get("semantic", 0.0),
+        "levenshtein_weight": feature_weights.get("levenshtein", 0.0),
         "levenshtein_weights": normalized_levenshtein_weights,
-        "use_jaro_winkler": "Jaro-Winkler" in selected,
+        "jaro_winkler_weight": feature_weights.get("jaro_winkler", 0.0),
         "jaro_winkler_prefix_weight": max(0.0, min(0.25, float(jaro_winkler_prefix_weight or 0.1))),
         "threshold": max(0.0, float(threshold or 0.35)),
         "number_results": max(1, int(float(number_results or 50))),
@@ -715,9 +723,13 @@ def append_suite_run_gradio(
     similarity_function,
     pooling_method,
     max_token_length,
+    semantic_weight,
+    levenshtein_weight,
+    jaro_winkler_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
     code_metric,
+    code_metric_weight,
     code_language,
     codebleu_component_weights,
     crystalbleu_max_order,
@@ -748,9 +760,13 @@ def append_suite_run_gradio(
         similarity_function,
         pooling_method,
         max_token_length,
+        semantic_weight,
+        levenshtein_weight,
+        jaro_winkler_weight,
         levenshtein_weights,
         jaro_winkler_prefix_weight,
         code_metric,
+        code_metric_weight,
         code_language,
         codebleu_component_weights,
         crystalbleu_max_order,
@@ -863,9 +879,13 @@ def run_suite_gradio(
     similarity_function,
     pooling_method,
     max_token_length,
+    semantic_weight,
+    levenshtein_weight,
+    jaro_winkler_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
     code_metric,
+    code_metric_weight,
     code_language,
     codebleu_component_weights,
     crystalbleu_max_order,
@@ -914,9 +934,13 @@ def run_suite_gradio(
             similarity_function,
             pooling_method,
             max_token_length,
+            semantic_weight,
+            levenshtein_weight,
+            jaro_winkler_weight,
             levenshtein_weights,
             jaro_winkler_prefix_weight,
             code_metric,
+            code_metric_weight,
             code_language,
             codebleu_component_weights,
             crystalbleu_max_order,
@@ -1021,9 +1045,13 @@ def calculate_similarity_gradio(
     pooling_method,
     max_token_length,
     runtime_device,
+    semantic_weight,
+    levenshtein_weight,
+    jaro_winkler_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
     code_metric,
+    code_metric_weight,
     code_language,
     codebleu_component_weights,
     crystalbleu_max_order,
@@ -1052,7 +1080,7 @@ def calculate_similarity_gradio(
     effective_preprocess_mode = preprocess_mode if "Preprocessing" in selected_steps else "none"
     effective_chunking_method = chunking_method if "Chunking" in selected_steps else "none"
     effective_code_metric = code_metric if use_code_metric else "none"
-    effective_code_metric_weight = 1.0 if use_code_metric else 0.0
+    effective_code_metric_weight = code_metric_weight if use_code_metric else 0.0
     effective_levenshtein_weights = "1,1,1"
     if use_levenshtein:
         effective_levenshtein_weights, _ = validate_levenshtein_weights_text(levenshtein_weights)
@@ -1073,9 +1101,13 @@ def calculate_similarity_gradio(
 
     feature_weights = build_feature_weights(
         use_semantic,
+        semantic_weight,
         use_levenshtein,
+        levenshtein_weight,
         use_jaro_winkler,
+        jaro_winkler_weight,
         effective_code_metric,
+        effective_code_metric_weight,
     )
     score = calculate_similarity(
         code1,
@@ -1122,9 +1154,13 @@ def get_sim_list_gradio(
     pooling_method,
     max_token_length,
     runtime_device,
+    semantic_weight,
+    levenshtein_weight,
+    jaro_winkler_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
     code_metric,
+    code_metric_weight,
     code_language,
     codebleu_component_weights,
     crystalbleu_max_order,
@@ -1158,7 +1194,7 @@ def get_sim_list_gradio(
     effective_preprocess_mode = preprocess_mode if "Preprocessing" in selected_steps else "none"
     effective_chunking_method = chunking_method if "Chunking" in selected_steps else "none"
     effective_code_metric = code_metric if use_code_metric else "none"
-    effective_code_metric_weight = 1.0 if use_code_metric else 0.0
+    effective_code_metric_weight = code_metric_weight if use_code_metric else 0.0
     effective_levenshtein_weights = "1,1,1"
     if use_levenshtein:
         effective_levenshtein_weights, _ = validate_levenshtein_weights_text(levenshtein_weights)
@@ -1179,9 +1215,13 @@ def get_sim_list_gradio(
 
     feature_weights = build_feature_weights(
         use_semantic,
+        semantic_weight,
         use_levenshtein,
+        levenshtein_weight,
         use_jaro_winkler,
+        jaro_winkler_weight,
         effective_code_metric,
+        effective_code_metric_weight,
     )
     results = get_sim_list(
         zipped_file,
@@ -1284,12 +1324,33 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 value="auto",
                                 label="Runtime Device",
                             )
+                            pair_semantic_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["semantic"],
+                                label="Embedding Weight",
+                                step=0.05,
+                            )
                         with gr.Group(visible=True) as pair_levenshtein_group:
+                            pair_levenshtein_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["levenshtein"],
+                                label="Levenshtein Weight",
+                                step=0.05,
+                            )
                             pair_levenshtein_weights = gr.Textbox(
                                 value="1,1,1",
                                 label="Insert, Delete, Substitute",
                             )
                         with gr.Group(visible=False) as pair_jaro_group:
+                            pair_jaro_winkler_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["jaro_winkler"],
+                                label="Jaro-Winkler Weight",
+                                step=0.05,
+                            )
                             pair_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
                             )
@@ -1298,6 +1359,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 choices=list(CODE_METRIC_CHOICES),
                                 value="codebleu",
                                 label="Code Metric",
+                            )
+                            pair_code_metric_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["code_metric"],
+                                label="Code Metric Weight",
+                                step=0.05,
                             )
                             pair_code_language = gr.Dropdown(
                                 choices=list(available_code_metric_languages()),
@@ -1429,9 +1497,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     pair_pooling_method,
                     pair_max_token_length,
                     pair_runtime_device,
+                    pair_semantic_weight,
+                    pair_levenshtein_weight,
+                    pair_jaro_winkler_weight,
                     pair_levenshtein_weights,
                     pair_jaro_prefix_weight,
                     pair_code_metric,
+                    pair_code_metric_weight,
                     pair_code_language,
                     pair_codebleu_component_weights,
                     pair_crystalbleu_max_order,
@@ -1531,12 +1603,33 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 value="auto",
                                 label="Runtime Device",
                             )
+                            collection_semantic_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["semantic"],
+                                label="Embedding Weight",
+                                step=0.05,
+                            )
                         with gr.Group(visible=True) as collection_levenshtein_group:
+                            collection_levenshtein_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["levenshtein"],
+                                label="Levenshtein Weight",
+                                step=0.05,
+                            )
                             collection_levenshtein_weights = gr.Textbox(
                                 value="1,1,1",
                                 label="Insert, Delete, Substitute",
                             )
                         with gr.Group(visible=False) as collection_jaro_group:
+                            collection_jaro_winkler_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["jaro_winkler"],
+                                label="Jaro-Winkler Weight",
+                                step=0.05,
+                            )
                             collection_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
                             )
@@ -1545,6 +1638,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 choices=list(CODE_METRIC_CHOICES),
                                 value="codebleu",
                                 label="Code Metric",
+                            )
+                            collection_code_metric_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["code_metric"],
+                                label="Code Metric Weight",
+                                step=0.05,
                             )
                             collection_code_language = gr.Dropdown(
                                 choices=list(available_code_metric_languages()),
@@ -1687,9 +1787,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     collection_pooling_method,
                     collection_max_token_length,
                     collection_runtime_device,
+                    collection_semantic_weight,
+                    collection_levenshtein_weight,
+                    collection_jaro_winkler_weight,
                     collection_levenshtein_weights,
                     collection_jaro_prefix_weight,
                     collection_code_metric,
+                    collection_code_metric_weight,
                     collection_code_language,
                     collection_codebleu_component_weights,
                     collection_crystalbleu_max_order,
@@ -1804,12 +1908,33 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 value="auto",
                                 label="Runtime Device",
                             )
+                            suite_semantic_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["semantic"],
+                                label="Embedding Weight",
+                                step=0.05,
+                            )
                         with gr.Group(visible=True) as suite_levenshtein_group:
+                            suite_levenshtein_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["levenshtein"],
+                                label="Levenshtein Weight",
+                                step=0.05,
+                            )
                             suite_levenshtein_weights = gr.Textbox(
                                 value="1,1,1",
                                 label="Insert, Delete, Substitute",
                             )
                         with gr.Group(visible=False) as suite_jaro_group:
+                            suite_jaro_winkler_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["jaro_winkler"],
+                                label="Jaro-Winkler Weight",
+                                step=0.05,
+                            )
                             suite_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
                             )
@@ -1818,6 +1943,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 choices=list(CODE_METRIC_CHOICES),
                                 value="codebleu",
                                 label="Code Metric",
+                            )
+                            suite_code_metric_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["code_metric"],
+                                label="Code Metric Weight",
+                                step=0.05,
                             )
                             suite_code_language = gr.Dropdown(
                                 choices=list(available_code_metric_languages()),
@@ -1988,9 +2120,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_similarity_function,
                     suite_pooling_method,
                     suite_max_token_length,
+                    suite_semantic_weight,
+                    suite_levenshtein_weight,
+                    suite_jaro_winkler_weight,
                     suite_levenshtein_weights,
                     suite_jaro_prefix_weight,
                     suite_code_metric,
+                    suite_code_metric_weight,
                     suite_code_language,
                     suite_codebleu_component_weights,
                     suite_crystalbleu_max_order,
@@ -2031,9 +2167,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_similarity_function,
                     suite_pooling_method,
                     suite_max_token_length,
+                    suite_semantic_weight,
+                    suite_levenshtein_weight,
+                    suite_jaro_winkler_weight,
                     suite_levenshtein_weights,
                     suite_jaro_prefix_weight,
                     suite_code_metric,
+                    suite_code_metric_weight,
                     suite_code_language,
                     suite_codebleu_component_weights,
                     suite_crystalbleu_max_order,
