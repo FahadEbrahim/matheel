@@ -69,18 +69,17 @@ def build_feature_weights(
     fallback_names = []
 
     if use_semantic:
-        weights["semantic"] = max(0.0, float(ws))
+        weights["semantic"] = 1.0
         fallback_names.append("semantic")
     if use_levenshtein:
-        weights["levenshtein"] = max(0.0, float(wl))
+        weights["levenshtein"] = 1.0
         fallback_names.append("levenshtein")
     if use_jaro_winkler:
-        weights["jaro_winkler"] = max(0.0, float(wj))
+        weights["jaro_winkler"] = 1.0
         fallback_names.append("jaro_winkler")
 
-    numeric_code_metric = max(0.0, float(code_metric_weight))
     if (code_metric or "none") != "none":
-        weights["code_metric"] = numeric_code_metric
+        weights["code_metric"] = 1.0
         fallback_names.append("code_metric")
 
     return normalize_feature_weights_map(weights, fallback_names=fallback_names)
@@ -1319,15 +1318,21 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 value="auto",
                                 label="Runtime Device",
                             )
-                            pair_ws = gr.Slider(0, 1, value=0.7, label="Embedding Weight", step=0.05)
+                            pair_ws = gr.Slider(
+                                0, 1, value=0.7, label="Embedding Weight", step=0.05, visible=False
+                            )
                         with gr.Group(visible=True) as pair_levenshtein_group:
-                            pair_wl = gr.Slider(0, 1, value=0.3, label="Levenshtein Weight", step=0.05)
+                            pair_wl = gr.Slider(
+                                0, 1, value=0.3, label="Levenshtein Weight", step=0.05, visible=False
+                            )
                             pair_levenshtein_weights = gr.Textbox(
                                 value="1,1,1",
                                 label="Insert, Delete, Substitute",
                             )
                         with gr.Group(visible=False) as pair_jaro_group:
-                            pair_wj = gr.Slider(0, 1, value=0.1, label="Jaro-Winkler Weight", step=0.05)
+                            pair_wj = gr.Slider(
+                                0, 1, value=0.1, label="Jaro-Winkler Weight", step=0.05, visible=False
+                            )
                             pair_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
                             )
@@ -1338,7 +1343,12 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 label="Code Metric",
                             )
                             pair_code_metric_weight = gr.Slider(
-                                0, 1, value=0.2, label="Code Metric Weight", step=0.05
+                                0,
+                                1,
+                                value=0.2,
+                                label="Code Metric Weight",
+                                step=0.05,
+                                visible=False,
                             )
                             pair_code_language = gr.Dropdown(
                                 choices=list(available_code_metric_languages()),
@@ -1577,11 +1587,21 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 label="Runtime Device",
                             )
                             collection_ws = gr.Slider(
-                                0, 1, value=0.7, label="Embedding Weight", step=0.05
+                                0,
+                                1,
+                                value=0.7,
+                                label="Embedding Weight",
+                                step=0.05,
+                                visible=False,
                             )
                         with gr.Group(visible=True) as collection_levenshtein_group:
                             collection_wl = gr.Slider(
-                                0, 1, value=0.3, label="Levenshtein Weight", step=0.05
+                                0,
+                                1,
+                                value=0.3,
+                                label="Levenshtein Weight",
+                                step=0.05,
+                                visible=False,
                             )
                             collection_levenshtein_weights = gr.Textbox(
                                 value="1,1,1",
@@ -1589,7 +1609,12 @@ with gr.Blocks(title="Matheel Framework") as demo:
                             )
                         with gr.Group(visible=False) as collection_jaro_group:
                             collection_wj = gr.Slider(
-                                0, 1, value=0.1, label="Jaro-Winkler Weight", step=0.05
+                                0,
+                                1,
+                                value=0.1,
+                                label="Jaro-Winkler Weight",
+                                step=0.05,
+                                visible=False,
                             )
                             collection_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
@@ -1601,7 +1626,12 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 label="Code Metric",
                             )
                             collection_code_metric_weight = gr.Slider(
-                                0, 1, value=0.2, label="Code Metric Weight", step=0.05
+                                0,
+                                1,
+                                value=0.2,
+                                label="Code Metric Weight",
+                                step=0.05,
+                                visible=False,
                             )
                             collection_code_language = gr.Dropdown(
                                 choices=list(available_code_metric_languages()),
@@ -1865,15 +1895,21 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 value="auto",
                                 label="Runtime Device",
                             )
-                            suite_ws = gr.Slider(0, 1, value=0.7, label="Embedding Weight", step=0.05)
+                            suite_ws = gr.Slider(
+                                0, 1, value=0.7, label="Embedding Weight", step=0.05, visible=False
+                            )
                         with gr.Group(visible=True) as suite_levenshtein_group:
-                            suite_wl = gr.Slider(0, 1, value=0.3, label="Levenshtein Weight", step=0.05)
+                            suite_wl = gr.Slider(
+                                0, 1, value=0.3, label="Levenshtein Weight", step=0.05, visible=False
+                            )
                             suite_levenshtein_weights = gr.Textbox(
                                 value="1,1,1",
                                 label="Insert, Delete, Substitute",
                             )
                         with gr.Group(visible=False) as suite_jaro_group:
-                            suite_wj = gr.Slider(0, 1, value=0.1, label="Jaro-Winkler Weight", step=0.05)
+                            suite_wj = gr.Slider(
+                                0, 1, value=0.1, label="Jaro-Winkler Weight", step=0.05, visible=False
+                            )
                             suite_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
                             )
@@ -1884,7 +1920,12 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 label="Code Metric",
                             )
                             suite_code_metric_weight = gr.Slider(
-                                0, 1, value=0.2, label="Code Metric Weight", step=0.05
+                                0,
+                                1,
+                                value=0.2,
+                                label="Code Metric Weight",
+                                step=0.05,
+                                visible=False,
                             )
                             suite_code_language = gr.Dropdown(
                                 choices=list(available_code_metric_languages()),
