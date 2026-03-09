@@ -62,6 +62,13 @@ FEATURE_UI_CHOICES = [
     "Code Metric",
 ]
 DEFAULT_FEATURE_SELECTION = ["Embedding", "Levenshtein"]
+SUITE_FEATURE_NAME_MAP = {
+    "Embedding": "embedding",
+    "Levenshtein": "levenshtein",
+    "Jaro-Winkler": "jaro_winkler",
+    "Winnowing": "winnowing",
+    "GST": "gst",
+}
 DEFAULT_UI_FEATURE_WEIGHTS = {
     "semantic": 0.7,
     "levenshtein": 0.3,
@@ -174,6 +181,12 @@ def validate_positive_int_value(raw_value, label, minimum=1):
     if value < int(minimum):
         raise gr.Error(f"{label} must be at least {int(minimum)}.")
     return value
+
+
+def resolve_numeric_value(raw_value, default):
+    if raw_value in (None, ""):
+        return default
+    return raw_value
 
 
 def format_weight_values(values):
@@ -540,21 +553,13 @@ def suite_rows_to_configs(rows):
             "winnowing_kgram": effective_winnowing_kgram,
             "winnowing_window": effective_winnowing_window,
             "gst_min_match_length": effective_gst_min_match_length,
-            "threshold": max(0.0, float(row.get("threshold") or 0.35)),
+            "threshold": max(0.0, float(resolve_numeric_value(row.get("threshold"), 0.35))),
             "number_results": max(1, int(float(row.get("number_results") or 50))),
             "feature_weights": feature_weights,
         }
         options.update(metric_kwargs)
         configs.append({"run_name": run_name, "options": options})
     return configs
-
-
-def _compact_suite_model_name(model_name):
-    value = str(model_name or DEFAULT_MODEL).strip() or DEFAULT_MODEL
-    short_name = value.split("/")[-1]
-    for old, new in ((" ", "_"), (".", "_"), ("-", "_")):
-        short_name = short_name.replace(old, new)
-    return short_name.lower() or "model"
 
 
 def ensure_unique_suite_run_name(base_name, rows):
@@ -573,6 +578,19 @@ def ensure_unique_suite_run_name(base_name, rows):
     return f"{cleaned}_{index}"
 
 
+def _selected_suite_algorithm_names(selected_features, code_metric):
+    selected = set(selected_features or [])
+    names = []
+    for label in FEATURE_UI_CHOICES:
+        if label not in selected:
+            continue
+        if label == "Code Metric":
+            names.append(str(code_metric or "code_metric").strip().lower() or "code_metric")
+        else:
+            names.append(SUITE_FEATURE_NAME_MAP[label])
+    return names
+
+
 def default_suite_run_name(
     rows,
     selected_features,
@@ -585,35 +603,8 @@ def default_suite_run_name(
     preprocess_mode,
     chunking_method,
 ):
-    selected = set(selected_features or [])
     selected_steps = set(selected_preparation or [])
-    parts = []
-
-    parts.append(_compact_suite_model_name(model_name))
-
-    if "Embedding" in selected:
-        backend_map = {
-            "sentence_transformers": "dense",
-            "model2vec": "static",
-            "pylate": "multivector",
-            "auto": "auto",
-        }
-        normalized_backend = str(vector_backend or "auto").strip() or "auto"
-        parts.append(backend_map.get(normalized_backend, "embedding"))
-        if normalized_backend != "pylate":
-            parts.append(str(similarity_function or "cosine").strip().lower() or "cosine")
-        if normalized_backend in {"auto", "sentence_transformers"}:
-            parts.append(str(pooling_method or "mean").strip().lower() or "mean")
-    if "Levenshtein" in selected:
-        parts.append("levenshtein")
-    if "Jaro-Winkler" in selected:
-        parts.append("jaro")
-    if "Winnowing" in selected:
-        parts.append("winnowing")
-    if "GST" in selected:
-        parts.append("gst")
-    if "Code Metric" in selected:
-        parts.append(str(code_metric or "code_metric").strip().lower() or "code_metric")
+    parts = _selected_suite_algorithm_names(selected_features, code_metric)
     if "Preprocessing" in selected_steps and str(preprocess_mode or "none").strip() not in ("", "none"):
         parts.append(str(preprocess_mode).strip().lower())
     if "Chunking" in selected_steps and str(chunking_method or "none").strip() not in ("", "none"):
@@ -803,7 +794,7 @@ def build_suite_run_row_data(
         "winnowing_window": normalized_winnowing_window,
         "gst_weight": feature_weights.get("gst", 0.0),
         "gst_min_match_length": normalized_gst_min_match_length,
-        "threshold": max(0.0, float(threshold or 0.35)),
+        "threshold": max(0.0, float(resolve_numeric_value(threshold, 0.35))),
         "number_results": max(1, int(float(number_results or 50))),
     }
     return row
