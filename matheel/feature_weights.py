@@ -6,7 +6,14 @@ _DEFAULT_FEATURE_WEIGHTS = {
 
 
 def available_default_features():
-    return ("semantic", "levenshtein", "jaro_winkler", "code_metric")
+    return (
+        "semantic",
+        "levenshtein",
+        "jaro_winkler",
+        "winnowing",
+        "gst",
+        "code_metric",
+    )
 
 
 def _validate_weight_name(name):

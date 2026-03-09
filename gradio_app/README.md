@@ -11,8 +11,9 @@ pinned: false
 
 Interactive code-similarity analysis with configurable embedding, lexical, chunking, preprocessing, and code-aware metrics.
 
-This Space is aligned with `matheel==0.3.0` and includes:
+This Space is aligned with `matheel==0.3.1` and includes:
 
+- Lexical metrics and baseline algorithms: Levenshtein, Jaro-Winkler, Winnowing, GST
 - Code metrics: CodeBLEU, CrystalBLEU, RUBY, TSED, CodeBERTScore
 - Per-metric advanced parameters via dedicated UI fields
 - Advanced preprocessing mode support

@@ -104,6 +104,12 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
             "auto",
             "--similarity-function",
             "dot",
+            "--winnowing-kgram",
+            "6",
+            "--winnowing-window",
+            "5",
+            "--gst-min-match-length",
+            "4",
             "--static-vector-dim",
             "512",
             "--max-token-length",
@@ -153,6 +159,9 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert captured["kwargs"]["codebertscore_nthreads"] == 2
     assert captured["kwargs"]["vector_backend"] == "auto"
     assert captured["kwargs"]["similarity_function"] == "dot"
+    assert captured["kwargs"]["winnowing_kgram"] == 6
+    assert captured["kwargs"]["winnowing_window"] == 5
+    assert captured["kwargs"]["gst_min_match_length"] == 4
     assert captured["kwargs"]["static_vector_dim"] == 512
     assert captured["kwargs"]["max_token_length"] == 128
     assert captured["kwargs"]["pooling_method"] == "max"

@@ -53,10 +53,21 @@ DEFAULT_TSED_COSTS = "1,1,1"
 DEFAULT_CODEBERTSCORE_MODEL = "microsoft/codebert-base"
 DEFAULT_CODEBERTSCORE_MAX_LENGTH = 0
 DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE = 512
+FEATURE_UI_CHOICES = [
+    "Embedding",
+    "Levenshtein",
+    "Jaro-Winkler",
+    "Winnowing",
+    "GST",
+    "Code Metric",
+]
+DEFAULT_FEATURE_SELECTION = ["Embedding", "Levenshtein"]
 DEFAULT_UI_FEATURE_WEIGHTS = {
     "semantic": 0.7,
     "levenshtein": 0.3,
     "jaro_winkler": 0.1,
+    "winnowing": 0.1,
+    "gst": 0.1,
     "code_metric": 0.2,
 }
 
@@ -68,6 +79,10 @@ def build_feature_weights(
     levenshtein_weight,
     use_jaro_winkler,
     jaro_winkler_weight,
+    use_winnowing,
+    winnowing_weight,
+    use_gst,
+    gst_weight,
     code_metric,
     code_metric_weight,
 ):
@@ -83,6 +98,12 @@ def build_feature_weights(
     if use_jaro_winkler:
         weights["jaro_winkler"] = max(0.0, float(jaro_winkler_weight))
         fallback_names.append("jaro_winkler")
+    if use_winnowing:
+        weights["winnowing"] = max(0.0, float(winnowing_weight))
+        fallback_names.append("winnowing")
+    if use_gst:
+        weights["gst"] = max(0.0, float(gst_weight))
+        fallback_names.append("gst")
 
     if (code_metric or "none") != "none":
         weights["code_metric"] = max(0.0, float(code_metric_weight))
@@ -143,6 +164,16 @@ def parse_positive_values_text(raw_text, expected_count, label):
             raise gr.Error(f"{label} must contain positive values only.")
         values.append(value)
     return values
+
+
+def validate_positive_int_value(raw_value, label, minimum=1):
+    try:
+        value = int(float(raw_value))
+    except (TypeError, ValueError) as exc:
+        raise gr.Error(f"{label} must be an integer.") from exc
+    if value < int(minimum):
+        raise gr.Error(f"{label} must be at least {int(minimum)}.")
+    return value
 
 
 def format_weight_values(values):
@@ -278,6 +309,8 @@ def update_feature_sections(selected_features):
         gr.update(visible="Embedding" in selected),
         gr.update(visible="Levenshtein" in selected),
         gr.update(visible="Jaro-Winkler" in selected),
+        gr.update(visible="Winnowing" in selected),
+        gr.update(visible="GST" in selected),
         gr.update(visible="Code Metric" in selected),
     )
 
@@ -381,6 +414,11 @@ SUITE_COLUMNS = [
     "levenshtein_weights",
     "jaro_winkler_weight",
     "jaro_winkler_prefix_weight",
+    "winnowing_weight",
+    "winnowing_kgram",
+    "winnowing_window",
+    "gst_weight",
+    "gst_min_match_length",
     "threshold",
     "number_results",
 ]
@@ -416,6 +454,8 @@ def suite_rows_to_configs(rows):
             "semantic": max(0.0, float(row.get("semantic_weight") or 0)),
             "levenshtein": max(0.0, float(row.get("levenshtein_weight") or 0)),
             "jaro_winkler": max(0.0, float(row.get("jaro_winkler_weight") or 0)),
+            "winnowing": max(0.0, float(row.get("winnowing_weight") or 0)),
+            "gst": max(0.0, float(row.get("gst_weight") or 0)),
         }
         code_metric_weight = max(0.0, float(row.get("code_metric_weight") or 0))
         if code_metric != "none" and code_metric_weight > 0:
@@ -426,6 +466,23 @@ def suite_rows_to_configs(rows):
         if feature_weights.get("levenshtein", 0.0) > 0:
             effective_levenshtein_weights, _ = validate_levenshtein_weights_text(
                 row.get("levenshtein_weights") or "1,1,1"
+            )
+        effective_winnowing_kgram = 5
+        effective_winnowing_window = 4
+        if feature_weights.get("winnowing", 0.0) > 0:
+            effective_winnowing_kgram = validate_positive_int_value(
+                row.get("winnowing_kgram") or 5,
+                "Winnowing k-gram size",
+            )
+            effective_winnowing_window = validate_positive_int_value(
+                row.get("winnowing_window") or 4,
+                "Winnowing window size",
+            )
+        effective_gst_min_match_length = 5
+        if feature_weights.get("gst", 0.0) > 0:
+            effective_gst_min_match_length = validate_positive_int_value(
+                row.get("gst_min_match_length") or 5,
+                "GST minimum match length",
             )
 
         effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
@@ -480,6 +537,9 @@ def suite_rows_to_configs(rows):
             "jaro_winkler_prefix_weight": max(
                 0.0, min(0.25, float(row.get("jaro_winkler_prefix_weight") or 0.1))
             ),
+            "winnowing_kgram": effective_winnowing_kgram,
+            "winnowing_window": effective_winnowing_window,
+            "gst_min_match_length": effective_gst_min_match_length,
             "threshold": max(0.0, float(row.get("threshold") or 0.35)),
             "number_results": max(1, int(float(row.get("number_results") or 50))),
             "feature_weights": feature_weights,
@@ -548,6 +608,10 @@ def default_suite_run_name(
         parts.append("levenshtein")
     if "Jaro-Winkler" in selected:
         parts.append("jaro")
+    if "Winnowing" in selected:
+        parts.append("winnowing")
+    if "GST" in selected:
+        parts.append("gst")
     if "Code Metric" in selected:
         parts.append(str(code_metric or "code_metric").strip().lower() or "code_metric")
     if "Preprocessing" in selected_steps and str(preprocess_mode or "none").strip() not in ("", "none"):
@@ -597,8 +661,13 @@ def build_suite_run_row_data(
     semantic_weight,
     levenshtein_weight,
     jaro_winkler_weight,
+    winnowing_weight,
+    gst_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
+    winnowing_kgram,
+    winnowing_window,
+    gst_min_match_length,
     code_metric,
     code_metric_weight,
     code_language,
@@ -641,6 +710,23 @@ def build_suite_run_row_data(
     normalized_levenshtein_weights = "1,1,1"
     if "Levenshtein" in selected:
         _, normalized_levenshtein_weights = validate_levenshtein_weights_text(levenshtein_weights)
+    normalized_winnowing_kgram = 5
+    normalized_winnowing_window = 4
+    if "Winnowing" in selected:
+        normalized_winnowing_kgram = validate_positive_int_value(
+            winnowing_kgram,
+            "Winnowing k-gram size",
+        )
+        normalized_winnowing_window = validate_positive_int_value(
+            winnowing_window,
+            "Winnowing window size",
+        )
+    normalized_gst_min_match_length = 5
+    if "GST" in selected:
+        normalized_gst_min_match_length = validate_positive_int_value(
+            gst_min_match_length,
+            "GST minimum match length",
+        )
 
     normalized_codebleu_weights = "0.25,0.25,0.25,0.25"
     if normalized_code_metric.startswith("codebleu"):
@@ -673,6 +759,10 @@ def build_suite_run_row_data(
         levenshtein_weight,
         "Jaro-Winkler" in selected,
         jaro_winkler_weight,
+        "Winnowing" in selected,
+        winnowing_weight,
+        "GST" in selected,
+        gst_weight,
         normalized_code_metric,
         code_metric_weight,
     )
@@ -708,6 +798,11 @@ def build_suite_run_row_data(
         "levenshtein_weights": normalized_levenshtein_weights,
         "jaro_winkler_weight": feature_weights.get("jaro_winkler", 0.0),
         "jaro_winkler_prefix_weight": max(0.0, min(0.25, float(jaro_winkler_prefix_weight or 0.1))),
+        "winnowing_weight": feature_weights.get("winnowing", 0.0),
+        "winnowing_kgram": normalized_winnowing_kgram,
+        "winnowing_window": normalized_winnowing_window,
+        "gst_weight": feature_weights.get("gst", 0.0),
+        "gst_min_match_length": normalized_gst_min_match_length,
         "threshold": max(0.0, float(threshold or 0.35)),
         "number_results": max(1, int(float(number_results or 50))),
     }
@@ -726,8 +821,13 @@ def append_suite_run_gradio(
     semantic_weight,
     levenshtein_weight,
     jaro_winkler_weight,
+    winnowing_weight,
+    gst_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
+    winnowing_kgram,
+    winnowing_window,
+    gst_min_match_length,
     code_metric,
     code_metric_weight,
     code_language,
@@ -763,8 +863,13 @@ def append_suite_run_gradio(
         semantic_weight,
         levenshtein_weight,
         jaro_winkler_weight,
+        winnowing_weight,
+        gst_weight,
         levenshtein_weights,
         jaro_winkler_prefix_weight,
+        winnowing_kgram,
+        winnowing_window,
+        gst_min_match_length,
         code_metric,
         code_metric_weight,
         code_language,
@@ -832,7 +937,7 @@ def reset_suite_runs():
         profile_status_html("Run list cleared."),
         preview_suite_run_name(
             rows,
-            ["Embedding", "Levenshtein"],
+            DEFAULT_FEATURE_SELECTION,
             [],
             DEFAULT_MODEL,
             "auto",
@@ -882,8 +987,13 @@ def run_suite_gradio(
     semantic_weight,
     levenshtein_weight,
     jaro_winkler_weight,
+    winnowing_weight,
+    gst_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
+    winnowing_kgram,
+    winnowing_window,
+    gst_min_match_length,
     code_metric,
     code_metric_weight,
     code_language,
@@ -937,8 +1047,13 @@ def run_suite_gradio(
             semantic_weight,
             levenshtein_weight,
             jaro_winkler_weight,
+            winnowing_weight,
+            gst_weight,
             levenshtein_weights,
             jaro_winkler_prefix_weight,
+            winnowing_kgram,
+            winnowing_window,
+            gst_min_match_length,
             code_metric,
             code_metric_weight,
             code_language,
@@ -1048,8 +1163,13 @@ def calculate_similarity_gradio(
     semantic_weight,
     levenshtein_weight,
     jaro_winkler_weight,
+    winnowing_weight,
+    gst_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
+    winnowing_kgram,
+    winnowing_window,
+    gst_min_match_length,
     code_metric,
     code_metric_weight,
     code_language,
@@ -1076,6 +1196,8 @@ def calculate_similarity_gradio(
     use_semantic = "Embedding" in selected
     use_levenshtein = "Levenshtein" in selected
     use_jaro_winkler = "Jaro-Winkler" in selected
+    use_winnowing = "Winnowing" in selected
+    use_gst = "GST" in selected
     use_code_metric = "Code Metric" in selected
     effective_preprocess_mode = preprocess_mode if "Preprocessing" in selected_steps else "none"
     effective_chunking_method = chunking_method if "Chunking" in selected_steps else "none"
@@ -1084,6 +1206,23 @@ def calculate_similarity_gradio(
     effective_levenshtein_weights = "1,1,1"
     if use_levenshtein:
         effective_levenshtein_weights, _ = validate_levenshtein_weights_text(levenshtein_weights)
+    effective_winnowing_kgram = 5
+    effective_winnowing_window = 4
+    if use_winnowing:
+        effective_winnowing_kgram = validate_positive_int_value(
+            winnowing_kgram,
+            "Winnowing k-gram size",
+        )
+        effective_winnowing_window = validate_positive_int_value(
+            winnowing_window,
+            "Winnowing window size",
+        )
+    effective_gst_min_match_length = 5
+    if use_gst:
+        effective_gst_min_match_length = validate_positive_int_value(
+            gst_min_match_length,
+            "GST minimum match length",
+        )
 
     effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
     if effective_code_metric.startswith("codebleu"):
@@ -1106,6 +1245,10 @@ def calculate_similarity_gradio(
         levenshtein_weight,
         use_jaro_winkler,
         jaro_winkler_weight,
+        use_winnowing,
+        winnowing_weight,
+        use_gst,
+        gst_weight,
         effective_code_metric,
         effective_code_metric_weight,
     )
@@ -1130,6 +1273,9 @@ def calculate_similarity_gradio(
         crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
         levenshtein_weights=effective_levenshtein_weights,
         jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+        winnowing_kgram=effective_winnowing_kgram,
+        winnowing_window=effective_winnowing_window,
+        gst_min_match_length=effective_gst_min_match_length,
         vector_backend=vector_backend,
         similarity_function=similarity_function,
         pooling_method=pooling_method,
@@ -1157,8 +1303,13 @@ def get_sim_list_gradio(
     semantic_weight,
     levenshtein_weight,
     jaro_winkler_weight,
+    winnowing_weight,
+    gst_weight,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
+    winnowing_kgram,
+    winnowing_window,
+    gst_min_match_length,
     code_metric,
     code_metric_weight,
     code_language,
@@ -1190,6 +1341,8 @@ def get_sim_list_gradio(
     use_semantic = "Embedding" in selected
     use_levenshtein = "Levenshtein" in selected
     use_jaro_winkler = "Jaro-Winkler" in selected
+    use_winnowing = "Winnowing" in selected
+    use_gst = "GST" in selected
     use_code_metric = "Code Metric" in selected
     effective_preprocess_mode = preprocess_mode if "Preprocessing" in selected_steps else "none"
     effective_chunking_method = chunking_method if "Chunking" in selected_steps else "none"
@@ -1198,6 +1351,23 @@ def get_sim_list_gradio(
     effective_levenshtein_weights = "1,1,1"
     if use_levenshtein:
         effective_levenshtein_weights, _ = validate_levenshtein_weights_text(levenshtein_weights)
+    effective_winnowing_kgram = 5
+    effective_winnowing_window = 4
+    if use_winnowing:
+        effective_winnowing_kgram = validate_positive_int_value(
+            winnowing_kgram,
+            "Winnowing k-gram size",
+        )
+        effective_winnowing_window = validate_positive_int_value(
+            winnowing_window,
+            "Winnowing window size",
+        )
+    effective_gst_min_match_length = 5
+    if use_gst:
+        effective_gst_min_match_length = validate_positive_int_value(
+            gst_min_match_length,
+            "GST minimum match length",
+        )
 
     effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
     if effective_code_metric.startswith("codebleu"):
@@ -1220,6 +1390,10 @@ def get_sim_list_gradio(
         levenshtein_weight,
         use_jaro_winkler,
         jaro_winkler_weight,
+        use_winnowing,
+        winnowing_weight,
+        use_gst,
+        gst_weight,
         effective_code_metric,
         effective_code_metric_weight,
     )
@@ -1245,6 +1419,9 @@ def get_sim_list_gradio(
         crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
         levenshtein_weights=effective_levenshtein_weights,
         jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+        winnowing_kgram=effective_winnowing_kgram,
+        winnowing_window=effective_winnowing_window,
+        gst_min_match_length=effective_gst_min_match_length,
         vector_backend=vector_backend,
         similarity_function=similarity_function,
         pooling_method=pooling_method,
@@ -1271,7 +1448,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
         with gr.Tab("Pairwise Comparison"):
             with gr.Row():
                 with gr.Column(scale=8):
-                    gr.Markdown("1. Select the metrics you want. 2. Add preprocessing or chunking if needed. 3. Click Run.")
+                    gr.Markdown("1. Select the metrics and baselines you want. 2. Add preprocessing or chunking if needed. 3. Click Run.")
                     with gr.Row():
                         pair_code1 = gr.Textbox(
                             label="Code A",
@@ -1289,9 +1466,9 @@ with gr.Blocks(title="Matheel Framework") as demo:
                 with gr.Column(scale=5):
                     with gr.Accordion("Features", open=True):
                         pair_features = gr.CheckboxGroup(
-                            choices=["Embedding", "Levenshtein", "Jaro-Winkler", "Code Metric"],
-                            value=["Embedding", "Levenshtein"],
-                            label="Metrics",
+                            choices=FEATURE_UI_CHOICES,
+                            value=DEFAULT_FEATURE_SELECTION,
+                            label="Metrics and Baselines",
                         )
                         with gr.Group(visible=True) as pair_embedding_group:
                             pair_model = HuggingfaceHubSearch(
@@ -1353,6 +1530,31 @@ with gr.Blocks(title="Matheel Framework") as demo:
                             )
                             pair_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
+                            )
+                        with gr.Group(visible=False) as pair_winnowing_group:
+                            pair_winnowing_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["winnowing"],
+                                label="Winnowing Baseline Weight",
+                                step=0.05,
+                            )
+                            pair_winnowing_kgram = gr.Slider(
+                                1, 32, value=5, label="k-gram Size", step=1
+                            )
+                            pair_winnowing_window = gr.Slider(
+                                1, 32, value=4, label="Window Size", step=1
+                            )
+                        with gr.Group(visible=False) as pair_gst_group:
+                            pair_gst_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["gst"],
+                                label="GST Baseline Weight",
+                                step=0.05,
+                            )
+                            pair_gst_min_match_length = gr.Slider(
+                                1, 32, value=5, label="Min Match Length", step=1
                             )
                         with gr.Group(visible=False) as pair_code_group:
                             pair_code_metric = gr.Dropdown(
@@ -1460,6 +1662,8 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     pair_embedding_group,
                     pair_levenshtein_group,
                     pair_jaro_group,
+                    pair_winnowing_group,
+                    pair_gst_group,
                     pair_code_group,
                 ],
             )
@@ -1500,8 +1704,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     pair_semantic_weight,
                     pair_levenshtein_weight,
                     pair_jaro_winkler_weight,
+                    pair_winnowing_weight,
+                    pair_gst_weight,
                     pair_levenshtein_weights,
                     pair_jaro_prefix_weight,
+                    pair_winnowing_kgram,
+                    pair_winnowing_window,
+                    pair_gst_min_match_length,
                     pair_code_metric,
                     pair_code_metric_weight,
                     pair_code_language,
@@ -1553,7 +1762,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
         with gr.Tab("Collection Comparison"):
             with gr.Row():
                 with gr.Column(scale=8):
-                    gr.Markdown("1. Upload one ZIP file. 2. Select the metrics and preparation steps. 3. Click Run.")
+                    gr.Markdown("1. Upload one ZIP file. 2. Select the metrics and baselines you want. 3. Click Run.")
                     collection_file = gr.File(label="Code Collection (.zip)", file_types=[".zip"])
                     collection_run = gr.Button("Run", variant="primary")
                     collection_summary = gr.HTML(value=empty_summary_html())
@@ -1566,9 +1775,9 @@ with gr.Blocks(title="Matheel Framework") as demo:
                 with gr.Column(scale=5):
                     with gr.Accordion("Features", open=True):
                         collection_features = gr.CheckboxGroup(
-                            choices=["Embedding", "Levenshtein", "Jaro-Winkler", "Code Metric"],
-                            value=["Embedding", "Levenshtein"],
-                            label="Metrics",
+                            choices=FEATURE_UI_CHOICES,
+                            value=DEFAULT_FEATURE_SELECTION,
+                            label="Metrics and Baselines",
                         )
                         with gr.Group(visible=True) as collection_embedding_group:
                             collection_model = HuggingfaceHubSearch(
@@ -1632,6 +1841,31 @@ with gr.Blocks(title="Matheel Framework") as demo:
                             )
                             collection_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
+                            )
+                        with gr.Group(visible=False) as collection_winnowing_group:
+                            collection_winnowing_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["winnowing"],
+                                label="Winnowing Baseline Weight",
+                                step=0.05,
+                            )
+                            collection_winnowing_kgram = gr.Slider(
+                                1, 32, value=5, label="k-gram Size", step=1
+                            )
+                            collection_winnowing_window = gr.Slider(
+                                1, 32, value=4, label="Window Size", step=1
+                            )
+                        with gr.Group(visible=False) as collection_gst_group:
+                            collection_gst_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["gst"],
+                                label="GST Baseline Weight",
+                                step=0.05,
+                            )
+                            collection_gst_min_match_length = gr.Slider(
+                                1, 32, value=5, label="Min Match Length", step=1
                             )
                         with gr.Group(visible=False) as collection_code_group:
                             collection_code_metric = gr.Dropdown(
@@ -1751,6 +1985,8 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     collection_embedding_group,
                     collection_levenshtein_group,
                     collection_jaro_group,
+                    collection_winnowing_group,
+                    collection_gst_group,
                     collection_code_group,
                 ],
             )
@@ -1790,8 +2026,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     collection_semantic_weight,
                     collection_levenshtein_weight,
                     collection_jaro_winkler_weight,
+                    collection_winnowing_weight,
+                    collection_gst_weight,
                     collection_levenshtein_weights,
                     collection_jaro_prefix_weight,
+                    collection_winnowing_kgram,
+                    collection_winnowing_window,
+                    collection_gst_min_match_length,
                     collection_code_metric,
                     collection_code_metric_weight,
                     collection_code_language,
@@ -1848,7 +2089,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
 
             with gr.Row():
                 with gr.Column(scale=8):
-                    gr.Markdown("1. Set the current configuration. 2. Save Run to append it. 3. Repeat if needed. 4. Run the suite.")
+                    gr.Markdown("1. Set the current metrics and baselines. 2. Save Run to append it. 3. Repeat if needed. 4. Run the suite.")
                     suite_file = gr.File(label="Code Collection (.zip)", file_types=[".zip"])
                     suite_summary = gr.HTML(value=empty_suite_summary_html())
                     suite_output = gr.Dataframe(
@@ -1871,9 +2112,9 @@ with gr.Blocks(title="Matheel Framework") as demo:
                 with gr.Column(scale=5):
                     with gr.Accordion("Features", open=True):
                         suite_features = gr.CheckboxGroup(
-                            choices=["Embedding", "Levenshtein", "Jaro-Winkler", "Code Metric"],
-                            value=["Embedding", "Levenshtein"],
-                            label="Metrics",
+                            choices=FEATURE_UI_CHOICES,
+                            value=DEFAULT_FEATURE_SELECTION,
+                            label="Metrics and Baselines",
                         )
                         with gr.Group(visible=True) as suite_embedding_group:
                             suite_model = HuggingfaceHubSearch(
@@ -1937,6 +2178,31 @@ with gr.Blocks(title="Matheel Framework") as demo:
                             )
                             suite_jaro_prefix_weight = gr.Slider(
                                 0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
+                            )
+                        with gr.Group(visible=False) as suite_winnowing_group:
+                            suite_winnowing_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["winnowing"],
+                                label="Winnowing Baseline Weight",
+                                step=0.05,
+                            )
+                            suite_winnowing_kgram = gr.Slider(
+                                1, 32, value=5, label="k-gram Size", step=1
+                            )
+                            suite_winnowing_window = gr.Slider(
+                                1, 32, value=4, label="Window Size", step=1
+                            )
+                        with gr.Group(visible=False) as suite_gst_group:
+                            suite_gst_weight = gr.Slider(
+                                0,
+                                1,
+                                value=DEFAULT_UI_FEATURE_WEIGHTS["gst"],
+                                label="GST Baseline Weight",
+                                step=0.05,
+                            )
+                            suite_gst_min_match_length = gr.Slider(
+                                1, 32, value=5, label="Min Match Length", step=1
                             )
                         with gr.Group(visible=False) as suite_code_group:
                             suite_code_metric = gr.Dropdown(
@@ -2041,7 +2307,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                         suite_run_name_input = gr.Textbox(
                             value=preview_suite_run_name(
                                 empty_suite_rows(),
-                                ["Embedding", "Levenshtein"],
+                                DEFAULT_FEATURE_SELECTION,
                                 [],
                                 DEFAULT_MODEL,
                                 "auto",
@@ -2084,6 +2350,8 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_embedding_group,
                     suite_levenshtein_group,
                     suite_jaro_group,
+                    suite_winnowing_group,
+                    suite_gst_group,
                     suite_code_group,
                 ],
             )
@@ -2123,8 +2391,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_semantic_weight,
                     suite_levenshtein_weight,
                     suite_jaro_winkler_weight,
+                    suite_winnowing_weight,
+                    suite_gst_weight,
                     suite_levenshtein_weights,
                     suite_jaro_prefix_weight,
+                    suite_winnowing_kgram,
+                    suite_winnowing_window,
+                    suite_gst_min_match_length,
                     suite_code_metric,
                     suite_code_metric_weight,
                     suite_code_language,
@@ -2170,8 +2443,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_semantic_weight,
                     suite_levenshtein_weight,
                     suite_jaro_winkler_weight,
+                    suite_winnowing_weight,
+                    suite_gst_weight,
                     suite_levenshtein_weights,
                     suite_jaro_prefix_weight,
+                    suite_winnowing_kgram,
+                    suite_winnowing_window,
+                    suite_gst_min_match_length,
                     suite_code_metric,
                     suite_code_metric_weight,
                     suite_code_language,

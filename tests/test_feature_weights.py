@@ -1,4 +1,9 @@
-from matheel.feature_weights import default_feature_weights, normalize_feature_weights, resolve_feature_weights
+from matheel.feature_weights import (
+    available_default_features,
+    default_feature_weights,
+    normalize_feature_weights,
+    resolve_feature_weights,
+)
 
 
 def test_normalize_feature_weights_scales_to_one():
@@ -17,3 +22,14 @@ def test_resolve_feature_weights_uses_defaults_without_legacy_weights():
     resolved = resolve_feature_weights(feature_weights=None)
 
     assert resolved == default_feature_weights()
+
+
+def test_available_default_features_includes_new_lexical_baselines():
+    assert available_default_features() == (
+        "semantic",
+        "levenshtein",
+        "jaro_winkler",
+        "winnowing",
+        "gst",
+        "code_metric",
+    )

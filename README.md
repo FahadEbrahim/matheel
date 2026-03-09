@@ -73,6 +73,8 @@ Similarity features:
 - `semantic`
 - `levenshtein`
 - `jaro_winkler`
+- `winnowing`
+- `gst`
 - `code_metric`
 
 Code metrics:
@@ -124,7 +126,7 @@ Sentence Transformers pooling methods:
 - Preprocessing: whitespace and comment normalization before any scoring.
 - Chunking: Chonkie-backed document splitting with per-method options.
 - Vectors: dense single-vector, learned static single-vector, and multivector late interaction.
-- Edit distance: normalized Levenshtein and Jaro-Winkler lexical metrics.
+- Lexical metrics and baselines: normalized Levenshtein, Jaro-Winkler, Winnowing, and Greedy String Tiling.
 - Code metrics: built-in CodeBLEU-style metrics and CrystalBLEU.
 - Comparison suite: run multiple configurations, rank them, and optionally write summary/detail artifacts.
 
@@ -205,7 +207,9 @@ results = get_sim_list(
     feature_weights={
         "semantic": 0.7,
         "levenshtein": 0.15,
-        "jaro_winkler": 0.15,
+        "jaro_winkler": 0.05,
+        "winnowing": 0.05,
+        "gst": 0.05,
     },
 )
 ```
@@ -245,7 +249,7 @@ The `docs/` folder is already structured well for a later GitHub Pages setup if 
 
 ## Gradio
 
-The Gradio demo stays in `gradio_app/` and is aligned with the Hugging Face Space setup. The UI supports CodeBLEU, CrystalBLEU, RUBY, TSED, and CodeBERTScore, with metric-specific advanced fields. The core package and CLI can read either a ZIP archive or a directory; the Gradio upload flow remains ZIP-based.
+The Gradio demo stays in `gradio_app/` and is aligned with the Hugging Face Space setup. The UI supports embeddings, lexical metrics, baseline algorithms (Winnowing and GST), and the code-aware metrics (CodeBLEU, CrystalBLEU, RUBY, TSED, CodeBERTScore), with metric-specific advanced fields. The core package and CLI can read either a ZIP archive or a directory; the Gradio upload flow remains ZIP-based.
 
 ## License
 

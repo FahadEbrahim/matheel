@@ -132,6 +132,9 @@ def main():
 @click.option('--codebertscore-verbose/--no-codebertscore-verbose', default=False, show_default=True, help='Verbose CodeBERTScore output.')
 @click.option('--levenshtein-weights', default='1,1,1', show_default=True, help='Comma-separated insert,delete,substitute costs for Levenshtein.')
 @click.option('--jaro-winkler-prefix-weight', default=0.1, show_default=True, help='Prefix bonus weight for Jaro-Winkler (0.0 to 0.25).')
+@click.option('--winnowing-kgram', default=5, show_default=True, help='Token k-gram size used by Winnowing.')
+@click.option('--winnowing-window', default=4, show_default=True, help='Window size used by Winnowing fingerprint selection.')
+@click.option('--gst-min-match-length', default=5, show_default=True, help='Minimum token tile length used by Greedy String Tiling.')
 @click.option(
     '--vector-backend',
     type=click.Choice(available_vector_backends()),
@@ -212,6 +215,9 @@ def compare(
     codebertscore_verbose,
     levenshtein_weights,
     jaro_winkler_prefix_weight,
+    winnowing_kgram,
+    winnowing_window,
+    gst_min_match_length,
     vector_backend,
     similarity_function,
     static_vector_dim,
@@ -272,6 +278,9 @@ def compare(
         codebertscore_verbose=codebertscore_verbose,
         levenshtein_weights=levenshtein_weights,
         jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+        winnowing_kgram=winnowing_kgram,
+        winnowing_window=winnowing_window,
+        gst_min_match_length=gst_min_match_length,
         vector_backend=vector_backend,
         similarity_function=similarity_function,
         static_vector_dim=static_vector_dim,

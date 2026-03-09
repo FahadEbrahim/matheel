@@ -1,3 +1,4 @@
+import hashlib
 import os
 import zipfile
 from itertools import combinations
@@ -13,6 +14,7 @@ from .code_metrics import (
     prepare_ruby_context,
     prepare_tsed_context,
     score_code_metric_pair,
+    tokenize_for_code_metrics,
 )
 from .feature_weights import combine_weighted_scores, resolve_feature_weights
 from .model_routing import (
@@ -277,6 +279,29 @@ def validate_edit_distance_options(levenshtein_weights=None, jaro_winkler_prefix
     return parsed_levenshtein_weights, prefix_weight
 
 
+def validate_lexical_baseline_options(
+    winnowing_kgram=5,
+    winnowing_window=4,
+    gst_min_match_length=5,
+):
+    parsed_winnowing_kgram = int(float(winnowing_kgram or 0))
+    parsed_winnowing_window = int(float(winnowing_window or 0))
+    parsed_gst_min_match_length = int(float(gst_min_match_length or 0))
+
+    if parsed_winnowing_kgram < 1:
+        raise ValueError("winnowing_kgram must be at least 1.")
+    if parsed_winnowing_window < 1:
+        raise ValueError("winnowing_window must be at least 1.")
+    if parsed_gst_min_match_length < 1:
+        raise ValueError("gst_min_match_length must be at least 1.")
+
+    return (
+        parsed_winnowing_kgram,
+        parsed_winnowing_window,
+        parsed_gst_min_match_length,
+    )
+
+
 def validate_vector_options(vector_backend, static_vector_dim, model_name=None, model_info=None):
     backend = resolve_vector_backend(
         vector_backend,
@@ -326,6 +351,144 @@ def prepare_code(code, preprocess_mode="none"):
 
 def _should_use_chunking(chunking_method):
     return (chunking_method or "none").strip().lower() != "none"
+
+
+def _stable_token_hash(tokens):
+    payload = "\x1f".join(tokens).encode("utf-8", errors="ignore")
+    return int.from_bytes(hashlib.blake2b(payload, digest_size=8).digest(), "big")
+
+
+def _tokenize_for_lexical_matching(code):
+    return tokenize_for_code_metrics(code)
+
+
+def _winnowing_fingerprints(tokens, kgram_size=5, window_size=4):
+    if not tokens:
+        return set()
+
+    effective_kgram_size = min(max(1, int(kgram_size)), len(tokens))
+    hashes = [
+        _stable_token_hash(tokens[index : index + effective_kgram_size])
+        for index in range(len(tokens) - effective_kgram_size + 1)
+    ]
+    if not hashes:
+        return set()
+
+    effective_window_size = min(max(1, int(window_size)), len(hashes))
+    selected = {}
+    for start in range(len(hashes) - effective_window_size + 1):
+        current_window = hashes[start : start + effective_window_size]
+        minimum_hash = min(current_window)
+        relative_index = max(
+            offset for offset, value in enumerate(current_window) if value == minimum_hash
+        )
+        absolute_index = start + relative_index
+        selected[absolute_index] = minimum_hash
+    if not selected:
+        selected[0] = min(hashes)
+    return set(selected.values())
+
+
+def winnowing_similarity_from_tokens(tokens1, tokens2, kgram_size=5, window_size=4):
+    if not tokens1 and not tokens2:
+        return 1.0
+    if not tokens1 or not tokens2:
+        return 0.0
+
+    fingerprints1 = _winnowing_fingerprints(
+        tokens1,
+        kgram_size=kgram_size,
+        window_size=window_size,
+    )
+    fingerprints2 = _winnowing_fingerprints(
+        tokens2,
+        kgram_size=kgram_size,
+        window_size=window_size,
+    )
+    union = fingerprints1 | fingerprints2
+    if not union:
+        return 1.0
+    return len(fingerprints1 & fingerprints2) / float(len(union))
+
+
+def _ranges_overlap(start1, length1, start2, length2):
+    end1 = start1 + length1
+    end2 = start2 + length2
+    return start1 < end2 and start2 < end1
+
+
+def gst_similarity_from_tokens(tokens1, tokens2, min_match_length=5):
+    if not tokens1 and not tokens2:
+        return 1.0
+    if not tokens1 or not tokens2:
+        return 0.0
+
+    effective_min_match_length = min(
+        max(1, int(min_match_length)),
+        min(len(tokens1), len(tokens2)),
+    )
+    marked1 = [False] * len(tokens1)
+    marked2 = [False] * len(tokens2)
+    covered_tokens = 0
+
+    # Repeatedly extract the longest non-overlapping matching tiles, then score
+    # the proportion of both token streams that the tiles cover.
+    while True:
+        best_length = effective_min_match_length - 1
+        matches = []
+        positions_by_token = {}
+        for index, token in enumerate(tokens2):
+            if not marked2[index]:
+                positions_by_token.setdefault(token, []).append(index)
+
+        for index1, token in enumerate(tokens1):
+            if marked1[index1]:
+                continue
+            for index2 in positions_by_token.get(token, ()):
+                if marked2[index2]:
+                    continue
+
+                length = 0
+                while index1 + length < len(tokens1) and index2 + length < len(tokens2):
+                    if marked1[index1 + length] or marked2[index2 + length]:
+                        break
+                    if tokens1[index1 + length] != tokens2[index2 + length]:
+                        break
+                    length += 1
+
+                if length < effective_min_match_length:
+                    continue
+                if length > best_length:
+                    best_length = length
+                    matches = [(index1, index2, length)]
+                elif length == best_length:
+                    matches.append((index1, index2, length))
+
+        if best_length < effective_min_match_length or not matches:
+            break
+
+        accepted_matches = []
+        for index1, index2, length in sorted(matches, key=lambda item: (-item[2], item[0], item[1])):
+            if any(marked1[index1 + offset] or marked2[index2 + offset] for offset in range(length)):
+                continue
+            if any(
+                _ranges_overlap(index1, length, existing1, existing_length)
+                or _ranges_overlap(index2, length, existing2, existing_length)
+                for existing1, existing2, existing_length in accepted_matches
+            ):
+                continue
+            accepted_matches.append((index1, index2, length))
+
+        if not accepted_matches:
+            break
+
+        for index1, index2, length in accepted_matches:
+            for offset in range(length):
+                marked1[index1 + offset] = True
+                marked2[index2 + offset] = True
+            covered_tokens += length
+
+    return (2.0 * covered_tokens) / float(len(tokens1) + len(tokens2))
 
 
 def build_document_embeddings(
@@ -403,20 +566,69 @@ def build_feature_scores(
     similarity_function="cosine",
     levenshtein_weights=(1, 1, 1),
     jaro_winkler_prefix_weight=0.1,
+    winnowing_kgram=5,
+    winnowing_window=4,
+    gst_min_match_length=5,
+    active_features=None,
 ):
+    requested_features = None
+    if active_features is not None:
+        requested_features = {str(name) for name in active_features}
+
+    use_all_features = requested_features is None
+    needs_token_features = use_all_features or "winnowing" in requested_features or "gst" in requested_features
+    lexical_tokens1 = None
+    lexical_tokens2 = None
+    if needs_token_features:
+        lexical_tokens1 = _tokenize_for_lexical_matching(code1)
+        lexical_tokens2 = _tokenize_for_lexical_matching(code2)
+
     feature_scores = {
-        "semantic": semantic_similarity(
-            embedding1,
-            embedding2,
-            vector_backend=vector_backend,
-            multivector_bidirectional=multivector_bidirectional,
-            similarity_function=similarity_function,
+        "semantic": (
+            semantic_similarity(
+                embedding1,
+                embedding2,
+                vector_backend=vector_backend,
+                multivector_bidirectional=multivector_bidirectional,
+                similarity_function=similarity_function,
+            )
+            if (use_all_features or "semantic" in requested_features)
+            and embedding1 is not None
+            and embedding2 is not None
+            else 0.0
         ),
-        "levenshtein": Levenshtein.normalized_similarity(code1, code2, weights=levenshtein_weights),
-        "jaro_winkler": JaroWinkler.normalized_similarity(
-            code1,
-            code2,
-            prefix_weight=jaro_winkler_prefix_weight,
+        "levenshtein": (
+            Levenshtein.normalized_similarity(code1, code2, weights=levenshtein_weights)
+            if use_all_features or "levenshtein" in requested_features
+            else 0.0
+        ),
+        "jaro_winkler": (
+            JaroWinkler.normalized_similarity(
+                code1,
+                code2,
+                prefix_weight=jaro_winkler_prefix_weight,
+            )
+            if use_all_features or "jaro_winkler" in requested_features
+            else 0.0
+        ),
+        "winnowing": (
+            winnowing_similarity_from_tokens(
+                lexical_tokens1,
+                lexical_tokens2,
+                kgram_size=winnowing_kgram,
+                window_size=winnowing_window,
+            )
+            if use_all_features or "winnowing" in requested_features
+            else 0.0
+        ),
+        "gst": (
+            gst_similarity_from_tokens(
+                lexical_tokens1,
+                lexical_tokens2,
+                min_match_length=gst_min_match_length,
+            )
+            if use_all_features or "gst" in requested_features
+            else 0.0
         ),
         "code_metric": float(code_metric_score),
     }
@@ -438,7 +650,13 @@ def combined_similarity_from_embeddings(
     similarity_function="cosine",
     levenshtein_weights=(1, 1, 1),
     jaro_winkler_prefix_weight=0.1,
+    winnowing_kgram=5,
+    winnowing_window=4,
+    gst_min_match_length=5,
 ):
+    active_features = {
+        name for name, value in (feature_weights or {}).items() if float(value) > 0.0
+    }
     feature_scores = build_feature_scores(
         code1,
         code2,
@@ -451,6 +669,10 @@ def combined_similarity_from_embeddings(
         similarity_function=similarity_function,
         levenshtein_weights=levenshtein_weights,
         jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+        winnowing_kgram=winnowing_kgram,
+        winnowing_window=winnowing_window,
+        gst_min_match_length=gst_min_match_length,
+        active_features=active_features,
     )
     return combine_weighted_scores(feature_scores, feature_weights)
 
@@ -530,6 +752,9 @@ def rank_code_pairs(
     similarity_function="cosine",
     levenshtein_weights=(1, 1, 1),
     jaro_winkler_prefix_weight=0.1,
+    winnowing_kgram=5,
+    winnowing_window=4,
+    gst_min_match_length=5,
 ):
     results = []
     code_metric_name = (code_metric or "none").strip().lower()
@@ -594,6 +819,9 @@ def rank_code_pairs(
             similarity_function=similarity_function,
             levenshtein_weights=levenshtein_weights,
             jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+            winnowing_kgram=winnowing_kgram,
+            winnowing_window=winnowing_window,
+            gst_min_match_length=gst_min_match_length,
         )
         results.append((score, i, j))
     return sorted(results, reverse=True)
@@ -658,6 +886,9 @@ def get_sim_list(
     max_token_length=None,
     levenshtein_weights=None,
     jaro_winkler_prefix_weight=0.1,
+    winnowing_kgram=5,
+    winnowing_window=4,
+    gst_min_match_length=5,
 ):
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
@@ -667,8 +898,18 @@ def get_sim_list(
         levenshtein_weights,
         jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
     )
+    winnowing_kgram, winnowing_window, gst_min_match_length = validate_lexical_baseline_options(
+        winnowing_kgram=winnowing_kgram,
+        winnowing_window=winnowing_window,
+        gst_min_match_length=gst_min_match_length,
+    )
     model_info = None
-    if (vector_backend or "auto").strip().lower() in ("", "auto"):
+    resolved_feature_weights = resolve_feature_weights(
+        feature_weights=feature_weights,
+        code_metric_weight=code_metric_weight,
+    )
+    use_semantic = resolved_feature_weights.get("semantic", 0.0) > 0.0
+    if use_semantic and (vector_backend or "auto").strip().lower() in ("", "auto"):
         model_info = load_hf_model_info(model_name or DEFAULT_MODEL_NAME)
     vector_backend, static_vector_dim = validate_vector_options(
         vector_backend,
@@ -678,35 +919,34 @@ def get_sim_list(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
-    resolved_feature_weights = resolve_feature_weights(
-        feature_weights=feature_weights,
-        code_metric_weight=code_metric_weight,
-    )
     file_names, raw_codes = extract_and_read_source(zipped_file)
     codes = [prepare_code(code, preprocess_mode=preprocess_mode) for code in raw_codes]
-    model = load_backend_model(
-        model_name,
-        vector_backend=vector_backend,
-        device=device,
-        similarity_function=selected_similarity,
-        pooling_method=selected_pooling,
-        max_token_length=max_token_length,
-    )
-    embeddings = build_document_embeddings(
-        model,
-        codes,
-        chunking_method=chunking_method,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        max_chunks=max_chunks,
-        chunk_aggregation=chunk_aggregation,
-        chunk_language=chunk_language,
-        chunker_options=chunker_options,
-        vector_backend=vector_backend,
-        static_vector_dim=static_vector_dim,
-        static_vector_lowercase=static_vector_lowercase,
-        pooling_method=selected_pooling,
-    )
+    if use_semantic:
+        model = load_backend_model(
+            model_name,
+            vector_backend=vector_backend,
+            device=device,
+            similarity_function=selected_similarity,
+            pooling_method=selected_pooling,
+            max_token_length=max_token_length,
+        )
+        embeddings = build_document_embeddings(
+            model,
+            codes,
+            chunking_method=chunking_method,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            max_chunks=max_chunks,
+            chunk_aggregation=chunk_aggregation,
+            chunk_language=chunk_language,
+            chunker_options=chunker_options,
+            vector_backend=vector_backend,
+            static_vector_dim=static_vector_dim,
+            static_vector_lowercase=static_vector_lowercase,
+            pooling_method=selected_pooling,
+        )
+    else:
+        embeddings = [None] * len(codes)
     code_metric_name = (code_metric or "none").strip().lower()
     use_code_metric = code_metric_name not in ("none", "") and resolved_feature_weights.get("code_metric", 0.0) > 0.0
     crystalbleu_context = None
@@ -783,6 +1023,9 @@ def get_sim_list(
         similarity_function=selected_similarity,
         levenshtein_weights=levenshtein_weights,
         jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+        winnowing_kgram=winnowing_kgram,
+        winnowing_window=winnowing_window,
+        gst_min_match_length=gst_min_match_length,
     )
 
     pairs_results = [
@@ -857,6 +1100,9 @@ def calculate_similarity(
     max_token_length=None,
     levenshtein_weights=None,
     jaro_winkler_prefix_weight=0.1,
+    winnowing_kgram=5,
+    winnowing_window=4,
+    gst_min_match_length=5,
 ):
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
@@ -866,8 +1112,18 @@ def calculate_similarity(
         levenshtein_weights,
         jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
     )
+    winnowing_kgram, winnowing_window, gst_min_match_length = validate_lexical_baseline_options(
+        winnowing_kgram=winnowing_kgram,
+        winnowing_window=winnowing_window,
+        gst_min_match_length=gst_min_match_length,
+    )
     model_info = None
-    if (vector_backend or "auto").strip().lower() in ("", "auto"):
+    resolved_feature_weights = resolve_feature_weights(
+        feature_weights=feature_weights,
+        code_metric_weight=code_metric_weight,
+    )
+    use_semantic = resolved_feature_weights.get("semantic", 0.0) > 0.0
+    if use_semantic and (vector_backend or "auto").strip().lower() in ("", "auto"):
         model_info = load_hf_model_info(model_name or DEFAULT_MODEL_NAME)
     vector_backend, static_vector_dim = validate_vector_options(
         vector_backend,
@@ -877,35 +1133,34 @@ def calculate_similarity(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
-    resolved_feature_weights = resolve_feature_weights(
-        feature_weights=feature_weights,
-        code_metric_weight=code_metric_weight,
-    )
     prepared_code1 = prepare_code(code1, preprocess_mode=preprocess_mode)
     prepared_code2 = prepare_code(code2, preprocess_mode=preprocess_mode)
-    model = load_backend_model(
-        model_name,
-        vector_backend=vector_backend,
-        device=device,
-        similarity_function=selected_similarity,
-        pooling_method=selected_pooling,
-        max_token_length=max_token_length,
-    )
-    embeddings = build_document_embeddings(
-        model,
-        [prepared_code1, prepared_code2],
-        chunking_method=chunking_method,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        max_chunks=max_chunks,
-        chunk_aggregation=chunk_aggregation,
-        chunk_language=chunk_language,
-        chunker_options=chunker_options,
-        vector_backend=vector_backend,
-        static_vector_dim=static_vector_dim,
-        static_vector_lowercase=static_vector_lowercase,
-        pooling_method=selected_pooling,
-    )
+    if use_semantic:
+        model = load_backend_model(
+            model_name,
+            vector_backend=vector_backend,
+            device=device,
+            similarity_function=selected_similarity,
+            pooling_method=selected_pooling,
+            max_token_length=max_token_length,
+        )
+        embeddings = build_document_embeddings(
+            model,
+            [prepared_code1, prepared_code2],
+            chunking_method=chunking_method,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            max_chunks=max_chunks,
+            chunk_aggregation=chunk_aggregation,
+            chunk_language=chunk_language,
+            chunker_options=chunker_options,
+            vector_backend=vector_backend,
+            static_vector_dim=static_vector_dim,
+            static_vector_lowercase=static_vector_lowercase,
+            pooling_method=selected_pooling,
+        )
+    else:
+        embeddings = [None, None]
     code_metric_score = 0.0
     if (code_metric or "none").strip().lower() not in ("none", "") and resolved_feature_weights.get("code_metric", 0.0) > 0.0:
         code_metric_score = score_code_metric_pair(
@@ -958,4 +1213,7 @@ def calculate_similarity(
         similarity_function=selected_similarity,
         levenshtein_weights=levenshtein_weights,
         jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+        winnowing_kgram=winnowing_kgram,
+        winnowing_window=winnowing_window,
+        gst_min_match_length=gst_min_match_length,
     )

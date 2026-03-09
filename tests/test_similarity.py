@@ -173,6 +173,95 @@ def test_calculate_similarity_supports_custom_jaro_winkler_prefix_weight():
     assert stronger_prefix_score > default_score
 
 
+def test_calculate_similarity_supports_winnowing_feature():
+    identical_score = similarity.calculate_similarity(
+        "int total = value + 1;",
+        "int total = value + 1;",
+        feature_weights={"winnowing": 1.0},
+        winnowing_kgram=3,
+        winnowing_window=2,
+    )
+    different_score = similarity.calculate_similarity(
+        "int total = value + 1;",
+        "while (ready) { stop(); }",
+        feature_weights={"winnowing": 1.0},
+        winnowing_kgram=3,
+        winnowing_window=2,
+    )
+
+    assert identical_score == pytest.approx(1.0)
+    assert different_score < identical_score
+
+
+def test_calculate_similarity_supports_gst_feature():
+    related_score = similarity.calculate_similarity(
+        "alpha beta gamma delta epsilon zeta",
+        "zero beta gamma delta epsilon one",
+        feature_weights={"gst": 1.0},
+        gst_min_match_length=2,
+    )
+    unrelated_score = similarity.calculate_similarity(
+        "alpha beta gamma delta epsilon zeta",
+        "red blue green yellow",
+        feature_weights={"gst": 1.0},
+        gst_min_match_length=2,
+    )
+
+    assert related_score > 0.0
+    assert unrelated_score < related_score
+
+
+def test_calculate_similarity_skips_embedding_loading_without_semantic_feature(monkeypatch):
+    monkeypatch.setattr(
+        similarity,
+        "load_backend_model",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("Embeddings should not be loaded.")),
+    )
+    monkeypatch.setattr(
+        similarity,
+        "load_hf_model_info",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("Model metadata should not be loaded.")),
+    )
+
+    score = similarity.calculate_similarity(
+        "int total = value + 1;",
+        "int total = value + 1;",
+        feature_weights={"winnowing": 1.0},
+        vector_backend="auto",
+    )
+
+    assert score == pytest.approx(1.0)
+
+
+def test_get_sim_list_skips_embedding_loading_without_semantic_feature(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        similarity,
+        "load_backend_model",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("Embeddings should not be loaded.")),
+    )
+    monkeypatch.setattr(
+        similarity,
+        "load_hf_model_info",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("Model metadata should not be loaded.")),
+    )
+
+    source_dir = tmp_path / "codes"
+    source_dir.mkdir()
+    (source_dir / "a.py").write_text("alpha beta gamma delta", encoding="utf-8")
+    (source_dir / "b.py").write_text("alpha beta gamma epsilon", encoding="utf-8")
+
+    results = similarity.get_sim_list(
+        source_dir,
+        threshold=0.0,
+        number_results=5,
+        feature_weights={"gst": 1.0},
+        vector_backend="auto",
+        gst_min_match_length=2,
+    )
+
+    assert len(results) == 1
+
+
 def test_calculate_similarity_supports_static_hash_backend():
     score = similarity.calculate_similarity(
         "def add(a, b):\n    return a + b\n",
