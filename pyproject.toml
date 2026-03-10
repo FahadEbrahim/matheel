@@ -11,7 +11,7 @@ authors = [
 description = "Matheel: A CLI and Python package for source-code similarity detection."
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
-license = "CC-BY-NC-4.0"
+license = "MIT"
 
 dependencies = [
     "click>=8,<9",

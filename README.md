@@ -253,4 +253,4 @@ The Gradio demo stays in `gradio_app/` and is aligned with the Hugging Face Spac
 
 ## License
 
-This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International License](https://creativecommons.org/licenses/by-nc/4.0/).
+This project is licensed under the [MIT License](LICENSE).
