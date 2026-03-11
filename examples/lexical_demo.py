@@ -1,41 +1,43 @@
 from matheel.similarity import calculate_similarity
 
-
-LEFT = "def normalize(name):\n    return name.strip().lower()\n"
-RIGHT = "def normalise(name):\n    return name.strip().lower()\n"
+from _sample_data import CODE_A_NAME, CODE_B_NAME, load_sample_pair
 
 
 def main():
+    code_a, code_b = load_sample_pair()
+
+    print(f"Comparing Code A ({CODE_A_NAME}) with Code B ({CODE_B_NAME})")
+
     levenshtein_only = calculate_similarity(
-        LEFT,
-        RIGHT,
+        code_a,
+        code_b,
         model_name="huggingface/CodeBERTa-small-v1",
         vector_backend="sentence_transformers",
         feature_weights={"levenshtein": 1.0},
     )
     jaro_only = calculate_similarity(
-        LEFT,
-        RIGHT,
+        code_a,
+        code_b,
         model_name="huggingface/CodeBERTa-small-v1",
         vector_backend="sentence_transformers",
         feature_weights={"jaro_winkler": 1.0},
     )
     winnowing_only = calculate_similarity(
-        LEFT,
-        RIGHT,
+        code_a,
+        code_b,
         feature_weights={"winnowing": 1.0},
         winnowing_kgram=3,
         winnowing_window=2,
     )
     gst_only = calculate_similarity(
-        LEFT,
-        RIGHT,
+        code_a,
+        code_b,
         feature_weights={"gst": 1.0},
         gst_min_match_length=2,
     )
     blended = calculate_similarity(
-        LEFT,
-        RIGHT,
+        code_a,
+        code_b,
         model_name="huggingface/CodeBERTa-small-v1",
         vector_backend="sentence_transformers",
         feature_weights={
@@ -47,11 +49,11 @@ def main():
         },
     )
 
-    print("Levenshtein only:", levenshtein_only)
-    print("Jaro-Winkler only:", jaro_only)
-    print("Winnowing only:", winnowing_only)
-    print("GST only:", gst_only)
-    print("Blended:", blended)
+    print("Levenshtein only:", round(levenshtein_only, 4))
+    print("Jaro-Winkler only:", round(jaro_only, 4))
+    print("Winnowing only:", round(winnowing_only, 4))
+    print("GST only:", round(gst_only, 4))
+    print("Blended:", round(blended, 4))
 
 
 if __name__ == "__main__":

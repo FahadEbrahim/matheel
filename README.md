@@ -1,6 +1,12 @@
 # Matheel
 
-Matheel is a simple, function-based Python package and CLI for source-code similarity. It combines semantic embeddings, lexical similarity, chunking, preprocessing, and code-aware metrics without forcing a class-heavy API.
+Matheel is a function-based Python package and CLI for source-code similarity. It combines semantic embeddings, lexical similarity, chunking, preprocessing, and code-aware metrics in one workflow.
+
+## Demos
+
+- Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
+- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/gradio_app/matheel_gradio_colab_demo.ipynb)
+- Examples Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
 
 ## Installation
 
@@ -29,9 +35,13 @@ pip install "matheel[dev]"
 
 ## Quick Start
 
-The repo includes a small Java archive at `sample_pairs.zip` for quick validation.
+The repository root includes `sample_pairs.zip`, a small Java archive with:
 
-CLI:
+- `code_1.java`
+- `code_3_plag.java`
+- additional plagiarized and non-plagiarized comparisons
+
+CLI archive comparison:
 
 ```bash
 matheel compare sample_pairs.zip \
@@ -42,31 +52,36 @@ matheel compare sample_pairs.zip \
   --num 10
 ```
 
-Python:
+Python pairwise scoring with the sample pair:
 
 ```python
-from matheel.similarity import get_sim_list
+from zipfile import ZipFile
 
-results = get_sim_list(
-    "sample_pairs.zip",
+from matheel.similarity import calculate_similarity
+
+with ZipFile("sample_pairs.zip") as archive:
+    code_a = archive.read("code_1.java").decode("utf-8")
+    code_b = archive.read("code_3_plag.java").decode("utf-8")
+
+score = calculate_similarity(
+    code_a,
+    code_b,
     model_name="huggingface/CodeBERTa-small-v1",
-    threshold=0.2,
-    number_results=10,
     feature_weights={
         "semantic": 0.7,
         "levenshtein": 0.3,
     },
 )
-print(results.head())
+
+print(round(score, 4))
 ```
 
-## Supported Languages
+## Supported Scope
 
-- Chunking is language-agnostic by default because it can split any text.
-- `CodeBLEU`-style metrics are intentionally scoped to `Java`, `Python`, `C`, and `C++`.
-- Generic preprocessing works across languages, but code-aware metrics are most defensible in that four-language scope.
+Supported languages:
 
-## Supported Methods
+- Chunking and preprocessing are text-first and can run on any source text.
+- Code-aware metrics are currently scoped to `Java`, `Python`, `C`, and `C++`.
 
 Similarity features:
 
@@ -89,12 +104,14 @@ Code metrics:
 - `tsed`
 - `codebertscore`
 
-`ruby` now uses a full staged implementation (`graph -> tree -> string`), with optional runtime dependencies enabled via `matheel[metrics]`.
-
 Chunking methods:
 
 - `none`
-- Chonkie-backed when installed: `code`, `chonkie_token`, `chonkie_sentence`, `chonkie_recursive`, `chonkie_fast`
+- `code`
+- `chonkie_token`
+- `chonkie_sentence`
+- `chonkie_recursive`
+- `chonkie_fast`
 
 Vector backends:
 
@@ -120,15 +137,6 @@ Sentence Transformers pooling methods:
 - `weightedmean`
 
 `auto` inspects Hugging Face model metadata and routes to the correct backend when the model exposes a known library.
-
-## Core Parts
-
-- Preprocessing: whitespace and comment normalization before any scoring.
-- Chunking: Chonkie-backed document splitting with per-method options.
-- Vectors: dense single-vector, learned static single-vector, and multivector late interaction.
-- Lexical metrics and baselines: normalized Levenshtein, Jaro-Winkler, Winnowing, and Greedy String Tiling.
-- Code metrics: built-in CodeBLEU-style metrics and CrystalBLEU.
-- Comparison suite: run multiple configurations, rank them, and optionally write summary/detail artifacts.
 
 ## CLI
 
@@ -170,9 +178,12 @@ Pairwise scoring:
 ```python
 from matheel.similarity import calculate_similarity
 
+code_a = "def add(a, b):\n    return a + b\n"
+code_b = "def add(x, y):\n    return x + y\n"
+
 score = calculate_similarity(
-    "def add(a, b):\n    return a + b\n",
-    "def add(x, y):\n    return x + y\n",
+    code_a,
+    code_b,
     model_name="huggingface/CodeBERTa-small-v1",
     vector_backend="auto",
     max_token_length=256,
@@ -193,10 +204,10 @@ Directory or ZIP ranking:
 from matheel.similarity import get_sim_list
 
 results = get_sim_list(
-    "sample_codes",
+    "sample_pairs.zip",
     model_name="huggingface/CodeBERTa-small-v1",
     threshold=0.4,
-    number_results=50,
+    number_results=10,
     vector_backend="auto",
     max_token_length=256,
     chunking_method="chonkie_token",
@@ -212,44 +223,55 @@ results = get_sim_list(
         "gst": 0.05,
     },
 )
+
+print(results.head())
 ```
-
-## Hugging Face Routing
-
-Matheel can inspect Hugging Face model metadata and route automatically:
-
-- `sentence-transformers` models go to the Sentence Transformers path
-- `model2vec` models go to the model2vec static path
-- `PyLate` models go to the multivector late-interaction path
-
-If metadata is unavailable, Matheel falls back to simple name and tag heuristics, then defaults to the Sentence Transformers path.
 
 ## Docs
 
-- Docs index: [docs/index.md](docs/index.md)
+- Docs folder landing page: [docs/README.md](docs/README.md)
+- Canonical docs index: [docs/index.md](docs/index.md)
 - Quick usage: [docs/usage.md](docs/usage.md)
 - Preprocessing: [docs/preprocessing.md](docs/preprocessing.md)
 - Chunking: [docs/chunking.md](docs/chunking.md)
-- Vectors: [docs/vectors.md](docs/vectors.md)
-- Edit distance and feature weights: [docs/lexical.md](docs/lexical.md)
+- Vectors and routing: [docs/vectors.md](docs/vectors.md)
+- Lexical metrics and baselines: [docs/lexical.md](docs/lexical.md)
 - Code metrics: [docs/code_metrics.md](docs/code_metrics.md)
 - Comparison suite: [docs/comparison_suite.md](docs/comparison_suite.md)
 
-The `docs/` folder is already structured well for a later GitHub Pages setup if you decide to publish the docs site from the repository.
-
 ## Examples
 
+- Colab walkthrough: [examples/matheel_examples_colab.ipynb](examples/matheel_examples_colab.ipynb)
 - Quick archive check: [examples/sample_pairs_demo.py](examples/sample_pairs_demo.py)
 - Preprocessing: [examples/preprocessing_demo.py](examples/preprocessing_demo.py)
 - Chunking: [examples/chunking_demo.py](examples/chunking_demo.py)
 - Vector backends: [examples/vectors_demo.py](examples/vectors_demo.py)
-- Edit distance and feature weights: [examples/lexical_demo.py](examples/lexical_demo.py)
+- Lexical metrics and baselines: [examples/lexical_demo.py](examples/lexical_demo.py)
 - Code metrics: [examples/code_metrics_demo.py](examples/code_metrics_demo.py)
 - Comparison suite: [examples/comparison_suite_demo.py](examples/comparison_suite_demo.py)
+
+All examples use the same sample pair from `sample_pairs.zip`: `code_1.java` and `code_3_plag.java`.
 
 ## Gradio
 
 The Gradio demo stays in `gradio_app/` and is aligned with the Hugging Face Space setup. The UI supports embeddings, lexical metrics, baseline algorithms (Winnowing and GST), and the code-aware metrics (CodeBLEU, CrystalBLEU, RUBY, TSED, CodeBERTScore), with metric-specific advanced fields. The core package and CLI can read either a ZIP archive or a directory; the Gradio upload flow remains ZIP-based.
+
+## Acknowledgments
+
+Matheel builds on several open-source libraries:
+
+- [Sentence Transformers](https://pypi.org/project/sentence-transformers/)
+- [Chonkie](https://pypi.org/project/chonkie/)
+- [model2vec](https://pypi.org/project/model2vec/)
+- [PyLate](https://pypi.org/project/pylate/)
+- [RapidFuzz](https://pypi.org/project/rapidfuzz/)
+- [tree-sitter-language-pack](https://pypi.org/project/tree-sitter-language-pack/)
+- [NetworkX](https://pypi.org/project/networkx/)
+- [APTED](https://pypi.org/project/apted/)
+- [bert-score](https://pypi.org/project/bert-score/)
+- [Gradio](https://pypi.org/project/gradio/)
+
+The project also depends on the standard scientific Python stack and related tooling, including NumPy, pandas, Click, SentencePiece, and func-timeout.
 
 ## License
 

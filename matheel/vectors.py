@@ -599,7 +599,7 @@ def multivector_similarity(left, right, bidirectional=True, vector_backend=None)
 
 def _pylate_scores_available():
     try:
-        from pylate.scores import colbert_scores_pairwise  # noqa: F401
+        __import__("pylate.scores")
     except ImportError:
         return False
     return True

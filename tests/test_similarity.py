@@ -8,6 +8,7 @@ from matheel import similarity
 
 class FakeModel:
     def encode(self, inputs, convert_to_numpy=True):
+        _ = convert_to_numpy
         if isinstance(inputs, str):
             return np.asarray(_vectorize(inputs), dtype=float)
         return np.asarray([_vectorize(item) for item in inputs], dtype=float)

@@ -27,7 +27,6 @@ from .vectors import (
     build_multivector_embeddings,
     build_static_hash_vectors,
     build_chunked_single_vectors,
-    configure_model_max_token_length,
     configure_sentence_transformer_pooling,
     detect_model_max_token_length,
     encode_single_vectors,
@@ -430,6 +429,7 @@ def gst_similarity_from_tokens(tokens1, tokens2, min_match_length=5):
     marked1 = [False] * len(tokens1)
     marked2 = [False] * len(tokens2)
     covered_tokens = 0
+    total_tokens = float(len(tokens1) + len(tokens2))
 
     # Repeatedly extract the longest non-overlapping matching tiles, then score
     # the proportion of both token streams that the tiles cover.
@@ -465,7 +465,7 @@ def gst_similarity_from_tokens(tokens1, tokens2, min_match_length=5):
                     matches.append((index1, index2, length))
 
         if best_length < effective_min_match_length or not matches:
-            break
+            return (2.0 * covered_tokens) / total_tokens
 
         accepted_matches = []
         for index1, index2, length in sorted(matches, key=lambda item: (-item[2], item[0], item[1])):
@@ -480,15 +480,13 @@ def gst_similarity_from_tokens(tokens1, tokens2, min_match_length=5):
             accepted_matches.append((index1, index2, length))
 
         if not accepted_matches:
-            break
+            return (2.0 * covered_tokens) / total_tokens
 
         for index1, index2, length in accepted_matches:
             for offset in range(length):
                 marked1[index1 + offset] = True
                 marked2[index2 + offset] = True
             covered_tokens += length
-
-    return (2.0 * covered_tokens) / float(len(tokens1) + len(tokens2))
 
 
 def build_document_embeddings(
@@ -675,34 +673,6 @@ def combined_similarity_from_embeddings(
         active_features=active_features,
     )
     return combine_weighted_scores(feature_scores, feature_weights)
-
-
-def paraphrase_mining_with_combined_score(
-    model,
-    sentences,
-    k=100,
-    feature_weights=None,
-    similarity_function="cosine",
-    pooling_method="mean",
-    max_token_length=None,
-):
-    resolved_feature_weights = resolve_feature_weights(feature_weights=feature_weights)
-    model = configure_model_max_token_length(model, max_token_length=max_token_length)
-    embeddings = build_document_embeddings(
-        model,
-        list(sentences),
-        pooling_method=pooling_method,
-    )
-    results = rank_code_pairs(
-        list(sentences),
-        embeddings,
-        resolved_feature_weights,
-        similarity_function=similarity_function,
-    )
-    limit = max(0, int(k or 0))
-    if limit:
-        return results[:limit]
-    return results
 
 
 def rank_code_pairs(

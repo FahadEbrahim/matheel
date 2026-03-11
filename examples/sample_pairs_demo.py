@@ -1,10 +1,6 @@
-from pathlib import Path
-
 from matheel.similarity import get_sim_list
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SAMPLE_ARCHIVE = REPO_ROOT / "sample_pairs.zip"
+from _sample_data import SAMPLE_ARCHIVE
 
 
 def main():
@@ -18,7 +14,7 @@ def main():
             "levenshtein": 0.3,
         },
     )
-    print(results.head())
+    print(results.head().round(4))
 
 
 if __name__ == "__main__":

@@ -1,15 +1,11 @@
-from pathlib import Path
-
 from matheel.comparison_suite import run_comparison_suite
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-SAMPLE_ARCHIVE = REPO_ROOT / "sample_pairs.zip"
+from _sample_data import SAMPLE_ARCHIVE
 
 
 RUNS = [
     {
-        "run_name": "dense_baseline",
+        "run_name": "semantic_levenshtein_blend",
         "options": {
             "model_name": "huggingface/CodeBERTa-small-v1",
             "vector_backend": "sentence_transformers",
@@ -20,7 +16,7 @@ RUNS = [
         },
     },
     {
-        "run_name": "code_metric_blend",
+        "run_name": "codebleu_java_blend",
         "options": {
             "model_name": "huggingface/CodeBERTa-small-v1",
             "vector_backend": "sentence_transformers",
@@ -40,9 +36,9 @@ RUNS = [
 
 def main():
     summary, details = run_comparison_suite(SAMPLE_ARCHIVE, RUNS)
-    print(summary)
+    print(summary.round(4))
     print()
-    print(details["dense_baseline"].head())
+    print(details["semantic_levenshtein_blend"].head().round(4))
 
 
 if __name__ == "__main__":

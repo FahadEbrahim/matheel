@@ -186,10 +186,6 @@ def keyword_set_for_language(language):
     return _CODEBLEU_KEYWORD_CACHE[key]
 
 
-def code_metric_language_supported(language):
-    return normalize_code_language(language) in _SUPPORTED_CODE_LANGUAGES
-
-
 def tokenize_for_code_metrics(text):
     return _TOKEN_RE.findall(text or "")
 

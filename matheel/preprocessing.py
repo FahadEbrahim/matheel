@@ -192,7 +192,3 @@ def preprocess_code(text, mode="none"):
         return collapse_whitespace(value)
 
     raise ValueError(f"Unsupported preprocess mode: {mode}")
-
-
-def preprocess_codes(texts, mode="none"):
-    return [preprocess_code(text, mode=mode) for text in texts]

@@ -92,12 +92,3 @@ matheel compare sample_pairs.zip \
   --feature-weight gst=1.0 \
   --gst-min-match-length 5
 ```
-
-## Practical Guidance
-
-- Start with semantic-heavy blends for transformer/model runs.
-- Increase `levenshtein` when code is very short or formatting is stable.
-- Increase `jaro_winkler` when identifier-level similarity matters.
-- Add `winnowing` when you want a token-fingerprint baseline that stays robust to small local edits.
-- Add `gst` when you want to emphasize longer copied token spans.
-- Add `code_metric` only when you want structure-aware scoring in the final blend.

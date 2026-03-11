@@ -2,15 +2,17 @@ from matheel.model_routing import available_vector_backends, infer_model_capabil
 from matheel.similarity import calculate_similarity
 from matheel.vectors import available_pooling_methods, available_similarity_functions
 
-
-LEFT = "def add(a, b):\n    return a + b\n"
-RIGHT = "def add(x, y):\n    return x + y\n"
+from _sample_data import CODE_A_NAME, CODE_B_NAME, load_sample_pair
 
 
 def main():
+    code_a, code_b = load_sample_pair()
+
     print("Vector backends:", available_vector_backends())
     print("Similarity functions:", available_similarity_functions())
     print("Pooling methods:", available_pooling_methods())
+    print()
+    print(f"Comparing Code A ({CODE_A_NAME}) with Code B ({CODE_B_NAME})")
     print()
 
     capabilities = infer_model_capabilities("huggingface/CodeBERTa-small-v1")
@@ -18,15 +20,15 @@ def main():
     print()
 
     score = calculate_similarity(
-        LEFT,
-        RIGHT,
+        code_a,
+        code_b,
         model_name="huggingface/CodeBERTa-small-v1",
         vector_backend="sentence_transformers",
         similarity_function="dot",
         pooling_method="max",
         feature_weights={"semantic": 1.0},
     )
-    print("Dense score:", score)
+    print("Dense score:", round(score, 4))
 
 
 if __name__ == "__main__":

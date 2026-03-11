@@ -130,7 +130,3 @@ def resolve_vector_backend(requested_backend, model_name=None, model_info=None):
 
 def backend_is_multivector(vector_backend):
     return normalize_vector_backend_name(vector_backend) == "pylate"
-
-
-def backend_is_static(vector_backend):
-    return normalize_vector_backend_name(vector_backend) in ("model2vec", "static_hash")
