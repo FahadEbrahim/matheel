@@ -64,7 +64,7 @@ def main():
     help='Optional code-level metric added to the final score.',
 )
 @click.option('--code-metric-weight', default=0.0, show_default=True, help='Weight applied to the selected code metric.')
-@click.option('--code-language', default='java', show_default=True, help='Language hint for code-level metrics. Official CodeBLEU scope: java, python, c, cpp.')
+@click.option('--code-language', default='java', show_default=True, help='Language hint for code-level metrics. Native CodeBLEU, RUBY, and TSED support: java, python, c, cpp, go, javascript, typescript, kotlin, scala, swift, solidity, dart, php, ruby, rust, csharp, lua, julia, r, objc.')
 @click.option('--codebleu-component-weights', default='0.25,0.25,0.25,0.25', show_default=True, help='Comma-separated weights for ngram, weighted_ngram, syntax, dataflow.')
 @click.option('--crystalbleu-max-order', default=4, show_default=True, help='Maximum n-gram order for CrystalBLEU.')
 @click.option('--crystalbleu-trivial-ngram-count', default=50, show_default=True, help='How many frequent n-grams to ignore in CrystalBLEU.')

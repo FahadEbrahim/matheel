@@ -33,6 +33,8 @@ pip install "matheel[dev]"
 
 `matheel[all]` installs the currently supported optional backends in one command: Chonkie code chunking, metrics runtime dependencies (RUBY graph/tree, TSED, CodeBERTScore), model2vec, PyLate, and the Gradio app dependencies.
 
+Matheel now ships a native CodeBLEU implementation that uses `tree_sitter_language_pack` for parser resolution, so real syntax/dataflow scoring no longer depends on installing the pip `codebleu` package. The pip package is still useful for validation/comparison work if you want to cross-check the native scores on selected examples; Matheel does not currently claim exact pip parity on every possible input.
+
 ## Quick Start
 
 The repository root includes `sample_pairs.zip`, a small Java archive with:
@@ -80,8 +82,9 @@ print(round(score, 4))
 
 Supported languages:
 
-- Chunking and preprocessing are text-first and can run on any source text.
-- Code-aware metrics are currently scoped to `Java`, `Python`, `C`, and `C++`.
+- Chunking remains text-first and can run on any source text.
+- Preprocessing heuristics and code-aware metrics are now regression-tested for a unified 20-language scope: `Java`, `Python`, `C`, `C++`, `Go`, `JavaScript`, `TypeScript`, `Kotlin`, `Scala`, `Swift`, `Solidity`, `Dart`, `PHP`, `Ruby`, `Rust`, `C#`, `Lua`, `Julia`, `R`, and `Objective-C` (`objc`).
+- Native CodeBLEU with real syntax/dataflow now covers that same 20-language scope.
 
 Similarity features:
 

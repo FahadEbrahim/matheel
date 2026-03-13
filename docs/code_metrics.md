@@ -54,21 +54,40 @@ Matheel includes built-in code-aware metrics that can be blended into the final 
 
 ## Language Scope
 
-For the strongest and safest interpretation, CodeBLEU-style metrics are scoped to:
+Native CodeBLEU with real syntax/dataflow is currently scoped to:
 
 - `java`
 - `python`
 - `c`
 - `cpp`
+- `go`
+- `javascript`
+- `typescript`
+- `kotlin`
+- `scala`
+- `swift`
+- `solidity`
+- `dart`
+- `php`
+- `ruby`
+- `rust`
+- `csharp`
+- `lua`
+- `julia`
+- `r`
+- `objc`
 
-RUBY and TSED follow the same language scope (`java`, `python`, `c`, `cpp`).
-CodeBERTScore is language-agnostic at runtime, but use the same four-language scope for consistent code-level comparisons.
+RUBY and TSED follow that same 20-language structural scope.
+CodeBERTScore is language-agnostic at runtime, but use that same 20-language scope for consistent code-level comparisons.
+Additional languages from the tree-sitter runtime remain plausible follow-on work, but Matheel should only claim them after keyword coverage, alias handling, and regression tests are added.
 
 ## Metric Details
 
 ### CodeBLEU-style Metrics
 
-Matheel provides a built-in CodeBLEU-style implementation, so no external `codebleu` package is required.
+Matheel now ships a native CodeBLEU implementation, so the syntax and dataflow pieces use real tree/DFG extraction without requiring the pip `codebleu` package at runtime. Parser resolution is routed through `tree_sitter_language_pack`, which avoids needing separate `tree_sitter_<lang>` wheels for the supported languages in this environment.
+
+The pip `codebleu` package is still useful for comparison or validation work, and Matheel includes selected regression examples that check exact native-vs-pip agreement on overlapping official languages. That comparison coverage is intentionally narrow: treat it as validation on representative examples, not a blanket claim of score-for-score parity on every input.
 
 - `codebleu`
   Full weighted blend of the CodeBLEU components.
@@ -113,6 +132,7 @@ RUBY uses a staged similarity strategy:
 3. string similarity as a deterministic fallback
 
 `ruby_mode` controls this behavior (`auto`, `graph`, `tree`, `string`, `ngram`).
+`auto` keeps the staged fallback path. Explicit `graph` and `tree` modes are strict and raise if that structural mode cannot produce a score.
 
 - `ruby_max_order`
   Maximum n-gram order (used when `ruby_mode=ngram`).

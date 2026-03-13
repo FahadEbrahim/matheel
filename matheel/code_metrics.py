@@ -4,16 +4,15 @@ import time
 from collections import Counter
 from pathlib import Path
 
+from .native_codebleu import AVAILABLE_LANGUAGES as NATIVE_CODEBLEU_LANGUAGES
+from .native_codebleu import calc_codebleu as native_calc_codebleu
+from .native_codebleu import native_runtime_available as native_codebleu_runtime_available
 
 try:
-    from codebleu import bleu as package_codebleu_bleu
     from codebleu.codebleu import PACKAGE_DIR as codebleu_package_dir
-    from codebleu import weighted_ngram_match as package_weighted_ngram_match
     from codebleu.utils import get_tree_sitter_language as codebleu_get_tree_sitter_language
 except ImportError:  # pragma: no cover - optional dependency
-    package_codebleu_bleu = None
     codebleu_package_dir = None
-    package_weighted_ngram_match = None
     codebleu_get_tree_sitter_language = None
 
 try:
@@ -53,8 +52,10 @@ except ImportError:  # pragma: no cover - optional dependency
 
 try:
     from tree_sitter_language_pack import get_parser as get_tree_sitter_parser
+    from tree_sitter_language_pack import get_language as get_tree_sitter_language_pack
 except ImportError:  # pragma: no cover - optional dependency
     get_tree_sitter_parser = None
+    get_tree_sitter_language_pack = None
 
 try:
     import networkx as nx
@@ -74,7 +75,69 @@ _TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d+|[^\w\s]")
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _RUBY_TRANX_SPLIT_RE = re.compile(r"([^A-Za-z0-9_])")
 _RUBY_TRANX_CAMEL_RE = re.compile(r"([a-z])([A-Z])")
-_SUPPORTED_CODE_LANGUAGES = ("java", "python", "c", "cpp")
+_SUPPORTED_CODE_LANGUAGES = (
+    "java",
+    "python",
+    "c",
+    "cpp",
+    "go",
+    "javascript",
+    "typescript",
+    "kotlin",
+    "scala",
+    "swift",
+    "solidity",
+    "dart",
+    "php",
+    "ruby",
+    "rust",
+    "csharp",
+    "lua",
+    "julia",
+    "r",
+    "objc",
+)
+_SUPPORTED_REAL_CODEBLEU_LANGUAGES = NATIVE_CODEBLEU_LANGUAGES
+_CODE_LANGUAGE_ALIASES = {
+    "py": "python",
+    "python3": "python",
+    "c++": "cpp",
+    "cc": "cpp",
+    "cxx": "cpp",
+    "hpp": "cpp",
+    "h++": "cpp",
+    "cpp": "cpp",
+    "c": "c",
+    "h": "c",
+    "java": "java",
+    "golang": "go",
+    "js": "javascript",
+    "node": "javascript",
+    "nodejs": "javascript",
+    "mjs": "javascript",
+    "cjs": "javascript",
+    "ts": "typescript",
+    "typescript": "typescript",
+    "kt": "kotlin",
+    "kts": "kotlin",
+    "sol": "solidity",
+    "rb": "ruby",
+    "rs": "rust",
+    "c#": "csharp",
+    "c_sharp": "csharp",
+    "cs": "csharp",
+    "lua": "lua",
+    "jl": "julia",
+    "objective-c": "objc",
+    "objectivec": "objc",
+    "obj-c": "objc",
+}
+_CODEBLEU_KEYWORD_LANGUAGE_NAMES = {
+    "csharp": "c_sharp",
+}
+_CODEBLEU_TREE_SITTER_LANGUAGE_NAMES = {
+    "csharp": "c_sharp",
+}
 _CODEBLEU_KEYWORD_CACHE = {}
 _TREE_SITTER_PARSER_CACHE = {}
 _CODEBERTSCORE_SCORER_CACHE = {}
@@ -106,6 +169,138 @@ _KEYWORDS = {
         "include", "int", "long", "namespace", "new", "nullptr", "private", "protected",
         "public", "return", "short", "signed", "static", "struct", "switch", "template",
         "this", "throw", "true", "try", "typedef", "typename", "using", "void", "while",
+    },
+    "go": {
+        "break", "case", "chan", "const", "continue", "default", "defer", "else", "false",
+        "fallthrough", "for", "func", "go", "goto", "if", "import", "interface", "map",
+        "package", "range", "return", "select", "struct", "switch", "true", "type", "var",
+    },
+    "javascript": {
+        "await", "break", "case", "catch", "class", "const", "continue", "debugger",
+        "default", "delete", "do", "else", "enum", "export", "extends", "false", "finally",
+        "for", "function", "if", "implements", "import", "in", "instanceof", "interface",
+        "let", "new", "null", "package", "private", "protected", "public", "return",
+        "static", "super", "switch", "this", "throw", "true", "try", "typeof", "var",
+        "void", "while", "with", "yield",
+    },
+    "typescript": {
+        "abstract", "any", "as", "asserts", "async", "await", "bigint", "boolean", "break",
+        "case", "catch", "class", "const", "constructor", "continue", "debugger", "declare",
+        "default", "delete", "do", "else", "enum", "export", "extends", "false", "finally",
+        "for", "function", "get", "if", "implements", "import", "in", "infer", "instanceof",
+        "interface", "is", "keyof", "let", "module", "namespace", "never", "new", "null",
+        "number", "object", "override", "package", "private", "protected", "public",
+        "readonly", "return", "satisfies", "set", "static", "string", "super", "switch",
+        "symbol", "this", "throw", "true", "try", "type", "typeof", "undefined", "unique",
+        "unknown", "var", "void", "while", "with", "yield",
+    },
+    "kotlin": {
+        "abstract", "actual", "annotation", "as", "break", "by", "class", "companion", "const",
+        "constructor", "continue", "crossinline", "data", "delegate", "do", "dynamic", "else",
+        "enum", "expect", "external", "false", "field", "file", "final", "finally", "for",
+        "fun", "get", "if", "import", "in", "infix", "init", "inline", "inner", "interface",
+        "internal", "is", "lateinit", "noinline", "null", "object", "open", "operator", "out",
+        "override", "package", "private", "protected", "public", "reified", "return", "sealed",
+        "set", "super", "suspend", "tailrec", "this", "throw", "true", "try", "typealias",
+        "val", "var", "when", "where", "while",
+    },
+    "scala": {
+        "abstract", "case", "catch", "class", "def", "do", "else", "extends", "false", "final",
+        "finally", "for", "forSome", "if", "implicit", "import", "lazy", "match", "new", "null",
+        "object", "override", "package", "private", "protected", "return", "sealed", "super",
+        "this", "throw", "trait", "true", "try", "type", "val", "var", "while", "with", "yield",
+    },
+    "swift": {
+        "actor", "as", "associatedtype", "async", "await", "break", "case", "catch", "class",
+        "continue", "convenience", "default", "defer", "deinit", "didSet", "do", "dynamic",
+        "else", "enum", "extension", "fallthrough", "false", "fileprivate", "final", "for",
+        "func", "get", "guard", "if", "import", "in", "indirect", "infix", "init", "inout",
+        "internal", "is", "lazy", "let", "mutating", "nil", "nonmutating", "open", "operator",
+        "override", "postfix", "precedencegroup", "prefix", "private", "protocol", "public",
+        "repeat", "required", "rethrows", "return", "self", "set", "some", "static", "struct",
+        "subscript", "super", "switch", "throw", "throws", "true", "try", "typealias", "var",
+        "weak", "where", "while", "willSet",
+    },
+    "solidity": {
+        "abstract", "address", "anonymous", "as", "assembly", "bool", "break", "bytes", "calldata",
+        "constant", "constructor", "continue", "contract", "delete", "do", "else", "emit", "enum",
+        "error", "event", "external", "false", "fallback", "for", "function", "if", "immutable",
+        "import", "indexed", "interface", "internal", "is", "library", "mapping", "memory",
+        "modifier", "new", "override", "payable", "pragma", "private", "public", "pure", "return",
+        "returns", "revert", "storage", "struct", "true", "try", "type", "uint", "uint256",
+        "using", "view", "virtual", "while",
+    },
+    "dart": {
+        "abstract", "as", "assert", "async", "await", "base", "break", "case", "class", "const",
+        "continue", "covariant", "default", "deferred", "do", "dynamic", "else", "enum", "export",
+        "extends", "extension", "external", "factory", "false", "final", "for", "Function", "get",
+        "hide", "if", "implements", "import", "in", "interface", "is", "late", "library", "mixin",
+        "new", "null", "on", "operator", "part", "required", "rethrow", "return", "sealed", "set",
+        "show", "static", "super", "switch", "sync", "this", "throw", "true", "try", "typedef",
+        "var", "void", "when", "while", "with", "yield",
+    },
+    "php": {
+        "__halt_compiler", "abstract", "and", "array", "as", "break", "callable", "case",
+        "catch", "class", "clone", "const", "continue", "declare", "default", "die", "do",
+        "echo", "else", "elseif", "empty", "enddeclare", "endfor", "endforeach", "endif",
+        "endswitch", "endwhile", "eval", "exit", "extends", "final", "for", "foreach",
+        "function", "global", "goto", "if", "implements", "include", "include_once",
+        "instanceof", "insteadof", "interface", "isset", "list", "namespace", "new", "or",
+        "print", "private", "protected", "public", "require", "require_once", "return",
+        "static", "switch", "throw", "trait", "try", "unset", "use", "var", "while", "xor",
+    },
+    "ruby": {
+        "__ENCODING__", "__FILE__", "__LINE__", "BEGIN", "END", "alias", "and", "begin",
+        "break", "case", "class", "def", "defined?", "do", "else", "elsif", "end", "ensure",
+        "false", "for", "if", "in", "module", "next", "nil", "not", "or", "redo", "rescue",
+        "retry", "return", "self", "super", "then", "true", "undef", "unless", "until",
+        "when", "while", "yield",
+    },
+    "rust": {
+        "as", "async", "await", "block", "bool", "break", "char", "const", "continue",
+        "crate", "default", "dyn", "else", "enum", "expr", "extern", "f32", "f64", "false",
+        "fn", "for", "i128", "i16", "i32", "i64", "i8", "ident", "if", "impl", "in", "isize",
+        "item", "let", "lifetime", "literal", "loop", "macro_rules!", "match", "meta", "mod",
+        "move", "mut", "pat", "path", "pub", "ref", "return", "self", "static", "stmt", "str",
+        "struct", "super", "trait", "true", "tt", "ty", "type", "u128", "u16", "u32", "u64",
+        "u8", "union", "unsafe", "use", "usize", "vis", "where", "while", "yield",
+    },
+    "csharp": {
+        "abstract", "add", "alias", "as", "ascending", "async", "await", "base", "bool",
+        "break", "byte", "by", "case", "catch", "char", "checked", "class", "const",
+        "continue", "decimal", "default", "delegate", "descending", "do", "double", "dynamic",
+        "else", "enum", "equals", "event", "explicit", "extern", "false", "finally", "fixed",
+        "float", "for", "foreach", "from", "get", "global", "goto", "group", "if", "implicit",
+        "in", "int", "interface", "internal", "into", "is", "join", "let", "lock", "long",
+        "nameof", "namespace", "new", "notnull", "null", "object", "on", "operator", "orderby",
+        "out", "override", "params", "partial", "private", "protected", "public", "readonly",
+        "ref", "remove", "return", "sbyte", "sealed", "select", "set", "short", "sizeof",
+        "stackalloc", "static", "string", "struct", "switch", "this", "throw", "true", "try",
+        "typeof", "uint", "ulong", "unchecked", "unmanaged", "unsafe", "ushort", "using",
+        "value", "var", "virtual", "void", "volatile", "when", "where", "while", "yield",
+    },
+    "lua": {
+        "and", "break", "do", "else", "elseif", "end", "false", "for", "function", "goto",
+        "if", "in", "local", "nil", "not", "or", "repeat", "return", "then", "true", "until",
+        "while",
+    },
+    "julia": {
+        "abstract", "begin", "break", "catch", "const", "continue", "do", "else", "elseif",
+        "end", "false", "finally", "for", "function", "global", "if", "import", "in", "let",
+        "local", "macro", "module", "mutable", "quote", "return", "struct", "true", "try",
+        "using", "where", "while",
+    },
+    "r": {
+        "break", "else", "FALSE", "for", "function", "if", "in", "Inf", "NA", "NaN", "next",
+        "NULL", "repeat", "return", "TRUE", "while",
+    },
+    "objc": {
+        "break", "case", "catch", "char", "class", "const", "continue", "default", "do",
+        "double", "else", "enum", "extern", "float", "for", "goto", "id", "if",
+        "implementation", "import", "int", "interface", "long", "nil", "nonatomic",
+        "property", "protocol", "readonly", "return", "selector", "self", "short", "signed",
+        "static", "struct", "super", "switch", "typedef", "union", "unsigned", "void",
+        "volatile", "while",
     },
 }
 
@@ -140,23 +335,39 @@ def available_code_metric_languages():
     return _SUPPORTED_CODE_LANGUAGES
 
 
+def available_ast_metric_languages():
+    return _SUPPORTED_CODE_LANGUAGES
+
+
+def available_codebleu_languages():
+    return _SUPPORTED_REAL_CODEBLEU_LANGUAGES
+
+
+def codebleu_runtime_available():
+    return native_codebleu_runtime_available()
+
+
 def normalize_code_language(language):
     key = (language or "java").strip().lower()
-    if key in ("py", "python3"):
-        return "python"
-    if key in ("c++", "cc", "cxx", "hpp", "h++", "cpp"):
-        return "cpp"
-    if key in ("c", "h"):
-        return "c"
-    if key == "java":
-        return "java"
+    return _CODE_LANGUAGE_ALIASES.get(key, key)
+
+
+def normalize_codebleu_language(language):
+    key = normalize_code_language(language)
+    if key not in _SUPPORTED_REAL_CODEBLEU_LANGUAGES:
+        supported = ", ".join(_SUPPORTED_REAL_CODEBLEU_LANGUAGES)
+        raise ValueError(
+            "CodeBLEU with real syntax/dataflow currently supports: "
+            f"{supported}. Got: {language}"
+        )
     return key
 
 
 def _load_package_keywords(language):
     if codebleu_package_dir is None:
         return None
-    package_path = Path(codebleu_package_dir) / "keywords" / f"{language}.txt"
+    package_language = _CODEBLEU_KEYWORD_LANGUAGE_NAMES.get(language, language)
+    package_path = Path(codebleu_package_dir) / "keywords" / f"{package_language}.txt"
     if not package_path.exists():
         return None
     keywords = {
@@ -167,6 +378,12 @@ def _load_package_keywords(language):
     return keywords or None
 
 
+def _fallback_keyword_set(language):
+    if language == "cpp":
+        return set(_KEYWORDS["c"]) | set(_KEYWORDS["cpp"])
+    return set(_KEYWORDS.get(language, set()))
+
+
 def keyword_set_for_language(language):
     key = normalize_code_language(language)
     if key not in _SUPPORTED_CODE_LANGUAGES:
@@ -174,15 +391,11 @@ def keyword_set_for_language(language):
         raise ValueError(f"Code metrics currently support: {supported}. Got: {language}")
     if key in _CODEBLEU_KEYWORD_CACHE:
         return _CODEBLEU_KEYWORD_CACHE[key]
+    keywords = _fallback_keyword_set(key)
     package_keywords = _load_package_keywords(key)
     if package_keywords is not None:
-        _CODEBLEU_KEYWORD_CACHE[key] = package_keywords
-        return package_keywords
-    if key in ("c", "cpp"):
-        _CODEBLEU_KEYWORD_CACHE["c"] = set(_KEYWORDS["c"])
-        _CODEBLEU_KEYWORD_CACHE["cpp"] = set(_KEYWORDS["c"]) | set(_KEYWORDS["cpp"])
-        return _CODEBLEU_KEYWORD_CACHE[key]
-    _CODEBLEU_KEYWORD_CACHE[key] = set(_KEYWORDS[key])
+        keywords.update(package_keywords)
+    _CODEBLEU_KEYWORD_CACHE[key] = keywords
     return _CODEBLEU_KEYWORD_CACHE[key]
 
 
@@ -237,19 +450,6 @@ def _weighted_match_score(reference_tokens, hypothesis_tokens, weights, ignored_
 def _keyword_weighted_match_score(reference_tokens, hypothesis_tokens, keywords, weights, epsilon=1e-12):
     if not hypothesis_tokens:
         return 0.0
-
-    if package_weighted_ngram_match is not None:
-        references = [[reference_tokens]]
-        hypotheses = [hypothesis_tokens]
-
-        def token_weights(tokens):
-            return {token: 1.0 if token in keywords else 0.2 for token in tokens}
-
-        refs_with_weights = [
-            [[tokens, token_weights(tokens)] for tokens in reference]
-            for reference in references
-        ]
-        return float(package_weighted_ngram_match.corpus_bleu(refs_with_weights, hypotheses))
 
     precisions = []
     max_order = len(weights)
@@ -333,8 +533,9 @@ def parse_component_weights(raw_weights=None):
 
 
 def codebleu_components(reference, prediction, language="java", component_weights=None):
-    reference_tokens = tokenize_for_code_metrics(reference)
-    hypothesis_tokens = tokenize_for_code_metrics(prediction)
+    normalized_language = normalize_codebleu_language(language)
+    reference_tokens = (reference or "").strip().split()
+    hypothesis_tokens = (prediction or "").strip().split()
     if not reference_tokens and not hypothesis_tokens:
         return {
             "codebleu": 1.0,
@@ -345,36 +546,24 @@ def codebleu_components(reference, prediction, language="java", component_weight
         }
 
     weights = parse_component_weights(component_weights)
-    bleu_weights = (0.25, 0.25, 0.25, 0.25)
-    keywords = keyword_set_for_language(language)
+    if not codebleu_runtime_available():
+        raise ImportError(
+            "CodeBLEU syntax/dataflow scoring requires tree-sitter and tree-sitter-language-pack."
+        )
 
-    if package_codebleu_bleu is not None:
-        ngram_score = float(package_codebleu_bleu.corpus_bleu([[reference_tokens]], [hypothesis_tokens]))
-    else:
-        ngram_score = _weighted_match_score(reference_tokens, hypothesis_tokens, bleu_weights)
-
-    weighted_ngram_score = _keyword_weighted_match_score(reference_tokens, hypothesis_tokens, keywords, bleu_weights)
-    syntax_score = _weighted_match_score(
-        _syntax_shape_tokens(reference_tokens, keywords),
-        _syntax_shape_tokens(hypothesis_tokens, keywords),
-        bleu_weights,
-    )
-    dataflow_score = _identifier_overlap_score(reference_tokens, hypothesis_tokens, keywords)
-
-    alpha, beta, gamma, theta = weights
-    combined = float(
-        (alpha * ngram_score)
-        + (beta * weighted_ngram_score)
-        + (gamma * syntax_score)
-        + (theta * dataflow_score)
+    scores = native_calc_codebleu(
+        references=[(reference or "").strip()],
+        predictions=[(prediction or "").strip()],
+        lang=normalized_language,
+        weights=weights,
     )
 
     return {
-        "codebleu": combined,
-        "codebleu_ngram": float(ngram_score),
-        "codebleu_weighted_ngram": float(weighted_ngram_score),
-        "codebleu_syntax": float(syntax_score),
-        "codebleu_dataflow": float(dataflow_score),
+        "codebleu": float(scores["codebleu"]),
+        "codebleu_ngram": float(scores["ngram_match_score"]),
+        "codebleu_weighted_ngram": float(scores["weighted_ngram_match_score"]),
+        "codebleu_syntax": float(scores["syntax_match_score"]),
+        "codebleu_dataflow": float(scores["dataflow_match_score"]),
     }
 
 
@@ -727,7 +916,9 @@ def _resolve_tsed_parser(language):
 
     if parser is None and TreeSitterParser is not None and codebleu_get_tree_sitter_language is not None:
         try:
-            ts_language = codebleu_get_tree_sitter_language(normalized_language)
+            ts_language = codebleu_get_tree_sitter_language(
+                _CODEBLEU_TREE_SITTER_LANGUAGE_NAMES.get(normalized_language, normalized_language)
+            )
             try:
                 parser = TreeSitterParser(ts_language)
             except TypeError:
@@ -1288,8 +1479,12 @@ def score_code_metric_pair(
                 use_edge_cost=bool(ruby_graph_use_edge_cost),
                 include_leaf_edges=bool(ruby_graph_include_leaf_edges),
             )
+            if resolved_score is None and resolved_mode == "graph":
+                raise RuntimeError("RUBY graph mode could not produce a structural score.")
         if resolved_score is None and resolved_mode in {"auto", "tree", "graph"}:
             resolved_score = _ruby_tree_similarity(left_tree, right_tree)
+            if resolved_score is None and resolved_mode == "tree":
+                raise RuntimeError("RUBY tree mode could not produce a structural score.")
         if resolved_score is None:
             resolved_score = _ruby_string_similarity_from_tokens(
                 left_tokens,
