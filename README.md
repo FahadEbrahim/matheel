@@ -1,6 +1,6 @@
 # Matheel
 
-Matheel is a function-based Python package and CLI for source-code similarity. It combines semantic embeddings, lexical similarity, chunking, preprocessing, and code-aware metrics in one workflow.
+Matheel is a Python package and CLI for source-code similarity. It combines semantic embeddings, lexical similarity, chunking, preprocessing, and code evaluation metrics in one workflow.
 
 ## Demos
 
@@ -10,7 +10,7 @@ Matheel is a function-based Python package and CLI for source-code similarity. I
 
 ## Installation
 
-Use Python `3.10` to `3.12`.
+Use Python `3.10` to `3.12`. Installation can take some time. 
 
 Base install:
 
@@ -41,7 +41,7 @@ The repository root includes `sample_pairs.zip`, a small Java archive with:
 
 - `code_1.java`
 - `code_3_plag.java`
-- additional plagiarized and non-plagiarized comparisons
+- additional plagiarised and non-plagiarised comparisons
 
 CLI archive comparison:
 
