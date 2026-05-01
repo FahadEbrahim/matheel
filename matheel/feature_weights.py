@@ -20,6 +20,12 @@ def _validate_weight_name(name):
     key = str(name or "").strip()
     if not key:
         raise ValueError("Feature names must be non-empty.")
+    supported = available_default_features()
+    if key not in supported:
+        supported_text = ", ".join(supported)
+        raise ValueError(
+            f"Unsupported feature weight: {key}. Supported feature weights: {supported_text}."
+        )
     return key
 
 
