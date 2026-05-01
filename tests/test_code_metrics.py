@@ -10,6 +10,7 @@ from matheel.code_metrics import (
     codebleu_runtime_available,
     codebleu_components,
     normalize_code_language,
+    parse_component_weights,
     prepare_crystalbleu_context,
     prepare_ruby_context,
     score_code_metric_pair,
@@ -210,6 +211,21 @@ def test_codebleu_empty_guard_uses_scoring_tokenizer(monkeypatch):
 
     with pytest.raises(ImportError):
         codebleu_components(";", ";", language="python")
+
+
+@pytest.mark.parametrize(
+    "raw_weights",
+    [
+        "-1,1,1,1",
+        "nan,1,1,1",
+        "inf,1,1,1",
+        [0.25, -0.1, 0.25, 0.6],
+        [0.25, float("nan"), 0.25, 0.5],
+    ],
+)
+def test_parse_component_weights_rejects_invalid_values(raw_weights):
+    with pytest.raises(ValueError, match="finite non-negative"):
+        parse_component_weights(raw_weights)
 
 
 def test_crystalbleu_context_can_be_reused_across_pairs():

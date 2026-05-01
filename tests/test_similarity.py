@@ -106,6 +106,49 @@ def test_get_sim_list_rejects_regular_file_source(tmp_path):
         )
 
 
+def test_get_sim_list_validates_source_before_model_metadata_lookup(tmp_path, monkeypatch):
+    source_file = tmp_path / "single.py"
+    source_file.write_text("print(1)", encoding="utf-8")
+
+    def fail_model_info(model_name):
+        raise AssertionError(f"metadata lookup should not run for invalid source: {model_name}")
+
+    monkeypatch.setattr(similarity, "load_hf_model_info", fail_model_info)
+
+    with pytest.raises(ValueError, match="directory or a ZIP archive"):
+        similarity.get_sim_list(
+            source_file,
+            feature_weights={"semantic": 1.0},
+            vector_backend="auto",
+        )
+
+
+def test_get_sim_list_rejects_embedding_count_mismatch(tmp_path, monkeypatch):
+    source_dir = tmp_path / "codes"
+    source_dir.mkdir()
+    (source_dir / "a.py").write_text("print(1)", encoding="utf-8")
+    (source_dir / "b.py").write_text("print(2)", encoding="utf-8")
+
+    monkeypatch.setattr(
+        similarity,
+        "load_backend_model",
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
+    )
+    monkeypatch.setattr(
+        similarity,
+        "build_document_embeddings",
+        lambda *args, **kwargs: [np.asarray([1.0, 0.0], dtype=float)],
+    )
+
+    with pytest.raises(ValueError, match="Embedding count"):
+        similarity.get_sim_list(
+            source_dir,
+            model_name="fake",
+            feature_weights={"semantic": 1.0},
+            vector_backend="sentence_transformers",
+        )
+
+
 def test_calculate_similarity_supports_chunking(monkeypatch):
     pytest.importorskip("chonkie")
     monkeypatch.setattr(

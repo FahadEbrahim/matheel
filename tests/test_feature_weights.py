@@ -23,6 +23,27 @@ def test_resolve_feature_weights_accepts_string_overrides():
 @pytest.mark.parametrize(
     "feature_weights",
     [
+        {"semantic": float("nan")},
+        {"semantic": float("inf")},
+        "semantic=nan",
+        "semantic=inf",
+        ["semantic=nan"],
+    ],
+)
+def test_resolve_feature_weights_rejects_non_finite_values(feature_weights):
+    with pytest.raises(ValueError, match="finite"):
+        resolve_feature_weights(feature_weights=feature_weights)
+
+
+@pytest.mark.parametrize("code_metric_weight", [float("nan"), float("inf")])
+def test_default_feature_weights_rejects_non_finite_code_metric_weight(code_metric_weight):
+    with pytest.raises(ValueError, match="finite"):
+        default_feature_weights(code_metric_weight=code_metric_weight)
+
+
+@pytest.mark.parametrize(
+    "feature_weights",
+    [
         {"levenshten": 1.0},
         "levenshten=1.0",
         ["semantic=0.5", "levenshten=0.5"],
