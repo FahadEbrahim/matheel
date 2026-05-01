@@ -15,10 +15,11 @@ The publish workflow is intentionally triggered by `release.published`. A tag pu
 
 - Confirm `pyproject.toml` has the intended version.
 - Confirm the release tag uses the same version with a leading `v`, for example `v0.3.6`.
-- Confirm release notes describe the user-visible changes.
-- Confirm the README PyPI badges are dynamic and cache-safe:
-  - PyPI version: `https://img.shields.io/pypi/v/matheel.svg?cacheSeconds=300`
-  - Python versions: `https://img.shields.io/pypi/pyversions/matheel.svg?cacheSeconds=300`
+- Confirm the GitHub Release notes describe the user-visible changes.
+- Do not add release notes under `docs/releases`; keep release notes on GitHub Releases.
+- Confirm the README PyPI badges are dynamic and use the standard Shields cache:
+  - PyPI version: `https://img.shields.io/pypi/v/matheel.svg`
+  - Python versions: `https://img.shields.io/pypi/pyversions/matheel.svg`
 
 ## Tests
 
@@ -71,7 +72,7 @@ git tag --sort=-version:refname | head
 
 - Confirm the GitHub Actions publish run succeeded for the release event.
 - Confirm PyPI shows the new version, the `Requires-Python` range, and Python version classifiers.
-- Confirm the README badges show the released PyPI version and supported Python versions after the Shields cache refreshes.
+- Confirm the README badges show the released PyPI version and supported Python versions after the standard Shields cache refreshes.
 
 ## Post-Release
 

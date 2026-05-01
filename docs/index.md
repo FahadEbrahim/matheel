@@ -20,7 +20,6 @@ Matheel is organized around a simple flow:
 - [Code metrics](code_metrics.md)
 - [Comparison suite](comparison_suite.md)
 - [Release checklist](release_checklist.md)
-- [Release notes: v0.3.5](releases/v0.3.5.md)
 
 ## Demos and Examples
 

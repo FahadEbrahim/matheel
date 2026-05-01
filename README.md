@@ -1,8 +1,8 @@
 # Matheel
 
 [![Tests](https://github.com/FahadEbrahim/matheel/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/FahadEbrahim/matheel/actions/workflows/tests.yml)
-[![PyPI](https://img.shields.io/pypi/v/matheel.svg?cacheSeconds=300)](https://pypi.org/project/matheel/)
-[![Python versions](https://img.shields.io/pypi/pyversions/matheel.svg?cacheSeconds=300)](https://pypi.org/project/matheel/)
+[![PyPI](https://img.shields.io/pypi/v/matheel.svg)](https://pypi.org/project/matheel/)
+[![Python versions](https://img.shields.io/pypi/pyversions/matheel.svg)](https://pypi.org/project/matheel/)
 [![Latest release](https://img.shields.io/github/v/release/FahadEbrahim/matheel.svg)](https://github.com/FahadEbrahim/matheel/releases)
 [![License](https://img.shields.io/github/license/FahadEbrahim/matheel.svg)](LICENSE)
 
