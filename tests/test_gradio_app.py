@@ -1,6 +1,8 @@
 import importlib.util
+import zipfile
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 
@@ -139,3 +141,96 @@ def test_build_feature_weights_ignores_code_metric_weight_when_metric_is_inactiv
     )
 
     assert weights == {"semantic": 1.0}
+
+
+def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
+    row = _build_suite_row(run_name="../baseline/strong")
+    summary = pd.DataFrame(
+        [
+            {
+                "run_name": "../baseline/strong",
+                "pair_count": 1,
+                "mean_score": 1.0,
+                "median_score": 1.0,
+                "max_score": 1.0,
+                "min_score": 1.0,
+                "std_score": 0.0,
+                "top_file_1": "a.py",
+                "top_file_2": "b.py",
+                "top_score": 1.0,
+                "vector_backend": "auto",
+                "code_metric": "none",
+                "chunking_method": "none",
+            }
+        ]
+    )
+    details = pd.DataFrame(
+        [
+            {
+                "file_name_1": "a.py",
+                "file_name_2": "b.py",
+                "similarity_score": 1.0,
+            }
+        ]
+    )
+
+    def fake_run_comparison_suite(
+        zipped_file,
+        run_configs,
+        summary_out=None,
+        details_dir=None,
+        output_format="csv",
+    ):
+        assert run_configs[0]["run_name"] == "../baseline/strong"
+        return summary, {"../baseline/strong": details}
+
+    monkeypatch.setattr(gradio_app, "run_comparison_suite", fake_run_comparison_suite)
+
+    outputs = gradio_app.run_suite_gradio(
+        "codes.zip",
+        [row],
+        "csv",
+        "",
+        ["Levenshtein"],
+        gradio_app.DEFAULT_MODEL,
+        "auto",
+        "cosine",
+        "mean",
+        256,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        "1,1,1",
+        0.1,
+        5,
+        4,
+        5,
+        "codebleu",
+        0.0,
+        "java",
+        "0.25,0.25,0.25,0.25",
+        4,
+        50,
+        gradio_app.DEFAULT_RUBY_MODE,
+        gradio_app.DEFAULT_RUBY_GRAPH_TIMEOUT,
+        gradio_app.DEFAULT_TSED_COSTS,
+        gradio_app.DEFAULT_CODEBERTSCORE_MODEL,
+        gradio_app.DEFAULT_CODEBERTSCORE_MAX_LENGTH,
+        [],
+        "none",
+        "none",
+        120,
+        0,
+        0,
+        "mean",
+        "text",
+        "",
+        0.0,
+        50,
+    )
+
+    details_zip_path = outputs[6]
+    with zipfile.ZipFile(details_zip_path) as archive:
+        assert archive.namelist() == ["baseline_strong.csv"]

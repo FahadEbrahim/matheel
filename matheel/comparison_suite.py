@@ -116,10 +116,14 @@ def summary_row_from_results(run_name, options, results):
     }
 
 
-def _slugify(value):
-    slug = _SLUG_RE.sub("_", value.strip())
+def slugify_run_name(value):
+    slug = _SLUG_RE.sub("_", str(value).strip())
     slug = slug.strip("._")
     return slug or "run"
+
+
+def _slugify(value):
+    return slugify_run_name(value)
 
 
 def _rounded_score_frame(frame):
@@ -148,7 +152,7 @@ def write_run_details(run_name, results, details_dir):
     results = _rounded_score_frame(results)
     target_dir = Path(details_dir)
     target_dir.mkdir(parents=True, exist_ok=True)
-    target_path = target_dir / f"{_slugify(run_name)}.csv"
+    target_path = target_dir / f"{slugify_run_name(run_name)}.csv"
     results.to_csv(target_path, index=False, float_format=f"%.{_SCORE_DECIMALS}f")
     return target_path
 
