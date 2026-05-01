@@ -3,7 +3,12 @@ import json
 import pandas as pd
 import pytest
 
-from matheel.comparison_suite import load_run_configs, parse_run_configs, run_comparison_suite
+from matheel.comparison_suite import (
+    load_run_configs,
+    parse_run_configs,
+    run_comparison_suite,
+    slugify_run_name,
+)
 
 
 def test_load_run_configs_accepts_runs_wrapper(tmp_path):
@@ -64,6 +69,11 @@ def test_parse_run_configs_rejects_legacy_weight_keys():
         parse_run_configs(
             '[{"run_name":"legacy","options":{"ws":0.7,"wl":0.3}}]'
         )
+
+
+def test_slugify_run_name_removes_path_separators():
+    assert slugify_run_name("../baseline/strong") == "baseline_strong"
+    assert slugify_run_name("...") == "run"
 
 
 def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):

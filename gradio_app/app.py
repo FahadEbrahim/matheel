@@ -13,7 +13,7 @@ import pandas as pd
 from gradio_huggingfacehub_search import HuggingfaceHubSearch
 
 from matheel.chunking import available_chunk_aggregations, available_chunking_methods
-from matheel.comparison_suite import run_comparison_suite
+from matheel.comparison_suite import run_comparison_suite, slugify_run_name
 from matheel.code_metrics import available_code_metric_languages, available_code_metrics
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
@@ -1097,9 +1097,10 @@ def run_suite_gradio(
     details_zip_path = os.path.join(export_root, "comparison_suite_details.zip")
     with zipfile.ZipFile(details_zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for run_name, frame in result_frames.items():
-            detail_path = os.path.join(export_root, f"{run_name}.csv")
+            detail_filename = f"{slugify_run_name(run_name)}.csv"
+            detail_path = os.path.join(export_root, detail_filename)
             frame.to_csv(detail_path, index=False)
-            archive.write(detail_path, arcname=os.path.basename(detail_path))
+            archive.write(detail_path, arcname=detail_filename)
     run_sheet_export = os.path.join(export_root, "comparison_suite_runs.json")
     with open(run_sheet_export, "w", encoding="utf-8") as handle:
         json.dump(run_configs, handle, indent=2)
