@@ -36,6 +36,14 @@ python -m build
 python -m twine check dist/*
 ```
 
+- Publish the checked artifacts to PyPI:
+
+```bash
+python -m twine upload dist/*
+```
+
+- Confirm PyPI shows the new version.
+
 ## GitHub Release
 
 - Confirm the tag exists on GitHub.
