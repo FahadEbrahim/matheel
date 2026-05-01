@@ -41,6 +41,19 @@ def test_code_chunker_requires_chonkie_when_unavailable(monkeypatch):
         )
 
 
+def test_chonkie_constructor_errors_are_reported_as_configuration_errors(monkeypatch):
+    class BrokenChunker:
+        def __init__(self, chunk_size=0, chunk_overlap=0, tokenizer=None):
+            raise TypeError("bad chunker option")
+
+    monkeypatch.setattr(chunking, "_load_chonkie_class", lambda class_name: BrokenChunker)
+
+    with pytest.raises(ValueError, match="Failed to initialize TokenChunker") as exc_info:
+        chunk_text("line1\nline2", method="chonkie_token", chunk_size=2)
+
+    assert isinstance(exc_info.value.__cause__, TypeError)
+
+
 def test_parse_chunker_options_supports_strings():
     assert parse_chunker_options("flag=true,count=2,name=demo") == {
         "flag": True,

@@ -43,11 +43,12 @@ def normalize_run_config(config, index=1):
         raise ValueError("Each comparison run must be a JSON object.")
 
     options = dict(config.get("options", {}))
+    nested_run_name = options.pop("run_name", None)
     for key, value in config.items():
         if key not in {"run_name", "options"}:
             options[key] = value
 
-    run_name = str(config.get("run_name") or options.pop("run_name", f"run_{index}"))
+    run_name = str(config.get("run_name") or nested_run_name or f"run_{index}")
 
     if "model" in options and "model_name" not in options:
         options["model_name"] = options.pop("model")

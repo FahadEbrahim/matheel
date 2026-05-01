@@ -130,6 +130,13 @@ def test_calculate_similarity_supports_chunking(monkeypatch):
     assert score == pytest.approx(1.0)
 
 
+def test_aggregate_chunk_embeddings_handles_empty_input():
+    result = similarity.aggregate_chunk_embeddings([])
+
+    assert result.shape == (1,)
+    assert result[0] == 0.0
+
+
 def test_calculate_similarity_supports_code_metric_without_semantic_weights(monkeypatch):
     monkeypatch.setattr(
         similarity,

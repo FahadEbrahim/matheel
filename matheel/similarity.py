@@ -345,10 +345,10 @@ def semantic_similarity(
 
 def aggregate_chunk_embeddings(chunk_embeddings, chunk_aggregation="mean"):
     vectors = np.asarray(chunk_embeddings, dtype=float)
+    if vectors.size == 0:
+        return np.zeros(1, dtype=float)
     if vectors.ndim == 1:
         return vectors
-    if len(vectors) == 0:
-        return np.zeros(1, dtype=float)
     if chunk_aggregation == "max":
         return vectors.max(axis=0)
     if chunk_aggregation == "first":
