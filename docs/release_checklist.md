@@ -36,22 +36,15 @@ python -m build
 python -m twine check dist/*
 ```
 
-- Publish the checked artifacts to PyPI:
+## GitHub Release and PyPI
 
-```bash
-python -m twine upload dist/*
-```
-
-- Confirm PyPI shows the new version.
-
-## GitHub Release
-
-- Confirm the tag exists on GitHub.
-- Publish the GitHub Release for the same tag.
+- Create and push the release tag.
+- Publish the GitHub Release for the same tag. The publish workflow uploads the package to PyPI through Trusted Publishing.
 - Mark the release as latest when it is the current stable release.
-- Confirm GitHub Releases, repository tags, and `pyproject.toml` agree:
+- Confirm PyPI, GitHub Releases, repository tags, and `pyproject.toml` agree:
 
 ```bash
+python -m pip index versions matheel
 gh release list --limit 5
 git tag --sort=-version:refname | head
 ```
