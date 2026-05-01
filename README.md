@@ -27,6 +27,8 @@ pip install matheel
 Optional extras:
 
 ```bash
+pip install "matheel[sentence_transformers]"
+pip install "matheel[semantic]"
 pip install "matheel[chunking]"
 pip install "matheel[chunking_code]"
 pip install "matheel[metrics]"
@@ -37,7 +39,9 @@ pip install "matheel[all]"
 pip install "matheel[dev]"
 ```
 
-`matheel[all]` installs the currently supported optional backends in one command: Chonkie code chunking, metrics runtime dependencies (RUBY graph/tree, TSED, CodeBERTScore), model2vec, PyLate, and the Gradio app dependencies.
+`matheel[sentence_transformers]` installs the default dense semantic backend. `matheel[semantic]` installs all semantic backends: Sentence Transformers, model2vec, and PyLate. `matheel[chunking]` installs Chonkie chunkers; `matheel[chunking_code]` additionally installs Chonkie's code auto-detection support. `matheel[all]` installs the currently supported optional backends in one command.
+
+Examples that use semantic weights assume `matheel[sentence_transformers]`, `matheel[semantic]`, or `matheel[all]` is installed.
 
 Matheel now ships a native CodeBLEU implementation that uses `tree_sitter_language_pack` for parser resolution, so real syntax/dataflow scoring no longer depends on installing the pip `codebleu` package. The pip package is still useful for validation/comparison work if you want to cross-check the native scores on selected examples; Matheel does not currently claim exact pip parity on every possible input.
 

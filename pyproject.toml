@@ -33,44 +33,64 @@ dependencies = [
     "numpy>=2,<3",
     "rapidfuzz>=3,<4",
     "networkx>=3,<4",
+    # 1.x currently has limited wheel coverage across the supported Python matrix.
     "tree-sitter-language-pack>=0.7,<0.8",
-    "func-timeout>=4,<5",
-    "sentence-transformers>=5.1,<5.2",
-    "sentencepiece>=0.2,<0.3"
+    "func-timeout>=4,<5"
 ]
 
 [project.optional-dependencies]
 chunking = [
-    "chonkie>=1.5,<1.6"
+    "chonkie>=1.5,<1.7"
 ]
 chunking_code = [
-    "chonkie[code]>=1.5,<1.6"
+    "chonkie[code]>=1.5,<1.7"
 ]
 metrics = [
     "apted>=1.0,<2",
     "bert-score>=0.3,<0.4"
 ]
+sentence_transformers = [
+    "sentence-transformers>=5.1,<5.2",
+    "sentencepiece>=0.2,<0.3"
+]
 model2vec = [
-    "model2vec>=0.7,<0.8"
+    "model2vec>=0.7,<0.9"
 ]
 pylate = [
+    # PyLate 1.4 pins sentence-transformers==5.1.1.
+    "sentence-transformers>=5.1,<5.2",
+    "sentencepiece>=0.2,<0.3",
+    "pylate>=1.4,<1.5"
+]
+semantic = [
+    # PyLate 1.4 pins sentence-transformers==5.1.1.
+    "sentence-transformers>=5.1,<5.2",
+    "sentencepiece>=0.2,<0.3",
+    "model2vec>=0.7,<0.9",
     "pylate>=1.4,<1.5"
 ]
 gradio = [
+    "sentence-transformers>=5.1,<5.2",
+    "sentencepiece>=0.2,<0.3",
+    # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
     "gradio>=5,<6",
-    "gradio-huggingfacehub-search==0.0.8"
+    "gradio-huggingfacehub-search>=0.0.8,<0.1"
 ]
 all = [
-    "chonkie[code]>=1.5,<1.6",
+    "chonkie[code]>=1.5,<1.7",
     "apted>=1.0,<2",
     "bert-score>=0.3,<0.4",
-    "model2vec>=0.7,<0.8",
+    # PyLate 1.4 pins sentence-transformers==5.1.1.
+    "sentence-transformers>=5.1,<5.2",
+    "sentencepiece>=0.2,<0.3",
+    "model2vec>=0.7,<0.9",
     "pylate>=1.4,<1.5",
+    # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
     "gradio>=5,<6",
-    "gradio-huggingfacehub-search==0.0.8"
+    "gradio-huggingfacehub-search>=0.0.8,<0.1"
 ]
 dev = [
-    "pytest>=8,<9",
+    "pytest>=8,<10",
     "ruff>=0.15,<0.16",
     "build>=1,<2",
     "twine>=6,<7"
