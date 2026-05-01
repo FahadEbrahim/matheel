@@ -247,6 +247,8 @@ def extract_and_read_source(source_path):
 
 def _validate_weight(name, value):
     numeric_value = float(value)
+    if not np.isfinite(numeric_value):
+        raise ValueError(f"{name} must be finite.")
     if numeric_value < 0:
         raise ValueError(f"{name} must be non-negative.")
     return numeric_value
@@ -320,6 +322,15 @@ def validate_vector_options(vector_backend, static_vector_dim, model_name=None, 
         model_info=model_info,
     )
     return backend, max(8, int(static_vector_dim or 0))
+
+
+def validate_embedding_count(embeddings, code_count):
+    embedding_count = 0 if embeddings is None else len(embeddings)
+    if embedding_count != int(code_count):
+        raise ValueError(
+            f"Embedding count ({embedding_count}) must match code count ({int(code_count)})."
+        )
+    return embeddings
 
 
 def semantic_similarity(
@@ -738,6 +749,7 @@ def rank_code_pairs(
     winnowing_window=4,
     gst_min_match_length=5,
 ):
+    validate_embedding_count(embeddings, len(codes))
     results = []
     code_metric_name = (code_metric or "none").strip().lower()
     use_code_metric = code_metric_name not in ("none", "") and feature_weights.get("code_metric", 0.0) > 0.0
@@ -892,6 +904,7 @@ def get_sim_list(
     )
     validate_active_code_metric_weight(code_metric, resolved_feature_weights)
     use_semantic = resolved_feature_weights.get("semantic", 0.0) > 0.0
+    file_names, raw_codes = extract_and_read_source(zipped_file)
     if use_semantic and (vector_backend or "auto").strip().lower() in ("", "auto"):
         model_info = load_hf_model_info(model_name or DEFAULT_MODEL_NAME)
     vector_backend, static_vector_dim = validate_vector_options(
@@ -902,7 +915,6 @@ def get_sim_list(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
-    file_names, raw_codes = extract_and_read_source(zipped_file)
     codes = [prepare_code(code, preprocess_mode=preprocess_mode) for code in raw_codes]
     if use_semantic:
         model = load_backend_model(

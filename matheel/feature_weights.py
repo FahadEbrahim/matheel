@@ -1,3 +1,6 @@
+import math
+
+
 _DEFAULT_FEATURE_WEIGHTS = {
     "semantic": 0.7,
     "levenshtein": 0.3,
@@ -31,6 +34,8 @@ def _validate_weight_name(name):
 
 def _validate_weight_value(name, value):
     numeric_value = float(value)
+    if not math.isfinite(numeric_value):
+        raise ValueError(f"{name} must be finite.")
     if numeric_value < 0:
         raise ValueError(f"{name} must be non-negative.")
     return numeric_value

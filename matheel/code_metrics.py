@@ -526,8 +526,10 @@ def parse_component_weights(raw_weights=None):
         values = [float(value.strip()) for value in str(raw_weights).split(",") if value.strip()]
     if len(values) != 4:
         raise ValueError("CodeBLEU component weights must contain exactly 4 values.")
+    if any((not math.isfinite(value)) or value < 0 for value in values):
+        raise ValueError("CodeBLEU component weights must be finite non-negative values.")
     total = sum(values)
-    if total <= 0:
+    if not math.isfinite(total) or total <= 0:
         raise ValueError("CodeBLEU component weights must sum to a positive value.")
     return tuple(value / total for value in values)
 
