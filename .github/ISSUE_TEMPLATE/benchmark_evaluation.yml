@@ -1,0 +1,62 @@
+name: Benchmark or evaluation task
+description: Add ground-truth evaluation, benchmark datasets, metrics, resampling, or comparison methodology.
+title: "[Benchmark]: "
+labels: ["type: benchmark", "status: triage"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What benchmark or evaluation capability is needed?
+    validations:
+      required: true
+  - type: dropdown
+    id: task_family
+    attributes:
+      label: Task family
+      options:
+        - Pair classification
+        - Retrieval/ranking
+        - Score calibration
+        - Resampling/uncertainty
+        - Statistical comparison
+        - Dataset adapter
+        - Benchmark demonstration
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: dataset
+    attributes:
+      label: Dataset or labels
+      description: Describe expected input files, ground-truth labels, relevance judgments, or preset source.
+      placeholder: "pairs.csv with left_id, right_id, label; or qrels with query_id, doc_id, relevance."
+    validations:
+      required: true
+  - type: textarea
+    id: metrics
+    attributes:
+      label: Metrics
+      placeholder: "Accuracy, precision, recall, F1, AUROC, AUPRC, MAP, MRR, nDCG@k."
+    validations:
+      required: true
+  - type: textarea
+    id: methodology
+    attributes:
+      label: Methodology
+      description: Explain thresholds, calibration, splits, resampling, and how algorithms will be compared fairly.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+      placeholder: "Add tiny fixtures, deterministic metrics tests, and CLI smoke tests."
+    validations:
+      required: true

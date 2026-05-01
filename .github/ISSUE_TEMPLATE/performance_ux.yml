@@ -1,0 +1,53 @@
+name: Performance or UX
+description: Improve runtime, progress feedback, usability, or result interpretation.
+title: "[Performance/UX]: "
+labels: ["type: performance", "type: ux", "status: triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What runtime, progress, or usability issue affects users?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI progress
+        - Python API progress hooks
+        - Gradio progress
+        - Runtime profiling
+        - Algorithm performance
+        - Result table readability
+        - Score interpretation
+        - Visualization
+    validations:
+      required: true
+  - type: textarea
+    id: scenario
+    attributes:
+      label: User scenario
+      placeholder: "Running 200 submissions in the Gradio app gives no progress feedback."
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed improvement
+      placeholder: "Show pair count, active algorithm, elapsed time, and estimated progress."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+    validations:
+      required: true
