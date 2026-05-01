@@ -532,10 +532,14 @@ def parse_component_weights(raw_weights=None):
     return tuple(value / total for value in values)
 
 
+def _default_codebleu_tokens(value):
+    return (value or "").strip().split()
+
+
 def codebleu_components(reference, prediction, language="java", component_weights=None):
     normalized_language = normalize_codebleu_language(language)
-    reference_tokens = (reference or "").strip().split()
-    hypothesis_tokens = (prediction or "").strip().split()
+    reference_tokens = _default_codebleu_tokens(reference)
+    hypothesis_tokens = _default_codebleu_tokens(prediction)
     if not reference_tokens and not hypothesis_tokens:
         return {
             "codebleu": 1.0,
@@ -556,6 +560,7 @@ def codebleu_components(reference, prediction, language="java", component_weight
         predictions=[(prediction or "").strip()],
         lang=normalized_language,
         weights=weights,
+        tokenizer=_default_codebleu_tokens,
     )
 
     return {
@@ -567,8 +572,9 @@ def codebleu_components(reference, prediction, language="java", component_weight
     }
 
 
-def prepare_crystalbleu_context(codes, max_order=4):
+def prepare_crystalbleu_context(codes, max_order=4, trivial_ngram_count=50):
     order_limit = max(1, min(int(max_order), 8))
+    ignored_count = max(0, int(trivial_ngram_count))
     tokens_by_doc = [tokenize_for_code_metrics(code) for code in codes]
     sorted_ngrams_by_n = {}
 
@@ -582,6 +588,7 @@ def prepare_crystalbleu_context(codes, max_order=4):
         "tokens_by_doc": tokens_by_doc,
         "sorted_ngrams_by_n": sorted_ngrams_by_n,
         "max_order": order_limit,
+        "trivial_ngram_count": ignored_count,
     }
 
 
@@ -1335,16 +1342,26 @@ def score_code_metric_pair(
         return float((forward + reverse) * 0.5)
 
     if metric_key == "crystalbleu":
+        requested_trivial_ngram_count = max(0, int(crystalbleu_trivial_ngram_count))
         if crystalbleu_context is None:
             crystalbleu_context = prepare_crystalbleu_context(
                 [reference, prediction],
                 max_order=crystalbleu_max_order,
+                trivial_ngram_count=requested_trivial_ngram_count,
             )
             left_index = 0
             right_index = 1
         else:
             left_index = int(reference_index)
             right_index = int(prediction_index)
+            context_trivial_ngram_count = crystalbleu_context.get("trivial_ngram_count")
+            if (
+                context_trivial_ngram_count is not None
+                and int(context_trivial_ngram_count) != requested_trivial_ngram_count
+            ):
+                raise ValueError(
+                    "CrystalBLEU context trivial_ngram_count does not match scoring options."
+                )
 
         tokens_by_doc = crystalbleu_context["tokens_by_doc"]
         sorted_ngrams_by_n = crystalbleu_context["sorted_ngrams_by_n"]
@@ -1353,7 +1370,7 @@ def score_code_metric_pair(
             tokens_by_doc[right_index],
             sorted_ngrams_by_n=sorted_ngrams_by_n,
             max_order=crystalbleu_max_order,
-            trivial_ngram_count=crystalbleu_trivial_ngram_count,
+            trivial_ngram_count=requested_trivial_ngram_count,
         )
         if not bidirectional:
             return float(forward)
@@ -1362,7 +1379,7 @@ def score_code_metric_pair(
             tokens_by_doc[left_index],
             sorted_ngrams_by_n=sorted_ngrams_by_n,
             max_order=crystalbleu_max_order,
-            trivial_ngram_count=crystalbleu_trivial_ngram_count,
+            trivial_ngram_count=requested_trivial_ngram_count,
         )
         return float((forward + reverse) * 0.5)
 

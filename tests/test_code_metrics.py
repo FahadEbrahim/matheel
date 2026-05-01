@@ -195,13 +195,30 @@ def test_codebleu_supports_real_dfg_languages(language, snippet):
     assert components["codebleu"] == pytest.approx(1.0)
 
 
+def test_codebleu_empty_guard_uses_scoring_tokenizer(monkeypatch):
+    monkeypatch.setattr(code_metrics_module, "codebleu_runtime_available", lambda: False)
+
+    components = codebleu_components(" \n", "\t", language="python")
+
+    assert components == {
+        "codebleu": 1.0,
+        "codebleu_ngram": 1.0,
+        "codebleu_weighted_ngram": 1.0,
+        "codebleu_syntax": 1.0,
+        "codebleu_dataflow": 1.0,
+    }
+
+    with pytest.raises(ImportError):
+        codebleu_components(";", ";", language="python")
+
+
 def test_crystalbleu_context_can_be_reused_across_pairs():
     codes = [
         "int value = 1;",
         "int value = 1;",
         "return value + 2;",
     ]
-    context = prepare_crystalbleu_context(codes, max_order=4)
+    context = prepare_crystalbleu_context(codes, max_order=4, trivial_ngram_count=0)
 
     identical_score = score_code_metric_pair(
         codes[0],
@@ -224,6 +241,25 @@ def test_crystalbleu_context_can_be_reused_across_pairs():
 
     assert identical_score == 1.0
     assert different_score < identical_score
+
+
+def test_crystalbleu_context_rejects_trivial_ngram_count_mismatch():
+    context = prepare_crystalbleu_context(
+        ["int value = 1;", "return value + 1;"],
+        max_order=4,
+        trivial_ngram_count=2,
+    )
+
+    with pytest.raises(ValueError, match="trivial_ngram_count"):
+        score_code_metric_pair(
+            "int value = 1;",
+            "return value + 1;",
+            metric_name="crystalbleu",
+            crystalbleu_context=context,
+            reference_index=0,
+            prediction_index=1,
+            crystalbleu_trivial_ngram_count=0,
+        )
 
 
 @pytest.mark.parametrize("alias,normalized_language", NORMALIZE_ALIAS_CASES)

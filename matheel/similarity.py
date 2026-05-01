@@ -937,7 +937,11 @@ def get_sim_list(
     tsed_context = None
     codebertscore_context = None
     if use_code_metric and code_metric_name == "crystalbleu":
-        crystalbleu_context = prepare_crystalbleu_context(codes, max_order=crystalbleu_max_order)
+        crystalbleu_context = prepare_crystalbleu_context(
+            codes,
+            max_order=crystalbleu_max_order,
+            trivial_ngram_count=crystalbleu_trivial_ngram_count,
+        )
     if use_code_metric and code_metric_name == "ruby":
         ruby_context = prepare_ruby_context(
             codes,
