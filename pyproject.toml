@@ -57,6 +57,7 @@ all = [
 ]
 dev = [
     "pytest>=8,<9",
+    "ruff>=0.15,<0.16",
     "build>=1,<2",
     "twine>=6,<7"
 ]
@@ -78,3 +79,13 @@ testpaths = ["tests"]
 markers = [
     "integration: real-model tests that use actual embedding backends and cached/downloaded model weights",
 ]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = [
+    "*.ipynb",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"gradio_app/app.py" = ["E402"]
