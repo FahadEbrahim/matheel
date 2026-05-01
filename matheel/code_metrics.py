@@ -1518,10 +1518,22 @@ def score_code_metric_pair(
             left_tree = tsed_context["trees"][0]
             right_tree = tsed_context["trees"][1]
         else:
+            if reference_index is None or prediction_index is None:
+                raise ValueError(
+                    "TSED context scoring requires reference_index and prediction_index."
+                )
             left_index = int(reference_index)
             right_index = int(prediction_index)
-            left_tree = tsed_context["trees"][left_index]
-            right_tree = tsed_context["trees"][right_index]
+            trees = tsed_context.get("trees", [])
+            if (
+                left_index < 0
+                or right_index < 0
+                or left_index >= len(trees)
+                or right_index >= len(trees)
+            ):
+                raise ValueError("TSED context indices are out of range for the prepared context.")
+            left_tree = trees[left_index]
+            right_tree = trees[right_index]
 
         return _tsed_pair_score(
             left_tree,

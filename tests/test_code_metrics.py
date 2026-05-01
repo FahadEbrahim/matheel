@@ -503,6 +503,21 @@ def test_tsed_metric_scores_identical_higher_than_different():
     assert identical >= different
 
 
+def test_tsed_context_rejects_out_of_range_indices(monkeypatch):
+    monkeypatch.setattr(code_metrics_module, "_tsed_runtime_available", lambda: True)
+
+    with pytest.raises(ValueError, match="out of range"):
+        score_code_metric_pair(
+            "def add(a, b): return a + b",
+            "def sum_two(x, y): return x + y",
+            metric_name="tsed",
+            language="python",
+            tsed_context={"trees": [object()]},
+            reference_index=0,
+            prediction_index=1,
+        )
+
+
 @pytest.mark.parametrize("language,snippet", NEW_TREE_SITTER_LANGUAGE_SNIPPETS.items())
 def test_tsed_supports_new_scoped_languages(language, snippet):
     if not code_metrics_module._tsed_runtime_available():

@@ -165,8 +165,10 @@ def _build_chonkie_chunker(method, chunk_size, chunk_overlap, chunk_language="te
     filtered = _filter_callable_kwargs(chunker_class, options)
     try:
         return chunker_class(**filtered)
-    except Exception:
-        return None
+    except Exception as exc:
+        raise ValueError(
+            f"Failed to initialize {class_name} for chunking method '{method}'."
+        ) from exc
 
 
 def _chunk_with_chonkie(text, method, chunk_size, chunk_overlap, max_chunks=0, chunk_language="text", chunker_options=None):

@@ -5,6 +5,7 @@ import pytest
 
 from matheel.comparison_suite import (
     load_run_configs,
+    normalize_run_config,
     parse_run_configs,
     run_comparison_suite,
     slugify_run_name,
@@ -64,6 +65,21 @@ def test_parse_run_configs_accepts_json_text():
     assert runs[0]["options"]["feature_weights"] == {"semantic": 0.2, "code_metric": 0.8}
 
 
+def test_normalize_run_config_does_not_leak_nested_run_name():
+    run = normalize_run_config(
+        {
+            "run_name": "outer",
+            "options": {
+                "run_name": "inner",
+                "feature_weights": {"levenshtein": 1.0},
+            },
+        }
+    )
+
+    assert run["run_name"] == "outer"
+    assert "run_name" not in run["options"]
+
+
 def test_parse_run_configs_rejects_legacy_weight_keys():
     with pytest.raises(ValueError, match="Legacy weight keys"):
         parse_run_configs(
@@ -120,3 +136,32 @@ def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):
     assert "0.9877" in summary_text
     assert "0.9876543" not in strong_details_text
     assert "0.9877" in strong_details_text
+
+
+def test_run_comparison_suite_accepts_already_normalized_configs(monkeypatch):
+    captured_options = []
+
+    def fake_get_sim_list(zipped_file, **kwargs):
+        captured_options.append(kwargs)
+        return pd.DataFrame(
+            [
+                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 1.0},
+            ]
+        )
+
+    monkeypatch.setattr("matheel.comparison_suite.get_sim_list", fake_get_sim_list)
+    normalized = normalize_run_config(
+        {
+            "run_name": "outer",
+            "options": {
+                "run_name": "inner",
+                "feature_weights": {"levenshtein": 1.0},
+            },
+        }
+    )
+
+    summary, _ = run_comparison_suite("codes.zip", [normalized])
+
+    assert list(summary["run_name"]) == ["outer"]
+    assert captured_options
+    assert "run_name" not in captured_options[0]
