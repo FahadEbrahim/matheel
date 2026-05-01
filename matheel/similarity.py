@@ -257,6 +257,16 @@ def validate_code_metric_options(code_metric_weight, codebleu_component_weights)
     )
 
 
+def validate_active_code_metric_weight(code_metric, feature_weights):
+    metric_name = (code_metric or "none").strip().lower()
+    metric_weight = float((feature_weights or {}).get("code_metric", 0.0))
+    if metric_name in ("none", "") and metric_weight > 0.0:
+        raise ValueError(
+            "code_metric_weight requires an active code_metric. "
+            "Set code_metric to a supported metric or set the code_metric feature weight to 0."
+        )
+
+
 def validate_edit_distance_options(levenshtein_weights=None, jaro_winkler_prefix_weight=0.1):
     if levenshtein_weights in (None, ""):
         parsed_levenshtein_weights = (1, 1, 1)
@@ -878,6 +888,7 @@ def get_sim_list(
         feature_weights=feature_weights,
         code_metric_weight=code_metric_weight,
     )
+    validate_active_code_metric_weight(code_metric, resolved_feature_weights)
     use_semantic = resolved_feature_weights.get("semantic", 0.0) > 0.0
     if use_semantic and (vector_backend or "auto").strip().lower() in ("", "auto"):
         model_info = load_hf_model_info(model_name or DEFAULT_MODEL_NAME)
@@ -1092,6 +1103,7 @@ def calculate_similarity(
         feature_weights=feature_weights,
         code_metric_weight=code_metric_weight,
     )
+    validate_active_code_metric_weight(code_metric, resolved_feature_weights)
     use_semantic = resolved_feature_weights.get("semantic", 0.0) > 0.0
     if use_semantic and (vector_backend or "auto").strip().lower() in ("", "auto"):
         model_info = load_hf_model_info(model_name or DEFAULT_MODEL_NAME)

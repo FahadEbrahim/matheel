@@ -120,3 +120,22 @@ def test_default_suite_run_name_uses_algorithm_names():
         )
         == "embedding_levenshtein"
     )
+
+
+def test_build_feature_weights_ignores_code_metric_weight_when_metric_is_inactive():
+    weights = gradio_app.build_feature_weights(
+        True,
+        1.0,
+        False,
+        0.0,
+        False,
+        0.0,
+        False,
+        0.0,
+        False,
+        0.0,
+        "none",
+        1.0,
+    )
+
+    assert weights == {"semantic": 1.0}

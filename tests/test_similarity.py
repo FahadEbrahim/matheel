@@ -138,6 +138,29 @@ def test_calculate_similarity_supports_code_metric_without_semantic_weights(monk
     assert score == pytest.approx(1.0)
 
 
+def test_calculate_similarity_rejects_inactive_code_metric_weight():
+    with pytest.raises(ValueError, match="code_metric_weight requires an active code_metric"):
+        similarity.calculate_similarity(
+            "abc",
+            "abc",
+            vector_backend="static_hash",
+            feature_weights={"levenshtein": 1.0},
+            code_metric="none",
+            code_metric_weight=1.0,
+        )
+
+
+def test_calculate_similarity_rejects_code_metric_feature_without_metric():
+    with pytest.raises(ValueError, match="code_metric_weight requires an active code_metric"):
+        similarity.calculate_similarity(
+            "abc",
+            "abc",
+            vector_backend="static_hash",
+            feature_weights={"code_metric": 1.0},
+            code_metric="none",
+        )
+
+
 def test_calculate_similarity_supports_custom_levenshtein_weights():
     default_score = similarity.calculate_similarity(
         "abcd",
