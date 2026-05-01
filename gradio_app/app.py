@@ -12,6 +12,11 @@ import gradio as gr
 import pandas as pd
 from gradio_huggingfacehub_search import HuggingfaceHubSearch
 
+try:
+    from gradio_app.html_utils import escape_html
+except ModuleNotFoundError:
+    from html_utils import escape_html
+
 from matheel.chunking import available_chunk_aggregations, available_chunking_methods
 from matheel.comparison_suite import run_comparison_suite, slugify_run_name
 from matheel.code_metrics import available_code_metric_languages, available_code_metrics
@@ -293,21 +298,21 @@ def sync_codebertscore_model_settings_gradio(model_name, codebertscore_max_lengt
 
 
 def profile_status_html(message):
-    return f"<p><strong>Status:</strong> {message}</p>"
+    return f"<p><strong>Status:</strong> {escape_html(message)}</p>"
 
 
 def model_status_html(settings=None, error_message=None):
     if error_message:
-        return f"<p><strong>Model:</strong> {error_message}</p>"
+        return f"<p><strong>Model:</strong> {escape_html(error_message)}</p>"
 
     if not settings:
         return ""
 
-    backend = settings.get("resolved_vector_backend", "auto")
+    backend = escape_html(settings.get("resolved_vector_backend", "auto"))
     detected = int(settings.get("detected_max_token_length") or 0)
     configured = settings.get("configured_max_token_length")
     active = int(configured or detected or 0)
-    device = settings.get("runtime_device", "auto")
+    device = escape_html(settings.get("runtime_device", "auto"))
     return (
         f"<p><strong>Resolved:</strong> {backend} | "
         f"<strong>Detected:</strong> {detected} | "
@@ -914,7 +919,7 @@ def suite_runs_overview_html(rows):
         return "<p><strong>Configured runs:</strong> none.</p>"
 
     names = [str(value).strip() for value in frame["run_name"].tolist() if str(value).strip()]
-    preview = ", ".join(names[:4])
+    preview = ", ".join(escape_html(name) for name in names[:4])
     if len(names) > 4:
         preview = f"{preview}, +{len(names) - 4} more"
     return f"<p><strong>Configured runs:</strong> {len(names)} | {preview}</p>"
@@ -951,7 +956,7 @@ def suite_summary_html(summary):
 
     best = summary.iloc[0]
     return (
-        f"<p><strong>Best run:</strong> {best['run_name']} | "
+        f"<p><strong>Best run:</strong> {escape_html(best['run_name'])} | "
         f"<strong>Runs:</strong> {len(summary)} | "
         f"<strong>Best mean:</strong> {float(summary['mean_score'].max()):.3f} | "
         f"<strong>Best max:</strong> {float(summary['max_score'].max()):.3f}</p>"
@@ -1135,7 +1140,8 @@ def results_summary_html(results, vector_backend, code_metric, chunking_method, 
     scores = results["similarity_score"].astype(float)
     top_row = results.iloc[0]
     return (
-        f"<p><strong>Top pair:</strong> {top_row['file_name_1']} vs {top_row['file_name_2']} | "
+        f"<p><strong>Top pair:</strong> {escape_html(top_row['file_name_1'])} "
+        f"vs {escape_html(top_row['file_name_2'])} | "
         f"<strong>Pairs:</strong> {len(results)} | "
         f"<strong>Average:</strong> {scores.mean():.3f} | "
         f"<strong>Top score:</strong> {scores.max():.3f}</p>"
