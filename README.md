@@ -16,7 +16,7 @@ Matheel is a Python package and CLI for source-code similarity. It combines sema
 
 ## Installation
 
-Use Python `3.10` to `3.12`. Installation can take some time. 
+Use Python `3.10` to `3.13`. Installation can take some time.
 
 Base install:
 
