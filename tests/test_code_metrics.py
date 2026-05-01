@@ -278,6 +278,25 @@ def test_crystalbleu_context_rejects_trivial_ngram_count_mismatch():
         )
 
 
+def test_crystalbleu_context_rejects_negative_indices():
+    context = prepare_crystalbleu_context(
+        ["int value = 1;", "return value + 1;"],
+        max_order=4,
+        trivial_ngram_count=0,
+    )
+
+    with pytest.raises(ValueError, match="out of range"):
+        score_code_metric_pair(
+            "int value = 1;",
+            "return value + 1;",
+            metric_name="crystalbleu",
+            crystalbleu_context=context,
+            reference_index=-1,
+            prediction_index=0,
+            crystalbleu_trivial_ngram_count=0,
+        )
+
+
 @pytest.mark.parametrize("alias,normalized_language", NORMALIZE_ALIAS_CASES)
 def test_normalize_code_language_accepts_aliases(alias, normalized_language):
     assert normalize_code_language(alias) == normalized_language
@@ -382,6 +401,27 @@ def test_ruby_context_can_be_reused_across_pairs():
     )
 
     assert similar_score > different_score
+
+
+@pytest.mark.parametrize("ruby_mode", ["ngram", "string"])
+def test_ruby_context_rejects_negative_indices(ruby_mode):
+    codes = [
+        "def add(a, b): return a + b",
+        "def sum_two(x, y): return x + y",
+    ]
+    context = prepare_ruby_context(codes, max_order=2)
+
+    with pytest.raises(ValueError, match="out of range"):
+        score_code_metric_pair(
+            codes[0],
+            codes[1],
+            metric_name="ruby",
+            ruby_context=context,
+            reference_index=-1,
+            prediction_index=0,
+            ruby_mode=ruby_mode,
+            ruby_max_order=2,
+        )
 
 
 def test_ruby_string_mode_uses_tranx_token_edit_similarity():
@@ -531,6 +571,60 @@ def test_codebertscore_bidirectional_cache_is_symmetric(monkeypatch):
     assert first == pytest.approx(0.6123)
     assert second == pytest.approx(0.6123)
     assert calls["count"] == 1
+
+
+@pytest.mark.parametrize(
+    "first_options,second_options",
+    [
+        ({"codebertscore_idf": False}, {"codebertscore_idf": True}),
+        ({"codebertscore_lang": "python"}, {"codebertscore_lang": "java"}),
+        (
+            {"codebertscore_rescale_with_baseline": False},
+            {"codebertscore_rescale_with_baseline": True},
+        ),
+        (
+            {"codebertscore_use_fast_tokenizer": False},
+            {"codebertscore_use_fast_tokenizer": True},
+        ),
+        ({"codebertscore_nthreads": 2}, {"codebertscore_nthreads": 4}),
+    ],
+)
+def test_codebertscore_cache_key_includes_score_options(
+    monkeypatch,
+    first_options,
+    second_options,
+):
+    calls = []
+
+    def fake_score(reference, prediction, **kwargs):
+        calls.append(kwargs)
+        return len(calls) / 10.0
+
+    monkeypatch.setattr(code_metrics_module, "_score_codebertscore_pair", fake_score)
+    context = {"pair_cache": {}}
+
+    first = score_code_metric_pair(
+        "left",
+        "right",
+        metric_name="codebertscore",
+        codebertscore_context=context,
+        reference_index=0,
+        prediction_index=1,
+        **first_options,
+    )
+    second = score_code_metric_pair(
+        "left",
+        "right",
+        metric_name="codebertscore",
+        codebertscore_context=context,
+        reference_index=0,
+        prediction_index=1,
+        **second_options,
+    )
+
+    assert first == pytest.approx(0.1)
+    assert second == pytest.approx(0.2)
+    assert len(calls) == 2
 
 
 def test_tsed_metric_scores_identical_higher_than_different():

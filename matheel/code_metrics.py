@@ -1277,6 +1277,63 @@ def _score_codebertscore_pair(
     return float((score_forward + score_reverse) * 0.5)
 
 
+def _context_item_count(context, keys):
+    counts = [
+        len(context.get(key, []))
+        for key in keys
+        if context.get(key) is not None
+    ]
+    return max(counts, default=0)
+
+
+def _validate_context_indices(context_name, item_count, reference_index, prediction_index):
+    if reference_index is None or prediction_index is None:
+        raise ValueError(
+            f"{context_name} context scoring requires reference_index and prediction_index."
+        )
+    left_index = int(reference_index)
+    right_index = int(prediction_index)
+    if (
+        left_index < 0
+        or right_index < 0
+        or left_index >= item_count
+        or right_index >= item_count
+    ):
+        raise ValueError(
+            f"{context_name} context indices are out of range for the prepared context."
+        )
+    return left_index, right_index
+
+
+def _codebertscore_cache_options(
+    model,
+    num_layers,
+    batch_size,
+    max_length,
+    device,
+    lang,
+    idf,
+    rescale_with_baseline,
+    use_fast_tokenizer,
+    nthreads,
+):
+    normalized_lang = None
+    if lang is not None:
+        normalized_lang = str(lang).strip() or None
+    return (
+        str(model),
+        str(num_layers),
+        int(batch_size),
+        int(max_length),
+        str(device),
+        normalized_lang,
+        bool(idf),
+        bool(rescale_with_baseline),
+        bool(use_fast_tokenizer),
+        int(nthreads),
+    )
+
+
 def score_code_metric_pair(
     reference,
     prediction,
@@ -1354,8 +1411,12 @@ def score_code_metric_pair(
             left_index = 0
             right_index = 1
         else:
-            left_index = int(reference_index)
-            right_index = int(prediction_index)
+            left_index, right_index = _validate_context_indices(
+                "CrystalBLEU",
+                len(crystalbleu_context.get("tokens_by_doc", [])),
+                reference_index,
+                prediction_index,
+            )
             context_trivial_ngram_count = crystalbleu_context.get("trivial_ngram_count")
             if (
                 context_trivial_ngram_count is not None
@@ -1401,8 +1462,19 @@ def score_code_metric_pair(
                     epsilon=epsilon,
                 )
             else:
-                left_index = int(reference_index)
-                right_index = int(prediction_index)
+                left_index, right_index = _validate_context_indices(
+                    "RUBY",
+                    _context_item_count(
+                        ruby_context,
+                        (
+                            "tokens_by_doc",
+                            "tranx_tokens_by_doc",
+                            "selected_tokens_by_doc",
+                        ),
+                    ),
+                    reference_index,
+                    prediction_index,
+                )
                 order_scores = []
                 counts_by_order = ruby_context["ngram_counts_by_order"]
                 for n in range(1, order_limit + 1):
@@ -1434,8 +1506,20 @@ def score_code_metric_pair(
             and reference_index is not None
             and prediction_index is not None
         ):
-            left_index = int(reference_index)
-            right_index = int(prediction_index)
+            left_index, right_index = _validate_context_indices(
+                "RUBY",
+                _context_item_count(
+                    ruby_context,
+                    (
+                        "tokens_by_doc",
+                        "tranx_tokens_by_doc",
+                        "selected_tokens_by_doc",
+                        "trees",
+                    ),
+                ),
+                reference_index,
+                prediction_index,
+            )
             ruby_cache = ruby_context.get("pair_cache", {})
             if bidirectional:
                 left_index, right_index = min(left_index, right_index), max(left_index, right_index)
@@ -1537,20 +1621,13 @@ def score_code_metric_pair(
             left_tree = tsed_context["trees"][0]
             right_tree = tsed_context["trees"][1]
         else:
-            if reference_index is None or prediction_index is None:
-                raise ValueError(
-                    "TSED context scoring requires reference_index and prediction_index."
-                )
-            left_index = int(reference_index)
-            right_index = int(prediction_index)
             trees = tsed_context.get("trees", [])
-            if (
-                left_index < 0
-                or right_index < 0
-                or left_index >= len(trees)
-                or right_index >= len(trees)
-            ):
-                raise ValueError("TSED context indices are out of range for the prepared context.")
+            left_index, right_index = _validate_context_indices(
+                "TSED",
+                len(trees),
+                reference_index,
+                prediction_index,
+            )
             left_tree = trees[left_index]
             right_tree = trees[right_index]
 
@@ -1571,6 +1648,18 @@ def score_code_metric_pair(
             and prediction_index is not None
         ):
             cache = codebertscore_context.get("pair_cache", {})
+            options_key = _codebertscore_cache_options(
+                codebertscore_model,
+                codebertscore_num_layers,
+                codebertscore_batch_size,
+                codebertscore_max_length,
+                codebertscore_device,
+                codebertscore_lang,
+                codebertscore_idf,
+                codebertscore_rescale_with_baseline,
+                codebertscore_use_fast_tokenizer,
+                codebertscore_nthreads,
+            )
             if bidirectional:
                 left_index = min(int(reference_index), int(prediction_index))
                 right_index = max(int(reference_index), int(prediction_index))
@@ -1578,22 +1667,14 @@ def score_code_metric_pair(
                     "sym",
                     left_index,
                     right_index,
-                    str(codebertscore_model),
-                    str(codebertscore_num_layers),
-                    int(codebertscore_batch_size),
-                    int(codebertscore_max_length),
-                    str(codebertscore_device),
+                    *options_key,
                 )
             else:
                 cache_key = (
                     "dir",
                     int(reference_index),
                     int(prediction_index),
-                    str(codebertscore_model),
-                    str(codebertscore_num_layers),
-                    int(codebertscore_batch_size),
-                    int(codebertscore_max_length),
-                    str(codebertscore_device),
+                    *options_key,
                 )
             if cache_key in cache:
                 return float(cache[cache_key])
