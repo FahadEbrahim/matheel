@@ -241,6 +241,7 @@ print(results.head())
 - Lexical metrics and baselines: [docs/lexical.md](docs/lexical.md)
 - Code metrics: [docs/code_metrics.md](docs/code_metrics.md)
 - Comparison suite: [docs/comparison_suite.md](docs/comparison_suite.md)
+- Release checklist: [docs/release_checklist.md](docs/release_checklist.md)
 
 ## Testing
 
