@@ -242,6 +242,26 @@ print(results.head())
 - Code metrics: [docs/code_metrics.md](docs/code_metrics.md)
 - Comparison suite: [docs/comparison_suite.md](docs/comparison_suite.md)
 
+## Testing
+
+Install the development dependencies before running the test suite:
+
+```bash
+pip install -e ".[dev]"
+```
+
+Default test runs are intended to be fast and offline-friendly:
+
+```bash
+pytest
+```
+
+Real-model integration tests are opt-in because they may need optional backends, cached model weights, or network access:
+
+```bash
+pytest -m integration
+```
+
 ## Examples
 
 - Colab walkthrough: [examples/matheel_examples_colab.ipynb](examples/matheel_examples_colab.ipynb)
