@@ -29,11 +29,34 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: Install build
-        run: python -m pip install --upgrade build
+      - name: Install build tools
+        run: python -m pip install --upgrade build twine
+
+      - name: Verify release tag matches package version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python - <<'PY'
+          import os
+          import sys
+          import tomllib
+
+          tag = os.environ["RELEASE_TAG"]
+          with open("pyproject.toml", "rb") as pyproject:
+              version = tomllib.load(pyproject)["project"]["version"]
+
+          expected_tag = f"v{version}"
+          if tag != expected_tag:
+              print(f"Release tag {tag!r} does not match package version {version!r}.", file=sys.stderr)
+              print(f"Expected tag: {expected_tag}", file=sys.stderr)
+              raise SystemExit(1)
+          PY
 
       - name: Build package
         run: python -m build
+
+      - name: Check package metadata
+        run: python -m twine check dist/*
 
       - name: Publish package distributions to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1

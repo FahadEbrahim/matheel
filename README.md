@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/FahadEbrahim/matheel/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/FahadEbrahim/matheel/actions/workflows/tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/matheel.svg?cacheSeconds=300)](https://pypi.org/project/matheel/)
-[![Python versions](https://img.shields.io/badge/python-3.10--3.12-blue.svg)](pyproject.toml)
+[![Python versions](https://img.shields.io/pypi/pyversions/matheel.svg?cacheSeconds=300)](https://pypi.org/project/matheel/)
 [![Latest release](https://img.shields.io/github/v/release/FahadEbrahim/matheel.svg)](https://github.com/FahadEbrahim/matheel/releases)
 [![License](https://img.shields.io/github/license/FahadEbrahim/matheel.svg)](LICENSE)
 
@@ -254,25 +254,25 @@ print(results.head())
 Install the development dependencies before running the test suite:
 
 ```bash
-pip install -e ".[dev]"
+python -m pip install -e ".[dev]"
 ```
 
 Default test runs are intended to be fast and offline-friendly:
 
 ```bash
-pytest
+python -m pytest
 ```
 
 Run the Ruff lint check before opening a pull request:
 
 ```bash
-ruff check .
+python -m ruff check .
 ```
 
 Real-model integration tests are opt-in because they may need optional backends, cached model weights, or network access:
 
 ```bash
-pytest -m integration
+python -m pytest -m integration
 ```
 
 ## Examples
