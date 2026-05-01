@@ -143,6 +143,74 @@ def test_build_feature_weights_ignores_code_metric_weight_when_metric_is_inactiv
     assert weights == {"semantic": 1.0}
 
 
+def test_status_html_helpers_escape_dynamic_values():
+    profile_html = gradio_app.profile_status_html('<script>alert("x")</script>')
+
+    assert "<script>" not in profile_html
+    assert "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;" in profile_html
+
+    error_html = gradio_app.model_status_html(error_message="<img src=x>")
+
+    assert "<img" not in error_html
+    assert "&lt;img src=x&gt;" in error_html
+
+    status_html = gradio_app.model_status_html(
+        {
+            "resolved_vector_backend": "<b>semantic</b>",
+            "detected_max_token_length": 512,
+            "configured_max_token_length": 256,
+            "runtime_device": "<svg>",
+        }
+    )
+
+    assert "<b>semantic</b>" not in status_html
+    assert "&lt;b&gt;semantic&lt;/b&gt;" in status_html
+    assert "&lt;svg&gt;" in status_html
+
+
+def test_suite_html_helpers_escape_run_names():
+    rows = pd.DataFrame([{"run_name": '<img src=x onerror="alert(1)">'}])
+
+    overview_html = gradio_app.suite_runs_overview_html(rows)
+
+    assert "<img" not in overview_html
+    assert "&lt;img src=x onerror=&quot;alert(1)&quot;&gt;" in overview_html
+
+    summary = pd.DataFrame(
+        [
+            {
+                "run_name": "<b>best</b>",
+                "mean_score": 0.8,
+                "max_score": 0.9,
+            }
+        ]
+    )
+
+    summary_html = gradio_app.suite_summary_html(summary)
+
+    assert "<b>best</b>" not in summary_html
+    assert "&lt;b&gt;best&lt;/b&gt;" in summary_html
+
+
+def test_results_summary_html_escapes_uploaded_file_names():
+    results = pd.DataFrame(
+        [
+            {
+                "file_name_1": "<b>a.py</b>",
+                "file_name_2": "<script>x</script>",
+                "similarity_score": 0.9,
+            }
+        ]
+    )
+
+    summary_html = gradio_app.results_summary_html(results, "auto", "none", "none", "cpu")
+
+    assert "<b>a.py</b>" not in summary_html
+    assert "<script>" not in summary_html
+    assert "&lt;b&gt;a.py&lt;/b&gt;" in summary_html
+    assert "&lt;script&gt;x&lt;/script&gt;" in summary_html
+
+
 def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
     row = _build_suite_row(run_name="../baseline/strong")
     summary = pd.DataFrame(
