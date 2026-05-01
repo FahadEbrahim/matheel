@@ -196,6 +196,30 @@ def test_compare_command_accepts_directory_source(tmp_path, monkeypatch):
     assert captured["args"][0] == str(source_dir)
 
 
+def test_compare_command_rejects_inactive_code_metric_weight(tmp_path):
+    source_dir = tmp_path / "codes"
+    source_dir.mkdir()
+    (source_dir / "a.py").write_text("print(1)", encoding="utf-8")
+    (source_dir / "b.py").write_text("print(1)", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "compare",
+            str(source_dir),
+            "--feature-weight",
+            "levenshtein=1",
+            "--code-metric-weight",
+            "1",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert isinstance(result.exception, ValueError)
+    assert "code_metric_weight requires an active code_metric" in str(result.exception)
+
+
 def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
     archive_path = tmp_path / "codes.zip"
     archive_path.write_bytes(b"placeholder")
