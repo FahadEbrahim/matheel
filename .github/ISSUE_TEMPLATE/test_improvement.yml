@@ -1,0 +1,57 @@
+name: Test improvement
+description: Add or strengthen tests, CI, fixtures, or regression coverage.
+title: "[Tests]: "
+labels: ["type: tests", "status: triage"]
+body:
+  - type: textarea
+    id: gap
+    attributes:
+      label: Test gap
+      description: What behavior is untested or weakly tested?
+    validations:
+      required: true
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Test scope
+      options:
+        - Unit tests
+        - Integration tests
+        - CLI tests
+        - Gradio tests
+        - Algorithm correctness tests
+        - Dataset/evaluation tests
+        - CI workflow
+        - Packaging/release tests
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Target files or modules
+      placeholder: "`matheel/similarity.py`, `tests/test_similarity.py`"
+    validations:
+      required: true
+  - type: textarea
+    id: cases
+    attributes:
+      label: Required cases
+      placeholder: |
+        - Identical code scores as expected.
+        - Completely different code scores lower.
+        - Invalid inputs raise clear errors.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Verification command
+      placeholder: "`pytest --ignore=tests/test_real_models.py`"
+    validations:
+      required: true

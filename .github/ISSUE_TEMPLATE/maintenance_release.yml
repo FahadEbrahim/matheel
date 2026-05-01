@@ -1,0 +1,47 @@
+name: Maintenance or release task
+description: Track release preparation, packaging, versioning, CI, and project hygiene.
+title: "[Maintenance]: "
+labels: ["type: maintenance", "status: triage"]
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: Task
+      description: What maintenance or release step is needed?
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - GitHub workflow
+        - Branch/PR process
+        - Versioning
+        - Packaging
+        - Release notes
+        - Dependency update
+        - Repository cleanup
+        - Project metadata
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      placeholder: "Needed before v0.3.5 so every release has repeatable checks."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification
+      placeholder: "Commands, screenshots, or release checklist items."
+    validations:
+      required: true

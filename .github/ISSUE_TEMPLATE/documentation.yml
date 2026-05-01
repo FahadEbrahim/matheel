@@ -1,0 +1,56 @@
+name: Documentation
+description: Improve docs, examples, API guides, or implementation explanations.
+title: "[Docs]: "
+labels: ["type: documentation", "status: triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What documentation should change?
+    validations:
+      required: true
+  - type: dropdown
+    id: doc_area
+    attributes:
+      label: Documentation area
+      options:
+        - README
+        - Usage guide
+        - API reference
+        - Algorithm details
+        - Tokenization/preprocessing
+        - Evaluation methodology
+        - Extensibility guide
+        - Gradio guide
+        - Release notes
+        - Manuscript support
+    validations:
+      required: true
+  - type: textarea
+    id: audience
+    attributes:
+      label: Audience
+      placeholder: "Researchers comparing algorithms, instructors using the UI, or contributors adding algorithms."
+    validations:
+      required: true
+  - type: textarea
+    id: content
+    attributes:
+      label: Required content
+      placeholder: "Explain tokenization strategy, normalization steps, limitations, and examples."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: Checks
+      placeholder: "Review links, run examples, or render docs if applicable."
+    validations:
+      required: false

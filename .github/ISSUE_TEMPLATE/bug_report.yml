@@ -1,0 +1,88 @@
+name: Bug report
+description: Report incorrect, broken, or surprising behavior in released Matheel code.
+title: "[Bug]: "
+labels: ["type: bug", "status: triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for reproducible behavior that should work but does not.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What is the bug?
+      placeholder: "Matheel silently accepts an invalid feature name and returns a zero score."
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - CLI
+        - Python API
+        - Gradio app
+        - Similarity algorithms
+        - Code metrics
+        - Preprocessing or chunking
+        - Datasets or evaluation
+        - Packaging or dependencies
+        - Documentation
+        - Tests or CI
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction steps
+      description: Include the smallest command, script, dataset, or uploaded ZIP that reproduces the problem.
+      placeholder: |
+        1. Run `matheel compare sample_pairs.zip --feature-weight levenshten=1`
+        2. Observe that no validation error is raised.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "Matheel should reject unknown feature names with a clear error."
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: "The run succeeds and scores are silently wrong."
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include Matheel version, Python version, OS, install command, and optional extras.
+      placeholder: |
+        Matheel: 0.3.4
+        Python: 3.12
+        OS: macOS
+        Install: pip install "matheel[all]"
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: What must be true before this bug can close?
+      placeholder: |
+        - Invalid feature names raise `ValueError`.
+        - CLI surfaces the error cleanly.
+        - Regression test added.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+      placeholder: "Add unit tests in `tests/test_feature_weights.py` and run `pytest --ignore=tests/test_real_models.py`."
+    validations:
+      required: true

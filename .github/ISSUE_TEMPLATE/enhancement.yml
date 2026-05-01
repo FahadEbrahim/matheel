@@ -1,0 +1,73 @@
+name: Enhancement
+description: Propose a scoped improvement to Matheel behavior or APIs.
+title: "[Enhancement]: "
+labels: ["type: enhancement", "status: triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should be added or changed?
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - Progress and runtime reporting
+        - Algorithm implementation
+        - Evaluation methodology
+        - Dataset support
+        - Extensibility
+        - Gradio user experience
+        - Visualization
+        - Packaging
+        - Release process
+    validations:
+      required: true
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Link a related issue, user need, or release goal.
+      placeholder: "Long runs need progress indicators."
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed behavior
+      description: Describe the user-facing behavior and API shape.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope and non-goals
+      placeholder: |
+        In scope:
+        - Add tqdm progress for pair scoring.
+        - Add elapsed seconds to comparison-suite output.
+
+        Out of scope:
+        - Full benchmark calibration.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - CLI shows progress when stdout is interactive.
+        - Non-interactive output remains script-friendly.
+        - Unit tests cover timing metadata.
+    validations:
+      required: true
+  - type: textarea
+    id: tests
+    attributes:
+      label: Test plan
+      placeholder: "List unit, integration, Gradio, or manual checks."
+    validations:
+      required: true
