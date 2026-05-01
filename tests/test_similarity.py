@@ -94,6 +94,18 @@ def test_get_sim_list_accepts_directory_source(tmp_path, monkeypatch):
     assert clean_results.iloc[0]["similarity_score"] == 1.0
 
 
+def test_get_sim_list_rejects_regular_file_source(tmp_path):
+    source_file = tmp_path / "single.py"
+    source_file.write_text("print(1)", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="directory or a ZIP archive"):
+        similarity.get_sim_list(
+            source_file,
+            feature_weights={"levenshtein": 1.0},
+            vector_backend="static_hash",
+        )
+
+
 def test_calculate_similarity_supports_chunking(monkeypatch):
     pytest.importorskip("chonkie")
     monkeypatch.setattr(

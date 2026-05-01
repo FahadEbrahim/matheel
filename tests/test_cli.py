@@ -196,6 +196,26 @@ def test_compare_command_accepts_directory_source(tmp_path, monkeypatch):
     assert captured["args"][0] == str(source_dir)
 
 
+def test_compare_command_rejects_regular_file_source(tmp_path):
+    source_file = tmp_path / "single.py"
+    source_file.write_text("print(1)", encoding="utf-8")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "compare",
+            str(source_file),
+            "--feature-weight",
+            "levenshtein=1",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert isinstance(result.exception, ValueError)
+    assert "directory or a ZIP archive" in str(result.exception)
+
+
 def test_compare_command_rejects_inactive_code_metric_weight(tmp_path):
     source_dir = tmp_path / "codes"
     source_dir.mkdir()

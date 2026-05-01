@@ -240,6 +240,8 @@ def extract_and_read_source(source_path):
     resolved_path = resolve_file_path(source_path)
     if os.path.isdir(resolved_path):
         return read_directory_source(resolved_path)
+    if not zipfile.is_zipfile(resolved_path):
+        raise ValueError("source_path must be a directory or a ZIP archive.")
     return read_zip_source(resolved_path)
 
 
