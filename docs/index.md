@@ -19,6 +19,7 @@ Matheel is organized around a simple flow:
 - [Lexical metrics and baselines](lexical.md)
 - [Code metrics](code_metrics.md)
 - [Comparison suite](comparison_suite.md)
+- [Release checklist](release_checklist.md)
 
 ## Demos and Examples
 

@@ -14,3 +14,4 @@ The canonical index is [index.md](index.md).
 - [Lexical metrics and baselines](lexical.md)
 - [Code metrics](code_metrics.md)
 - [Comparison suite](comparison_suite.md)
+- [Release checklist](release_checklist.md)
