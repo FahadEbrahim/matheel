@@ -73,6 +73,7 @@ include = ["matheel*"]
 exclude = ["gradio_app*"]
 
 [tool.pytest.ini_options]
+addopts = ["-m", "not integration"]
 testpaths = ["tests"]
 markers = [
     "integration: real-model tests that use actual embedding backends and cached/downloaded model weights",
