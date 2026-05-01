@@ -263,6 +263,12 @@ Default test runs are intended to be fast and offline-friendly:
 pytest
 ```
 
+Run the Ruff lint check before opening a pull request:
+
+```bash
+ruff check .
+```
+
 Real-model integration tests are opt-in because they may need optional backends, cached model weights, or network access:
 
 ```bash

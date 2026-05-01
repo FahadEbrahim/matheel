@@ -1029,7 +1029,8 @@ def calc_codebleu(
     if len(weights) != 4:
         raise ValueError("weights should contain exactly 4 values.")
     if tokenizer is None:
-        tokenizer = lambda text: text.split()
+        def tokenizer(text):
+            return text.split()
 
     normalized_references = [[value.strip() for value in reference] if isinstance(reference, list) else [reference.strip()] for reference in references]
     normalized_predictions = [value.strip() for value in predictions]
