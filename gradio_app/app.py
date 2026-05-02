@@ -101,6 +101,106 @@ DEFAULT_UI_FEATURE_WEIGHTS = {
     "gst": 0.1,
     "code_metric": 0.2,
 }
+APP_CSS = """
+#matheel-app {
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+#matheel-app .matheel-summary,
+#matheel-app .matheel-status {
+    border: 1px solid #d6d9df;
+    border-left: 4px solid #2a7f62;
+    border-radius: 8px;
+    background: #fbfbf8;
+    padding: 10px 12px;
+    margin: 0 0 12px;
+}
+
+#matheel-app .matheel-status {
+    background: #f6faf7;
+}
+
+#matheel-app .matheel-empty {
+    border-left-color: #8a6f24;
+    background: #fffaf0;
+}
+
+#matheel-app .matheel-error {
+    border-left-color: #b42318;
+    background: #fff5f5;
+}
+
+#matheel-app .matheel-summary-title {
+    display: block;
+    margin-bottom: 8px;
+    color: #1f2328;
+}
+
+#matheel-app .matheel-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 8px 12px;
+}
+
+#matheel-app .matheel-summary-item {
+    min-width: 0;
+}
+
+#matheel-app .matheel-summary-label {
+    display: block;
+    color: #5f6773;
+    font-size: 0.78rem;
+    line-height: 1.2;
+}
+
+#matheel-app .matheel-summary-value {
+    display: block;
+    color: #1f2328;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+#matheel-app .matheel-table {
+    font-size: 0.92rem;
+}
+"""
+
+
+def summary_panel_html(title, items, variant="summary"):
+    escaped_title = escape_html(title)
+    classes = ["matheel-summary"]
+    if variant and variant != "summary":
+        classes.append(f"matheel-{variant}")
+    rendered_items = []
+    for label, value in items:
+        rendered_items.append(
+            "<span class=\"matheel-summary-item\">"
+            f"<span class=\"matheel-summary-label\">{escape_html(label)}</span>"
+            f"<span class=\"matheel-summary-value\">{escape_html(value)}</span>"
+            "</span>"
+        )
+    return (
+        f"<div class=\"{' '.join(classes)}\">"
+        f"<strong class=\"matheel-summary-title\">{escaped_title}</strong>"
+        f"<div class=\"matheel-summary-grid\">{''.join(rendered_items)}</div>"
+        "</div>"
+    )
+
+
+def status_panel_html(label, message, variant="status"):
+    classes = ["matheel-status"]
+    if variant and variant != "status":
+        classes.append(f"matheel-{variant}")
+    return (
+        f"<div class=\"{' '.join(classes)}\">"
+        f"<strong>{escape_html(label)}:</strong> {escape_html(message)}"
+        "</div>"
+    )
+
+
+def format_elapsed_seconds(value):
+    return f"{float(value):.3f}s"
 
 
 def build_feature_weights(
@@ -317,26 +417,29 @@ def sync_codebertscore_model_settings_gradio(model_name, codebertscore_max_lengt
 
 
 def profile_status_html(message):
-    return f"<p><strong>Status:</strong> {escape_html(message)}</p>"
+    return status_panel_html("Status", message)
 
 
 def model_status_html(settings=None, error_message=None):
     if error_message:
-        return f"<p><strong>Model:</strong> {escape_html(error_message)}</p>"
+        return status_panel_html("Model", error_message, variant="error")
 
     if not settings:
         return ""
 
-    backend = escape_html(settings.get("resolved_vector_backend", "auto"))
+    backend = settings.get("resolved_vector_backend", "auto")
     detected = int(settings.get("detected_max_token_length") or 0)
     configured = settings.get("configured_max_token_length")
     active = int(configured or detected or 0)
-    device = escape_html(settings.get("runtime_device", "auto"))
-    return (
-        f"<p><strong>Resolved:</strong> {backend} | "
-        f"<strong>Detected:</strong> {detected} | "
-        f"<strong>Active:</strong> {active} | "
-        f"<strong>Device:</strong> {device}</p>"
+    device = settings.get("runtime_device", "auto")
+    return summary_panel_html(
+        "Model Settings",
+        [
+            ("Backend", backend),
+            ("Detected Tokens", str(detected)),
+            ("Active Tokens", str(active)),
+            ("Device", device),
+        ],
     )
 
 
@@ -935,13 +1038,20 @@ def append_suite_run_gradio(
 def suite_runs_overview_html(rows):
     frame = normalize_suite_rows_frame(rows)
     if frame.empty:
-        return "<p><strong>Configured runs:</strong> none.</p>"
+        return summary_panel_html(
+            "Configured Runs",
+            [("Runs", "0"), ("Run Names", "None")],
+            variant="empty",
+        )
 
     names = [str(value).strip() for value in frame["run_name"].tolist() if str(value).strip()]
-    preview = ", ".join(escape_html(name) for name in names[:4])
+    preview = ", ".join(names[:4])
     if len(names) > 4:
         preview = f"{preview}, +{len(names) - 4} more"
-    return f"<p><strong>Configured runs:</strong> {len(names)} | {preview}</p>"
+    return summary_panel_html(
+        "Configured Runs",
+        [("Runs", str(len(names))), ("Run Names", preview)],
+    )
 
 
 def reset_suite_runs():
@@ -966,7 +1076,11 @@ def reset_suite_runs():
 
 
 def empty_suite_summary_html():
-    return "<p><strong>Comparison Suite:</strong> No runs executed yet.</p>"
+    return summary_panel_html(
+        "Comparison Suite",
+        [("Status", "No runs executed"), ("Best Run", "None")],
+        variant="empty",
+    )
 
 
 def suite_summary_html(summary):
@@ -975,14 +1089,17 @@ def suite_summary_html(summary):
 
     best = summary.iloc[0]
     elapsed_seconds = float(best.get("elapsed_seconds", 0.0))
-    feature_set = escape_html(best.get("feature_set", "none"))
-    return (
-        f"<p><strong>Best run:</strong> {escape_html(best['run_name'])} | "
-        f"<strong>Runs:</strong> {len(summary)} | "
-        f"<strong>Best mean:</strong> {float(summary['mean_score'].max()):.3f} | "
-        f"<strong>Best max:</strong> {float(summary['max_score'].max()):.3f} | "
-        f"<strong>Elapsed:</strong> {elapsed_seconds:.3f}s | "
-        f"<strong>Features:</strong> {feature_set}</p>"
+    feature_set = best.get("feature_set", "none")
+    return summary_panel_html(
+        "Comparison Suite",
+        [
+            ("Best Run", best["run_name"]),
+            ("Runs", str(len(summary))),
+            ("Best Mean", f"{float(summary['mean_score'].max()):.3f}"),
+            ("Best Max", f"{float(summary['max_score'].max()):.3f}"),
+            ("Elapsed", format_elapsed_seconds(elapsed_seconds)),
+            ("Features", feature_set),
+        ],
     )
 
 
@@ -1099,7 +1216,7 @@ def run_suite_gradio(
         )
         execution_frame = pd.DataFrame([row], columns=SUITE_COLUMNS)
         status_html = profile_status_html(
-            f'Ran the current settings as "{row["run_name"]}". Click "Save Run" if you want to keep it in the suite.'
+            f'Ran the current settings as "{row["run_name"]}". Saved runs unchanged.'
         )
     else:
         status_html = profile_status_html(f"Completed {len(saved_frame)} saved run(s).")
@@ -1157,32 +1274,58 @@ def score_card_html(
     elapsed_seconds=None,
 ):
     numeric_score = float(score)
-    elapsed_fragment = ""
+    items = [("Similarity Score", f"{numeric_score:.4f}")]
     if elapsed_seconds is not None:
-        elapsed_fragment = f" | <strong>Elapsed:</strong> {float(elapsed_seconds):.3f}s"
-    return f"<p><strong>Similarity score:</strong> {numeric_score:.4f}{elapsed_fragment}</p>"
+        items.append(("Elapsed", format_elapsed_seconds(elapsed_seconds)))
+    if code_metric and code_metric != "none":
+        items.append(("Code Metric", code_metric))
+    items.append(("Backend", vector_backend))
+    items.append(("Device", runtime_device))
+    return summary_panel_html("Pairwise Result", items)
+
+
+def empty_pair_summary_html():
+    return summary_panel_html(
+        "Pairwise Result",
+        [("Status", "No comparison run"), ("Similarity Score", "None")],
+        variant="empty",
+    )
 
 
 def empty_summary_html():
-    return "<p><strong>Collection:</strong> No results yet.</p>"
+    return summary_panel_html(
+        "Collection Results",
+        [("Status", "No collection run"), ("Top Pair", "None")],
+        variant="empty",
+    )
 
 
 def results_summary_html(results, vector_backend, code_metric, chunking_method, runtime_device):
     if results is None or results.empty:
-        return "<p><strong>Collection:</strong> No pairs met the current threshold.</p>"
+        return summary_panel_html(
+            "Collection Results",
+            [("Status", "No pairs met the threshold"), ("Top Pair", "None")],
+            variant="empty",
+        )
 
     scores = results["similarity_score"].astype(float)
     top_row = results.iloc[0]
     elapsed_seconds = float(results.attrs.get("elapsed_seconds", 0.0))
-    feature_set = escape_html(results.attrs.get("feature_set", "none"))
-    return (
-        f"<p><strong>Top pair:</strong> {escape_html(top_row['file_name_1'])} "
-        f"vs {escape_html(top_row['file_name_2'])} | "
-        f"<strong>Pairs:</strong> {len(results)} | "
-        f"<strong>Average:</strong> {scores.mean():.3f} | "
-        f"<strong>Top score:</strong> {scores.max():.3f} | "
-        f"<strong>Elapsed:</strong> {elapsed_seconds:.3f}s | "
-        f"<strong>Features:</strong> {feature_set}</p>"
+    feature_set = results.attrs.get("feature_set", "none")
+    return summary_panel_html(
+        "Collection Results",
+        [
+            ("Top Pair", f"{top_row['file_name_1']} vs {top_row['file_name_2']}"),
+            ("Pairs", str(len(results))),
+            ("Average", f"{scores.mean():.3f}"),
+            ("Top Score", f"{scores.max():.3f}"),
+            ("Elapsed", format_elapsed_seconds(elapsed_seconds)),
+            ("Features", feature_set),
+            ("Backend", vector_backend),
+            ("Code Metric", code_metric),
+            ("Chunking", chunking_method),
+            ("Device", runtime_device),
+        ],
     )
 
 
@@ -1228,6 +1371,9 @@ def calculate_similarity_gradio(
     chunker_options,
     progress=gr.Progress(track_tqdm=True),
 ):
+    if not str(code1 or "").strip() or not str(code2 or "").strip():
+        raise gr.Error("Paste both snippets before running pairwise comparison.")
+
     selected = set(selected_features or [])
     selected_steps = set(selected_preparation or [])
     use_semantic = "Embedding" in selected
@@ -1481,37 +1627,35 @@ def get_sim_list_gradio(
     ), results
 
 
-with gr.Blocks(title="Matheel Framework") as demo:
+with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id="matheel-app") as demo:
     gr.Markdown(
         "# Matheel Framework\n"
-        "Measure code similarity with configurable embedding, lexical, and code-aware metrics. "
-        "Select only the parts you want to use, then refine their parameters."
+        "Configurable code similarity for pair, collection, and suite workflows."
     )
     with gr.Tabs():
-        with gr.Tab("Pairwise Comparison"):
+        with gr.Tab("Pairwise"):
             with gr.Row():
                 with gr.Column(scale=8):
-                    gr.Markdown("1. Select the metrics and baselines you want. 2. Add preprocessing or chunking if needed. 3. Click Run.")
                     with gr.Row():
                         pair_code1 = gr.Textbox(
                             label="Code A",
                             lines=16,
-                            placeholder="Paste the first snippet here...",
+                            placeholder="First snippet",
                         )
                         pair_code2 = gr.Textbox(
                             label="Code B",
                             lines=16,
-                            placeholder="Paste the second snippet here...",
+                            placeholder="Second snippet",
                         )
-                    pair_run = gr.Button("Run", variant="primary")
-                    pair_output = gr.HTML(value=score_card_html(0.0))
+                    pair_run = gr.Button("Run Pair", variant="primary")
+                    pair_output = gr.HTML(value=empty_pair_summary_html())
 
                 with gr.Column(scale=5):
-                    with gr.Accordion("Features", open=True):
+                    with gr.Accordion("Metrics", open=True):
                         pair_features = gr.CheckboxGroup(
                             choices=FEATURE_UI_CHOICES,
                             value=DEFAULT_FEATURE_SELECTION,
-                            label="Metrics and Baselines",
+                            label="Active Metrics",
                         )
                         with gr.Group(visible=True) as pair_embedding_group:
                             pair_model = HuggingfaceHubSearch(
@@ -1538,7 +1682,9 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     value="mean",
                                     label="Pooling Method",
                                 )
-                            pair_max_token_length = gr.Slider(8, 512, value=256, label="Max Tokens", step=1)
+                            pair_max_token_length = gr.Slider(
+                                8, 512, value=256, label="Max Tokens per Input", step=1
+                            )
                             pair_runtime_device = gr.Dropdown(
                                 choices=list(DEVICE_CHOICES),
                                 value="auto",
@@ -1661,7 +1807,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
-                    with gr.Accordion("Code Preparation", open=False):
+                    with gr.Accordion("Preparation", open=False):
                         pair_code_preparation = gr.CheckboxGroup(
                             choices=["Preprocessing", "Chunking"],
                             value=[],
@@ -1802,25 +1948,28 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     ],
                 )
 
-        with gr.Tab("Collection Comparison"):
+        with gr.Tab("Collection"):
             with gr.Row():
                 with gr.Column(scale=8):
-                    gr.Markdown("1. Upload one ZIP file. 2. Select the metrics and baselines you want. 3. Click Run.")
-                    collection_file = gr.File(label="Code Collection (.zip)", file_types=[".zip"])
-                    collection_run = gr.Button("Run", variant="primary")
+                    collection_file = gr.File(label="Code ZIP", file_types=[".zip"])
+                    collection_run = gr.Button("Run Collection", variant="primary")
                     collection_summary = gr.HTML(value=empty_summary_html())
                     collection_output = gr.Dataframe(
                         label="Ranked Pairs",
-                        wrap=True,
+                        wrap=False,
                         interactive=False,
+                        max_height=460,
+                        show_search="filter",
+                        column_widths=["34%", "34%", "18%"],
+                        elem_classes=["matheel-table"],
                     )
 
                 with gr.Column(scale=5):
-                    with gr.Accordion("Features", open=True):
+                    with gr.Accordion("Metrics", open=True):
                         collection_features = gr.CheckboxGroup(
                             choices=FEATURE_UI_CHOICES,
                             value=DEFAULT_FEATURE_SELECTION,
-                            label="Metrics and Baselines",
+                            label="Active Metrics",
                         )
                         with gr.Group(visible=True) as collection_embedding_group:
                             collection_model = HuggingfaceHubSearch(
@@ -1848,7 +1997,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     label="Pooling Method",
                                 )
                             collection_max_token_length = gr.Slider(
-                                8, 512, value=256, label="Max Tokens", step=1
+                                8, 512, value=256, label="Max Tokens per Input", step=1
                             )
                             collection_runtime_device = gr.Dropdown(
                                 choices=list(DEVICE_CHOICES),
@@ -1972,7 +2121,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
-                    with gr.Accordion("Code Preparation", open=False):
+                    with gr.Accordion("Preparation", open=False):
                         collection_code_preparation = gr.CheckboxGroup(
                             choices=["Preprocessing", "Chunking"],
                             value=[],
@@ -2015,7 +2164,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                 placeholder="include_line_numbers=true",
                             )
 
-                    with gr.Accordion("Display", open=False):
+                    with gr.Accordion("Result Limits", open=False):
                         collection_threshold = gr.Slider(0, 1, value=0.35, label="Threshold", step=0.01)
                         collection_number_results = gr.Slider(
                             1, 1000, value=50, label="Max Pairs", step=1
@@ -2126,19 +2275,21 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     ],
                 )
 
-        with gr.Tab("Comparison Suite"):
+        with gr.Tab("Suite"):
             suite_details_store = gr.State({})
             suite_runs_state = gr.State(empty_suite_rows())
 
             with gr.Row():
                 with gr.Column(scale=8):
-                    gr.Markdown("1. Set the current metrics and baselines. 2. Save Run to append it. 3. Repeat if needed. 4. Run the suite.")
-                    suite_file = gr.File(label="Code Collection (.zip)", file_types=[".zip"])
+                    suite_file = gr.File(label="Code ZIP", file_types=[".zip"])
                     suite_summary = gr.HTML(value=empty_suite_summary_html())
                     suite_output = gr.Dataframe(
                         label="Suite Summary",
-                        wrap=True,
+                        wrap=False,
                         interactive=False,
+                        max_height=360,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
                     )
                     suite_run_name = gr.Dropdown(
                         choices=[],
@@ -2147,17 +2298,20 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     )
                     suite_details = gr.Dataframe(
                         label="Selected Run Details",
-                        wrap=True,
+                        wrap=False,
                         interactive=False,
+                        max_height=420,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
                     )
                     suite_runs_overview = gr.HTML(value=suite_runs_overview_html(empty_suite_rows()))
 
                 with gr.Column(scale=5):
-                    with gr.Accordion("Features", open=True):
+                    with gr.Accordion("Metrics", open=True):
                         suite_features = gr.CheckboxGroup(
                             choices=FEATURE_UI_CHOICES,
                             value=DEFAULT_FEATURE_SELECTION,
-                            label="Metrics and Baselines",
+                            label="Active Metrics",
                         )
                         with gr.Group(visible=True) as suite_embedding_group:
                             suite_model = HuggingfaceHubSearch(
@@ -2185,7 +2339,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     label="Pooling Method",
                                 )
                             suite_max_token_length = gr.Slider(
-                                8, 512, value=256, label="Max Tokens", step=1
+                                8, 512, value=256, label="Max Tokens per Input", step=1
                             )
                             suite_runtime_device = gr.Dropdown(
                                 choices=list(DEVICE_CHOICES),
@@ -2309,7 +2463,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                                     label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
-                    with gr.Accordion("Code Preparation", open=False):
+                    with gr.Accordion("Preparation", open=False):
                         suite_code_preparation = gr.CheckboxGroup(
                             choices=["Preprocessing", "Chunking"],
                             value=[],
@@ -2367,13 +2521,13 @@ with gr.Blocks(title="Matheel Framework") as demo:
                             suite_add_run = gr.Button("Save Run", variant="secondary")
                             suite_template = gr.Button("Clear Runs", variant="secondary")
 
-                    with gr.Accordion("Display", open=False):
+                    with gr.Accordion("Result Limits", open=False):
                         suite_threshold = gr.Slider(0, 1, value=0.35, label="Threshold", step=0.01)
                         suite_number_results = gr.Slider(
                             1, 1000, value=50, label="Max Pairs", step=1
                         )
 
-                    suite_run = gr.Button("Run Comparison Suite", variant="primary")
+                    suite_run = gr.Button("Run Suite", variant="primary")
                     suite_output_format = gr.Dropdown(
                         choices=["csv", "json"],
                         value="csv",
@@ -2383,7 +2537,7 @@ with gr.Blocks(title="Matheel Framework") as demo:
                     suite_details_download = gr.File(label="Details ZIP")
                     suite_runs_download = gr.File(label="Run JSON")
                     suite_status = gr.HTML(
-                        value=profile_status_html("Save Run appends the current configuration. Run Comparison Suite executes the saved list.")
+                        value=profile_status_html("No saved runs yet. Save a configuration or run the current one.")
                     )
 
             suite_features.change(

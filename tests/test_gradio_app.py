@@ -224,6 +224,65 @@ def test_score_card_html_displays_elapsed_time():
 
     assert "0.7500" in score_html
     assert "2.346s" in score_html
+    assert "Pairwise Result" in score_html
+
+
+def test_empty_result_panels_use_readable_states():
+    pair_html = gradio_app.empty_pair_summary_html()
+    collection_html = gradio_app.empty_summary_html()
+    suite_html = gradio_app.empty_suite_summary_html()
+
+    assert "No comparison run" in pair_html
+    assert "No collection run" in collection_html
+    assert "No runs executed" in suite_html
+    assert "matheel-empty" in pair_html
+    assert "matheel-empty" in collection_html
+    assert "matheel-empty" in suite_html
+
+
+def test_pair_comparison_requires_both_snippets():
+    with pytest.raises(gradio_app.gr.Error, match="Paste both snippets"):
+        gradio_app.calculate_similarity_gradio(
+            "",
+            "print(1)",
+            gradio_app.DEFAULT_FEATURE_SELECTION,
+            gradio_app.DEFAULT_MODEL,
+            "auto",
+            "cosine",
+            "mean",
+            256,
+            "auto",
+            0.7,
+            0.3,
+            0.0,
+            0.0,
+            0.0,
+            "1,1,1",
+            0.1,
+            5,
+            4,
+            5,
+            "codebleu",
+            0.0,
+            "python",
+            "0.25,0.25,0.25,0.25",
+            4,
+            50,
+            gradio_app.DEFAULT_RUBY_MODE,
+            gradio_app.DEFAULT_RUBY_GRAPH_TIMEOUT,
+            gradio_app.DEFAULT_TSED_COSTS,
+            gradio_app.DEFAULT_CODEBERTSCORE_MODEL,
+            gradio_app.DEFAULT_CODEBERTSCORE_MAX_LENGTH,
+            [],
+            "none",
+            "none",
+            120,
+            0,
+            0,
+            "mean",
+            "text",
+            "",
+        )
 
 
 def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
