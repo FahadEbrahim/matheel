@@ -153,6 +153,12 @@ def main():
     show_default=True,
     help='Semantic similarity function for single-vector backends.',
 )
+@click.option(
+    '--normalize-semantic-scores/--raw-semantic-scores',
+    default=False,
+    show_default=True,
+    help='Normalize single-vector semantic scores to 0-1 before weighted blending.',
+)
 @click.option('--static-vector-dim', default=256, show_default=True, help='Dimension for local static-vector compatibility fallback.')
 @click.option('--max-token-length', default=0, show_default=True, help='Maximum token length to use for the selected model. 0 keeps the model default.')
 @click.option(
@@ -229,6 +235,7 @@ def compare(
     gst_min_match_length,
     vector_backend,
     similarity_function,
+    normalize_semantic_scores,
     static_vector_dim,
     max_token_length,
     pooling_method,
@@ -293,6 +300,7 @@ def compare(
         gst_min_match_length=gst_min_match_length,
         vector_backend=vector_backend,
         similarity_function=similarity_function,
+        normalize_semantic_scores=normalize_semantic_scores,
         static_vector_dim=static_vector_dim,
         max_token_length=max_token_length,
         pooling_method=pooling_method,

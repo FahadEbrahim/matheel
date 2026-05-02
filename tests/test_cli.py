@@ -114,6 +114,7 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
             "auto",
             "--similarity-function",
             "dot",
+            "--normalize-semantic-scores",
             "--winnowing-kgram",
             "6",
             "--winnowing-window",
@@ -170,6 +171,7 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert captured["kwargs"]["codebertscore_nthreads"] == 2
     assert captured["kwargs"]["vector_backend"] == "auto"
     assert captured["kwargs"]["similarity_function"] == "dot"
+    assert captured["kwargs"]["normalize_semantic_scores"] is True
     assert captured["kwargs"]["winnowing_kgram"] == 6
     assert captured["kwargs"]["winnowing_window"] == 5
     assert captured["kwargs"]["gst_min_match_length"] == 4

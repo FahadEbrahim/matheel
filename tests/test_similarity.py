@@ -435,6 +435,53 @@ def test_calculate_similarity_supports_alternative_similarity_functions():
     assert euclidean_score == pytest.approx(0.0)
 
 
+def test_calculate_similarity_normalizes_semantic_scores_when_requested():
+    raw_score = similarity.calculate_similarity(
+        "def add(a, b):\n    return a + b\n",
+        "def add(a, b):\n    return a + b\n",
+        feature_weights={"semantic": 1.0},
+        vector_backend="static_hash",
+        similarity_function="euclidean",
+        static_vector_dim=64,
+    )
+    normalized_score = similarity.calculate_similarity(
+        "def add(a, b):\n    return a + b\n",
+        "def add(a, b):\n    return a + b\n",
+        feature_weights={"semantic": 1.0},
+        vector_backend="static_hash",
+        similarity_function="euclidean",
+        static_vector_dim=64,
+        normalize_semantic_scores=True,
+    )
+
+    assert raw_score == pytest.approx(0.0)
+    assert normalized_score == pytest.approx(1.0)
+
+
+def test_calculate_similarity_guards_raw_distance_scores_in_weighted_blends():
+    with pytest.raises(ValueError, match="normalize_semantic_scores"):
+        similarity.calculate_similarity(
+            "def add(a, b):\n    return a + b\n",
+            "def add(a, b):\n    return a + b\n",
+            feature_weights={"semantic": 0.5, "levenshtein": 0.5},
+            vector_backend="static_hash",
+            similarity_function="euclidean",
+            static_vector_dim=64,
+        )
+
+    score = similarity.calculate_similarity(
+        "def add(a, b):\n    return a + b\n",
+        "def add(a, b):\n    return a + b\n",
+        feature_weights={"semantic": 0.5, "levenshtein": 0.5},
+        vector_backend="static_hash",
+        similarity_function="euclidean",
+        static_vector_dim=64,
+        normalize_semantic_scores=True,
+    )
+
+    assert score == pytest.approx(1.0)
+
+
 def test_calculate_similarity_falls_back_when_model2vec_is_unavailable(monkeypatch):
     monkeypatch.setattr(
         similarity,
