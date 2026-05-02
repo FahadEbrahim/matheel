@@ -101,6 +101,7 @@ print(results.head())
 ## Documentation Map
 
 - [Preprocessing](preprocessing.md)
+- [Tokenization and preprocessing limits](tokenization.md)
 - [Chunking](chunking.md)
 - [Vectors and routing](vectors.md)
 - [Lexical metrics and baselines](lexical.md)

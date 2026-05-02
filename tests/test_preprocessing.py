@@ -590,6 +590,18 @@ def test_advanced_preprocess_normalizes_string_with_slashes_before_stripping_com
     assert "trailing" not in processed
 
 
+def test_advanced_preprocess_order_strips_imports_comments_then_normalizes_tokens():
+    code = """
+    import os
+    value = "abc # not comment" # trailing comment
+    return value + 123
+    """
+
+    processed = preprocess_code(code, mode="advanced", language="python")
+
+    assert processed == "id1 = <STR> return id1 + <NUM>"
+
+
 def test_basic_preprocess_preserves_python_floor_division():
     code = """
     value = total // count  # average

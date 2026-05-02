@@ -14,6 +14,7 @@ from matheel.code_metrics import (
     prepare_crystalbleu_context,
     prepare_ruby_context,
     score_code_metric_pair,
+    tokenize_for_code_metrics,
 )
 
 try:
@@ -174,6 +175,59 @@ def test_available_code_metric_languages_expose_expanded_scope():
 
 def test_available_ast_metric_languages_match_structural_scope():
     assert available_ast_metric_languages() == tuple(SUPPORTED_LANGUAGE_SNIPPETS.keys())
+
+
+def test_code_metric_regex_tokenizer_keeps_identifiers_numbers_and_punctuation():
+    tokens = tokenize_for_code_metrics("def add_value(totalCount):\n    return totalCount + 42")
+
+    assert tokens == [
+        "def",
+        "add_value",
+        "(",
+        "totalCount",
+        ")",
+        ":",
+        "return",
+        "totalCount",
+        "+",
+        "42",
+    ]
+
+
+def test_code_metric_regex_tokenizer_does_not_parse_operator_pairs():
+    assert tokenize_for_code_metrics("items[i] += value // 2") == [
+        "items",
+        "[",
+        "i",
+        "]",
+        "+",
+        "=",
+        "value",
+        "/",
+        "/",
+        "2",
+    ]
+
+
+def test_ruby_tranx_tokenizer_splits_camel_case_more_aggressively():
+    assert code_metrics_module._tokenize_tranx("AddValue(totalCount, item2)") == [
+        "Add",
+        "Value",
+        "(",
+        "total",
+        "Count",
+        ",",
+        "item2",
+        ")",
+    ]
+
+
+def test_crystalbleu_context_uses_shared_code_metric_tokenizer():
+    context = prepare_crystalbleu_context(["items[i] += value // 2"], trivial_ngram_count=0)
+
+    assert context["tokens_by_doc"] == [
+        ["items", "[", "i", "]", "+", "=", "value", "/", "/", "2"]
+    ]
 
 
 @REQUIRES_CODEBLEU
