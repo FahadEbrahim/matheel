@@ -69,6 +69,12 @@ python -m twine check dist/*
 
 - Confirm package metadata includes Python classifiers for `3.10`, `3.11`, `3.12`, and `3.13`.
 
+## Documentation
+
+- Confirm the Pages workflow has passed on the latest `main` commit.
+- Confirm the published docs open at <https://fahadebrahim.github.io/matheel/>.
+- Keep release notes on GitHub Releases instead of publishing them under `docs/releases`.
+
 ## GitHub Release and PyPI
 
 - Create and push the release tag from the merged `main` commit.

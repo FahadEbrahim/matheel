@@ -1,0 +1,30 @@
+site_name: Matheel
+site_description: Documentation for Matheel source-code similarity workflows.
+site_url: https://fahadebrahim.github.io/matheel/
+repo_url: https://github.com/FahadEbrahim/matheel
+repo_name: FahadEbrahim/matheel
+
+docs_dir: docs
+site_dir: site
+use_directory_urls: true
+strict: true
+
+theme:
+  name: readthedocs
+  highlightjs: true
+
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - Preprocessing: preprocessing.md
+  - Chunking: chunking.md
+  - Vectors and routing: vectors.md
+  - Lexical metrics and baselines: lexical.md
+  - Code metrics: code_metrics.md
+  - Comparison suite: comparison_suite.md
+  - Development: development.md
+  - Release checklist: release_checklist.md
+
+exclude_docs: |
+  README.md
+  release_backlog.md
