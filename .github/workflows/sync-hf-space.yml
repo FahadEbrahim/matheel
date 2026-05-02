@@ -1,0 +1,53 @@
+name: Sync Hugging Face Space
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "gradio_app/**"
+      - ".github/workflows/sync-hf-space.yml"
+  workflow_run:
+    workflows:
+      - Publish
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hf-space-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync Space files
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Verify Gradio app version references
+        run: python scripts/sync_gradio_app_version.py --check
+
+      - name: Sync Gradio app to Hugging Face Space
+        uses: huggingface/hub-sync@v0.1.0
+        with:
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: ${{ vars.HF_SPACE_REPO || 'buelfhood/matheel-framework' }}
+          hf_token: ${{ secrets.HF_TOKEN }}
+          repo_type: space
+          space_sdk: gradio
+          subdirectory: gradio_app
