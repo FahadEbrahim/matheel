@@ -15,6 +15,18 @@ The publish workflow is intentionally triggered by `release.published`. A tag pu
 
 - Confirm `pyproject.toml` has the intended version.
 - Confirm the release tag uses the same version with a leading `v`, for example `v0.3.6`.
+- Sync the Gradio app version references after changing the package version:
+
+```bash
+python scripts/sync_gradio_app_version.py
+```
+
+- Confirm the Gradio app README and requirements pin match `pyproject.toml`:
+
+```bash
+python scripts/sync_gradio_app_version.py --check
+```
+
 - Confirm the GitHub Release notes describe the user-visible changes.
 - Do not add release notes under `docs/releases`; keep release notes on GitHub Releases.
 - Confirm the README PyPI badges are dynamic and use the standard Shields cache:

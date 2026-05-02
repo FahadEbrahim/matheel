@@ -37,6 +37,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
 
+      - name: Check Gradio app version references
+        run: python scripts/sync_gradio_app_version.py --check
+
       - name: Run Ruff
         run: python -m ruff check .
 

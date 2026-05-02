@@ -52,6 +52,9 @@ jobs:
               raise SystemExit(1)
           PY
 
+      - name: Verify Gradio app version references
+        run: python scripts/sync_gradio_app_version.py --check
+
       - name: Build package
         run: python -m build
 
