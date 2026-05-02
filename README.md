@@ -44,7 +44,7 @@ See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semanti
 
 - Documentation: [fahadebrahim.github.io/matheel](https://fahadebrahim.github.io/matheel/)
 - Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
-- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/gradio_app/matheel_gradio_colab_demo.ipynb)
+- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_gradio_colab_demo.ipynb)
 - Examples Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
 - Examples folder: [examples/](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 - Development: [development docs](https://fahadebrahim.github.io/matheel/development/)
