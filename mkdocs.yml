@@ -3,6 +3,7 @@ site_description: Documentation for Matheel source-code similarity workflows.
 site_url: https://fahadebrahim.github.io/matheel/
 repo_url: https://github.com/FahadEbrahim/matheel
 repo_name: FahadEbrahim/matheel
+edit_uri: edit/main/docs/
 
 docs_dir: docs
 site_dir: site
