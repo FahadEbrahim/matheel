@@ -27,7 +27,7 @@ Start with the [usage guide](usage.md) for installation, optional extras, quick 
 ## Demos and Examples
 
 - [Hugging Face Space demo](https://huggingface.co/spaces/buelfhood/matheel-framework)
-- [Gradio Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/gradio_app/matheel_gradio_colab_demo.ipynb)
+- [Gradio Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_gradio_colab_demo.ipynb)
 - [Examples Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
 - [Examples folder](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 
