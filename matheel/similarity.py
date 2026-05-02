@@ -367,8 +367,8 @@ def aggregate_chunk_embeddings(chunk_embeddings, chunk_aggregation="mean"):
     return vectors.mean(axis=0)
 
 
-def prepare_code(code, preprocess_mode="none"):
-    return preprocess_code(code, mode=preprocess_mode)
+def prepare_code(code, preprocess_mode="none", code_language=None):
+    return preprocess_code(code, mode=preprocess_mode, language=code_language)
 
 
 def _should_use_chunking(chunking_method):
@@ -915,7 +915,10 @@ def get_sim_list(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
-    codes = [prepare_code(code, preprocess_mode=preprocess_mode) for code in raw_codes]
+    codes = [
+        prepare_code(code, preprocess_mode=preprocess_mode, code_language=code_language)
+        for code in raw_codes
+    ]
     if use_semantic:
         model = load_backend_model(
             model_name,
@@ -1133,8 +1136,16 @@ def calculate_similarity(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
-    prepared_code1 = prepare_code(code1, preprocess_mode=preprocess_mode)
-    prepared_code2 = prepare_code(code2, preprocess_mode=preprocess_mode)
+    prepared_code1 = prepare_code(
+        code1,
+        preprocess_mode=preprocess_mode,
+        code_language=code_language,
+    )
+    prepared_code2 = prepare_code(
+        code2,
+        preprocess_mode=preprocess_mode,
+        code_language=code_language,
+    )
     if use_semantic:
         model = load_backend_model(
             model_name,
