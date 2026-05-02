@@ -13,7 +13,7 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     def fake_get_sim_list(*args, **kwargs):
         captured["args"] = args
         captured["kwargs"] = kwargs
-        return pd.DataFrame(
+        frame = pd.DataFrame(
             [
                 {
                     "file_name_1": "a.py",
@@ -22,6 +22,16 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
                 }
             ]
         )
+        frame.attrs.update(
+            {
+                "elapsed_seconds": 1.2346,
+                "feature_set": "code_metric,semantic",
+                "vector_backend": "sentence_transformers",
+                "code_metric": "codebleu",
+                "chunking_method": "code",
+            }
+        )
+        return frame
 
     monkeypatch.setattr("matheel.cli.get_sim_list", fake_get_sim_list)
 
@@ -168,6 +178,8 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert captured["kwargs"]["pooling_method"] == "max"
     assert captured["kwargs"]["device"] == "cpu"
     assert captured["kwargs"]["progress"] is True
+    assert "Elapsed: 1.2346s" in result.stderr
+    assert "features=code_metric,semantic" in result.stderr
 
 
 def test_compare_command_accepts_directory_source(tmp_path, monkeypatch):

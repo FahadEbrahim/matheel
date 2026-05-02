@@ -22,6 +22,7 @@ from matheel.comparison_suite import run_comparison_suite, slugify_run_name
 from matheel.code_metrics import available_code_metric_languages, available_code_metrics
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
+from matheel._run_metadata import elapsed_seconds_between, perf_counter
 from matheel.similarity import (
     DEFAULT_MODEL_NAME,
     available_runtime_devices,
@@ -973,11 +974,15 @@ def suite_summary_html(summary):
         return empty_suite_summary_html()
 
     best = summary.iloc[0]
+    elapsed_seconds = float(best.get("elapsed_seconds", 0.0))
+    feature_set = escape_html(best.get("feature_set", "none"))
     return (
         f"<p><strong>Best run:</strong> {escape_html(best['run_name'])} | "
         f"<strong>Runs:</strong> {len(summary)} | "
         f"<strong>Best mean:</strong> {float(summary['mean_score'].max()):.3f} | "
-        f"<strong>Best max:</strong> {float(summary['max_score'].max()):.3f}</p>"
+        f"<strong>Best max:</strong> {float(summary['max_score'].max()):.3f} | "
+        f"<strong>Elapsed:</strong> {elapsed_seconds:.3f}s | "
+        f"<strong>Features:</strong> {feature_set}</p>"
     )
 
 
@@ -1144,9 +1149,18 @@ def run_suite_gradio(
     )
 
 
-def score_card_html(score, vector_backend="sentence_transformers", runtime_device="auto", code_metric="none"):
+def score_card_html(
+    score,
+    vector_backend="sentence_transformers",
+    runtime_device="auto",
+    code_metric="none",
+    elapsed_seconds=None,
+):
     numeric_score = float(score)
-    return f"<p><strong>Similarity score:</strong> {numeric_score:.4f}</p>"
+    elapsed_fragment = ""
+    if elapsed_seconds is not None:
+        elapsed_fragment = f" | <strong>Elapsed:</strong> {float(elapsed_seconds):.3f}s"
+    return f"<p><strong>Similarity score:</strong> {numeric_score:.4f}{elapsed_fragment}</p>"
 
 
 def empty_summary_html():
@@ -1159,12 +1173,16 @@ def results_summary_html(results, vector_backend, code_metric, chunking_method, 
 
     scores = results["similarity_score"].astype(float)
     top_row = results.iloc[0]
+    elapsed_seconds = float(results.attrs.get("elapsed_seconds", 0.0))
+    feature_set = escape_html(results.attrs.get("feature_set", "none"))
     return (
         f"<p><strong>Top pair:</strong> {escape_html(top_row['file_name_1'])} "
         f"vs {escape_html(top_row['file_name_2'])} | "
         f"<strong>Pairs:</strong> {len(results)} | "
         f"<strong>Average:</strong> {scores.mean():.3f} | "
-        f"<strong>Top score:</strong> {scores.max():.3f}</p>"
+        f"<strong>Top score:</strong> {scores.max():.3f} | "
+        f"<strong>Elapsed:</strong> {elapsed_seconds:.3f}s | "
+        f"<strong>Features:</strong> {feature_set}</p>"
     )
 
 
@@ -1271,6 +1289,7 @@ def calculate_similarity_gradio(
         effective_code_metric,
         effective_code_metric_weight,
     )
+    start_time = perf_counter()
     score = calculate_similarity(
         code1,
         code2,
@@ -1303,11 +1322,13 @@ def calculate_similarity_gradio(
         progress_callback=gradio_progress_callback(progress),
         **metric_kwargs,
     )
+    elapsed_seconds = elapsed_seconds_between(start_time, perf_counter())
     return score_card_html(
         score,
         vector_backend=vector_backend,
         runtime_device=runtime_device,
         code_metric=effective_code_metric,
+        elapsed_seconds=elapsed_seconds,
     )
 
 

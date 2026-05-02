@@ -23,6 +23,7 @@ from .model_routing import (
     resolve_vector_backend,
 )
 from ._progress import emit_progress, progress_iter
+from ._run_metadata import attach_run_metadata, elapsed_seconds_since, perf_counter
 from .preprocessing import preprocess_code
 from .vectors import (
     build_multivector_embeddings,
@@ -899,6 +900,7 @@ def get_sim_list(
     progress=False,
     progress_callback=None,
 ):
+    start_time = perf_counter()
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
         codebleu_component_weights,
@@ -1069,7 +1071,15 @@ def get_sim_list(
     ]
 
     similarity_df = pd.DataFrame(pairs_results, columns=RESULT_COLUMNS)
-    return similarity_df.head(max(1, int(number_results)))
+    result = similarity_df.head(max(1, int(number_results)))
+    return attach_run_metadata(
+        result,
+        elapsed_seconds=elapsed_seconds_since(start_time),
+        feature_weights=resolved_feature_weights,
+        vector_backend=vector_backend,
+        code_metric=(code_metric or "none").strip().lower() or "none",
+        chunking_method=(chunking_method or "none").strip().lower() or "none",
+    )
 
 
 def calculate_similarity(
