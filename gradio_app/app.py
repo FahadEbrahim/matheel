@@ -67,6 +67,24 @@ FEATURE_UI_CHOICES = [
     "Code Metric",
 ]
 DEFAULT_FEATURE_SELECTION = ["Embedding", "Levenshtein"]
+
+
+def gradio_progress_callback(progress):
+    if progress is None:
+        return None
+
+    def callback(event):
+        total = max(1, int(event.get("total") or 1))
+        current = min(total, max(0, int(event.get("current") or 0)))
+        description = event.get("message") or event.get("stage") or "Working"
+        try:
+            progress(current / total, desc=str(description))
+        except Exception:
+            return
+
+    return callback
+
+
 SUITE_FEATURE_NAME_MAP = {
     "Embedding": "embedding",
     "Levenshtein": "levenshtein",
@@ -1012,6 +1030,7 @@ def run_suite_gradio(
     chunker_options,
     threshold,
     number_results,
+    progress=gr.Progress(track_tqdm=True),
 ):
     saved_frame = normalize_suite_rows_frame(run_sheet_rows)
     if zipped_file is None:
@@ -1092,6 +1111,7 @@ def run_suite_gradio(
         summary_out=summary_export_path,
         details_dir=details_dir,
         output_format=output_format,
+        progress_callback=gradio_progress_callback(progress),
     )
     details_store = {
         run_name: frame.to_dict(orient="records")
@@ -1188,6 +1208,7 @@ def calculate_similarity_gradio(
     chunk_aggregation,
     chunk_language,
     chunker_options,
+    progress=gr.Progress(track_tqdm=True),
 ):
     selected = set(selected_features or [])
     selected_steps = set(selected_preparation or [])
@@ -1279,6 +1300,7 @@ def calculate_similarity_gradio(
         pooling_method=pooling_method,
         max_token_length=max_token_length,
         device=runtime_device,
+        progress_callback=gradio_progress_callback(progress),
         **metric_kwargs,
     )
     return score_card_html(
@@ -1330,6 +1352,7 @@ def get_sim_list_gradio(
     chunker_options,
     threshold,
     number_results,
+    progress=gr.Progress(track_tqdm=True),
 ):
     if zipped_file is None:
         return empty_summary_html(), pd.DataFrame(columns=["file_name_1", "file_name_2", "similarity_score"])
@@ -1425,6 +1448,7 @@ def get_sim_list_gradio(
         pooling_method=pooling_method,
         max_token_length=max_token_length,
         device=runtime_device,
+        progress_callback=gradio_progress_callback(progress),
         **metric_kwargs,
     )
     return results_summary_html(

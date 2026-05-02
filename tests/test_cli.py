@@ -118,6 +118,7 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
             "max",
             "--device",
             "cpu",
+            "--progress",
         ],
     )
 
@@ -166,6 +167,7 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert captured["kwargs"]["max_token_length"] == 128
     assert captured["kwargs"]["pooling_method"] == "max"
     assert captured["kwargs"]["device"] == "cpu"
+    assert captured["kwargs"]["progress"] is True
 
 
 def test_compare_command_accepts_directory_source(tmp_path, monkeypatch):
@@ -252,12 +254,20 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
         captured["config_file"] = config_file
         return [{"run_name": "baseline", "options": {}}]
 
-    def fake_run_comparison_suite(zipfile, run_configs, summary_out, details_dir, output_format):
+    def fake_run_comparison_suite(
+        zipfile,
+        run_configs,
+        summary_out,
+        details_dir,
+        output_format,
+        progress,
+    ):
         captured["zipfile"] = zipfile
         captured["run_configs"] = run_configs
         captured["summary_out"] = summary_out
         captured["details_dir"] = details_dir
         captured["output_format"] = output_format
+        captured["progress"] = progress
         return (
             pd.DataFrame(
                 [
@@ -297,6 +307,7 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
             str(tmp_path / "details"),
             "--format",
             "json",
+            "--progress",
         ],
     )
 
@@ -306,3 +317,4 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
     assert captured["summary_out"].endswith("summary.json")
     assert captured["details_dir"].endswith("details")
     assert captured["output_format"] == "json"
+    assert captured["progress"] is True

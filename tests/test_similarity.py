@@ -348,6 +348,54 @@ def test_get_sim_list_skips_embedding_loading_without_semantic_feature(tmp_path,
     assert len(results) == 1
 
 
+def test_get_sim_list_reports_progress_events(tmp_path):
+    source_dir = tmp_path / "codes"
+    source_dir.mkdir()
+    (source_dir / "a.py").write_text("alpha beta", encoding="utf-8")
+    (source_dir / "b.py").write_text("alpha gamma", encoding="utf-8")
+    (source_dir / "c.py").write_text("delta gamma", encoding="utf-8")
+    events = []
+
+    similarity.get_sim_list(
+        source_dir,
+        threshold=0.0,
+        number_results=5,
+        feature_weights={"levenshtein": 1.0},
+        vector_backend="auto",
+        progress_callback=events.append,
+    )
+
+    prepare_events = [event for event in events if event["stage"] == "prepare_files"]
+    pair_events = [event for event in events if event["stage"] == "compare_pairs"]
+    assert prepare_events[0] == {
+        "stage": "prepare_files",
+        "current": 0,
+        "total": 3,
+        "message": "Prepare files",
+    }
+    assert prepare_events[-1]["current"] == 3
+    assert pair_events[0]["current"] == 0
+    assert pair_events[0]["total"] == 3
+    assert pair_events[-1]["current"] == 3
+
+
+def test_calculate_similarity_reports_progress_events():
+    events = []
+
+    similarity.calculate_similarity(
+        "alpha beta",
+        "alpha gamma",
+        feature_weights={"levenshtein": 1.0},
+        vector_backend="auto",
+        progress_callback=events.append,
+    )
+
+    assert any(event["stage"] == "prepare_snippets" for event in events)
+    pair_events = [event for event in events if event["stage"] == "compare_pairs"]
+    assert pair_events[-1]["current"] == 1
+    assert pair_events[-1]["total"] == 1
+
+
 def test_calculate_similarity_supports_static_hash_backend():
     score = similarity.calculate_similarity(
         "def add(a, b):\n    return a + b\n",

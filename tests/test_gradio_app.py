@@ -248,7 +248,9 @@ def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
         summary_out=None,
         details_dir=None,
         output_format="csv",
+        progress_callback=None,
     ):
+        _ = zipped_file, summary_out, details_dir, output_format, progress_callback
         assert run_configs[0]["run_name"] == "../baseline/strong"
         return summary, {"../baseline/strong": details}
 

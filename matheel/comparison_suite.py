@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from .feature_weights import default_feature_weights, parse_feature_weights
+from ._progress import progress_iter
 from .similarity import DEFAULT_MODEL_NAME, get_sim_list
 
 
@@ -164,15 +165,34 @@ def run_comparison_suite(
     summary_out=None,
     details_dir=None,
     output_format="csv",
+    progress=False,
+    progress_callback=None,
 ):
     normalized_runs = [normalize_run_config(config, index=index) for index, config in enumerate(run_configs, start=1)]
     summary_rows = []
     result_frames = {}
 
-    for run in normalized_runs:
+    run_iter = progress_iter(
+        normalized_runs,
+        total=len(normalized_runs),
+        desc="Run comparison suite",
+        unit="run",
+        progress=progress,
+        progress_callback=progress_callback,
+        stage="suite_runs",
+    )
+    for run in run_iter:
         run_name = run["run_name"]
         options = dict(run["options"])
-        results = _rounded_score_frame(get_sim_list(zipped_file, **options))
+        run_options = dict(options)
+        run_options.setdefault("progress", progress)
+        run_options.setdefault("progress_callback", _run_progress_callback(progress_callback, run_name))
+        results = _rounded_score_frame(
+            get_sim_list(
+                zipped_file,
+                **run_options,
+            )
+        )
         result_frames[run_name] = results
         write_run_details(run_name, results, details_dir=details_dir)
         summary_rows.append(summary_row_from_results(run_name, options, results))
@@ -185,3 +205,15 @@ def run_comparison_suite(
         write_summary(summary, summary_out, output_format=output_format)
 
     return summary, result_frames
+
+
+def _run_progress_callback(progress_callback, run_name):
+    if progress_callback is None:
+        return None
+
+    def callback(event):
+        payload = dict(event)
+        payload["run_name"] = run_name
+        progress_callback(payload)
+
+    return callback

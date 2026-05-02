@@ -165,3 +165,30 @@ def test_run_comparison_suite_accepts_already_normalized_configs(monkeypatch):
     assert list(summary["run_name"]) == ["outer"]
     assert captured_options
     assert "run_name" not in captured_options[0]
+
+
+def test_run_comparison_suite_reports_progress_events(monkeypatch):
+    def fake_get_sim_list(zipped_file, **kwargs):
+        callback = kwargs.get("progress_callback")
+        if callback is not None:
+            callback({"stage": "compare_pairs", "current": 1, "total": 1})
+        return pd.DataFrame(
+            [
+                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 1.0},
+            ]
+        )
+
+    monkeypatch.setattr("matheel.comparison_suite.get_sim_list", fake_get_sim_list)
+    events = []
+
+    run_comparison_suite(
+        "codes.zip",
+        [{"run_name": "baseline", "feature_weights": {"levenshtein": 1.0}}],
+        progress_callback=events.append,
+    )
+
+    suite_events = [event for event in events if event["stage"] == "suite_runs"]
+    pair_events = [event for event in events if event["stage"] == "compare_pairs"]
+    assert suite_events[-1]["current"] == 1
+    assert suite_events[-1]["total"] == 1
+    assert pair_events[-1]["run_name"] == "baseline"

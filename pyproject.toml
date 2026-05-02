@@ -33,6 +33,7 @@ dependencies = [
     "numpy>=2,<3",
     "rapidfuzz>=3,<4",
     "networkx>=3,<4",
+    "tqdm>=4,<5",
     # 1.x currently has limited wheel coverage across the supported Python matrix.
     "tree-sitter-language-pack>=0.7,<0.8",
     "func-timeout>=4,<5"

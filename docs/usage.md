@@ -113,3 +113,5 @@ print(results.head())
 - Gradio remains ZIP-only for uploads.
 - `feature_weights` is the canonical scoring input.
 - `vector_backend=auto` uses Hugging Face metadata and tag heuristics when available.
+- CLI progress bars write to stderr and default to interactive terminals only. Use `--progress` or `--no-progress` to override.
+- Python APIs accept `progress=True` for tqdm bars and `progress_callback=...` for structured progress events.

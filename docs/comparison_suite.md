@@ -85,6 +85,10 @@ One row per run, including:
   Writes one CSV per run with the detailed ranked pairs.
 - `output_format`
   `csv` or `json` for the summary file.
+- `progress`
+  Enables tqdm progress bars when set to `True`.
+- `progress_callback`
+  Receives structured progress event dictionaries for run-level and pair-level work.
 - Numeric score fields are rounded to 4 decimal places in suite output artifacts.
 
 ## Python Example
@@ -116,7 +120,7 @@ runs = [
     },
 ]
 
-summary, details = run_comparison_suite("sample_pairs.zip", runs)
+summary, details = run_comparison_suite("sample_pairs.zip", runs, progress=True)
 print(summary)
 print(details["dense_baseline"].head())
 ```

@@ -1,6 +1,10 @@
+import sys
+
 import click
+
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
+from ._progress import should_show_progress
 from .similarity import DEFAULT_MODEL_NAME, available_runtime_devices, get_sim_list
 from .chunking import available_chunk_aggregations, available_chunking_methods
 from .model_routing import available_vector_backends
@@ -167,6 +171,11 @@ def main():
 )
 @click.option('--threshold', default=0.0, help='Similarity Threshold')
 @click.option('--num', default=10, help='Number of Results to Display')
+@click.option(
+    '--progress/--no-progress',
+    default=None,
+    help='Show progress bars on stderr. Defaults to auto for interactive terminals.',
+)
 def compare(
     source_path,
     feature_weights,
@@ -226,6 +235,7 @@ def compare(
     device,
     threshold,
     num,
+    progress,
 ):
     """Bulk similarity from a ZIP archive or a directory."""
     results = get_sim_list(
@@ -287,6 +297,7 @@ def compare(
         max_token_length=max_token_length,
         pooling_method=pooling_method,
         device=device,
+        progress=should_show_progress(progress, stream=sys.stderr),
     )
     click.echo(results.to_string(index=False))
 
@@ -316,7 +327,12 @@ def compare(
     show_default=True,
     help="Summary file format.",
 )
-def compare_suite(source_path, config_file, summary_out, details_dir, output_format):
+@click.option(
+    "--progress/--no-progress",
+    default=None,
+    help="Show progress bars on stderr. Defaults to auto for interactive terminals.",
+)
+def compare_suite(source_path, config_file, summary_out, details_dir, output_format, progress):
     """Run multiple similarity configurations from a JSON config file."""
     run_configs = load_run_configs(config_file)
     summary, _ = run_comparison_suite(
@@ -325,6 +341,7 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
         summary_out=summary_out,
         details_dir=details_dir,
         output_format=output_format,
+        progress=should_show_progress(progress, stream=sys.stderr),
     )
     if summary.empty:
         click.echo("No runs were executed.")
