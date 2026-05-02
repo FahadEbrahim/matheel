@@ -1,6 +1,6 @@
-# Documentation Index
+# Matheel Documentation
 
-Use this page as the main in-repo docs index.
+Use this page as the main Matheel docs index.
 
 Matheel is organized around a simple flow:
 
@@ -19,13 +19,14 @@ Matheel is organized around a simple flow:
 - [Lexical metrics and baselines](lexical.md)
 - [Code metrics](code_metrics.md)
 - [Comparison suite](comparison_suite.md)
+- [Development](development.md)
 - [Release checklist](release_checklist.md)
 
 ## Demos and Examples
 
-- [README demos](../README.md#demos)
-- [Examples Colab notebook](../examples/matheel_examples_colab.ipynb)
-- [Examples folder](../examples/)
+- [Repository demos](https://github.com/FahadEbrahim/matheel#demos)
+- [Examples Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
+- [Examples folder](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 
 ## Suggested Reading Order
 

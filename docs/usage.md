@@ -10,17 +10,19 @@ Base install:
 pip install matheel
 ```
 
-Full optional install:
+Recommended optional installs:
 
 ```bash
+pip install "matheel[semantic]"
+pip install "matheel[chunking]"
+pip install "matheel[metrics]"
+pip install "matheel[gradio]"
 pip install "matheel[all]"
 ```
 
-Metrics-only optional install:
+`matheel[semantic]` installs the supported semantic backends. `matheel[chunking]` installs Chonkie chunkers. `matheel[metrics]` installs optional code metric runtimes. `matheel[gradio]` installs the web app dependencies. `matheel[all]` installs all supported optional backends.
 
-```bash
-pip install "matheel[metrics]"
-```
+Compatibility extras remain available for narrower installs: `sentence_transformers`, `model2vec`, `pylate`, and `chunking_code`.
 
 ## Quick Check
 
