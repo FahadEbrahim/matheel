@@ -469,7 +469,7 @@ def test_basic_preprocess_removes_comments_and_collapses_whitespace():
 
 @pytest.mark.parametrize("language,code,expected", BASIC_LANGUAGE_CASES)
 def test_basic_preprocess_supports_scoped_languages(language, code, expected):
-    processed = preprocess_code(code, mode="basic")
+    processed = preprocess_code(code, mode="basic", language=language)
 
     assert processed == expected
 
@@ -533,7 +533,7 @@ def test_normalize_preprocess_drops_blank_lines_only():
 
 @pytest.mark.parametrize("language,code,blocked_phrases", ADVANCED_LANGUAGE_CASES)
 def test_advanced_preprocess_supports_scoped_languages(language, code, blocked_phrases):
-    processed = preprocess_code(code, mode="advanced")
+    processed = preprocess_code(code, mode="advanced", language=language)
 
     for phrase in blocked_phrases:
         assert phrase not in processed
@@ -541,6 +541,63 @@ def test_advanced_preprocess_supports_scoped_languages(language, code, blocked_p
     assert "<NUM>" in processed
     assert "return" in processed
     assert "id1" in processed
+
+
+@pytest.mark.parametrize("language", ("java", "javascript", "rust"))
+def test_basic_preprocess_preserves_decrement_syntax_for_non_lua_languages(language):
+    code = """
+    int value = counter--;
+    int next = value;
+    """
+
+    processed = preprocess_code(code, mode="basic", language=language)
+
+    assert processed == "int value = counter--; int next = value;"
+
+
+def test_basic_preprocess_strips_lua_double_hyphen_comments():
+    code = """
+    local value = 1 -- trailing note
+    local next = value
+    """
+
+    processed = preprocess_code(code, mode="basic", language="lua")
+
+    assert processed == "local value = 1 local next = value"
+
+
+def test_basic_preprocess_preserves_slashes_inside_string_literals():
+    code = """
+    String url = "https://example.com/path";
+    int value = 1; // trailing note
+    """
+
+    processed = preprocess_code(code, mode="basic", language="java")
+
+    assert processed == 'String url = "https://example.com/path"; int value = 1;'
+
+
+def test_advanced_preprocess_normalizes_string_with_slashes_before_stripping_comment():
+    code = """
+    String url = "https://example.com/path";
+    return url; // trailing note
+    """
+
+    processed = preprocess_code(code, mode="advanced", language="java")
+
+    assert "<STR>" in processed
+    assert "example" not in processed
+    assert "trailing" not in processed
+
+
+def test_basic_preprocess_preserves_python_floor_division():
+    code = """
+    value = total // count  # average
+    """
+
+    processed = preprocess_code(code, mode="basic", language="python")
+
+    assert processed == "value = total // count"
 
 
 def test_advanced_preprocess_strips_imports_literals_and_identifiers():

@@ -5,6 +5,7 @@ Preprocessing modifies code text before lexical, semantic, or code-aware scoring
 ## Parameter
 
 - `preprocess_mode`
+- `code_language` in comparison APIs, or `language` when calling `preprocess_code(...)` directly
 
 ## Supported Modes
 
@@ -19,10 +20,11 @@ Preprocessing modifies code text before lexical, semantic, or code-aware scoring
 
 ## What It Changes
 
-- `/* ... */` block comments are removed.
-- `// ...` line comments are removed.
-- Lua `--[[ ... ]]` block comments and `-- ...` line comments are removed.
-- `# ...` comments are removed, except common C/C++/C# preprocessor directives such as `#include`, `#define`, `#region`, and `#nullable`.
+- `/* ... */` block comments are removed for C-like languages.
+- `// ...` line comments are removed for C-like languages.
+- Lua `--[[ ... ]]` block comments and `-- ...` line comments are removed for Lua.
+- `# ...` comments are removed for the generic path and non-Lua language hints, except common C/C++/C# preprocessor directives such as `#include`, `#define`, `#region`, and `#nullable`.
+- Comment markers inside quoted string literals are preserved.
 - Import-like lines (`import`, `from ... import`, `package`, `#include`, `#import`, `using`, `use`, `require`, `include`, `library(...)`, `source(...)`, and Node/Lua-style `require(...)` assignments) are stripped in `advanced`.
 - String and numeric literals are normalized to placeholders in `advanced`.
 - Non-keyword identifiers are canonicalized (`id1`, `id2`, ...) in `advanced`.
@@ -73,6 +75,7 @@ cleaned = preprocess_code(
         return a + b
     """,
     mode="basic",
+    language="python",
 )
 print(cleaned)
 ```
@@ -81,5 +84,6 @@ print(cleaned)
 
 ```bash
 matheel compare sample_pairs.zip \
-  --preprocess-mode basic
+  --preprocess-mode basic \
+  --code-language java
 ```

@@ -1,12 +1,7 @@
 import re
 
 
-_BLOCK_COMMENT_RE = re.compile(r"/\*.*?\*/", re.DOTALL)
-_LUA_BLOCK_COMMENT_RE = re.compile(r"--\[\[.*?\]\]", re.DOTALL)
-_INLINE_HASH_COMMENT_RE = re.compile(r"\s#.*$")
-_INLINE_SLASH_COMMENT_RE = re.compile(r"//.*$")
-_INLINE_LUA_COMMENT_RE = re.compile(r"--.*$")
-_STRING_LITERAL_RE = re.compile(r'"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')
+_STRING_LITERAL_RE = re.compile(r"`(?:\\.|[^`\\])*`|\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
 _NUMBER_LITERAL_RE = re.compile(r"\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b")
 _TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|<STR>|<NUM>|[^\w\s]")
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -294,6 +289,38 @@ _SUPPORTED_PREPROCESS_LANGUAGES = (
     "r",
     "objc",
 )
+_PREPROCESS_LANGUAGE_ALIASES = {
+    "c++": "cpp",
+    "c#": "csharp",
+    "cs": "csharp",
+    "js": "javascript",
+    "objective-c": "objc",
+    "objectivec": "objc",
+    "py": "python",
+    "ts": "typescript",
+}
+_SLASH_LINE_COMMENT_LANGUAGES = {
+    "c",
+    "cpp",
+    "csharp",
+    "dart",
+    "go",
+    "java",
+    "javascript",
+    "kotlin",
+    "objc",
+    "php",
+    "rust",
+    "scala",
+    "solidity",
+    "swift",
+    "typescript",
+}
+_LUA_LINE_COMMENT_LANGUAGES = {"lua"}
+_SLASH_BLOCK_COMMENT_LANGUAGES = _SLASH_LINE_COMMENT_LANGUAGES
+_LUA_BLOCK_COMMENT_LANGUAGES = {"lua"}
+_GENERIC_LINE_COMMENT_MARKERS = ("//", "#")
+_GENERIC_BLOCK_COMMENT_MARKERS = (("/*", "*/"), ("--[[", "]]"))
 
 
 def available_preprocess_modes():
@@ -302,6 +329,11 @@ def available_preprocess_modes():
 
 def available_preprocess_languages():
     return _SUPPORTED_PREPROCESS_LANGUAGES
+
+
+def normalize_preprocess_language(language):
+    key = (language or "").strip().lower().replace("_", "-")
+    return _PREPROCESS_LANGUAGE_ALIASES.get(key, key)
 
 
 def normalize_newlines(text):
@@ -318,29 +350,142 @@ def drop_blank_lines(text):
     return "\n".join(lines)
 
 
-def strip_block_comments(text):
-    value = _BLOCK_COMMENT_RE.sub(" ", normalize_newlines(text))
-    return _LUA_BLOCK_COMMENT_RE.sub(" ", value)
+def _block_comment_markers(language=None):
+    normalized_language = normalize_preprocess_language(language)
+    if not normalized_language:
+        return _GENERIC_BLOCK_COMMENT_MARKERS
+
+    markers = []
+    if normalized_language in _SLASH_BLOCK_COMMENT_LANGUAGES:
+        markers.append(("/*", "*/"))
+    if normalized_language in _LUA_BLOCK_COMMENT_LANGUAGES:
+        markers.append(("--[[", "]]"))
+    if normalized_language not in _SUPPORTED_PREPROCESS_LANGUAGES:
+        markers.extend(_GENERIC_BLOCK_COMMENT_MARKERS)
+    return tuple(markers)
 
 
-def _strip_hash_comment(line):
-    stripped = line.lstrip()
-    if stripped.startswith(_HASH_DIRECTIVES):
+def _line_comment_markers(language=None):
+    normalized_language = normalize_preprocess_language(language)
+    if not normalized_language:
+        return _GENERIC_LINE_COMMENT_MARKERS
+
+    markers = [] if normalized_language in _LUA_LINE_COMMENT_LANGUAGES else ["#"]
+    if normalized_language in _SLASH_LINE_COMMENT_LANGUAGES:
+        markers.append("//")
+    if normalized_language in _LUA_LINE_COMMENT_LANGUAGES:
+        markers.append("--")
+    if normalized_language not in _SUPPORTED_PREPROCESS_LANGUAGES:
+        for marker in _GENERIC_LINE_COMMENT_MARKERS:
+            if marker not in markers:
+                markers.append(marker)
+    return tuple(markers)
+
+
+def _strip_block_comments_with_markers(text, markers):
+    value = normalize_newlines(text)
+    if not markers:
+        return value
+
+    cleaned = []
+    index = 0
+    quote = None
+    escaped = False
+    block_end = None
+
+    while index < len(value):
+        if block_end:
+            if value.startswith(block_end, index):
+                cleaned.append(" ")
+                index += len(block_end)
+                block_end = None
+                continue
+            if value[index] == "\n":
+                cleaned.append("\n")
+            index += 1
+            continue
+
+        char = value[index]
+        if quote:
+            cleaned.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\" and quote != "`":
+                escaped = True
+            elif char == quote:
+                quote = None
+            index += 1
+            continue
+
+        if char in ("'", '"', "`"):
+            quote = char
+            cleaned.append(char)
+            index += 1
+            continue
+
+        matched = False
+        for start_marker, end_marker in markers:
+            if value.startswith(start_marker, index):
+                cleaned.append(" ")
+                index += len(start_marker)
+                block_end = end_marker
+                matched = True
+                break
+        if matched:
+            continue
+
+        cleaned.append(char)
+        index += 1
+
+    return "".join(cleaned)
+
+
+def strip_block_comments(text, language=None):
+    return _strip_block_comments_with_markers(text, _block_comment_markers(language))
+
+
+def _strip_line_comment_with_markers(line, markers):
+    if not markers:
         return line
-    if stripped.startswith("#"):
+    if "#" in markers and line.lstrip().startswith(_HASH_DIRECTIVES):
+        return line
+    if "#" in markers and line.lstrip().startswith("#"):
         return ""
-    if _INLINE_HASH_COMMENT_RE.search(line):
-        return _INLINE_HASH_COMMENT_RE.sub("", line).rstrip()
+
+    index = 0
+    quote = None
+    escaped = False
+
+    while index < len(line):
+        char = line[index]
+        if quote:
+            if escaped:
+                escaped = False
+            elif char == "\\" and quote != "`":
+                escaped = True
+            elif char == quote:
+                quote = None
+            index += 1
+            continue
+
+        if char in ("'", '"', "`"):
+            quote = char
+            index += 1
+            continue
+
+        for marker in markers:
+            if line.startswith(marker, index):
+                return line[:index].rstrip()
+        index += 1
+
     return line
 
 
-def strip_line_comments(text):
+def strip_line_comments(text, language=None):
+    markers = _line_comment_markers(language)
     cleaned_lines = []
     for line in normalize_newlines(text).split("\n"):
-        current = _INLINE_SLASH_COMMENT_RE.sub("", line).rstrip()
-        current = _INLINE_LUA_COMMENT_RE.sub("", current).rstrip()
-        current = _strip_hash_comment(current)
-        cleaned_lines.append(current)
+        cleaned_lines.append(_strip_line_comment_with_markers(line, markers).rstrip())
     return "\n".join(cleaned_lines)
 
 
@@ -394,7 +539,7 @@ def canonicalize_identifiers(text):
     return " ".join(normalized)
 
 
-def preprocess_code(text, mode="none"):
+def preprocess_code(text, mode="none", language=None):
     selected_mode = (mode or "none").strip().lower()
     value = trim_trailing_whitespace(text)
 
@@ -405,14 +550,14 @@ def preprocess_code(text, mode="none"):
         return drop_blank_lines(value).strip()
 
     if selected_mode == "basic":
-        value = strip_block_comments(value)
-        value = strip_line_comments(value)
+        value = strip_block_comments(value, language=language)
+        value = strip_line_comments(value, language=language)
         value = drop_blank_lines(value)
         return collapse_whitespace(value)
 
     if selected_mode == "advanced":
-        value = strip_block_comments(value)
-        value = strip_line_comments(value)
+        value = strip_block_comments(value, language=language)
+        value = strip_line_comments(value, language=language)
         value = strip_import_like_lines(value)
         value = drop_blank_lines(value)
         value = normalize_literal_placeholders(value)
