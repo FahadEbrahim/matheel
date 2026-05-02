@@ -9,6 +9,7 @@ from matheel.vectors import (
     detect_model_max_token_length,
     multivector_similarity,
     resolve_max_token_length,
+    similarity_function_score_range,
     single_vector_similarity,
 )
 
@@ -32,6 +33,12 @@ def test_single_vector_similarity_supports_all_supported_functions():
     right = [0.0, 1.0]
 
     assert available_similarity_functions() == ("cosine", "dot", "euclidean", "manhattan")
+    assert similarity_function_score_range("cosine") == (-1.0, 1.0)
+    assert similarity_function_score_range("dot") == (float("-inf"), float("inf"))
+    assert similarity_function_score_range("euclidean") == (float("-inf"), 0.0)
+    assert similarity_function_score_range("manhattan") == (float("-inf"), 0.0)
+    for name in available_similarity_functions():
+        assert similarity_function_score_range(name, normalize_score=True) == (0.0, 1.0)
     assert single_vector_similarity(left, left, similarity_function="cosine") == 1.0
     assert single_vector_similarity(left, left, similarity_function="dot") == 1.0
     assert single_vector_similarity(left, left, similarity_function="euclidean") == 0.0
@@ -40,6 +47,14 @@ def test_single_vector_similarity_supports_all_supported_functions():
     assert single_vector_similarity(left, right, similarity_function="dot") == 0.0
     assert single_vector_similarity(left, right, similarity_function="euclidean") == pytest.approx(-(2.0 ** 0.5))
     assert single_vector_similarity(left, right, similarity_function="manhattan") == -2.0
+    assert single_vector_similarity(left, right, similarity_function="euclidean", normalize_score=True) == pytest.approx(
+        1.0 / (1.0 + (2.0 ** 0.5))
+    )
+    assert single_vector_similarity(left, right, similarity_function="manhattan", normalize_score=True) == pytest.approx(
+        1.0 / 3.0
+    )
+    assert single_vector_similarity([2.0, 0.0], [2.0, 0.0], similarity_function="dot") == 4.0
+    assert single_vector_similarity([2.0, 0.0], [2.0, 0.0], similarity_function="dot", normalize_score=True) == 1.0
 
 
 def test_configure_sentence_transformer_pooling_replaces_single_pooling_mode():

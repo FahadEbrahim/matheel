@@ -53,6 +53,65 @@ def available_similarity_functions():
     return ("cosine", "dot", "euclidean", "manhattan")
 
 
+def similarity_function_score_range(name, normalize_score=False):
+    selected = normalize_similarity_function_name(name)
+    if normalize_score:
+        return (0.0, 1.0)
+    if selected == "cosine":
+        return (-1.0, 1.0)
+    if selected == "dot":
+        return (float("-inf"), float("inf"))
+    return (float("-inf"), 0.0)
+
+
+def similarity_function_uses_distance_scale(name):
+    selected = normalize_similarity_function_name(name)
+    return selected in ("euclidean", "manhattan")
+
+
+def similarity_function_is_unbounded(name):
+    selected = normalize_similarity_function_name(name)
+    return selected in ("dot", "euclidean", "manhattan")
+
+
+def normalized_similarity_score(score, similarity_function):
+    selected = normalize_similarity_function_name(similarity_function)
+    numeric_score = float(score)
+    if similarity_function_uses_distance_scale(selected):
+        return _distance_to_similarity(abs(numeric_score))
+    return float(np.clip(numeric_score, 0.0, 1.0))
+
+
+def raw_distance_to_similarity(distance):
+    numeric_distance = max(0.0, float(distance))
+    return 1.0 / (1.0 + numeric_distance)
+
+
+def _distance_to_similarity(distance):
+    return raw_distance_to_similarity(distance)
+
+
+def _maybe_normalize_single_vector_score(score, similarity_function, normalize_score=False):
+    if normalize_score:
+        return normalized_similarity_score(score, similarity_function)
+    return float(score)
+
+
+def _distance_score(distance, normalize_score=False):
+    numeric_distance = max(0.0, float(distance))
+    if normalize_score:
+        return _distance_to_similarity(numeric_distance)
+    return -numeric_distance
+
+
+def _raw_cosine_score(left_vector, right_vector):
+    denominator = np.linalg.norm(left_vector) * np.linalg.norm(right_vector)
+    if denominator <= 0:
+        return 0.0
+    score = np.dot(left_vector, right_vector) / denominator
+    return float(np.clip(score, -1.0, 1.0))
+
+
 def normalize_similarity_function_name(name):
     key = str(name or "cosine").strip().lower()
     normalized = _SIMILARITY_FUNCTION_ALIASES.get(key)
@@ -400,7 +459,12 @@ def _extract_scalar_score(value):
     return float(array.reshape(-1)[0])
 
 
-def _pairwise_similarity_with_sentence_transformers(left, right, similarity_function="cosine"):
+def _pairwise_similarity_with_sentence_transformers(
+    left,
+    right,
+    similarity_function="cosine",
+    normalize_score=False,
+):
     from sentence_transformers import util
 
     left_vector = np.asarray(left, dtype=float).reshape(1, -1)
@@ -414,27 +478,46 @@ def _pairwise_similarity_with_sentence_transformers(left, right, similarity_func
         score = util.pairwise_manhattan_sim(left_vector, right_vector)
     else:
         score = util.pairwise_cos_sim(left_vector, right_vector)
-    return _extract_scalar_score(score)
+    return _maybe_normalize_single_vector_score(
+        _extract_scalar_score(score),
+        selected,
+        normalize_score=normalize_score,
+    )
 
 
-def single_vector_similarity(left, right, similarity_function="cosine"):
+def single_vector_similarity(left, right, similarity_function="cosine", normalize_score=False):
     selected = normalize_similarity_function_name(similarity_function)
     try:
-        return _pairwise_similarity_with_sentence_transformers(left, right, similarity_function=selected)
+        return _pairwise_similarity_with_sentence_transformers(
+            left,
+            right,
+            similarity_function=selected,
+            normalize_score=normalize_score,
+        )
     except Exception:
         left_vector = np.asarray(left, dtype=float)
         right_vector = np.asarray(right, dtype=float)
         if selected == "dot":
-            return float(np.dot(left_vector, right_vector))
+            return _maybe_normalize_single_vector_score(
+                np.dot(left_vector, right_vector),
+                selected,
+                normalize_score=normalize_score,
+            )
         if selected == "euclidean":
-            return float(-np.linalg.norm(left_vector - right_vector))
+            return _distance_score(
+                np.linalg.norm(left_vector - right_vector),
+                normalize_score=normalize_score,
+            )
         if selected == "manhattan":
-            return float(-np.abs(left_vector - right_vector).sum())
-        denominator = np.linalg.norm(left_vector) * np.linalg.norm(right_vector)
-        if denominator <= 0:
-            return 0.0
-        score = np.dot(left_vector, right_vector) / denominator
-        return float(np.clip(score, -1.0, 1.0))
+            return _distance_score(
+                np.abs(left_vector - right_vector).sum(),
+                normalize_score=normalize_score,
+            )
+        return _maybe_normalize_single_vector_score(
+            _raw_cosine_score(left_vector, right_vector),
+            selected,
+            normalize_score=normalize_score,
+        )
 
 
 def _encode_to_numpy(model, inputs):

@@ -85,6 +85,7 @@ print(results.head())
 
 - Use a ZIP archive or a directory path with `matheel compare`.
 - Use `feature_weights` to combine semantic, lexical, and code-aware scores.
+- Use `--normalize-semantic-scores` when blending `dot`, `euclidean`, or `manhattan` semantic scores with other 0-1 metrics.
 - Add `--preprocess-mode` when code should be normalized before scoring.
 - Add `--chunking-method` when large files should be split before embedding.
 - Use `matheel compare-suite` with a JSON config for repeatable multi-run comparisons.

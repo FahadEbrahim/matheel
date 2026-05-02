@@ -35,6 +35,7 @@ from .vectors import (
     load_vector_model,
     multivector_similarity,
     normalize_pooling_method_name,
+    similarity_function_is_unbounded,
     resolve_max_token_length,
     normalize_similarity_function_name,
     single_vector_similarity,
@@ -326,6 +327,27 @@ def validate_vector_options(vector_backend, static_vector_dim, model_name=None, 
     return backend, max(8, int(static_vector_dim or 0))
 
 
+def validate_semantic_score_scale_options(
+    feature_weights,
+    vector_backend,
+    similarity_function,
+    normalize_semantic_scores=False,
+):
+    if normalize_semantic_scores or backend_is_multivector(vector_backend):
+        return
+    active_features = {
+        name for name, value in (feature_weights or {}).items() if float(value) > 0.0
+    }
+    if "semantic" not in active_features or len(active_features) <= 1:
+        return
+    if not similarity_function_is_unbounded(similarity_function):
+        return
+    raise ValueError(
+        "Raw semantic scores from this similarity function are not on the 0-1 feature scale. "
+        "Set normalize_semantic_scores=True before combining semantic scores with other features."
+    )
+
+
 def validate_embedding_count(embeddings, code_count):
     embedding_count = 0 if embeddings is None else len(embeddings)
     if embedding_count != int(code_count):
@@ -341,6 +363,7 @@ def semantic_similarity(
     vector_backend="sentence_transformers",
     multivector_bidirectional=False,
     similarity_function="cosine",
+    normalize_semantic_scores=False,
 ):
     if backend_is_multivector(vector_backend):
         return multivector_similarity(
@@ -353,6 +376,7 @@ def semantic_similarity(
         embedding1,
         embedding2,
         similarity_function=similarity_function,
+        normalize_score=normalize_semantic_scores,
     )
 
 
@@ -593,6 +617,7 @@ def build_feature_scores(
     winnowing_window=4,
     gst_min_match_length=5,
     active_features=None,
+    normalize_semantic_scores=False,
 ):
     requested_features = None
     if active_features is not None:
@@ -614,6 +639,7 @@ def build_feature_scores(
                 vector_backend=vector_backend,
                 multivector_bidirectional=multivector_bidirectional,
                 similarity_function=similarity_function,
+                normalize_semantic_scores=normalize_semantic_scores,
             )
             if (use_all_features or "semantic" in requested_features)
             and embedding1 is not None
@@ -676,7 +702,14 @@ def combined_similarity_from_embeddings(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    normalize_semantic_scores=False,
 ):
+    validate_semantic_score_scale_options(
+        feature_weights,
+        vector_backend,
+        similarity_function,
+        normalize_semantic_scores=normalize_semantic_scores,
+    )
     active_features = {
         name for name, value in (feature_weights or {}).items() if float(value) > 0.0
     }
@@ -696,6 +729,7 @@ def combined_similarity_from_embeddings(
         winnowing_window=winnowing_window,
         gst_min_match_length=gst_min_match_length,
         active_features=active_features,
+        normalize_semantic_scores=normalize_semantic_scores,
     )
     return combine_weighted_scores(feature_scores, feature_weights)
 
@@ -750,6 +784,7 @@ def rank_code_pairs(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    normalize_semantic_scores=False,
     progress=False,
     progress_callback=None,
 ):
@@ -830,6 +865,7 @@ def rank_code_pairs(
             winnowing_kgram=winnowing_kgram,
             winnowing_window=winnowing_window,
             gst_min_match_length=gst_min_match_length,
+            normalize_semantic_scores=normalize_semantic_scores,
         )
         results.append((score, i, j))
     return sorted(results, reverse=True)
@@ -897,6 +933,7 @@ def get_sim_list(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    normalize_semantic_scores=False,
     progress=False,
     progress_callback=None,
 ):
@@ -932,6 +969,13 @@ def get_sim_list(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
+    normalize_semantic_scores = bool(normalize_semantic_scores)
+    validate_semantic_score_scale_options(
+        resolved_feature_weights,
+        vector_backend,
+        selected_similarity,
+        normalize_semantic_scores=normalize_semantic_scores,
+    )
     source_iter = progress_iter(
         raw_codes,
         total=len(raw_codes),
@@ -1056,6 +1100,7 @@ def get_sim_list(
         winnowing_kgram=winnowing_kgram,
         winnowing_window=winnowing_window,
         gst_min_match_length=gst_min_match_length,
+        normalize_semantic_scores=normalize_semantic_scores,
         progress=progress,
         progress_callback=progress_callback,
     )
@@ -1143,6 +1188,7 @@ def calculate_similarity(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    normalize_semantic_scores=False,
     progress=False,
     progress_callback=None,
 ):
@@ -1176,6 +1222,13 @@ def calculate_similarity(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
+    normalize_semantic_scores = bool(normalize_semantic_scores)
+    validate_semantic_score_scale_options(
+        resolved_feature_weights,
+        vector_backend,
+        selected_similarity,
+        normalize_semantic_scores=normalize_semantic_scores,
+    )
     prepared_codes = [
         prepare_code(code, preprocess_mode=preprocess_mode, code_language=code_language)
         for code in progress_iter(
@@ -1282,5 +1335,6 @@ def calculate_similarity(
             winnowing_kgram=winnowing_kgram,
             winnowing_window=winnowing_window,
             gst_min_match_length=gst_min_match_length,
+            normalize_semantic_scores=normalize_semantic_scores,
         )
     return score

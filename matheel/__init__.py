@@ -9,7 +9,11 @@ from .code_metrics import (
 from .feature_weights import available_default_features, default_feature_weights, normalize_feature_weights
 from .model_routing import infer_model_backend, infer_model_capabilities, available_vector_backends
 from .preprocessing import preprocess_code
-from .vectors import available_pooling_methods, available_similarity_functions
+from .vectors import (
+    available_pooling_methods,
+    available_similarity_functions,
+    similarity_function_score_range,
+)
 from .similarity import (
     available_runtime_devices,
     calculate_similarity,
@@ -42,4 +46,5 @@ __all__ = [
     "run_comparison_suite",
     "score_code_metric_pair",
     "detect_default_device",
+    "similarity_function_score_range",
 ]

@@ -13,6 +13,7 @@ You can also use `vector_backend=auto` and let Matheel route based on Hugging Fa
 - `vector_backend`
 - `max_token_length`
 - `similarity_function`
+- `normalize_semantic_scores`
 - `pooling_method`
 - `static_vector_dim`
 - `static_vector_lowercase`
@@ -88,7 +89,11 @@ These apply to single-vector backends:
 Notes:
 
 - `cosine` and `dot` are the most common similarity choices.
-- `euclidean` and `manhattan` are distance-style scores, so thresholds may need to be lower and can be negative.
+- Raw `cosine` scores are bounded from -1 to 1.
+- Raw `dot` scores are unbounded.
+- Raw `euclidean` and `manhattan` scores are negative distances. Identical vectors score `0.0`; farther vectors become more negative.
+- `normalize_semantic_scores=True` maps single-vector semantic scores to the 0-1 range before weighting. Distance scores use `1 / (1 + distance)`, so identical vectors score `1.0` and farther vectors approach `0.0`.
+- Keep normalization as an option when you need raw distance or dot values for analysis. Enable it before combining `dot`, `euclidean`, or `manhattan` semantic scores with lexical or code-metric weights.
 
 ## Pooling Methods
 
@@ -126,6 +131,7 @@ score = calculate_similarity(
     vector_backend="sentence_transformers",
     max_token_length=256,
     similarity_function="dot",
+    normalize_semantic_scores=True,
     pooling_method="max",
     feature_weights={"semantic": 1.0},
 )
