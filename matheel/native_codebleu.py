@@ -579,31 +579,32 @@ def _brevity_penalty(closest_ref_len, hyp_len):
     return math.exp(1 - (closest_ref_len / hyp_len))
 
 
-def _modified_recall(references, hypothesis, n, weighted=False):
-    numerator = 0.0
-    denominator = 0.0
+def _weighted_ngram_sum(counter, token_weights):
+    total = 0.0
+    for ngram, count in counter.items():
+        total += count * token_weights.get(ngram[0], 1.0)
+    return total
+
+
+def _modified_precision(references, hypothesis, n, weighted=False, hypothesis_weights=None):
     counts = Counter(ngrams(hypothesis, n)) if len(hypothesis) >= n else Counter()
+    max_clipped_counts = {}
     for reference_entry in references:
         if weighted:
             reference = reference_entry[0]
-            token_weights = reference_entry[1]
         else:
             reference = reference_entry
-            token_weights = {}
         reference_counts = Counter(ngrams(reference, n)) if len(reference) >= n else Counter()
-        clipped_counts = {ngram: min(count, counts[ngram]) for ngram, count in reference_counts.items()}
-        if weighted and n == 1 and len(token_weights) == len(reference_counts):
-            def weighted_sum(counter):
-                total = 0.0
-                for ngram, count in counter.items():
-                    total += count * (token_weights.get(ngram[0], 1.0))
-                return total
-
-            numerator += weighted_sum(clipped_counts)
-            denominator += max(1.0, weighted_sum(reference_counts))
-        else:
-            numerator += float(sum(clipped_counts.values()))
-            denominator += max(1.0, float(sum(reference_counts.values())))
+        for ngram, count in counts.items():
+            clipped_count = min(count, reference_counts.get(ngram, 0))
+            max_clipped_counts[ngram] = max(max_clipped_counts.get(ngram, 0), clipped_count)
+    if weighted and n == 1:
+        weights = hypothesis_weights or {}
+        numerator = _weighted_ngram_sum(max_clipped_counts, weights)
+        denominator = max(1.0, _weighted_ngram_sum(counts, weights))
+    else:
+        numerator = float(sum(max_clipped_counts.values()))
+        denominator = max(1.0, float(sum(counts.values())))
     return numerator, denominator
 
 
@@ -619,11 +620,23 @@ def _corpus_bleu(list_of_references, hypotheses, weights=(0.25, 0.25, 0.25, 0.25
     if len(list_of_references) != len(hypotheses):
         raise ValueError("Number of references and hypotheses must match.")
     for references, hypothesis in zip(list_of_references, hypotheses):
+        if weighted:
+            hypothesis_tokens = hypothesis[0]
+            hypothesis_weights = hypothesis[1]
+        else:
+            hypothesis_tokens = hypothesis
+            hypothesis_weights = None
         for index, _ in enumerate(weights, start=1):
-            numerator, denominator = _modified_recall(references, hypothesis, index, weighted=weighted)
+            numerator, denominator = _modified_precision(
+                references,
+                hypothesis_tokens,
+                index,
+                weighted=weighted,
+                hypothesis_weights=hypothesis_weights,
+            )
             p_numerators[index] += numerator
             p_denominators[index] += denominator
-        hyp_len = len(hypothesis)
+        hyp_len = len(hypothesis_tokens)
         hyp_lengths += hyp_len
         ref_lengths += _closest_ref_length(references, hyp_len, weighted=weighted)
     if p_numerators[1] == 0:
@@ -1047,9 +1060,13 @@ def calc_codebleu(
         [[reference_tokens, make_weights(reference_tokens)] for reference_tokens in reference_group]
         for reference_group in tokenized_references
     ]
+    weighted_hypotheses = [
+        [hypothesis_tokens, make_weights(hypothesis_tokens)]
+        for hypothesis_tokens in tokenized_hypotheses
+    ]
     weighted_ngram_match_score = _corpus_bleu(
         weighted_references,
-        tokenized_hypotheses,
+        weighted_hypotheses,
         weights=(0.25, 0.25, 0.25, 0.25),
         weighted=True,
     )
