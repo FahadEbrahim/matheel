@@ -9,46 +9,21 @@
 
 Matheel is a Python package and CLI for source-code similarity. It combines semantic embeddings, lexical similarity, chunking, preprocessing, and code evaluation metrics in one workflow.
 
-## Demos
-
-- Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
-- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/gradio_app/matheel_gradio_colab_demo.ipynb)
-- Examples Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
-
 ## Installation
 
-Use Python `3.10` to `3.13`. Installation can take some time.
-
-Base install:
+Matheel supports Python `3.10` to `3.13`.
 
 ```bash
 pip install matheel
 ```
 
-Optional extras:
-
-```bash
-pip install "matheel[semantic]"
-pip install "matheel[chunking]"
-pip install "matheel[metrics]"
-pip install "matheel[gradio]"
-pip install "matheel[all]"
-```
-
-`matheel[semantic]` installs the supported semantic backends. `matheel[chunking]` installs Chonkie chunkers. `matheel[metrics]` installs optional code metric runtimes. `matheel[gradio]` installs the web app dependencies. `matheel[all]` installs all supported optional backends.
-
-Compatibility extras remain available for narrower installs: `sentence_transformers`, `model2vec`, `pylate`, and `chunking_code`.
-
-Examples that use semantic weights assume `matheel[semantic]` or `matheel[all]` is installed. See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for more install details.
+Optional semantic, chunking, metrics, and Gradio extras are covered in the [usage guide](https://fahadebrahim.github.io/matheel/usage/#installation).
 
 ## Quick Start
 
 ```bash
 matheel compare sample_pairs.zip \
-  --model huggingface/CodeBERTa-small-v1 \
-  --feature-weight semantic=0.7 \
-  --feature-weight levenshtein=0.3 \
-  --threshold 0.2 \
+  --feature-weight levenshtein=1.0 \
   --num 10
 ```
 
@@ -63,26 +38,20 @@ score = calculate_similarity(
 print(round(score, 4))
 ```
 
-See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for archive, suite, chunking, embedding, and code-metric examples.
+See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semantic models, archives, comparison suites, chunking, preprocessing, and code metrics.
 
-## Docs
+## Links
 
-- Published docs: [fahadebrahim.github.io/matheel](https://fahadebrahim.github.io/matheel/)
-- Source docs: [docs/index.md](docs/index.md)
-- Usage guide: [docs/usage.md](docs/usage.md)
-- Development: [docs/development.md](docs/development.md)
+- Documentation: [fahadebrahim.github.io/matheel](https://fahadebrahim.github.io/matheel/)
+- Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
+- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/gradio_app/matheel_gradio_colab_demo.ipynb)
+- Examples Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
+- Examples folder: [examples/](https://github.com/FahadEbrahim/matheel/tree/main/examples)
+- Development: [development docs](https://fahadebrahim.github.io/matheel/development/)
 
 ## Development
 
-Install Matheel in editable mode with the development tools, then run the default checks:
-
-```bash
-python -m pip install -e ".[dev]"
-python -m pytest
-python -m ruff check .
-```
-
-More development and release checks are in the [development docs](docs/development.md).
+Contributor setup, tests, linting, package checks, and release preparation are documented in the [development docs](https://fahadebrahim.github.io/matheel/development/).
 
 ## License
 

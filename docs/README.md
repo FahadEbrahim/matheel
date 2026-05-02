@@ -8,7 +8,7 @@ The published site is <https://fahadebrahim.github.io/matheel/>.
 ## Start Here
 
 - [Documentation index](index.md)
-- [Quick usage](usage.md)
+- [Usage](usage.md)
 - [Preprocessing](preprocessing.md)
 - [Chunking](chunking.md)
 - [Vectors and routing](vectors.md)

@@ -1,8 +1,10 @@
 # Usage Guide
 
-This page is the quick-start entry point. The detailed parameter guides live in the topic pages linked below.
+This page is the quick-start entry point for installing Matheel and running the main CLI and Python workflows. Detailed parameter guides live in the topic pages linked below.
 
-## Install
+## Installation
+
+Matheel supports Python `3.10` to `3.13`.
 
 Base install:
 
@@ -10,7 +12,7 @@ Base install:
 pip install matheel
 ```
 
-Recommended optional installs:
+The base package includes the CLI, preprocessing, lexical similarity, and the core comparison workflow. Install optional extras when you need larger semantic backends, chunkers, metric runtimes, or the Gradio app:
 
 ```bash
 pip install "matheel[semantic]"
@@ -20,15 +22,44 @@ pip install "matheel[gradio]"
 pip install "matheel[all]"
 ```
 
-`matheel[semantic]` installs the supported semantic backends. `matheel[chunking]` installs Chonkie chunkers. `matheel[metrics]` installs optional code metric runtimes. `matheel[gradio]` installs the web app dependencies. `matheel[all]` installs all supported optional backends.
+| Extra | Use it for |
+| --- | --- |
+| `matheel[semantic]` | Sentence Transformers, Model2Vec, and PyLate semantic scoring backends. |
+| `matheel[chunking]` | Chonkie chunkers for splitting code before embedding. |
+| `matheel[metrics]` | Optional code metric runtimes such as TSED and CodeBERTScore. |
+| `matheel[gradio]` | Dependencies for running the Gradio web app. |
+| `matheel[all]` | All supported optional backends in one install. |
 
 Compatibility extras remain available for narrower installs: `sentence_transformers`, `model2vec`, `pylate`, and `chunking_code`.
 
-## Quick Check
+Examples that use semantic weights assume `matheel[semantic]` or `matheel[all]` is installed. Optional installs can take some time because they may include model and ML runtime dependencies.
+
+## Quick Checks
 
 The repository root includes `sample_pairs.zip`, a small Java archive you can use immediately.
 
-CLI:
+Base CLI check:
+
+```bash
+matheel compare sample_pairs.zip \
+  --feature-weight levenshtein=1.0 \
+  --num 10
+```
+
+Base Python check:
+
+```python
+from matheel.similarity import calculate_similarity
+
+score = calculate_similarity(
+    "def add(a, b):\n    return a + b\n",
+    "def add(x, y):\n    return x + y\n",
+    feature_weights={"levenshtein": 1.0},
+)
+print(round(score, 4))
+```
+
+Semantic CLI check:
 
 ```bash
 matheel compare sample_pairs.zip \
@@ -37,7 +68,7 @@ matheel compare sample_pairs.zip \
   --feature-weight levenshtein=0.3
 ```
 
-Python:
+Semantic Python check:
 
 ```python
 from matheel.similarity import get_sim_list
@@ -50,15 +81,31 @@ results = get_sim_list(
 print(results.head())
 ```
 
+## Common Workflows
+
+- Use a ZIP archive or a directory path with `matheel compare`.
+- Use `feature_weights` to combine semantic, lexical, and code-aware scores.
+- Add `--preprocess-mode` when code should be normalized before scoring.
+- Add `--chunking-method` when large files should be split before embedding.
+- Use `matheel compare-suite` with a JSON config for repeatable multi-run comparisons.
+- Run the Gradio app or notebooks when you want an interactive workflow.
+
+## Demos and Examples
+
+- Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
+- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/gradio_app/matheel_gradio_colab_demo.ipynb)
+- Examples Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
+- Examples folder: [github.com/FahadEbrahim/matheel/tree/main/examples](https://github.com/FahadEbrahim/matheel/tree/main/examples)
+
 ## Documentation Map
 
-- [docs/index.md](index.md)
-- [docs/preprocessing.md](preprocessing.md)
-- [docs/chunking.md](chunking.md)
-- [docs/vectors.md](vectors.md)
-- [docs/lexical.md](lexical.md)
-- [docs/code_metrics.md](code_metrics.md)
-- [docs/comparison_suite.md](comparison_suite.md)
+- [Preprocessing](preprocessing.md)
+- [Chunking](chunking.md)
+- [Vectors and routing](vectors.md)
+- [Lexical metrics and baselines](lexical.md)
+- [Code metrics](code_metrics.md)
+- [Comparison suite](comparison_suite.md)
+- [Development](development.md)
 
 ## Interface Notes
 
