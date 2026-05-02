@@ -1,4 +1,10 @@
 from .chunking import chunk_text, chunker_parameter_names
+from .calibration import (
+    calibrate_threshold,
+    calibration_curve,
+    evaluate_threshold,
+    feature_score_range,
+)
 from .comparison_suite import load_run_configs, parse_run_configs, run_comparison_suite
 from .code_metrics import (
     available_code_metric_languages,
@@ -30,10 +36,14 @@ __all__ = [
     "available_runtime_devices",
     "available_similarity_functions",
     "available_vector_backends",
+    "calibrate_threshold",
+    "calibration_curve",
     "calculate_similarity",
     "chunk_text",
     "chunker_parameter_names",
     "codebleu_components",
+    "evaluate_threshold",
+    "feature_score_range",
     "get_sim_list",
     "infer_model_backend",
     "infer_model_capabilities",

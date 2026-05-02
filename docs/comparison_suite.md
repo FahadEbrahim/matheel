@@ -7,6 +7,7 @@ The comparison suite runs multiple configurations against the same directory or 
 - optional summary/detail files on disk
 
 This is the right interface for repeatable ablations, backend comparisons, and parameter sweeps.
+For calibrated decision thresholds, keep labels outside the suite output and use the score reports with the calibration helpers described in [Scoring and calibration](scoring.md).
 
 ## Main Functions
 
