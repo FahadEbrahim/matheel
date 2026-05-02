@@ -3,6 +3,7 @@ import re
 import time
 from collections import Counter
 from pathlib import Path
+from threading import RLock
 
 from .native_codebleu import AVAILABLE_LANGUAGES as NATIVE_CODEBLEU_LANGUAGES
 from .native_codebleu import calc_codebleu as native_calc_codebleu
@@ -142,6 +143,12 @@ _CODEBLEU_KEYWORD_CACHE = {}
 _TREE_SITTER_PARSER_CACHE = {}
 _CODEBERTSCORE_SCORER_CACHE = {}
 _CODEBERTSCORE_LAYER_CACHE = {}
+_CODEBLEU_KEYWORD_CACHE_LOCK = RLock()
+_TREE_SITTER_PARSER_CACHE_LOCK = RLock()
+_TREE_SITTER_PARSE_LOCK = RLock()
+_CODEBERTSCORE_SCORER_CACHE_LOCK = RLock()
+_CODEBERTSCORE_SCORER_USAGE_LOCK = RLock()
+_CODEBERTSCORE_LAYER_CACHE_LOCK = RLock()
 _KEYWORDS = {
     "c": {
         "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else",
@@ -389,14 +396,15 @@ def keyword_set_for_language(language):
     if key not in _SUPPORTED_CODE_LANGUAGES:
         supported = ", ".join(_SUPPORTED_CODE_LANGUAGES)
         raise ValueError(f"Code metrics currently support: {supported}. Got: {language}")
-    if key in _CODEBLEU_KEYWORD_CACHE:
+    with _CODEBLEU_KEYWORD_CACHE_LOCK:
+        if key in _CODEBLEU_KEYWORD_CACHE:
+            return _CODEBLEU_KEYWORD_CACHE[key]
+        keywords = _fallback_keyword_set(key)
+        package_keywords = _load_package_keywords(key)
+        if package_keywords is not None:
+            keywords.update(package_keywords)
+        _CODEBLEU_KEYWORD_CACHE[key] = frozenset(keywords)
         return _CODEBLEU_KEYWORD_CACHE[key]
-    keywords = _fallback_keyword_set(key)
-    package_keywords = _load_package_keywords(key)
-    if package_keywords is not None:
-        keywords.update(package_keywords)
-    _CODEBLEU_KEYWORD_CACHE[key] = keywords
-    return _CODEBLEU_KEYWORD_CACHE[key]
 
 
 def tokenize_for_code_metrics(text):
@@ -913,31 +921,32 @@ def _tsed_runtime_available():
 
 def _resolve_tsed_parser(language):
     normalized_language = normalize_code_language(language)
-    if normalized_language in _TREE_SITTER_PARSER_CACHE:
-        return _TREE_SITTER_PARSER_CACHE[normalized_language]
+    with _TREE_SITTER_PARSER_CACHE_LOCK:
+        if normalized_language in _TREE_SITTER_PARSER_CACHE:
+            return _TREE_SITTER_PARSER_CACHE[normalized_language]
 
-    parser = None
-    if get_tree_sitter_parser is not None:
-        try:
-            parser = get_tree_sitter_parser(normalized_language)
-        except Exception:
-            parser = None
-
-    if parser is None and TreeSitterParser is not None and codebleu_get_tree_sitter_language is not None:
-        try:
-            ts_language = codebleu_get_tree_sitter_language(
-                _CODEBLEU_TREE_SITTER_LANGUAGE_NAMES.get(normalized_language, normalized_language)
-            )
+        parser = None
+        if get_tree_sitter_parser is not None:
             try:
-                parser = TreeSitterParser(ts_language)
-            except TypeError:
-                parser = TreeSitterParser()
-                parser.language = ts_language
-        except Exception:
-            parser = None
+                parser = get_tree_sitter_parser(normalized_language)
+            except Exception:
+                parser = None
 
-    _TREE_SITTER_PARSER_CACHE[normalized_language] = parser
-    return parser
+        if parser is None and TreeSitterParser is not None and codebleu_get_tree_sitter_language is not None:
+            try:
+                ts_language = codebleu_get_tree_sitter_language(
+                    _CODEBLEU_TREE_SITTER_LANGUAGE_NAMES.get(normalized_language, normalized_language)
+                )
+                try:
+                    parser = TreeSitterParser(ts_language)
+                except TypeError:
+                    parser = TreeSitterParser()
+                    parser.language = ts_language
+            except Exception:
+                parser = None
+
+        _TREE_SITTER_PARSER_CACHE[normalized_language] = parser
+        return parser
 
 
 def _tsed_from_tree_sitter_node(ts_node, depth, path, remaining_budget, max_depth, max_children):
@@ -973,7 +982,8 @@ def _tsed_get_tree(language, code, max_nodes=180, max_depth=10, max_children=8):
     if parser is None:
         return None
     try:
-        tree = parser.parse(bytes(code or "", encoding="utf-8"))
+        with _TREE_SITTER_PARSE_LOCK:
+            tree = parser.parse(bytes(code or "", encoding="utf-8"))
     except Exception:
         return None
     root = getattr(tree, "root_node", None)
@@ -1091,23 +1101,24 @@ def _resolve_codebertscore_device(requested):
 
 
 def _infer_codebertscore_num_layers(model_type):
-    if model_type in _CODEBERTSCORE_LAYER_CACHE:
-        return _CODEBERTSCORE_LAYER_CACHE[model_type]
-    if AutoConfig is None:
+    with _CODEBERTSCORE_LAYER_CACHE_LOCK:
+        if model_type in _CODEBERTSCORE_LAYER_CACHE:
+            return _CODEBERTSCORE_LAYER_CACHE[model_type]
+        if AutoConfig is None:
+            _CODEBERTSCORE_LAYER_CACHE[model_type] = None
+            return None
+        try:
+            config = AutoConfig.from_pretrained(model_type)
+        except Exception:
+            _CODEBERTSCORE_LAYER_CACHE[model_type] = None
+            return None
+        for attr in ("num_hidden_layers", "n_layer", "num_layers"):
+            value = getattr(config, attr, None)
+            if isinstance(value, int) and value > 0:
+                _CODEBERTSCORE_LAYER_CACHE[model_type] = int(value)
+                return int(value)
         _CODEBERTSCORE_LAYER_CACHE[model_type] = None
         return None
-    try:
-        config = AutoConfig.from_pretrained(model_type)
-    except Exception:
-        _CODEBERTSCORE_LAYER_CACHE[model_type] = None
-        return None
-    for attr in ("num_hidden_layers", "n_layer", "num_layers"):
-        value = getattr(config, attr, None)
-        if isinstance(value, int) and value > 0:
-            _CODEBERTSCORE_LAYER_CACHE[model_type] = int(value)
-            return int(value)
-    _CODEBERTSCORE_LAYER_CACHE[model_type] = None
-    return None
 
 
 def _infer_codebertscore_position_limit(scorer):
@@ -1200,21 +1211,22 @@ def _resolve_codebertscore_scorer(
         bool(use_fast_tokenizer),
         int(nthreads),
     )
-    if cache_key in _CODEBERTSCORE_SCORER_CACHE:
-        return _CODEBERTSCORE_SCORER_CACHE[cache_key]
+    with _CODEBERTSCORE_SCORER_CACHE_LOCK:
+        if cache_key in _CODEBERTSCORE_SCORER_CACHE:
+            return _CODEBERTSCORE_SCORER_CACHE[cache_key]
 
-    scorer = BERTScorer(
-        model_type=str(model_type),
-        num_layers=parsed_layers,
-        lang=normalized_lang,
-        idf=bool(idf),
-        rescale_with_baseline=bool(rescale_with_baseline),
-        use_fast_tokenizer=bool(use_fast_tokenizer),
-        nthreads=max(1, int(nthreads)),
-        device=resolved_device,
-    )
-    _CODEBERTSCORE_SCORER_CACHE[cache_key] = scorer
-    return scorer
+        scorer = BERTScorer(
+            model_type=str(model_type),
+            num_layers=parsed_layers,
+            lang=normalized_lang,
+            idf=bool(idf),
+            rescale_with_baseline=bool(rescale_with_baseline),
+            use_fast_tokenizer=bool(use_fast_tokenizer),
+            nthreads=max(1, int(nthreads)),
+            device=resolved_device,
+        )
+        _CODEBERTSCORE_SCORER_CACHE[cache_key] = scorer
+        return scorer
 
 
 def prepare_codebertscore_context(codes):
@@ -1264,16 +1276,17 @@ def _score_codebertscore_pair(
         use_fast_tokenizer=use_fast_tokenizer,
         nthreads=nthreads,
     )
-    _configure_codebertscore_tokenizer_max_length(scorer=scorer, requested_max_length=max_length)
     batch = max(1, int(batch_size))
 
-    _, _, f1_forward = scorer.score(cands=[right], refs=[left], batch_size=batch, verbose=bool(verbose))
-    score_forward = _tensor_values_to_float_list(f1_forward)[0]
-    if not bidirectional:
-        return float(score_forward)
+    with _CODEBERTSCORE_SCORER_USAGE_LOCK:
+        _configure_codebertscore_tokenizer_max_length(scorer=scorer, requested_max_length=max_length)
+        _, _, f1_forward = scorer.score(cands=[right], refs=[left], batch_size=batch, verbose=bool(verbose))
+        score_forward = _tensor_values_to_float_list(f1_forward)[0]
+        if not bidirectional:
+            return float(score_forward)
 
-    _, _, f1_reverse = scorer.score(cands=[left], refs=[right], batch_size=batch, verbose=bool(verbose))
-    score_reverse = _tensor_values_to_float_list(f1_reverse)[0]
+        _, _, f1_reverse = scorer.score(cands=[left], refs=[right], batch_size=batch, verbose=bool(verbose))
+        score_reverse = _tensor_values_to_float_list(f1_reverse)[0]
     return float((score_forward + score_reverse) * 0.5)
 
 

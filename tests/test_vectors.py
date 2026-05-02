@@ -1,5 +1,11 @@
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+from types import SimpleNamespace
+
 import pytest
 
+import matheel.vectors as vectors_module
 from matheel.vectors import (
     available_pooling_methods,
     available_similarity_functions,
@@ -126,6 +132,38 @@ def test_detect_model_max_token_length_ignores_large_tokenizer_sentinel():
         config = DummyConfig()
 
     assert detect_model_max_token_length(model=DummyModel()) == 1024
+
+
+def test_model_name_token_length_cache_is_shared_across_concurrent_loads(monkeypatch):
+    calls = []
+
+    class FakeTokenizer:
+        model_max_length = 384
+
+    class FakeAutoTokenizer:
+        @staticmethod
+        def from_pretrained(model_name):
+            calls.append(model_name)
+            time.sleep(0.01)
+            return FakeTokenizer()
+
+    class FakeAutoConfig:
+        @staticmethod
+        def from_pretrained(model_name):
+            raise AssertionError(f"config lookup should not run after tokenizer hit: {model_name}")
+
+    vectors_module._MODEL_NAME_TOKEN_LENGTH_CACHE.clear()
+    monkeypatch.setitem(
+        sys.modules,
+        "transformers",
+        SimpleNamespace(AutoConfig=FakeAutoConfig, AutoTokenizer=FakeAutoTokenizer),
+    )
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(lambda _: detect_model_max_token_length(model_name="demo-model"), range(8)))
+
+    assert results == [384] * 8
+    assert calls == ["demo-model"]
 
 
 def test_configure_model_max_token_length_clamps_to_detected_limit():
