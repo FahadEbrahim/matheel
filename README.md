@@ -27,21 +27,18 @@ pip install matheel
 Optional extras:
 
 ```bash
-pip install "matheel[sentence_transformers]"
 pip install "matheel[semantic]"
 pip install "matheel[chunking]"
-pip install "matheel[chunking_code]"
 pip install "matheel[metrics]"
-pip install "matheel[model2vec]"
-pip install "matheel[pylate]"
 pip install "matheel[gradio]"
 pip install "matheel[all]"
-pip install "matheel[dev]"
 ```
 
-`matheel[sentence_transformers]` installs the default dense semantic backend. `matheel[semantic]` installs all semantic backends: Sentence Transformers, model2vec, and PyLate. `matheel[chunking]` installs Chonkie chunkers; `matheel[chunking_code]` additionally installs Chonkie's code auto-detection support. `matheel[all]` installs the currently supported optional backends in one command.
+`matheel[semantic]` installs the supported semantic backends: Sentence Transformers, model2vec, and PyLate. `matheel[chunking]` installs Chonkie chunkers. `matheel[metrics]` installs optional code metric runtimes. `matheel[gradio]` installs the web app dependencies. `matheel[all]` installs the currently supported optional backends in one command.
 
-Examples that use semantic weights assume `matheel[sentence_transformers]`, `matheel[semantic]`, or `matheel[all]` is installed.
+Compatibility extras remain available for narrower installs: `sentence_transformers`, `model2vec`, `pylate`, and `chunking_code`.
+
+Examples that use semantic weights assume `matheel[semantic]` or `matheel[all]` is installed.
 
 Matheel now ships a native CodeBLEU implementation that uses `tree_sitter_language_pack` for parser resolution, so real syntax/dataflow scoring no longer depends on installing the pip `codebleu` package. The pip package is still useful for validation/comparison work if you want to cross-check the native scores on selected examples; Matheel does not currently claim exact pip parity on every possible input.
 
@@ -253,21 +250,21 @@ print(results.head())
 - Comparison suite: [docs/comparison_suite.md](docs/comparison_suite.md)
 - Release checklist: [docs/release_checklist.md](docs/release_checklist.md)
 
-## Testing
+## Development
 
-Install the development dependencies before running the test suite:
+Install Matheel in editable mode with the development tools:
 
 ```bash
 python -m pip install -e ".[dev]"
 ```
 
-Default test runs are intended to be fast and offline-friendly:
+Run the default offline-friendly test suite:
 
 ```bash
 python -m pytest
 ```
 
-Run the Ruff lint check before opening a pull request:
+Run the Ruff lint check:
 
 ```bash
 python -m ruff check .
@@ -277,6 +274,13 @@ Real-model integration tests are opt-in because they may need optional backends,
 
 ```bash
 python -m pytest -m integration
+```
+
+When preparing release or packaging changes, build the package and check the distribution metadata:
+
+```bash
+python -m build
+python -m twine check dist/*
 ```
 
 ## Examples
