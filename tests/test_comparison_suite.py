@@ -108,6 +108,8 @@ def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):
         )
 
     monkeypatch.setattr("matheel.comparison_suite.get_sim_list", fake_get_sim_list)
+    times = iter([10.0, 11.23456, 20.0, 20.5])
+    monkeypatch.setattr("matheel.comparison_suite.perf_counter", lambda: next(times))
 
     summary_path = tmp_path / "summary.csv"
     details_dir = tmp_path / "details"
@@ -128,10 +130,19 @@ def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):
     assert set(result_frames.keys()) == {"strong", "weak"}
     assert summary.loc[0, "mean_score"] == 0.5556
     assert summary.loc[0, "top_score"] == 0.9877
+    assert summary.loc[0, "elapsed_seconds"] == 1.2346
+    assert summary.loc[0, "feature_set"] == "levenshtein,semantic"
+    assert summary.loc[0, "vector_backend"] == "auto"
+    assert summary.loc[0, "code_metric"] == "none"
+    assert summary.loc[0, "chunking_method"] == "none"
+    assert result_frames["strong"].attrs["elapsed_seconds"] == 1.2346
     assert result_frames["strong"].iloc[0]["similarity_score"] == 0.9877
 
     summary_text = summary_path.read_text(encoding="utf-8")
     strong_details_text = (details_dir / "strong.csv").read_text(encoding="utf-8")
+    assert "elapsed_seconds" in summary_text
+    assert "feature_set" in summary_text
+    assert "1.2346" in summary_text
     assert "0.9876543" not in summary_text
     assert "0.9877" in summary_text
     assert "0.9876543" not in strong_details_text

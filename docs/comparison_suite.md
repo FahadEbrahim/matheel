@@ -65,6 +65,8 @@ One row per run, including:
 
 - `run_name`
 - `pair_count`
+- `elapsed_seconds`
+- `feature_set`
 - `mean_score`
 - `median_score`
 - `max_score`
@@ -76,6 +78,8 @@ One row per run, including:
 - `vector_backend`
 - `code_metric`
 - `chunking_method`
+
+`elapsed_seconds` is rounded to 4 decimal places. `feature_set` lists the active nonzero feature weights for the run.
 
 ### Optional Files
 

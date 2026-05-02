@@ -182,6 +182,8 @@ def test_suite_html_helpers_escape_run_names():
                 "run_name": "<b>best</b>",
                 "mean_score": 0.8,
                 "max_score": 0.9,
+                "elapsed_seconds": 1.2345,
+                "feature_set": "<i>semantic</i>",
             }
         ]
     )
@@ -190,6 +192,8 @@ def test_suite_html_helpers_escape_run_names():
 
     assert "<b>best</b>" not in summary_html
     assert "&lt;b&gt;best&lt;/b&gt;" in summary_html
+    assert "1.234s" in summary_html
+    assert "&lt;i&gt;semantic&lt;/i&gt;" in summary_html
 
 
 def test_results_summary_html_escapes_uploaded_file_names():
@@ -202,6 +206,8 @@ def test_results_summary_html_escapes_uploaded_file_names():
             }
         ]
     )
+    results.attrs["elapsed_seconds"] = 0.4321
+    results.attrs["feature_set"] = "<i>levenshtein</i>"
 
     summary_html = gradio_app.results_summary_html(results, "auto", "none", "none", "cpu")
 
@@ -209,6 +215,15 @@ def test_results_summary_html_escapes_uploaded_file_names():
     assert "<script>" not in summary_html
     assert "&lt;b&gt;a.py&lt;/b&gt;" in summary_html
     assert "&lt;script&gt;x&lt;/script&gt;" in summary_html
+    assert "0.432s" in summary_html
+    assert "&lt;i&gt;levenshtein&lt;/i&gt;" in summary_html
+
+
+def test_score_card_html_displays_elapsed_time():
+    score_html = gradio_app.score_card_html(0.75, elapsed_seconds=2.3456)
+
+    assert "0.7500" in score_html
+    assert "2.346s" in score_html
 
 
 def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):

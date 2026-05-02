@@ -300,6 +300,7 @@ def compare(
         progress=should_show_progress(progress, stream=sys.stderr),
     )
     click.echo(results.to_string(index=False))
+    click.echo(_elapsed_summary_text(results), err=True)
 
 
 @main.command(name="compare-suite")
@@ -347,3 +348,18 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
         click.echo("No runs were executed.")
         return
     click.echo(summary.to_string(index=False))
+
+
+def _elapsed_summary_text(results):
+    elapsed_seconds = float(results.attrs.get("elapsed_seconds", 0.0))
+    feature_set = results.attrs.get("feature_set", "none")
+    vector_backend = results.attrs.get("vector_backend", "auto")
+    code_metric = results.attrs.get("code_metric", "none")
+    chunking_method = results.attrs.get("chunking_method", "none")
+    return (
+        f"Elapsed: {elapsed_seconds:.4f}s | "
+        f"features={feature_set} | "
+        f"backend={vector_backend} | "
+        f"code_metric={code_metric} | "
+        f"chunking={chunking_method}"
+    )

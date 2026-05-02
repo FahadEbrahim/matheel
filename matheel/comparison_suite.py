@@ -6,6 +6,7 @@ import pandas as pd
 
 from .feature_weights import default_feature_weights, parse_feature_weights
 from ._progress import progress_iter
+from ._run_metadata import elapsed_seconds_between, format_feature_set, perf_counter
 from .similarity import DEFAULT_MODEL_NAME, get_sim_list
 
 
@@ -20,6 +21,7 @@ _SCORE_FIELDS = (
     "top_score",
     "similarity_score",
 )
+_RUNTIME_FIELDS = ("elapsed_seconds",)
 
 
 def load_run_configs(config_path):
@@ -81,7 +83,9 @@ def _normalize_run_feature_weights(options):
     options["feature_weights"] = default_feature_weights()
 
 
-def summary_row_from_results(run_name, options, results):
+def summary_row_from_results(run_name, options, results, elapsed_seconds=None):
+    elapsed_value = _resolved_elapsed_seconds(results, elapsed_seconds)
+    metadata = _summary_metadata(options, results, elapsed_value)
     if results is None or results.empty:
         return {
             "run_name": run_name,
@@ -94,9 +98,7 @@ def summary_row_from_results(run_name, options, results):
             "top_file_1": "",
             "top_file_2": "",
             "top_score": 0.0,
-            "vector_backend": options.get("vector_backend", "auto"),
-            "code_metric": options.get("code_metric", "none"),
-            "chunking_method": options.get("chunking_method", "none"),
+            **metadata,
         }
 
     scores = results["similarity_score"].astype(float)
@@ -112,9 +114,7 @@ def summary_row_from_results(run_name, options, results):
         "top_file_1": str(top_row["file_name_1"]),
         "top_file_2": str(top_row["file_name_2"]),
         "top_score": round(float(top_row["similarity_score"]), _SCORE_DECIMALS),
-        "vector_backend": options.get("vector_backend", "auto"),
-        "code_metric": options.get("code_metric", "none"),
-        "chunking_method": options.get("chunking_method", "none"),
+        **metadata,
     }
 
 
@@ -131,6 +131,9 @@ def _slugify(value):
 def _rounded_score_frame(frame):
     rounded = frame.copy()
     for column in _SCORE_FIELDS:
+        if column in rounded.columns:
+            rounded[column] = rounded[column].astype(float).round(_SCORE_DECIMALS)
+    for column in _RUNTIME_FIELDS:
         if column in rounded.columns:
             rounded[column] = rounded[column].astype(float).round(_SCORE_DECIMALS)
     return rounded
@@ -187,15 +190,25 @@ def run_comparison_suite(
         run_options = dict(options)
         run_options.setdefault("progress", progress)
         run_options.setdefault("progress_callback", _run_progress_callback(progress_callback, run_name))
+        start_time = perf_counter()
         results = _rounded_score_frame(
             get_sim_list(
                 zipped_file,
                 **run_options,
             )
         )
+        elapsed_seconds = elapsed_seconds_between(start_time, perf_counter())
+        results.attrs["elapsed_seconds"] = elapsed_seconds
         result_frames[run_name] = results
         write_run_details(run_name, results, details_dir=details_dir)
-        summary_rows.append(summary_row_from_results(run_name, options, results))
+        summary_rows.append(
+            summary_row_from_results(
+                run_name,
+                options,
+                results,
+                elapsed_seconds=elapsed_seconds,
+            )
+        )
 
     summary = pd.DataFrame(summary_rows)
     if not summary.empty:
@@ -205,6 +218,28 @@ def run_comparison_suite(
         write_summary(summary, summary_out, output_format=output_format)
 
     return summary, result_frames
+
+
+def _resolved_elapsed_seconds(results, elapsed_seconds):
+    if elapsed_seconds is not None:
+        return round(float(elapsed_seconds), _SCORE_DECIMALS)
+    if results is not None:
+        value = results.attrs.get("elapsed_seconds")
+        if value is not None:
+            return round(float(value), _SCORE_DECIMALS)
+    return 0.0
+
+
+def _summary_metadata(options, results, elapsed_seconds):
+    attrs = getattr(results, "attrs", {}) if results is not None else {}
+    feature_weights = options.get("feature_weights")
+    return {
+        "elapsed_seconds": round(float(elapsed_seconds), _SCORE_DECIMALS),
+        "feature_set": attrs.get("feature_set") or format_feature_set(feature_weights),
+        "vector_backend": attrs.get("vector_backend") or options.get("vector_backend", "auto"),
+        "code_metric": attrs.get("code_metric") or options.get("code_metric", "none"),
+        "chunking_method": attrs.get("chunking_method") or options.get("chunking_method", "none"),
+    }
 
 
 def _run_progress_callback(progress_callback, run_name):

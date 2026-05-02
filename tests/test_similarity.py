@@ -356,7 +356,7 @@ def test_get_sim_list_reports_progress_events(tmp_path):
     (source_dir / "c.py").write_text("delta gamma", encoding="utf-8")
     events = []
 
-    similarity.get_sim_list(
+    results = similarity.get_sim_list(
         source_dir,
         threshold=0.0,
         number_results=5,
@@ -377,6 +377,11 @@ def test_get_sim_list_reports_progress_events(tmp_path):
     assert pair_events[0]["current"] == 0
     assert pair_events[0]["total"] == 3
     assert pair_events[-1]["current"] == 3
+    assert results.attrs["elapsed_seconds"] >= 0.0
+    assert results.attrs["feature_set"] == "levenshtein"
+    assert results.attrs["vector_backend"] == "sentence_transformers"
+    assert results.attrs["code_metric"] == "none"
+    assert results.attrs["chunking_method"] == "none"
 
 
 def test_calculate_similarity_reports_progress_events():
