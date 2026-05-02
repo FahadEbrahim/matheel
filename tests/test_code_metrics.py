@@ -1,3 +1,7 @@
+import time
+from concurrent.futures import ThreadPoolExecutor
+from types import SimpleNamespace
+
 import pytest
 
 import matheel.code_metrics as code_metrics_module
@@ -228,6 +232,26 @@ def test_crystalbleu_context_uses_shared_code_metric_tokenizer():
     assert context["tokens_by_doc"] == [
         ["items", "[", "i", "]", "+", "=", "value", "/", "/", "2"]
     ]
+
+
+def test_keyword_cache_is_immutable_and_shared_across_concurrent_loads(monkeypatch):
+    calls = []
+
+    def fake_load_package_keywords(language):
+        calls.append(language)
+        time.sleep(0.01)
+        return {"custom_keyword"}
+
+    code_metrics_module._CODEBLEU_KEYWORD_CACHE.clear()
+    monkeypatch.setattr(code_metrics_module, "_load_package_keywords", fake_load_package_keywords)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(code_metrics_module.keyword_set_for_language, ["python"] * 8))
+
+    assert calls == ["python"]
+    assert len({id(result) for result in results}) == 1
+    assert "custom_keyword" in results[0]
+    assert isinstance(results[0], frozenset)
 
 
 @REQUIRES_CODEBLEU
@@ -807,6 +831,63 @@ def test_codebertscore_cache_key_includes_score_options(
     assert len(calls) == 2
 
 
+def test_codebertscore_layer_cache_is_shared_across_concurrent_inference(monkeypatch):
+    calls = []
+
+    class FakeAutoConfig:
+        @staticmethod
+        def from_pretrained(model_type):
+            calls.append(model_type)
+            time.sleep(0.01)
+            return SimpleNamespace(num_hidden_layers=7)
+
+    code_metrics_module._CODEBERTSCORE_LAYER_CACHE.clear()
+    monkeypatch.setattr(code_metrics_module, "AutoConfig", FakeAutoConfig)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(
+            executor.map(
+                code_metrics_module._infer_codebertscore_num_layers,
+                ["demo-codebert"] * 8,
+            )
+        )
+
+    assert results == [7] * 8
+    assert calls == ["demo-codebert"]
+
+
+def test_codebertscore_scorer_cache_is_shared_across_concurrent_resolution(monkeypatch):
+    calls = []
+
+    class FakeBERTScorer:
+        def __init__(self, **kwargs):
+            calls.append(kwargs)
+            time.sleep(0.01)
+
+    code_metrics_module._CODEBERTSCORE_SCORER_CACHE.clear()
+    monkeypatch.setattr(code_metrics_module, "BERTScorer", FakeBERTScorer)
+    monkeypatch.setattr(code_metrics_module, "_infer_codebertscore_num_layers", lambda model_type: 7)
+    monkeypatch.setattr(code_metrics_module, "_resolve_codebertscore_device", lambda device: "cpu")
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(
+            executor.map(
+                lambda _: code_metrics_module._resolve_codebertscore_scorer(
+                    model_type="demo-codebert",
+                    num_layers=None,
+                    device="auto",
+                ),
+                range(8),
+            )
+        )
+
+    assert len({id(result) for result in results}) == 1
+    assert len(calls) == 1
+    assert calls[0]["model_type"] == "demo-codebert"
+    assert calls[0]["num_layers"] == 7
+    assert calls[0]["device"] == "cpu"
+
+
 def test_tsed_metric_scores_identical_higher_than_different():
     if not code_metrics_module._tsed_runtime_available():
         pytest.skip("TSED optional runtime is not available.")
@@ -875,6 +956,26 @@ def test_tsed_metric_uses_context_and_cost_options(monkeypatch):
         "right_tree": "right-tree",
         "costs": (2.0, 3.0, 4.0),
     }
+
+
+def test_tsed_parser_cache_is_shared_across_concurrent_resolution(monkeypatch):
+    calls = []
+    parser = object()
+
+    def fake_get_parser(language):
+        calls.append(language)
+        time.sleep(0.01)
+        return parser
+
+    code_metrics_module._TREE_SITTER_PARSER_CACHE.clear()
+    monkeypatch.setattr(code_metrics_module, "get_tree_sitter_parser", fake_get_parser)
+    monkeypatch.setattr(code_metrics_module, "TreeSitterParser", None)
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(code_metrics_module._resolve_tsed_parser, ["python"] * 8))
+
+    assert results == [parser] * 8
+    assert calls == ["python"]
 
 
 @pytest.mark.parametrize("language,snippet", NEW_TREE_SITTER_LANGUAGE_SNIPPETS.items())

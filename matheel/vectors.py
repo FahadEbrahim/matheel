@@ -1,4 +1,5 @@
 import re
+from threading import RLock
 import zlib
 
 import numpy as np
@@ -47,6 +48,7 @@ _POOLING_MODE_FLAGS = {
     "lasttoken": "pooling_mode_lasttoken",
 }
 _MODEL_NAME_TOKEN_LENGTH_CACHE = {}
+_MODEL_NAME_TOKEN_LENGTH_CACHE_LOCK = RLock()
 
 
 def available_similarity_functions():
@@ -205,30 +207,31 @@ def _detect_token_length_from_model_name(model_name):
     model_key = str(model_name or "").strip()
     if not model_key:
         return None
-    if model_key in _MODEL_NAME_TOKEN_LENGTH_CACHE:
-        return _MODEL_NAME_TOKEN_LENGTH_CACHE[model_key]
+    with _MODEL_NAME_TOKEN_LENGTH_CACHE_LOCK:
+        if model_key in _MODEL_NAME_TOKEN_LENGTH_CACHE:
+            return _MODEL_NAME_TOKEN_LENGTH_CACHE[model_key]
 
-    try:
-        from transformers import AutoConfig, AutoTokenizer
-    except ImportError:
-        return None
+        try:
+            from transformers import AutoConfig, AutoTokenizer
+        except ImportError:
+            return None
 
-    try:
-        tokenizer = AutoTokenizer.from_pretrained(model_key)
-    except Exception:
-        tokenizer = None
-    detected = _detect_token_length_from_tokenizer(tokenizer)
-    if detected is not None:
+        try:
+            tokenizer = AutoTokenizer.from_pretrained(model_key)
+        except Exception:
+            tokenizer = None
+        detected = _detect_token_length_from_tokenizer(tokenizer)
+        if detected is not None:
+            _MODEL_NAME_TOKEN_LENGTH_CACHE[model_key] = detected
+            return detected
+
+        try:
+            config = AutoConfig.from_pretrained(model_key)
+        except Exception:
+            config = None
+        detected = _detect_token_length_from_config(config)
         _MODEL_NAME_TOKEN_LENGTH_CACHE[model_key] = detected
         return detected
-
-    try:
-        config = AutoConfig.from_pretrained(model_key)
-    except Exception:
-        config = None
-    detected = _detect_token_length_from_config(config)
-    _MODEL_NAME_TOKEN_LENGTH_CACHE[model_key] = detected
-    return detected
 
 
 def detect_model_max_token_length(model=None, model_name=None, default=_DEFAULT_MAX_TOKEN_LENGTH):

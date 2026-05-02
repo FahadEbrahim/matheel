@@ -1,3 +1,6 @@
+from threading import RLock
+
+
 _BACKEND_ALIASES = {
     "auto": "auto",
     "transformer": "sentence_transformers",
@@ -17,6 +20,7 @@ _BACKEND_ALIASES = {
 _PUBLIC_VECTOR_BACKENDS = ("auto", "sentence_transformers", "model2vec", "pylate")
 _DEPRECATED_VECTOR_BACKENDS = ("static_hash",)
 _HF_MODEL_INFO_CACHE = {}
+_HF_MODEL_INFO_CACHE_LOCK = RLock()
 
 
 def available_vector_backends(include_deprecated=False):
@@ -38,19 +42,20 @@ def load_hf_model_info(model_name):
     if not model_name:
         return None
     model_key = str(model_name).strip()
-    if model_key in _HF_MODEL_INFO_CACHE:
-        return _HF_MODEL_INFO_CACHE[model_key]
-    try:
-        from huggingface_hub import HfApi
-    except ImportError:  # pragma: no cover - sentence-transformers usually installs this
-        return None
+    with _HF_MODEL_INFO_CACHE_LOCK:
+        if model_key in _HF_MODEL_INFO_CACHE:
+            return _HF_MODEL_INFO_CACHE[model_key]
+        try:
+            from huggingface_hub import HfApi
+        except ImportError:  # pragma: no cover - sentence-transformers usually installs this
+            return None
 
-    try:
-        model_info = HfApi().model_info(model_key)
-    except Exception:  # pragma: no cover - network and auth are environment-specific
-        return None
-    _HF_MODEL_INFO_CACHE[model_key] = model_info
-    return model_info
+        try:
+            model_info = HfApi().model_info(model_key)
+        except Exception:  # pragma: no cover - network and auth are environment-specific
+            return None
+        _HF_MODEL_INFO_CACHE[model_key] = model_info
+        return model_info
 
 
 def _library_name_from_info(model_info):

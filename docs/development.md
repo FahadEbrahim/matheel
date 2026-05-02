@@ -40,3 +40,9 @@ python -m twine check dist/*
 ```
 
 Use the [release checklist](release_checklist.md) for the full release flow.
+
+## Cache Safety
+
+Matheel uses module-level caches for Hugging Face model metadata, detected tokenizer limits, CodeBLEU keyword sets, tree-sitter parsers, and CodeBERTScore scorer objects.
+
+Request-path cache writes are protected with locks so concurrent API or Gradio calls do not mutate the same cache at the same time. Keyword cache entries are stored as immutable values. Pair-level caches inside prepared run contexts are scoped to that run context and should not be reused across independent requests.
