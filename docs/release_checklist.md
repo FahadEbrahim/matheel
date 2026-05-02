@@ -73,6 +73,9 @@ python -m twine check dist/*
 
 - Create and push the release tag from the merged `main` commit.
 - Publish the GitHub Release for the same tag. The publish workflow checks that the release tag matches `pyproject.toml`, builds the package, checks the metadata, and uploads to PyPI through Trusted Publishing.
+- The Hugging Face Space sync workflow runs after the publish workflow succeeds. It also runs after merged changes to `gradio_app/` on `main`.
+- Confirm the repository variable `HF_SPACE_REPO` points to the target Space if the default Space changes.
+- Confirm the `HF_TOKEN` secret is configured with write access to the target Space.
 - Mark the release as latest when it is the current stable release.
 - Confirm PyPI, GitHub Releases, repository tags, and `pyproject.toml` agree:
 
@@ -83,6 +86,7 @@ git tag --sort=-version:refname | head
 ```
 
 - Confirm the GitHub Actions publish run succeeded for the release event.
+- Confirm the GitHub Actions Space sync run succeeded for the release event.
 - Confirm PyPI shows the new version, the `Requires-Python` range, and Python version classifiers.
 - Confirm the README badges show the released PyPI version and supported Python versions after the standard Shields cache refreshes.
 
