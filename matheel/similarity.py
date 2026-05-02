@@ -22,6 +22,7 @@ from .model_routing import (
     load_hf_model_info,
     resolve_vector_backend,
 )
+from ._progress import emit_progress, progress_iter
 from .preprocessing import preprocess_code
 from .vectors import (
     build_multivector_embeddings,
@@ -748,13 +749,25 @@ def rank_code_pairs(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    progress=False,
+    progress_callback=None,
 ):
     validate_embedding_count(embeddings, len(codes))
     results = []
     code_metric_name = (code_metric or "none").strip().lower()
     use_code_metric = code_metric_name not in ("none", "") and feature_weights.get("code_metric", 0.0) > 0.0
+    pair_count = len(codes) * (len(codes) - 1) // 2
 
-    for i, j in combinations(range(len(codes)), 2):
+    pair_iter = progress_iter(
+        combinations(range(len(codes)), 2),
+        total=pair_count,
+        desc="Compare pairs",
+        unit="pair",
+        progress=progress,
+        progress_callback=progress_callback,
+        stage="compare_pairs",
+    )
+    for i, j in pair_iter:
         code_metric_score = 0.0
         if use_code_metric:
             code_metric_score = score_code_metric_pair(
@@ -883,6 +896,8 @@ def get_sim_list(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    progress=False,
+    progress_callback=None,
 ):
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
@@ -915,11 +930,21 @@ def get_sim_list(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
+    source_iter = progress_iter(
+        raw_codes,
+        total=len(raw_codes),
+        desc="Prepare files",
+        unit="file",
+        progress=progress,
+        progress_callback=progress_callback,
+        stage="prepare_files",
+    )
     codes = [
         prepare_code(code, preprocess_mode=preprocess_mode, code_language=code_language)
-        for code in raw_codes
+        for code in source_iter
     ]
     if use_semantic:
+        emit_progress(progress_callback, "build_embeddings", 0, 1, message="Build embeddings")
         model = load_backend_model(
             model_name,
             vector_backend=vector_backend,
@@ -943,6 +968,7 @@ def get_sim_list(
             static_vector_lowercase=static_vector_lowercase,
             pooling_method=selected_pooling,
         )
+        emit_progress(progress_callback, "build_embeddings", 1, 1, message="Build embeddings")
     else:
         embeddings = [None] * len(codes)
     code_metric_name = (code_metric or "none").strip().lower()
@@ -1028,6 +1054,8 @@ def get_sim_list(
         winnowing_kgram=winnowing_kgram,
         winnowing_window=winnowing_window,
         gst_min_match_length=gst_min_match_length,
+        progress=progress,
+        progress_callback=progress_callback,
     )
 
     pairs_results = [
@@ -1105,6 +1133,8 @@ def calculate_similarity(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    progress=False,
+    progress_callback=None,
 ):
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
@@ -1136,17 +1166,21 @@ def calculate_similarity(
     )
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
-    prepared_code1 = prepare_code(
-        code1,
-        preprocess_mode=preprocess_mode,
-        code_language=code_language,
-    )
-    prepared_code2 = prepare_code(
-        code2,
-        preprocess_mode=preprocess_mode,
-        code_language=code_language,
-    )
+    prepared_codes = [
+        prepare_code(code, preprocess_mode=preprocess_mode, code_language=code_language)
+        for code in progress_iter(
+            (code1, code2),
+            total=2,
+            desc="Prepare snippets",
+            unit="snippet",
+            progress=progress,
+            progress_callback=progress_callback,
+            stage="prepare_snippets",
+        )
+    ]
+    prepared_code1, prepared_code2 = prepared_codes
     if use_semantic:
+        emit_progress(progress_callback, "build_embeddings", 0, 1, message="Build embeddings")
         model = load_backend_model(
             model_name,
             vector_backend=vector_backend,
@@ -1170,61 +1204,73 @@ def calculate_similarity(
             static_vector_lowercase=static_vector_lowercase,
             pooling_method=selected_pooling,
         )
+        emit_progress(progress_callback, "build_embeddings", 1, 1, message="Build embeddings")
     else:
         embeddings = [None, None]
     code_metric_score = 0.0
-    if (code_metric or "none").strip().lower() not in ("none", "") and resolved_feature_weights.get("code_metric", 0.0) > 0.0:
-        code_metric_score = score_code_metric_pair(
+    score = 0.0
+    for _ in progress_iter(
+        (None,),
+        total=1,
+        desc="Compare pair",
+        unit="pair",
+        progress=progress,
+        progress_callback=progress_callback,
+        stage="compare_pairs",
+    ):
+        if (code_metric or "none").strip().lower() not in ("none", "") and resolved_feature_weights.get("code_metric", 0.0) > 0.0:
+            code_metric_score = score_code_metric_pair(
+                prepared_code1,
+                prepared_code2,
+                metric_name=code_metric,
+                language=code_language,
+                bidirectional=code_metric_bidirectional,
+                component_weights=component_weights,
+                crystalbleu_max_order=crystalbleu_max_order,
+                crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
+                ruby_max_order=ruby_max_order,
+                ruby_epsilon=ruby_epsilon,
+                ruby_mode=ruby_mode,
+                ruby_tokenizer=ruby_tokenizer,
+                ruby_denominator=ruby_denominator,
+                ruby_graph_timeout_seconds=ruby_graph_timeout_seconds,
+                ruby_graph_use_edge_cost=ruby_graph_use_edge_cost,
+                ruby_graph_include_leaf_edges=ruby_graph_include_leaf_edges,
+                ruby_tree_max_nodes=ruby_tree_max_nodes,
+                ruby_tree_max_depth=ruby_tree_max_depth,
+                ruby_tree_max_children=ruby_tree_max_children,
+                tsed_delete_cost=tsed_delete_cost,
+                tsed_insert_cost=tsed_insert_cost,
+                tsed_rename_cost=tsed_rename_cost,
+                tsed_max_nodes=tsed_max_nodes,
+                tsed_max_depth=tsed_max_depth,
+                tsed_max_children=tsed_max_children,
+                codebertscore_model=codebertscore_model,
+                codebertscore_num_layers=codebertscore_num_layers,
+                codebertscore_batch_size=codebertscore_batch_size,
+                codebertscore_max_length=codebertscore_max_length,
+                codebertscore_device=codebertscore_device,
+                codebertscore_lang=codebertscore_lang,
+                codebertscore_idf=codebertscore_idf,
+                codebertscore_rescale_with_baseline=codebertscore_rescale_with_baseline,
+                codebertscore_use_fast_tokenizer=codebertscore_use_fast_tokenizer,
+                codebertscore_nthreads=codebertscore_nthreads,
+                codebertscore_verbose=codebertscore_verbose,
+            )
+        score = combined_similarity_from_embeddings(
             prepared_code1,
             prepared_code2,
-            metric_name=code_metric,
-            language=code_language,
-            bidirectional=code_metric_bidirectional,
-            component_weights=component_weights,
-            crystalbleu_max_order=crystalbleu_max_order,
-            crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
-            ruby_max_order=ruby_max_order,
-            ruby_epsilon=ruby_epsilon,
-            ruby_mode=ruby_mode,
-            ruby_tokenizer=ruby_tokenizer,
-            ruby_denominator=ruby_denominator,
-            ruby_graph_timeout_seconds=ruby_graph_timeout_seconds,
-            ruby_graph_use_edge_cost=ruby_graph_use_edge_cost,
-            ruby_graph_include_leaf_edges=ruby_graph_include_leaf_edges,
-            ruby_tree_max_nodes=ruby_tree_max_nodes,
-            ruby_tree_max_depth=ruby_tree_max_depth,
-            ruby_tree_max_children=ruby_tree_max_children,
-            tsed_delete_cost=tsed_delete_cost,
-            tsed_insert_cost=tsed_insert_cost,
-            tsed_rename_cost=tsed_rename_cost,
-            tsed_max_nodes=tsed_max_nodes,
-            tsed_max_depth=tsed_max_depth,
-            tsed_max_children=tsed_max_children,
-            codebertscore_model=codebertscore_model,
-            codebertscore_num_layers=codebertscore_num_layers,
-            codebertscore_batch_size=codebertscore_batch_size,
-            codebertscore_max_length=codebertscore_max_length,
-            codebertscore_device=codebertscore_device,
-            codebertscore_lang=codebertscore_lang,
-            codebertscore_idf=codebertscore_idf,
-            codebertscore_rescale_with_baseline=codebertscore_rescale_with_baseline,
-            codebertscore_use_fast_tokenizer=codebertscore_use_fast_tokenizer,
-            codebertscore_nthreads=codebertscore_nthreads,
-            codebertscore_verbose=codebertscore_verbose,
+            embeddings[0],
+            embeddings[1],
+            resolved_feature_weights,
+            code_metric_score=code_metric_score,
+            vector_backend=vector_backend,
+            multivector_bidirectional=multivector_bidirectional,
+            similarity_function=selected_similarity,
+            levenshtein_weights=levenshtein_weights,
+            jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+            winnowing_kgram=winnowing_kgram,
+            winnowing_window=winnowing_window,
+            gst_min_match_length=gst_min_match_length,
         )
-    return combined_similarity_from_embeddings(
-        prepared_code1,
-        prepared_code2,
-        embeddings[0],
-        embeddings[1],
-        resolved_feature_weights,
-        code_metric_score=code_metric_score,
-        vector_backend=vector_backend,
-        multivector_bidirectional=multivector_bidirectional,
-        similarity_function=selected_similarity,
-        levenshtein_weights=levenshtein_weights,
-        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
-        winnowing_kgram=winnowing_kgram,
-        winnowing_window=winnowing_window,
-        gst_min_match_length=gst_min_match_length,
-    )
+    return score
