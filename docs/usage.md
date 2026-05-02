@@ -105,6 +105,7 @@ print(results.head())
 - [Vectors and routing](vectors.md)
 - [Lexical metrics and baselines](lexical.md)
 - [Code metrics](code_metrics.md)
+- [Scoring and calibration](scoring.md)
 - [Comparison suite](comparison_suite.md)
 - [Development](development.md)
 
