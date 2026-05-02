@@ -259,6 +259,102 @@ def test_calculate_similarity_supports_custom_jaro_winkler_prefix_weight():
     assert stronger_prefix_score > default_score
 
 
+@pytest.mark.parametrize(
+    "left,right,expected",
+    [
+        ("", "", 1.0),
+        ("", "abc", 0.0),
+        ("abc", "abc", 1.0),
+        ("abc", "axc", 2.0 / 3.0),
+        ("kitten", "sitting", 4.0 / 7.0),
+    ],
+)
+def test_levenshtein_feature_has_reference_scores(left, right, expected):
+    score = similarity.calculate_similarity(
+        left,
+        right,
+        vector_backend="static_hash",
+        feature_weights={"levenshtein": 1.0},
+    )
+
+    assert score == pytest.approx(expected)
+
+
+@pytest.mark.parametrize(
+    "left,right,expected",
+    [
+        ("", "", 1.0),
+        ("abc", "xyz", 0.0),
+        ("MARTHA", "MARHTA", 0.9611111111111111),
+        ("DIXON", "DICKSONX", 0.8133333333333332),
+    ],
+)
+def test_jaro_winkler_feature_has_reference_scores(left, right, expected):
+    score = similarity.calculate_similarity(
+        left,
+        right,
+        vector_backend="static_hash",
+        feature_weights={"jaro_winkler": 1.0},
+    )
+
+    assert score == pytest.approx(expected)
+
+
+def test_winnowing_similarity_handles_empty_and_reference_sets():
+    assert similarity.winnowing_similarity_from_tokens([], []) == 1.0
+    assert similarity.winnowing_similarity_from_tokens([], ["alpha"]) == 0.0
+    assert (
+        similarity.winnowing_similarity_from_tokens(
+            ["alpha", "beta", "gamma"],
+            ["alpha", "beta", "delta"],
+            kgram_size=1,
+            window_size=1,
+        )
+        == pytest.approx(0.5)
+    )
+
+
+def test_winnowing_kgram_controls_order_sensitivity():
+    left = ["alpha", "beta", "gamma"]
+    reordered = ["beta", "alpha", "gamma"]
+
+    assert similarity.winnowing_similarity_from_tokens(
+        left,
+        reordered,
+        kgram_size=1,
+        window_size=1,
+    ) == pytest.approx(1.0)
+    assert similarity.winnowing_similarity_from_tokens(
+        left,
+        reordered,
+        kgram_size=2,
+        window_size=1,
+    ) == pytest.approx(0.0)
+
+
+def test_gst_similarity_has_reference_token_accounting():
+    assert similarity.gst_similarity_from_tokens([], []) == 1.0
+    assert similarity.gst_similarity_from_tokens([], ["alpha"]) == 0.0
+    assert similarity.gst_similarity_from_tokens(
+        ["alpha", "beta", "gamma"],
+        ["alpha", "beta", "gamma"],
+        min_match_length=2,
+    ) == pytest.approx(1.0)
+    assert similarity.gst_similarity_from_tokens(
+        ["alpha", "beta", "gamma", "delta", "epsilon"],
+        ["zero", "beta", "gamma", "delta", "one"],
+        min_match_length=2,
+    ) == pytest.approx(0.6)
+
+
+def test_gst_accepts_non_overlapping_tiles_once():
+    left = ["alpha", "beta", "x", "gamma", "delta"]
+    right = ["alpha", "beta", "y", "gamma", "delta"]
+
+    assert similarity.gst_similarity_from_tokens(left, right, min_match_length=2) == pytest.approx(0.8)
+    assert similarity.gst_similarity_from_tokens(left, right, min_match_length=3) == pytest.approx(0.0)
+
+
 def test_calculate_similarity_supports_winnowing_feature():
     identical_score = similarity.calculate_similarity(
         "int total = value + 1;",
