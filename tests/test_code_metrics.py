@@ -273,6 +273,50 @@ def test_crystalbleu_context_can_be_reused_across_pairs():
     assert different_score < identical_score
 
 
+@pytest.mark.parametrize(
+    "reference,prediction,expected",
+    [
+        ("", "", 0.0),
+        ("", "alpha", 0.0),
+        ("alpha beta gamma", "alpha beta gamma", 1.0),
+        ("alpha beta gamma", "red green blue", 0.0),
+    ],
+)
+def test_crystalbleu_has_reference_scores(reference, prediction, expected):
+    score = score_code_metric_pair(
+        reference,
+        prediction,
+        metric_name="crystalbleu",
+        crystalbleu_max_order=2,
+        crystalbleu_trivial_ngram_count=0,
+    )
+
+    assert score == pytest.approx(expected)
+
+
+def test_crystalbleu_max_order_controls_reordered_token_score():
+    left = "alpha beta gamma"
+    reordered = "gamma beta alpha"
+
+    unigram_score = score_code_metric_pair(
+        left,
+        reordered,
+        metric_name="crystalbleu",
+        crystalbleu_max_order=1,
+        crystalbleu_trivial_ngram_count=0,
+    )
+    bigram_score = score_code_metric_pair(
+        left,
+        reordered,
+        metric_name="crystalbleu",
+        crystalbleu_max_order=2,
+        crystalbleu_trivial_ngram_count=0,
+    )
+
+    assert unigram_score == pytest.approx(1.0)
+    assert bigram_score == pytest.approx(0.0)
+
+
 def test_crystalbleu_context_rejects_trivial_ngram_count_mismatch():
     context = prepare_crystalbleu_context(
         ["int value = 1;", "return value + 1;"],
@@ -417,6 +461,50 @@ def test_ruby_context_can_be_reused_across_pairs():
     assert similar_score > different_score
 
 
+@pytest.mark.parametrize(
+    "reference,prediction,expected",
+    [
+        ("", "", 1.0),
+        ("", "alpha", 0.0),
+        ("alpha beta gamma", "alpha beta gamma", 1.0),
+        ("alpha beta gamma", "red green blue", 0.0),
+    ],
+)
+def test_ruby_ngram_mode_has_reference_scores(reference, prediction, expected):
+    score = score_code_metric_pair(
+        reference,
+        prediction,
+        metric_name="ruby",
+        ruby_mode="ngram",
+        ruby_max_order=2,
+    )
+
+    assert score == pytest.approx(expected)
+
+
+def test_ruby_ngram_max_order_controls_reordered_token_score():
+    left = "alpha beta gamma"
+    reordered = "gamma beta alpha"
+
+    unigram_score = score_code_metric_pair(
+        left,
+        reordered,
+        metric_name="ruby",
+        ruby_mode="ngram",
+        ruby_max_order=1,
+    )
+    bigram_score = score_code_metric_pair(
+        left,
+        reordered,
+        metric_name="ruby",
+        ruby_mode="ngram",
+        ruby_max_order=2,
+    )
+
+    assert unigram_score == pytest.approx(1.0)
+    assert bigram_score == pytest.approx(0.5)
+
+
 @pytest.mark.parametrize("ruby_mode", ["ngram", "string"])
 def test_ruby_context_rejects_negative_indices(ruby_mode):
     codes = [
@@ -460,6 +548,30 @@ def test_ruby_string_mode_uses_tranx_token_edit_similarity():
 
     assert identical == pytest.approx(1.0)
     assert 0.0 <= near < identical
+
+
+def test_ruby_string_denominator_changes_edit_similarity():
+    max_denominator = score_code_metric_pair(
+        "alpha beta gamma",
+        "alpha beta",
+        metric_name="ruby",
+        language="java",
+        ruby_mode="string",
+        ruby_tokenizer="regex",
+        ruby_denominator="max",
+    )
+    mean_denominator = score_code_metric_pair(
+        "alpha beta gamma",
+        "alpha beta",
+        metric_name="ruby",
+        language="java",
+        ruby_mode="string",
+        ruby_tokenizer="regex",
+        ruby_denominator="mean",
+    )
+
+    assert max_denominator == pytest.approx(2.0 / 3.0)
+    assert mean_denominator == pytest.approx(0.6)
 
 
 def test_ruby_string_mode_supports_cpp_language_scope():
@@ -676,6 +788,39 @@ def test_tsed_context_rejects_out_of_range_indices(monkeypatch):
             reference_index=0,
             prediction_index=1,
         )
+
+
+def test_tsed_metric_uses_context_and_cost_options(monkeypatch):
+    captured = {}
+
+    def fake_tsed_pair_score(left_tree, right_tree, delete_cost=1.0, insert_cost=1.0, rename_cost=1.0):
+        captured["left_tree"] = left_tree
+        captured["right_tree"] = right_tree
+        captured["costs"] = (delete_cost, insert_cost, rename_cost)
+        return 0.42
+
+    monkeypatch.setattr(code_metrics_module, "_tsed_runtime_available", lambda: True)
+    monkeypatch.setattr(code_metrics_module, "_tsed_pair_score", fake_tsed_pair_score)
+
+    score = score_code_metric_pair(
+        "left code",
+        "right code",
+        metric_name="tsed",
+        language="python",
+        tsed_context={"trees": ["left-tree", "right-tree"]},
+        reference_index=0,
+        prediction_index=1,
+        tsed_delete_cost=2.0,
+        tsed_insert_cost=3.0,
+        tsed_rename_cost=4.0,
+    )
+
+    assert score == pytest.approx(0.42)
+    assert captured == {
+        "left_tree": "left-tree",
+        "right_tree": "right-tree",
+        "costs": (2.0, 3.0, 4.0),
+    }
 
 
 @pytest.mark.parametrize("language,snippet", NEW_TREE_SITTER_LANGUAGE_SNIPPETS.items())
