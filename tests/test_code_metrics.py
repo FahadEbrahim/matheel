@@ -146,6 +146,20 @@ def test_codebleu_components_score_identical_code_as_one():
     assert components["codebleu_dataflow"] == 1.0
 
 
+@REQUIRES_CODEBLEU
+def test_native_codebleu_ngram_scores_penalize_extra_prediction_tokens():
+    reference = "int value = 1;"
+    prediction = "int value = 1; int other = 2;"
+
+    exact_scores = native_calc_codebleu([reference], [reference], lang="java")
+    expanded_scores = native_calc_codebleu([reference], [prediction], lang="java")
+
+    assert exact_scores["ngram_match_score"] == pytest.approx(1.0)
+    assert exact_scores["weighted_ngram_match_score"] == pytest.approx(1.0)
+    assert expanded_scores["ngram_match_score"] < exact_scores["ngram_match_score"]
+    assert expanded_scores["weighted_ngram_match_score"] < exact_scores["weighted_ngram_match_score"]
+
+
 def test_available_code_metrics_includes_new_metrics():
     metrics = available_code_metrics()
 
