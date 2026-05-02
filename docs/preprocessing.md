@@ -57,6 +57,12 @@ Preprocessing is still text-first, but the current regression-tested language se
 
 The broader tree-sitter parser inventory makes future language additions realistic, but they should land with matching import/comment heuristics and tests before they are treated as officially supported preprocessing targets.
 
+## Order and Tokenization
+
+Preprocessing runs before lexical baselines, semantic embeddings, and code metrics. `advanced` applies the same cleanup as `basic`, then strips import-like lines, normalizes literals, and canonicalizes identifiers.
+
+See [Tokenization and preprocessing limits](tokenization.md) for the token streams used by Winnowing, GST, CrystalBLEU, RUBY, parser-backed metrics, and embedding backends.
+
 ## When To Use It
 
 - Use `none` when formatting, comments, or whitespace are meaningful for your task.

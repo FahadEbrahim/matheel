@@ -13,6 +13,8 @@ Matheel can blend lexical similarity with semantic and code-aware scores.
 - `gst`
   Greedy String Tiling over token sequences.
 
+Winnowing and GST use Matheel's shared code-token regex after preprocessing. They are deterministic lexical baselines, not parser-derived token streams. See [Tokenization and preprocessing limits](tokenization.md) for details.
+
 These are most useful when:
 
 - identifier changes are small

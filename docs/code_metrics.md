@@ -1,6 +1,7 @@
 # Code Metrics
 
 Matheel includes built-in code-aware metrics that can be blended into the final score or used on their own.
+Token-based code metrics and parser-backed code metrics use different tokenization/parsing paths. See [Tokenization and preprocessing limits](tokenization.md) for the full comparison.
 
 ## Parameters
 

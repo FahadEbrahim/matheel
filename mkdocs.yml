@@ -18,6 +18,7 @@ nav:
   - Home: index.md
   - Usage: usage.md
   - Preprocessing: preprocessing.md
+  - Tokenization and limits: tokenization.md
   - Chunking: chunking.md
   - Vectors and routing: vectors.md
   - Lexical metrics and baselines: lexical.md
