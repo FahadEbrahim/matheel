@@ -1,6 +1,7 @@
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import tarfile
@@ -11,6 +12,7 @@ import zipfile
 from dataclasses import dataclass
 from hashlib import sha1
 from inspect import signature
+from itertools import combinations
 from pathlib import Path
 
 import pandas as pd
@@ -1336,14 +1338,42 @@ def _infer_pair_columns(frame, options):
         frame,
         options,
         "left_text_column",
-        ("left_text", "code1", "code_1", "func1", "submission_1_text", "source_1_text"),
+        (
+            "left_text",
+            "left_code",
+            "code_a",
+            "code1",
+            "code_1",
+            "func1",
+            "student1_code",
+            "student_1_code",
+            "submission1_code",
+            "submission_1_text",
+            "submission_1_code",
+            "source_1_text",
+            "source_1_code",
+        ),
         "left text",
     )
     right_text = _column_from_options(
         frame,
         options,
         "right_text_column",
-        ("right_text", "code2", "code_2", "func2", "submission_2_text", "source_2_text"),
+        (
+            "right_text",
+            "right_code",
+            "code_b",
+            "code2",
+            "code_2",
+            "func2",
+            "student2_code",
+            "student_2_code",
+            "submission2_code",
+            "submission_2_text",
+            "submission_2_code",
+            "source_2_text",
+            "source_2_code",
+        ),
         "right text",
     )
     left_path = _column_from_options(
@@ -1369,7 +1399,17 @@ def _infer_pair_columns(frame, options):
         frame,
         options,
         "label_column",
-        ("label", "is_clone", "is_plagiarism", "plagiarism", "verdict", "target"),
+        (
+            "label",
+            "cheating",
+            "is_cheating",
+            "is_clone",
+            "is_plagiarism",
+            "plagiarism",
+            "plagiarism_label",
+            "verdict",
+            "target",
+        ),
         "label",
         required=True,
     )
@@ -1493,13 +1533,28 @@ def _coerce_binary_like(value):
         return int(value)
     if isinstance(value, str):
         key = value.strip().lower()
-        if key in {"1", "true", "yes", "y", "clone", "positive", "plagiarized", "plagiarism", "match"}:
+        if key in {
+            "1",
+            "true",
+            "yes",
+            "y",
+            "cheating",
+            "clone",
+            "positive",
+            "plagiarized",
+            "plagiarism",
+            "match",
+        }:
             return 1
         if key in {
             "0",
             "false",
             "no",
             "n",
+            "not cheating",
+            "not_cheating",
+            "non-cheating",
+            "non cheating",
             "non-clone",
             "negative",
             "original",
@@ -2106,6 +2161,319 @@ def _adapt_conplag_pair_dataset(source_root, destination, dataset_name=None, **o
     ).root
 
 
+_IPCA_NAME_RE = re.compile(
+    r"^(?P<assignment>A\d+)-(?P<label>P|NP)-(?P<solution>Sol-\d+)(?:-(?P<variant>.+))?$",
+    re.IGNORECASE,
+)
+_SOURCE_FILE_SUFFIXES = {
+    ".c",
+    ".cc",
+    ".cpp",
+    ".cs",
+    ".go",
+    ".h",
+    ".hpp",
+    ".java",
+    ".js",
+    ".kt",
+    ".php",
+    ".py",
+    ".rb",
+    ".rs",
+    ".scala",
+    ".swift",
+    ".ts",
+    ".txt",
+}
+
+
+def _find_ipca_root(source_root):
+    root = _coerce_path(source_root)
+    candidates = [root / "IPC", root]
+    candidates.extend(path for path in root.rglob("IPC") if path.is_dir())
+    for candidate in candidates:
+        if candidate.exists() and any(candidate.rglob("*.txt")):
+            return candidate
+
+    for archive in sorted(root.rglob("IPC.zip")):
+        extracted = root / "ipca_extracted"
+        _safe_extract_zip(archive, extracted)
+        candidate = extracted / "IPC"
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _parse_ipca_submission(path, ipca_root):
+    relative = path.relative_to(ipca_root)
+    match = _IPCA_NAME_RE.match(path.stem)
+    if match is None:
+        return None
+    course = relative.parts[0] if len(relative.parts) > 1 else ""
+    label_code = match.group("label").upper()
+    solution = match.group("solution").lower()
+    return {
+        "path": path,
+        "relative": relative.as_posix(),
+        "course": course,
+        "assignment": match.group("assignment").upper(),
+        "label_code": label_code,
+        "solution": solution,
+        "variant": match.group("variant") or "base",
+    }
+
+
+def _adapt_ipca_pair_dataset(source_root, destination, dataset_name=None, **options):
+    _ = options
+    ipca_root = _find_ipca_root(source_root)
+    if ipca_root is None:
+        raise ValueError("IPCA adapter could not find an IPC directory or IPC.zip archive.")
+
+    submissions = []
+    for path in sorted(ipca_root.rglob("*.txt")):
+        parsed = _parse_ipca_submission(path, ipca_root)
+        if parsed is not None:
+            submissions.append(parsed)
+    if not submissions:
+        raise ValueError("IPCA adapter found no labeled .txt submissions.")
+
+    file_ids = {}
+    files = []
+    for submission in submissions:
+        file_id = _generated_id("ipca", submission["relative"])
+        file_ids[submission["relative"]] = file_id
+        files.append(
+            {
+                "file_id": file_id,
+                "source_path": submission["path"],
+                "suffix": ".txt",
+                "course": submission["course"],
+                "assignment": submission["assignment"],
+                "source_label": submission["label_code"],
+                "solution": submission["solution"],
+                "variant": submission["variant"],
+            }
+        )
+
+    pairs = []
+    groups = {}
+    for submission in submissions:
+        groups.setdefault((submission["course"], submission["assignment"]), []).append(submission)
+    for (course, assignment), group in sorted(groups.items()):
+        for left, right in combinations(sorted(group, key=lambda item: item["relative"]), 2):
+            label = int(
+                left["label_code"] == "P"
+                and right["label_code"] == "P"
+                and left["solution"] == right["solution"]
+            )
+            pairs.append(
+                {
+                    "left_id": file_ids[left["relative"]],
+                    "right_id": file_ids[right["relative"]],
+                    "label": label,
+                    "course": course,
+                    "assignment": assignment,
+                }
+            )
+    if not pairs:
+        raise ValueError("IPCA adapter found no pair rows.")
+
+    return write_pair_dataset(
+        destination,
+        files=pd.DataFrame(files),
+        pairs=pd.DataFrame(pairs),
+        metadata={
+            "name": dataset_name or "ipca",
+            "task_type": "plagiarism",
+            "dataset_kind": "pair_classification",
+            "adapter": "ipca_pair",
+            "ast_files_ignored": True,
+        },
+    ).root
+
+
+def _adapt_student_code_similarity_pair_dataset(source_root, destination, dataset_name=None, **options):
+    adapted_root = _adapt_pair_dataset_auto(
+        source_root,
+        destination,
+        dataset_name=dataset_name or "student_code_similarity",
+        **options,
+    )
+    metadata = _read_json(Path(adapted_root) / "metadata.json")
+    metadata["adapter"] = "student_code_similarity_pair"
+    _write_json(Path(adapted_root) / "metadata.json", metadata)
+    return adapted_root
+
+
+def _source_files_under(path):
+    root = _coerce_path(path)
+    if root.is_file():
+        return [root] if root.suffix.lower() in _SOURCE_FILE_SUFFIXES and not root.name.startswith(".") else []
+    return [
+        child
+        for child in sorted(root.rglob("*"))
+        if child.is_file()
+        and child.suffix.lower() in _SOURCE_FILE_SUFFIXES
+        and not any(part.startswith(".") for part in child.parts)
+    ]
+
+
+def _read_submission_unit_text(path):
+    source_files = _source_files_under(path)
+    chunks = []
+    for source_file in source_files:
+        try:
+            relative = source_file.relative_to(path).as_posix() if Path(path).is_dir() else source_file.name
+        except ValueError:
+            relative = source_file.name
+        text = source_file.read_text(encoding="utf-8", errors="ignore")
+        chunks.append(f"// {relative}\n{text}")
+    return "\n\n".join(chunks)
+
+
+def _criminal_minds_submission_key(path):
+    tokens = [token for token in re.split(r"[^a-z0-9]+", str(path).lower()) if token]
+    original = next((token for token in tokens if re.fullmatch(r"o\d+", token)), None)
+    if original is None:
+        return None
+    group = next((token for token in tokens if token in {"a", "b"}), "")
+    university = next((token for token in tokens if re.fullmatch(r"uni\d+", token)), "")
+    return original, group, university
+
+
+def _find_criminal_minds_code_root(source_root):
+    root = _coerce_path(source_root)
+    candidates = [root / "code", root]
+    candidates.extend(path for path in root.rglob("code") if path.is_dir())
+    for candidate in candidates:
+        if (candidate / "orig").is_dir() and (candidate / "plag").is_dir():
+            return candidate
+
+    for archive in sorted(root.rglob("ReplicationPackage.zip")):
+        extracted = root / "criminal_minds_extracted"
+        _safe_extract_zip(archive, extracted)
+        for candidate in [extracted / "code", *[path for path in extracted.rglob("code") if path.is_dir()]]:
+            if (candidate / "orig").is_dir() and (candidate / "plag").is_dir():
+                return candidate
+    return None
+
+
+def _collect_criminal_minds_units(section_root):
+    root = _coerce_path(section_root)
+    candidates = []
+    for path in [root, *sorted(root.rglob("*"))]:
+        if not (path.is_file() or path.is_dir()):
+            continue
+        try:
+            relative = path.relative_to(root)
+        except ValueError:
+            continue
+        key = _criminal_minds_submission_key(relative)
+        if key is not None and _source_files_under(path):
+            candidates.append((path, relative, key))
+
+    selected = []
+    for path, relative, key in sorted(candidates, key=lambda item: (len(item[1].parts), item[1].as_posix())):
+        if any(_is_relative_to(path, existing_path) for existing_path, _, _ in selected):
+            continue
+        selected.append((path, relative, key))
+    return selected
+
+
+def _adapt_criminal_minds_pair_dataset(source_root, destination, dataset_name=None, **options):
+    _ = options
+    code_root = _find_criminal_minds_code_root(source_root)
+    if code_root is None:
+        raise ValueError("Criminal Minds adapter could not find code/orig and code/plag directories.")
+
+    originals = _collect_criminal_minds_units(code_root / "orig")
+    plagiarized = _collect_criminal_minds_units(code_root / "plag")
+    if not originals or not plagiarized:
+        raise ValueError("Criminal Minds adapter found no original/plagiarized submission units.")
+
+    records = []
+    original_records = []
+    plagiarized_records = []
+    for source_label, units, target in (
+        ("original", originals, original_records),
+        ("plagiarized", plagiarized, plagiarized_records),
+    ):
+        for path, relative, key in units:
+            rel_text = f"{source_label}/{relative.as_posix()}"
+            record = {
+                "file_id": _generated_id("criminal_minds", rel_text),
+                "path": path,
+                "relative": rel_text,
+                "key": key,
+                "original_id": key[0],
+                "group": key[1],
+                "university": key[2],
+                "source_label": source_label,
+            }
+            target.append(record)
+            records.append(record)
+
+    files = [
+        {
+            "file_id": record["file_id"],
+            "text": _read_submission_unit_text(record["path"]),
+            "suffix": ".java",
+            "source_label": record["source_label"],
+            "source_id": record["relative"],
+            "original_id": record["original_id"],
+            "group": record["group"],
+            "university": record["university"],
+        }
+        for record in records
+    ]
+
+    originals_by_key = {record["key"]: record for record in original_records}
+    originals_by_original_id = {}
+    for record in original_records:
+        originals_by_original_id.setdefault(record["original_id"], []).append(record)
+
+    pairs = []
+    for plag_record in sorted(plagiarized_records, key=lambda item: item["relative"]):
+        positive = originals_by_key.get(plag_record["key"])
+        positive_records = [positive] if positive is not None else originals_by_original_id.get(plag_record["original_id"], [])
+        positive_ids = {record["file_id"] for record in positive_records}
+        for original_record in positive_records:
+            pairs.append(
+                {
+                    "left_id": original_record["file_id"],
+                    "right_id": plag_record["file_id"],
+                    "label": 1,
+                    "original_id": plag_record["original_id"],
+                }
+            )
+        for original_record in original_records:
+            if original_record["file_id"] in positive_ids:
+                continue
+            pairs.append(
+                {
+                    "left_id": original_record["file_id"],
+                    "right_id": plag_record["file_id"],
+                    "label": 0,
+                    "original_id": plag_record["original_id"],
+                }
+            )
+
+    if not any(row["label"] for row in pairs):
+        raise ValueError("Criminal Minds adapter found no positive original/plagiarized pairs.")
+
+    return write_pair_dataset(
+        destination,
+        files=pd.DataFrame(files),
+        pairs=pd.DataFrame(pairs),
+        metadata={
+            "name": dataset_name or "criminal_minds",
+            "task_type": "plagiarism",
+            "dataset_kind": "pair_classification",
+            "adapter": "criminal_minds_pair",
+        },
+    ).root
+
+
 def register_default_dataset_adapters(overwrite=False):
     register_dataset_adapter("auto_pair_tabular", _adapt_pair_dataset_auto, overwrite=overwrite)
     register_dataset_adapter("auto_retrieval_tabular", _adapt_retrieval_dataset_auto, overwrite=overwrite)
@@ -2113,6 +2481,13 @@ def register_default_dataset_adapters(overwrite=False):
     register_dataset_adapter("irplag_pair", _adapt_irplag_pair_dataset, overwrite=overwrite)
     register_dataset_adapter("irplag_retrieval", _adapt_irplag_retrieval_dataset, overwrite=overwrite)
     register_dataset_adapter("conplag_pair", _adapt_conplag_pair_dataset, overwrite=overwrite)
+    register_dataset_adapter("ipca_pair", _adapt_ipca_pair_dataset, overwrite=overwrite)
+    register_dataset_adapter(
+        "student_code_similarity_pair",
+        _adapt_student_code_similarity_pair_dataset,
+        overwrite=overwrite,
+    )
+    register_dataset_adapter("criminal_minds_pair", _adapt_criminal_minds_pair_dataset, overwrite=overwrite)
 
 
 def _is_relative_to(path, parent):
@@ -2347,6 +2722,43 @@ def register_default_dataset_presets(overwrite=False):
             "task_families": ("pair",),
             "url": "https://zenodo.org/records/7332790",
             "notes": "ConPlag source-code plagiarism pair-classification benchmark.",
+        },
+        overwrite=overwrite,
+    )
+    register_dataset_preset(
+        "ipca",
+        {
+            "source": "github",
+            "identifier": "humsha/IPCA",
+            "revision": "main",
+            "adapter": "ipca_pair",
+            "task_families": ("pair",),
+            "url": "https://github.com/humsha/IPCA",
+            "notes": "IPCA pair-classification dataset derived from P/NP filename labels.",
+        },
+        overwrite=overwrite,
+    )
+    register_dataset_preset(
+        "student_code_similarity",
+        {
+            "source": "kaggle",
+            "identifier": "ehsankhani/student-code-similarity-and-plagiarism-labels",
+            "adapter": "student_code_similarity_pair",
+            "task_families": ("pair",),
+            "url": "https://www.kaggle.com/datasets/ehsankhani/student-code-similarity-and-plagiarism-labels",
+            "notes": "Student code similarity and plagiarism labels pair-classification dataset.",
+        },
+        overwrite=overwrite,
+    )
+    register_dataset_preset(
+        "criminal_minds",
+        {
+            "source": "zenodo",
+            "identifier": "19115559",
+            "adapter": "criminal_minds_pair",
+            "task_families": ("pair",),
+            "url": "https://zenodo.org/records/19115559",
+            "notes": "Criminal Minds source-code plagiarism pair-classification replication package.",
         },
         overwrite=overwrite,
     )
