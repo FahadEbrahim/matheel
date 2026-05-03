@@ -30,8 +30,10 @@ Start with the [usage guide](usage.md) for installation, optional extras, quick 
 ## Demos and Examples
 
 - [Hugging Face Space demo](https://huggingface.co/spaces/buelfhood/matheel-framework)
-- [Gradio Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_gradio_colab_demo.ipynb)
-- [Examples Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
+- [Core workflows Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/01_core_workflows.ipynb)
+- [Dataset workflows Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)
+- [Custom algorithms Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/03_custom_algorithms.ipynb)
+- [Gradio Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb)
 - [Examples folder](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 
 ## Suggested Reading Order

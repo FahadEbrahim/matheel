@@ -1,6 +1,10 @@
+import sys
+from pathlib import Path
+
 from matheel.similarity import calculate_similarity
 
-from _sample_data import CODE_A_NAME, CODE_B_NAME, load_sample_pair
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from sample_data import CODE_A_NAME, CODE_B_NAME, load_sample_pair  # noqa: E402
 
 
 def main():

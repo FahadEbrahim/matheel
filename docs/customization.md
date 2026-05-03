@@ -54,6 +54,7 @@ When accepted by the function, `prepared_texts` contains the exact file-id-to-te
 Run a custom module against a directory or ZIP archive:
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --algorithm-path ./my_algorithm.py \
   --algorithm-option bias=0.2 \
@@ -111,6 +112,7 @@ Custom algorithms can be included in comparison-suite configs:
 ```
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare-suite sample_pairs.zip runs.json \
   --summary-out results/summary.csv \
   --details-dir results/runs \
@@ -145,7 +147,7 @@ scored, metrics = evaluate_pair_dataset(
 )
 ```
 
-See `examples/custom_algorithm_demo.py` for a runnable local example.
+See `examples/custom/custom_algorithm_demo.py` for a runnable local example.
 
 ## Reproducibility
 

@@ -9,7 +9,7 @@ It is a workflow example, not a benchmark claim. Real datasets are not bundled w
 From the repository root:
 
 ```bash
-python examples/reproducible_benchmark_demo.py \
+python examples/evaluation/reproducible_benchmark_demo.py \
   --output-dir benchmark_outputs/synthetic_pair_benchmark \
   --overwrite
 ```

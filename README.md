@@ -22,6 +22,7 @@ Optional semantic, chunking, metrics, and Gradio extras are covered in the [usag
 ## Quick Start
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --feature-weight levenshtein=1.0 \
   --num 10
@@ -44,8 +45,10 @@ See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semanti
 
 - Documentation: [fahadebrahim.github.io/matheel](https://fahadebrahim.github.io/matheel/)
 - Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
-- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_gradio_colab_demo.ipynb)
-- Examples Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
+- Core workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/01_core_workflows.ipynb)
+- Dataset workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)
+- Custom algorithms Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/03_custom_algorithms.ipynb)
+- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb)
 - Examples folder: [examples/](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 - Development: [development docs](https://fahadebrahim.github.io/matheel/development/)
 

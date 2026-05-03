@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+from zipfile import ZipFile
 
 from click.testing import CliRunner
 import pandas as pd
@@ -1092,7 +1093,7 @@ def test_dataset_example_script_runs():
     )
 
     result = subprocess.run(
-        [sys.executable, "examples/datasets_demo.py"],
+        [sys.executable, "examples/evaluation/datasets_demo.py"],
         cwd=repo_root,
         env=env,
         check=True,
@@ -1102,6 +1103,34 @@ def test_dataset_example_script_runs():
 
     assert "Generic tabular retrieval adapter" in result.stdout
     assert "Custom source and preset" in result.stdout
+
+
+def test_sample_data_generator_writes_archive(tmp_path):
+    repo_root = Path(__file__).resolve().parents[1]
+    output_path = tmp_path / "sample_pairs.zip"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/sample_data.py",
+            "--output",
+            str(output_path),
+        ],
+        cwd=repo_root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Wrote sample zip" in result.stdout
+    with ZipFile(output_path) as archive:
+        assert sorted(archive.namelist()) == [
+            "code_1.java",
+            "code_2_plag.java",
+            "code_3_plag.java",
+            "code_4_nonplag.java",
+            "hello_world.java",
+        ]
 
 
 def test_reproducible_benchmark_example_script_runs(tmp_path):
@@ -1115,7 +1144,7 @@ def test_reproducible_benchmark_example_script_runs(tmp_path):
     result = subprocess.run(
         [
             sys.executable,
-            "examples/reproducible_benchmark_demo.py",
+            "examples/evaluation/reproducible_benchmark_demo.py",
             "--output-dir",
             str(output_dir),
         ],

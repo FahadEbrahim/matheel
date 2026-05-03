@@ -112,6 +112,9 @@ For custom algorithm runs, `feature_set` is `custom`.
 
 ```python
 from matheel.comparison_suite import run_comparison_suite
+from examples.sample_data import write_sample_archive
+
+sample_archive = write_sample_archive("sample_pairs.zip", overwrite=True)
 
 runs = [
     {
@@ -147,7 +150,7 @@ runs = [
 ]
 
 summary, details = run_comparison_suite(
-    "sample_pairs.zip",
+    sample_archive,
     runs,
     reproducibility_out="results/reproducibility.json",
     progress=True,

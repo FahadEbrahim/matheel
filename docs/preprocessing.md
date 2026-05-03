@@ -89,6 +89,7 @@ print(cleaned)
 ## CLI Example
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --preprocess-mode basic \
   --code-language java

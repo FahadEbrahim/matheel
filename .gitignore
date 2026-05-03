@@ -9,3 +9,5 @@ dist/
 site/
 docs/releases/
 benchmark_outputs/
+sample_pairs.zip
+sample_pairs/
