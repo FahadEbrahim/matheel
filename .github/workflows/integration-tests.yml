@@ -1,0 +1,68 @@
+name: Real Model Integration Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      python-version:
+        description: Python version to use for the integration run.
+        required: true
+        default: "3.12"
+        type: choice
+        options:
+          - "3.10"
+          - "3.11"
+          - "3.12"
+          - "3.13"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: real-model-integration-tests-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    name: Python ${{ inputs.python-version }} real models
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HF_HOME: /home/runner/.cache/huggingface
+      HF_HUB_CACHE: /home/runner/.cache/huggingface/hub
+      TRANSFORMERS_CACHE: /home/runner/.cache/huggingface/transformers
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Cache Hugging Face models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('tests/test_real_models.py') }}
+          restore-keys: |
+            hf-models-${{ runner.os }}-py${{ inputs.python-version }}-
+            hf-models-${{ runner.os }}-
+
+      - name: Document integration requirements
+        run: |
+          echo "This manual workflow installs matheel[all,dev]."
+          echo "It may download public Hugging Face model weights and cache them under ${HF_HOME}."
+          echo "The default pull-request workflow does not run these tests."
+
+      - name: Install package with real-model extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all,dev]"
+
+      - name: Check integration test selection
+        run: python -m pytest -m integration --collect-only
+
+      - name: Run real-model integration tests
+        run: python -m pytest -m integration

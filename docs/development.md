@@ -30,6 +30,14 @@ Real-model integration tests are opt-in because they may need optional backends,
 python -m pytest -m integration
 ```
 
+Install the full optional stack before running them locally:
+
+```bash
+python -m pip install -e ".[all,dev]"
+```
+
+The `Real Model Integration Tests` GitHub Actions workflow is manual-only. It installs `matheel[all,dev]`, caches Hugging Face model files under `~/.cache/huggingface`, and runs `python -m pytest -m integration` on the selected Python version. It is not part of default pull-request CI, so normal tests remain offline-friendly.
+
 ## Package Checks
 
 When preparing release or packaging changes, build the package and check the distribution metadata:
