@@ -1464,9 +1464,425 @@ def _adapt_retrieval_dataset_auto(source_root, destination, dataset_name=None, *
     ).root
 
 
+def _normalize_soco14_split(split):
+    key = str(split or "test").strip().lower()
+    if key not in {"train", "test"}:
+        raise ValueError("SOCO14 split must be 'train' or 'test'.")
+    return key
+
+
+def _find_soco14_split_root(source_root, split):
+    root = _coerce_path(source_root)
+    candidates = [
+        root / f"fire14-source-code-{split}-dataset",
+        root / f"fire14-source-code-{split}-dataset_unzipped" / f"fire14-source-code-{split}-dataset",
+        root,
+    ]
+    for candidate in candidates:
+        if candidate.exists() and any(candidate.rglob("*.qrel")):
+            return candidate
+    for candidate in root.rglob(f"fire14-source-code-{split}-dataset"):
+        if candidate.is_dir() and any(candidate.rglob("*.qrel")):
+            return candidate
+    return root
+
+
+def _index_source_files(root):
+    indexed = {}
+    for path in sorted(_coerce_path(root).rglob("*")):
+        if not path.is_file() or "qrel" in path.name.lower() or path.name.startswith("."):
+            continue
+        indexed.setdefault(path.name, path)
+        indexed.setdefault(path.stem, path)
+    return indexed
+
+
+def _parse_qrel_line(line):
+    parts = line.split()
+    if len(parts) >= 4:
+        return parts[0], parts[2], _coerce_relevance_like(parts[3])
+    if len(parts) >= 2:
+        return parts[0], parts[1], 1.0
+    return None
+
+
+def _adapt_soco14_retrieval_dataset(source_root, destination, dataset_name=None, **options):
+    split = _normalize_soco14_split(options.get("split"))
+    split_root = _find_soco14_split_root(source_root, split)
+    source_index = _index_source_files(split_root)
+    qrel_files = sorted(split_root.rglob("*.qrel"))
+    if not qrel_files:
+        raise ValueError("SOCO14 source root does not contain qrel files.")
+
+    files = []
+    file_ids_by_path = {}
+    queries_by_id = {}
+    corpus_by_id = {}
+    qrels = []
+    skipped = 0
+
+    def file_id_for(path):
+        resolved = _coerce_path(path)
+        if resolved not in file_ids_by_path:
+            file_id = _generated_id("soco14", resolved.as_posix())
+            file_ids_by_path[resolved] = file_id
+            files.append({"file_id": file_id, "source_path": resolved, "suffix": resolved.suffix or ".txt"})
+        return file_ids_by_path[resolved]
+
+    for qrel_file in qrel_files:
+        for line in qrel_file.read_text(encoding="utf-8", errors="ignore").splitlines():
+            parsed = _parse_qrel_line(line.strip())
+            if parsed is None:
+                continue
+            query_token, document_token, relevance = parsed
+            query_path = source_index.get(query_token) or source_index.get(Path(query_token).name)
+            document_path = source_index.get(document_token) or source_index.get(Path(document_token).name)
+            if query_path is None or document_path is None:
+                skipped += 1
+                continue
+
+            query_id = _external_id_or_generated(query_token, "query_id", "query")
+            document_id = _external_id_or_generated(document_token, "document_id", "document")
+            queries_by_id.setdefault(
+                query_id,
+                {"query_id": query_id, "file_id": file_id_for(query_path), "source_id": query_token},
+            )
+            corpus_by_id.setdefault(
+                document_id,
+                {
+                    "document_id": document_id,
+                    "file_id": file_id_for(document_path),
+                    "source_id": document_token,
+                },
+            )
+            qrels.append({"query_id": query_id, "document_id": document_id, "relevance": relevance})
+
+    if not qrels:
+        raise ValueError("SOCO14 adapter found no qrels with matching source files.")
+
+    metadata = {
+        "name": dataset_name or "soco14",
+        "task_type": "plagiarism",
+        "dataset_kind": "retrieval",
+        "adapter": "soco14_retrieval",
+        "split": split,
+        "qrel_rows_skipped_missing_files": skipped,
+    }
+    return write_retrieval_dataset(
+        destination,
+        files=pd.DataFrame(files),
+        queries=pd.DataFrame(queries_by_id.values()),
+        corpus=pd.DataFrame(corpus_by_id.values()),
+        qrels=pd.DataFrame(qrels),
+        metadata=metadata,
+    ).root
+
+
+def _normalize_irplag_source_identifier(value):
+    text = str(value or "").strip().replace("\\", "/")
+    cleaned = "/".join(part for part in text.split("/") if part and part != ".")
+    return cleaned.lower() or text.lower()
+
+
+def _find_irplag_dataset_root(source_root):
+    root = _coerce_path(source_root)
+    direct = root / "IR-Plag-Dataset"
+    if direct.exists() and direct.is_dir():
+        return direct
+    for candidate in root.rglob("IR-Plag-Dataset"):
+        if candidate.is_dir():
+            return candidate
+    for archive in sorted(root.rglob("IR-Plag-Dataset.zip")):
+        extracted = root / "irplag_extracted"
+        _safe_extract_zip(archive, extracted)
+        extracted_root = extracted / "IR-Plag-Dataset"
+        if extracted_root.exists():
+            return extracted_root
+    return None
+
+
+def _build_irplag_case_tables(irplag_root):
+    files = []
+    pairs = []
+    queries = {}
+    corpus = {}
+    qrels = []
+    file_ids_by_path = {}
+
+    def file_id_for(path):
+        resolved = _coerce_path(path)
+        if resolved not in file_ids_by_path:
+            file_id = _generated_id("irplag", resolved.as_posix())
+            file_ids_by_path[resolved] = file_id
+            files.append({"file_id": file_id, "source_path": resolved, "suffix": resolved.suffix or ".java"})
+        return file_ids_by_path[resolved]
+
+    for case_dir in sorted(path for path in _coerce_path(irplag_root).glob("case-*") if path.is_dir()):
+        originals = sorted((case_dir / "original").rglob("*.java"))
+        if not originals:
+            continue
+        original_path = originals[0]
+        original_key = f"{case_dir.name}/original/{original_path.name}"
+        original_file_id = file_id_for(original_path)
+        document_id = _generated_id("document", original_key)
+        corpus.setdefault(
+            document_id,
+            {"document_id": document_id, "file_id": original_file_id, "source_id": original_key},
+        )
+
+        for label, folder in ((0, "non-plagiarized"), (1, "plagiarized")):
+            for submission_path in sorted((case_dir / folder).rglob("*.java")):
+                relative = submission_path.relative_to(case_dir).as_posix()
+                submission_key = f"{case_dir.name}/{relative}"
+                submission_file_id = file_id_for(submission_path)
+                pairs.append(
+                    {
+                        "left_id": original_file_id,
+                        "right_id": submission_file_id,
+                        "label": label,
+                        "case_id": case_dir.name,
+                    }
+                )
+                query_id = _generated_id("query", submission_key)
+                queries.setdefault(
+                    query_id,
+                    {"query_id": query_id, "file_id": submission_file_id, "source_id": submission_key},
+                )
+                qrels.append({"query_id": query_id, "document_id": document_id, "relevance": float(label)})
+
+    if not pairs:
+        return None
+    return files, pairs, list(queries.values()), list(corpus.values()), qrels
+
+
+def _adapt_irplag_pair_dataset(source_root, destination, dataset_name=None, **options):
+    root = _coerce_path(source_root)
+    irplag_root = _find_irplag_dataset_root(root)
+    if irplag_root is not None:
+        tables = _build_irplag_case_tables(irplag_root)
+        if tables is not None:
+            files, pairs, _, _, _ = tables
+            return write_pair_dataset(
+                destination,
+                files=pd.DataFrame(files),
+                pairs=pd.DataFrame(pairs),
+                metadata={
+                    "name": dataset_name or "irplag",
+                    "task_type": "plagiarism",
+                    "dataset_kind": "pair_classification",
+                    "adapter": "irplag_pair",
+                },
+            ).root
+
+    adapter_options = dict(options)
+    adapter_options.setdefault("label_column", "label")
+    adapted_root = _adapt_pair_dataset_auto(
+        root,
+        destination,
+        dataset_name=dataset_name or "irplag",
+        **adapter_options,
+    )
+    metadata = _read_json(Path(adapted_root) / "metadata.json")
+    metadata["adapter"] = "irplag_pair"
+    _write_json(Path(adapted_root) / "metadata.json", metadata)
+    return adapted_root
+
+
+def _adapt_irplag_retrieval_dataset(source_root, destination, dataset_name=None, **options):
+    root = _coerce_path(source_root)
+    irplag_root = _find_irplag_dataset_root(root)
+    if irplag_root is not None:
+        tables = _build_irplag_case_tables(irplag_root)
+        if tables is not None:
+            files, _, queries, corpus, qrels = tables
+            return write_retrieval_dataset(
+                destination,
+                files=pd.DataFrame(files),
+                queries=pd.DataFrame(queries),
+                corpus=pd.DataFrame(corpus),
+                qrels=pd.DataFrame(qrels),
+                metadata={
+                    "name": dataset_name or "irplag",
+                    "task_type": "plagiarism",
+                    "dataset_kind": "retrieval",
+                    "adapter": "irplag_retrieval",
+                },
+            ).root
+
+    table_path, frame = _select_pair_table(root, options)
+    _ = table_path
+    columns = _infer_pair_columns(frame, options)
+    files = []
+    file_ids_by_key = {}
+    queries_by_id = {}
+    corpus_by_id = {}
+    qrels = []
+    for row in frame.to_dict(orient="records"):
+        left_source_id = _normalize_irplag_source_identifier(
+            _table_value(row, columns["left_id"]) or _table_value(row, columns["left_path"])
+        )
+        right_source_id = _normalize_irplag_source_identifier(
+            _table_value(row, columns["right_id"]) or _table_value(row, columns["right_path"])
+        )
+        query_file_id = _add_tabular_file(
+            files,
+            file_ids_by_key,
+            root,
+            "query",
+            left_source_id,
+            _table_value(row, columns["left_text"]),
+            _table_value(row, columns["left_path"]),
+            ".txt",
+        )
+        document_file_id = _add_tabular_file(
+            files,
+            file_ids_by_key,
+            root,
+            "document",
+            right_source_id,
+            _table_value(row, columns["right_text"]),
+            _table_value(row, columns["right_path"]),
+            ".txt",
+        )
+        query_id = _generated_id("query", left_source_id)
+        document_id = _generated_id("document", right_source_id)
+        queries_by_id.setdefault(
+            query_id,
+            {"query_id": query_id, "file_id": query_file_id, "source_id": left_source_id},
+        )
+        corpus_by_id.setdefault(
+            document_id,
+            {"document_id": document_id, "file_id": document_file_id, "source_id": right_source_id},
+        )
+        qrels.append(
+            {
+                "query_id": query_id,
+                "document_id": document_id,
+                "relevance": float(_coerce_binary_like(row[columns["label"]])),
+            }
+        )
+
+    return write_retrieval_dataset(
+        destination,
+        files=pd.DataFrame(files),
+        queries=pd.DataFrame(queries_by_id.values()),
+        corpus=pd.DataFrame(corpus_by_id.values()),
+        qrels=pd.DataFrame(qrels),
+        metadata={
+            "name": dataset_name or "irplag",
+            "task_type": "plagiarism",
+            "dataset_kind": "retrieval",
+            "adapter": "irplag_retrieval",
+        },
+    ).root
+
+
+def _find_conplag_versions_root(source_root):
+    root = _coerce_path(source_root)
+    direct = root / "versions"
+    if direct.exists():
+        return direct
+    for candidate in root.rglob("versions"):
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def _find_conplag_submission_file(versions_root, problem, submission):
+    base = _coerce_path(versions_root)
+    problem_text = str(problem).strip()
+    submission_text = str(submission).strip()
+    search_roots = []
+    if problem_text:
+        search_roots.append(base / f"version_{problem_text}")
+    search_roots.append(base)
+    for search_root in search_roots:
+        if not search_root.exists():
+            continue
+        matches = sorted(search_root.rglob(f"{submission_text}.*"))
+        if matches:
+            return matches[0]
+    return None
+
+
+def _adapt_conplag_pair_dataset(source_root, destination, dataset_name=None, **options):
+    root = _coerce_path(source_root)
+    versions_root = _find_conplag_versions_root(root)
+    label_table = options.get("label_table") or "labels.csv"
+    labels_path = None
+    if versions_root is not None:
+        candidate = versions_root / label_table
+        if candidate.exists():
+            labels_path = candidate
+    if labels_path is None:
+        return _adapt_pair_dataset_auto(root, destination, dataset_name=dataset_name or "conplag", **options)
+
+    labels = pd.read_csv(labels_path)
+    left_col = _column_from_options(labels, options, "left_id_column", ("sub1", "left_id"), "left id", required=True)
+    right_col = _column_from_options(labels, options, "right_id_column", ("sub2", "right_id"), "right id", required=True)
+    problem_col = _column_from_options(labels, options, "problem_column", ("problem", "version"), "problem")
+    label_col = _column_from_options(labels, options, "label_column", ("verdict", "label"), "label", required=True)
+
+    files = []
+    file_ids_by_key = {}
+    pairs = []
+    for row in labels.to_dict(orient="records"):
+        problem = row.get(problem_col) if problem_col else ""
+        left_path = _find_conplag_submission_file(versions_root, problem, row[left_col])
+        right_path = _find_conplag_submission_file(versions_root, problem, row[right_col])
+        if left_path is None or right_path is None:
+            continue
+        left_id = _add_tabular_file(
+            files,
+            file_ids_by_key,
+            root,
+            "left",
+            f"{problem}:{row[left_col]}",
+            None,
+            left_path,
+            ".java",
+        )
+        right_id = _add_tabular_file(
+            files,
+            file_ids_by_key,
+            root,
+            "right",
+            f"{problem}:{row[right_col]}",
+            None,
+            right_path,
+            ".java",
+        )
+        pairs.append(
+            {
+                "left_id": left_id,
+                "right_id": right_id,
+                "label": _coerce_binary_like(row[label_col]),
+                "problem": problem,
+            }
+        )
+
+    if not pairs:
+        raise ValueError("ConPlag adapter found no labeled pairs with matching source files.")
+    return write_pair_dataset(
+        destination,
+        files=pd.DataFrame(files),
+        pairs=pd.DataFrame(pairs),
+        metadata={
+            "name": dataset_name or "conplag",
+            "task_type": "plagiarism",
+            "dataset_kind": "pair_classification",
+            "adapter": "conplag_pair",
+        },
+    ).root
+
+
 def register_default_dataset_adapters(overwrite=False):
     register_dataset_adapter("auto_pair_tabular", _adapt_pair_dataset_auto, overwrite=overwrite)
     register_dataset_adapter("auto_retrieval_tabular", _adapt_retrieval_dataset_auto, overwrite=overwrite)
+    register_dataset_adapter("soco14_retrieval", _adapt_soco14_retrieval_dataset, overwrite=overwrite)
+    register_dataset_adapter("irplag_pair", _adapt_irplag_pair_dataset, overwrite=overwrite)
+    register_dataset_adapter("irplag_retrieval", _adapt_irplag_retrieval_dataset, overwrite=overwrite)
+    register_dataset_adapter("conplag_pair", _adapt_conplag_pair_dataset, overwrite=overwrite)
 
 
 def _is_relative_to(path, parent):
@@ -1665,5 +2081,47 @@ def register_default_dataset_sources(overwrite=False):
     register_dataset_source("kaggle", _resolve_kaggle_dataset_source, overwrite=overwrite)
 
 
+def register_default_dataset_presets(overwrite=False):
+    register_dataset_preset(
+        "soco14",
+        {
+            "source": "zenodo",
+            "identifier": "7433031",
+            "retrieval_adapter": "soco14_retrieval",
+            "task_families": ("retrieval",),
+            "url": "https://zenodo.org/records/7433031",
+            "notes": "SOCO14 source-code plagiarism retrieval benchmark.",
+        },
+        overwrite=overwrite,
+    )
+    register_dataset_preset(
+        "irplag",
+        {
+            "source": "github",
+            "identifier": "oscarkarnalim/sourcecodeplagiarismdataset",
+            "revision": "master",
+            "adapter": "irplag_pair",
+            "retrieval_adapter": "irplag_retrieval",
+            "task_families": ("pair", "retrieval"),
+            "url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+            "notes": "IRPlag source-code plagiarism dataset.",
+        },
+        overwrite=overwrite,
+    )
+    register_dataset_preset(
+        "conplag",
+        {
+            "source": "zenodo",
+            "identifier": "7332790",
+            "adapter": "conplag_pair",
+            "task_families": ("pair",),
+            "url": "https://zenodo.org/records/7332790",
+            "notes": "ConPlag source-code plagiarism pair-classification benchmark.",
+        },
+        overwrite=overwrite,
+    )
+
+
 register_default_dataset_sources(overwrite=True)
 register_default_dataset_adapters(overwrite=True)
+register_default_dataset_presets(overwrite=True)

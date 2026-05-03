@@ -5,6 +5,7 @@ import pytest
 
 from matheel.datasets import (
     adapt_pair_dataset,
+    adapt_retrieval_dataset,
     available_dataset_adapters,
     available_dataset_kinds,
     available_dataset_presets,
@@ -69,6 +70,23 @@ def test_default_dataset_sources_include_generic_resolvers():
     sources = set(available_dataset_sources())
 
     assert {"local", "github", "zenodo", "huggingface", "kaggle"}.issubset(sources)
+
+
+def test_default_dataset_presets_include_only_approved_plagiarism_presets():
+    presets = set(available_dataset_presets())
+    pair_presets = set(available_dataset_presets_by_task("pair"))
+    retrieval_presets = set(available_dataset_presets_by_task("retrieval"))
+
+    assert {"soco14", "irplag", "conplag"}.issubset(presets)
+    assert "bigclonebench" not in presets
+    assert "poj104" not in presets
+    assert "soco14" not in pair_presets
+    assert {"irplag", "conplag"}.issubset(pair_presets)
+    assert {"soco14", "irplag"}.issubset(retrieval_presets)
+    assert "conplag" not in retrieval_presets
+    assert get_dataset_preset("soco14")["identifier"] == "7433031"
+    assert get_dataset_preset("irplag")["source"] == "github"
+    assert get_dataset_preset("conplag")["url"] == "https://zenodo.org/records/7332790"
 
 
 def test_safe_archive_extraction_rejects_path_traversal(tmp_path):
@@ -240,6 +258,100 @@ def test_auto_retrieval_tabular_adapter_supports_configured_columns(tmp_path):
     assert loaded.queries["query_id"].tolist() == ["q1"]
     assert loaded.corpus["document_id"].tolist() == ["d1", "d2"]
     assert sorted(loaded.qrels["relevance"].tolist()) == [0.0, 1.0]
+
+
+def test_soco14_retrieval_adapter_uses_document_id_schema(tmp_path):
+    source_root = tmp_path / "raw_soco14"
+    split_root = source_root / "fire14-source-code-test-dataset_unzipped" / "fire14-source-code-test-dataset"
+    (split_root / "c" / "A1").mkdir(parents=True)
+    (split_root / "c" / "A1" / "C10172").write_text("int main(){return 0;}\n", encoding="utf-8")
+    (split_root / "soco14-test-c-update.qrel").write_text(
+        "C10172 C10172\n"
+        "C10172 C99999\n",
+        encoding="utf-8",
+    )
+
+    adapted_root = adapt_retrieval_dataset(
+        source_root,
+        adapter="soco14_retrieval",
+        dataset_name="soco14_test",
+        adapter_options={"split": "test"},
+    )
+    loaded = load_retrieval_dataset(adapted_root)
+
+    assert loaded.metadata["task_type"] == "plagiarism"
+    assert loaded.metadata["dataset_kind"] == "retrieval"
+    assert loaded.metadata["qrel_rows_skipped_missing_files"] == 1
+    assert "document_id" in loaded.corpus.columns
+    assert "doc_id" not in loaded.corpus.columns
+    assert len(loaded.qrels) == 1
+
+
+def test_irplag_pair_and_retrieval_adapters_support_tabular_layout(tmp_path):
+    source_root = tmp_path / "raw_irplag"
+    source_root.mkdir()
+    (source_root / "left.py").write_text("print('left')\n", encoding="utf-8")
+    (source_root / "right.py").write_text("print('right')\n", encoding="utf-8")
+    pd.DataFrame(
+        [
+            {
+                "submission_1": " FolderA\\Task1\\Left.py ",
+                "submission_2": "folderB/task2/Right.py",
+                "left_path": "left.py",
+                "right_path": "right.py",
+                "label": 1,
+            }
+        ]
+    ).to_csv(source_root / "pairs.csv", index=False)
+
+    pair_root = adapt_pair_dataset(source_root, adapter="irplag_pair", dataset_name="irplag")
+    retrieval_root = adapt_retrieval_dataset(
+        source_root,
+        adapter="irplag_retrieval",
+        dataset_name="irplag",
+        adapter_options={
+            "left_id_column": "submission_1",
+            "right_id_column": "submission_2",
+            "left_path_column": "left_path",
+            "right_path_column": "right_path",
+        },
+    )
+    pair_dataset = load_pair_dataset(pair_root)
+    retrieval_dataset = load_retrieval_dataset(retrieval_root)
+
+    assert pair_dataset.metadata["adapter"] == "irplag_pair"
+    assert pair_dataset.pairs["label"].tolist() == [1]
+    assert retrieval_dataset.metadata["adapter"] == "irplag_retrieval"
+    assert retrieval_dataset.qrels["relevance"].tolist() == [1.0]
+    assert retrieval_dataset.queries["source_id"].tolist() == ["foldera/task1/left.py"]
+    assert retrieval_dataset.corpus["source_id"].tolist() == ["folderb/task2/right.py"]
+    assert "document_id" in retrieval_dataset.qrels.columns
+
+
+def test_conplag_pair_adapter_supports_nested_versions_layout(tmp_path):
+    source_root = tmp_path / "conplag_source"
+    versions_root = source_root / "conplag_unzipped" / "versions"
+    version_1 = versions_root / "version_1" / "a_b"
+    version_2 = versions_root / "version_2" / "c_d"
+    version_1.mkdir(parents=True)
+    version_2.mkdir(parents=True)
+    (version_1 / "a.java").write_text("class A {}\n", encoding="utf-8")
+    (version_1 / "b.java").write_text("class B {}\n", encoding="utf-8")
+    (version_2 / "c.java").write_text("class C {}\n", encoding="utf-8")
+    (version_2 / "d.java").write_text("class D {}\n", encoding="utf-8")
+    pd.DataFrame(
+        [
+            {"sub1": "a", "sub2": "b", "problem": 1, "verdict": 1},
+            {"sub1": "c", "sub2": "d", "problem": 2, "verdict": 0},
+        ]
+    ).to_csv(versions_root / "labels.csv", index=False)
+
+    adapted_root = adapt_pair_dataset(source_root, adapter="conplag_pair", dataset_name="conplag")
+    loaded = load_pair_dataset(adapted_root)
+
+    assert loaded.metadata["adapter"] == "conplag_pair"
+    assert len(loaded.files) == 4
+    assert sorted(loaded.pairs["label"].tolist()) == [0, 1]
 
 
 def test_load_retrieval_datasets_rejects_pair_only_preset(tmp_path):
