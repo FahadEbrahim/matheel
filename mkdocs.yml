@@ -24,6 +24,7 @@ nav:
   - Lexical metrics and baselines: lexical.md
   - Code metrics: code_metrics.md
   - Scoring and calibration: scoring.md
+  - Datasets and evaluation: datasets.md
   - Comparison suite: comparison_suite.md
   - Development: development.md
   - Release checklist: release_checklist.md

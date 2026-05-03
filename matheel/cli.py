@@ -1,10 +1,13 @@
+import json
 import sys
+from pathlib import Path
 
 import click
 
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
 from ._progress import should_show_progress
+from .evaluation import evaluate_pair_dataset
 from .similarity import DEFAULT_MODEL_NAME, available_runtime_devices, get_sim_list
 from .chunking import available_chunk_aggregations, available_chunking_methods
 from .model_routing import available_vector_backends
@@ -356,6 +359,108 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
         click.echo("No runs were executed.")
         return
     click.echo(summary.to_string(index=False))
+
+
+@main.command(name="evaluate-pairs")
+@click.argument("dataset_path", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.option("--scores-out", type=click.Path(), default="scored_pairs.csv", show_default=True)
+@click.option("--metrics-out", type=click.Path(), default="pair_metrics.json", show_default=True)
+@click.option("--threshold", default=0.5, show_default=True, help="Classification threshold.")
+@click.option(
+    "--feature-weight",
+    "feature_weights",
+    multiple=True,
+    help=(
+        "Normalized feature weights as name=value. "
+        "Defaults to levenshtein=1.0 for offline-friendly evaluation."
+    ),
+)
+@click.option("--model", default=DEFAULT_MODEL_NAME, show_default=True, help="Embedding model name.")
+@click.option(
+    "--preprocess-mode",
+    type=click.Choice(available_preprocess_modes()),
+    default="none",
+    show_default=True,
+)
+@click.option("--code-language", default="python", show_default=True)
+@click.option(
+    "--vector-backend",
+    type=click.Choice(available_vector_backends()),
+    default="auto",
+    show_default=True,
+)
+@click.option(
+    "--similarity-function",
+    type=click.Choice(available_similarity_functions()),
+    default="cosine",
+    show_default=True,
+)
+@click.option(
+    "--normalize-semantic-scores/--raw-semantic-scores",
+    default=False,
+    show_default=True,
+)
+@click.option("--max-token-length", default=0, show_default=True)
+@click.option(
+    "--pooling-method",
+    type=click.Choice(available_pooling_methods()),
+    default="mean",
+    show_default=True,
+)
+@click.option(
+    "--device",
+    type=click.Choice(("auto",) + available_runtime_devices()),
+    default="auto",
+    show_default=True,
+)
+def evaluate_pairs(
+    dataset_path,
+    scores_out,
+    metrics_out,
+    threshold,
+    feature_weights,
+    model,
+    preprocess_mode,
+    code_language,
+    vector_backend,
+    similarity_function,
+    normalize_semantic_scores,
+    max_token_length,
+    pooling_method,
+    device,
+):
+    """Evaluate a local pair-classification dataset."""
+    selected_weights = feature_weights or ("levenshtein=1.0",)
+    scored_pairs, metrics = evaluate_pair_dataset(
+        dataset_path,
+        threshold=threshold,
+        similarity_options={
+            "feature_weights": selected_weights,
+            "model_name": model,
+            "preprocess_mode": preprocess_mode,
+            "code_language": code_language,
+            "vector_backend": vector_backend,
+            "similarity_function": similarity_function,
+            "normalize_semantic_scores": normalize_semantic_scores,
+            "max_token_length": max_token_length,
+            "pooling_method": pooling_method,
+            "device": device,
+        },
+    )
+    scores_path = Path(scores_out)
+    metrics_path = Path(metrics_out)
+    scores_path.parent.mkdir(parents=True, exist_ok=True)
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    scored_pairs.to_csv(scores_path, index=False)
+    metrics_path.write_text(json.dumps(metrics, indent=2, sort_keys=True), encoding="utf-8")
+    click.echo(f"Wrote {len(scored_pairs)} scored pair(s) to {scores_path}.")
+    click.echo(f"Wrote metrics to {metrics_path}.")
+    click.echo(
+        f"accuracy={metrics['accuracy']:.4f} "
+        f"precision={metrics['precision']:.4f} "
+        f"recall={metrics['recall']:.4f} "
+        f"f1={metrics['f1']:.4f}"
+    )
 
 
 def _elapsed_summary_text(results):
