@@ -154,7 +154,7 @@ Built-in generic source resolvers:
 | `huggingface` | Resolve a Hugging Face dataset repository. | Requires optional Hugging Face Hub support. |
 | `kaggle` | Download a Kaggle dataset. | Requires optional Kaggle API or CLI credentials. |
 
-Hugging Face and Kaggle are generic resolvers only; their presence is not a dataset endorsement.
+Source resolvers only locate or download data; users are responsible for dataset access, credentials, licenses, and source terms.
 
 Built-in adapters:
 
@@ -166,6 +166,9 @@ Built-in adapters:
 | `irplag_pair` | `pair_classification` | Convert IRPlag pair layouts. |
 | `irplag_retrieval` | `retrieval` | Convert IRPlag pair layouts into retrieval manifests. |
 | `conplag_pair` | `pair_classification` | Convert ConPlag pair layouts. |
+| `ipca_pair` | `pair_classification` | Convert IPCA `.txt` submissions using filename P/NP labels. |
+| `student_code_similarity_pair` | `pair_classification` | Convert Student Code Similarity labeled pair tables. |
+| `criminal_minds_pair` | `pair_classification` | Convert Criminal Minds original/plagiarized submission layouts. |
 
 Approved built-in plagiarism presets:
 
@@ -174,6 +177,9 @@ Approved built-in plagiarism presets:
 | `soco14` | retrieval | Zenodo | `7433031` |
 | `irplag` | pair, retrieval | GitHub | `oscarkarnalim/sourcecodeplagiarismdataset` |
 | `conplag` | pair | Zenodo | `7332790` |
+| `ipca` | pair | GitHub | `humsha/IPCA` |
+| `student_code_similarity` | pair | Kaggle | `ehsankhani/student-code-similarity-and-plagiarism-labels` |
+| `criminal_minds` | pair | Zenodo | `19115559` |
 
 Custom projects can register their own source resolvers, presets, and adapters:
 

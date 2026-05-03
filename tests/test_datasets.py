@@ -81,14 +81,33 @@ def test_default_dataset_presets_include_only_approved_plagiarism_presets():
     pair_presets = set(available_dataset_presets_by_task("pair"))
     retrieval_presets = set(available_dataset_presets_by_task("retrieval"))
 
-    assert presets == {"soco14", "irplag", "conplag"}
+    assert presets == {
+        "soco14",
+        "irplag",
+        "conplag",
+        "ipca",
+        "student_code_similarity",
+        "criminal_minds",
+    }
     assert "soco14" not in pair_presets
-    assert {"irplag", "conplag"}.issubset(pair_presets)
+    assert {
+        "irplag",
+        "conplag",
+        "ipca",
+        "student_code_similarity",
+        "criminal_minds",
+    }.issubset(pair_presets)
     assert {"soco14", "irplag"}.issubset(retrieval_presets)
     assert "conplag" not in retrieval_presets
+    assert "ipca" not in retrieval_presets
+    assert "student_code_similarity" not in retrieval_presets
+    assert "criminal_minds" not in retrieval_presets
     assert get_dataset_preset("soco14")["identifier"] == "7433031"
     assert get_dataset_preset("irplag")["source"] == "github"
     assert get_dataset_preset("conplag")["url"] == "https://zenodo.org/records/7332790"
+    assert get_dataset_preset("ipca")["adapter"] == "ipca_pair"
+    assert get_dataset_preset("student_code_similarity")["source"] == "kaggle"
+    assert get_dataset_preset("criminal_minds")["identifier"] == "19115559"
 
 
 def test_safe_archive_extraction_rejects_path_traversal(tmp_path):
@@ -617,6 +636,69 @@ def test_conplag_pair_adapter_supports_nested_versions_layout(tmp_path):
     assert loaded.metadata["adapter"] == "conplag_pair"
     assert len(loaded.files) == 4
     assert sorted(loaded.pairs["label"].tolist()) == [0, 1]
+
+
+def test_ipca_pair_adapter_derives_labels_from_txt_filenames(tmp_path):
+    source_root = tmp_path / "ipca_source"
+    ipc_root = source_root / "IPC" / "ITC"
+    ipc_root.mkdir(parents=True)
+    (ipc_root / "A1-NP-Sol-1.txt").write_text("original one\n", encoding="utf-8")
+    (ipc_root / "A1-NP-Sol-1.ast").write_text("(ignored)\n", encoding="utf-8")
+    (ipc_root / "A1-P-Sol-3.txt").write_text("plag base\n", encoding="utf-8")
+    (ipc_root / "A1-P-Sol-3-comments.txt").write_text("plag comments\n", encoding="utf-8")
+    (ipc_root / "A1-P-Sol-4.txt").write_text("other plag\n", encoding="utf-8")
+
+    adapted_root = adapt_pair_dataset(source_root, adapter="ipca_pair", dataset_name="ipca")
+    loaded = load_pair_dataset(adapted_root)
+
+    assert loaded.metadata["adapter"] == "ipca_pair"
+    assert loaded.metadata["ast_files_ignored"] is True
+    assert len(loaded.files) == 4
+    assert sorted(loaded.pairs["label"].tolist()) == [0, 0, 0, 0, 0, 1]
+    assert set(loaded.pairs["course"]) == {"ITC"}
+
+
+def test_student_code_similarity_pair_adapter_supports_kaggle_layout(tmp_path):
+    source_root = tmp_path / "student_code_similarity"
+    source_root.mkdir()
+    pd.DataFrame(
+        [
+            {"student1_code": "print(1)", "student2_code": "print(1)", "cheating": "cheating"},
+            {"student1_code": "print(1)", "student2_code": "print(2)", "cheating": "not cheating"},
+        ]
+    ).to_csv(source_root / "pairs.csv", index=False)
+
+    adapted_root = adapt_pair_dataset(
+        source_root,
+        adapter="student_code_similarity_pair",
+        dataset_name="student_code_similarity",
+    )
+    loaded = load_pair_dataset(adapted_root)
+
+    assert loaded.metadata["adapter"] == "student_code_similarity_pair"
+    assert loaded.pairs["label"].tolist() == [1, 0]
+    assert len(loaded.files) == 2
+
+
+def test_criminal_minds_pair_adapter_matches_plagiarized_to_originals(tmp_path):
+    source_root = tmp_path / "criminal_minds_source"
+    code_root = source_root / "ReplicationPackage" / "code"
+    orig_root = code_root / "orig"
+    plag_root = code_root / "plag"
+    (orig_root / "uni1-A-o1").mkdir(parents=True)
+    (orig_root / "uni1-A-o2").mkdir(parents=True)
+    (plag_root / "uni1-A-o1-p1").mkdir(parents=True)
+    (orig_root / "uni1-A-o1" / "Main.java").write_text("class OriginalOne {}\n", encoding="utf-8")
+    (orig_root / "uni1-A-o2" / "Main.java").write_text("class OriginalTwo {}\n", encoding="utf-8")
+    (plag_root / "uni1-A-o1-p1" / "Main.java").write_text("class Plagiarized {}\n", encoding="utf-8")
+
+    adapted_root = adapt_pair_dataset(source_root, adapter="criminal_minds_pair", dataset_name="criminal_minds")
+    loaded = load_pair_dataset(adapted_root)
+
+    assert loaded.metadata["adapter"] == "criminal_minds_pair"
+    assert len(loaded.files) == 3
+    assert sorted(loaded.pairs["label"].tolist()) == [0, 1]
+    assert loaded.pairs.loc[loaded.pairs["label"] == 1, "original_id"].tolist() == ["o1"]
 
 
 def test_load_retrieval_datasets_rejects_pair_only_preset(tmp_path):
