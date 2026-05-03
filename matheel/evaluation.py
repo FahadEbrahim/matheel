@@ -38,6 +38,7 @@ def score_pair_dataset(
             resolved_algorithm,
             dataset,
             algorithm_options=algorithm_options,
+            prepared_texts=texts,
         )
         if resolved_algorithm is not None
         else None
@@ -143,6 +144,7 @@ def score_retrieval_dataset(
             resolved_algorithm,
             dataset,
             algorithm_options=algorithm_options,
+            prepared_texts=texts,
         )
         if resolved_algorithm is not None
         else None

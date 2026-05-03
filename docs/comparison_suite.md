@@ -60,6 +60,7 @@ The suite normalizes a few convenience aliases:
 If no weights are supplied, the suite applies Matheel’s default feature blend.
 For custom runs, provide `algorithm_path` and optional `algorithm_options`; feature weights are not required for those runs.
 Relative `algorithm_path` values are resolved from the config file's directory.
+Custom runs reject unsupported option names so configuration typos fail early.
 
 ## Outputs
 

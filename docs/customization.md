@@ -30,9 +30,13 @@ Options must be a mapping with non-empty string keys and JSON-serializable value
 Define `prepare_dataset` when the algorithm needs reusable dataset-level state:
 
 ```python
-def prepare_dataset(dataset, bias=0.0, **kwargs):
+def prepare_dataset(dataset, prepared_texts=None, bias=0.0, **kwargs):
     _ = kwargs
-    return {"bias": float(bias), "file_count": len(dataset.files)}
+    return {
+        "bias": float(bias),
+        "file_count": len(dataset.files),
+        "prepared_texts": dict(prepared_texts or {}),
+    }
 
 
 def score_pair(code_a, code_b, dataset_context=None, **kwargs):
@@ -41,7 +45,9 @@ def score_pair(code_a, code_b, dataset_context=None, **kwargs):
     return base + dataset_context["bias"]
 ```
 
-For normalized pair datasets, `dataset` is a `PairDataset`. For retrieval datasets, it is a `RetrievalDataset`. For `matheel compare` archive or directory runs, it is a small mapping with source file names, prepared code strings, and code count.
+For normalized pair datasets, `dataset` is a `PairDataset`. For retrieval datasets, it is a `RetrievalDataset`.
+For `matheel compare` archive or directory runs, it is a small mapping with source file names, prepared code strings, and code count.
+When accepted by the function, `prepared_texts` contains the exact file-id-to-text mapping that will be scored after preprocessing.
 
 ## CLI
 
@@ -77,6 +83,7 @@ matheel evaluate-retrieval ./data/retrieval \
 ```
 
 `--algorithm-option` accepts JSON-like scalar values such as `0.2`, `true`, `false`, `null`, quoted strings, lists, and objects.
+Path-loaded algorithm files can import helper modules placed beside the algorithm file.
 
 ## Comparison Suite
 
