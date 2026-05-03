@@ -538,6 +538,62 @@ def test_evaluate_pairs_command_loads_registered_preset(tmp_path, monkeypatch):
     assert metrics["pair_count"] == 1
 
 
+def test_evaluate_pairs_command_loads_dataset_manifest(tmp_path):
+    raw_root = tmp_path / "raw_pairs"
+    raw_root.mkdir()
+    pd.DataFrame(
+        [
+            {"left_code": "x = 1", "right_code": "x = 1", "label": 1},
+            {"left_code": "x = 1", "right_code": "x = 2", "label": 0},
+        ]
+    ).to_csv(raw_root / "pairs.csv", index=False)
+    manifest_path = tmp_path / "pair_manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "task": "pair",
+                "datasets": [
+                    {
+                        "source": "local",
+                        "identifier": "raw_pairs",
+                        "name": "cli_manifest_pairs",
+                        "adapter": "auto_pair_tabular",
+                        "adapted_destination": "normalized_pairs",
+                        "adapter_options": {
+                            "left_text_column": "left_code",
+                            "right_text_column": "right_code",
+                            "label_column": "label",
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    scores_path = tmp_path / "manifest_scores.csv"
+    metrics_path = tmp_path / "manifest_metrics.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-pairs",
+            "--manifest",
+            str(manifest_path),
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert metrics["pair_count"] == 2
+    assert (tmp_path / "normalized_pairs" / "pairs.csv").exists()
+
+
 def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
     dataset_root = tmp_path / "retrieval"
     write_retrieval_dataset(
@@ -639,6 +695,77 @@ def test_evaluate_retrieval_command_loads_tabular_adapter_spec(tmp_path):
     assert metrics["query_count"] == 1
     assert metrics["result_count"] == 2
     assert set(pd.read_csv(scores_path)["document_id"]) == {"d1", "d2"}
+
+
+def test_evaluate_retrieval_command_loads_dataset_manifest(tmp_path):
+    raw_root = tmp_path / "raw_retrieval"
+    raw_root.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "query_id": "q1",
+                "document_id": "d1",
+                "query_code": "print(1)",
+                "candidate_code": "print(1)",
+                "relevance": 1,
+            },
+            {
+                "query_id": "q1",
+                "document_id": "d2",
+                "query_code": "print(1)",
+                "candidate_code": "print(2)",
+                "relevance": 0,
+            },
+        ]
+    ).to_csv(raw_root / "retrieval.csv", index=False)
+    manifest_path = tmp_path / "retrieval_manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "task": "retrieval",
+                "datasets": [
+                    {
+                        "source": "local",
+                        "identifier": "raw_retrieval",
+                        "adapter": "auto_retrieval_tabular",
+                        "adapted_destination": "normalized_retrieval",
+                        "adapter_options": {
+                            "retrieval_table": "retrieval.csv",
+                            "query_text_column": "query_code",
+                            "document_text_column": "candidate_code",
+                            "relevance_column": "relevance",
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    scores_path = tmp_path / "manifest_retrieval_scores.csv"
+    metrics_path = tmp_path / "manifest_retrieval_metrics.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-retrieval",
+            "--manifest",
+            str(manifest_path),
+            "--k",
+            "1",
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert metrics["query_count"] == 1
+    assert metrics["result_count"] == 2
+    assert (tmp_path / "normalized_retrieval" / "qrels.csv").exists()
 
 
 def test_dataset_example_script_runs():

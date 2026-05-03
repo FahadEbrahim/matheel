@@ -17,8 +17,10 @@ from .datasets import (
     dataset_preset_task_families,
     load_pair_dataset,
     load_pair_datasets,
+    load_pair_datasets_from_manifest,
     load_retrieval_dataset,
     load_retrieval_datasets,
+    load_retrieval_datasets_from_manifest,
 )
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .similarity import DEFAULT_MODEL_NAME, available_runtime_devices, get_sim_list
@@ -101,6 +103,44 @@ def _dataset_spec_from_cli(
     payload = {"identifier": resolved_identifier}
     payload.update({key: value for key, value in optional_values.items() if value is not None})
     return payload
+
+
+def _ensure_manifest_has_no_dataset_cli_overrides(
+    manifest,
+    dataset_spec,
+    preset,
+    source,
+    identifier,
+    dataset_name,
+    adapter,
+    adapter_options,
+    destination,
+    adapted_destination,
+    revision,
+    split,
+    path_in_archive,
+):
+    if manifest is None:
+        return
+    overrides = {
+        "DATASET_SPEC": dataset_spec,
+        "--preset": preset,
+        "--source": source,
+        "--identifier": identifier,
+        "--dataset-name": dataset_name,
+        "--adapter": adapter,
+        "--destination": destination,
+        "--adapted-destination": adapted_destination,
+        "--revision": revision,
+        "--split": split,
+        "--path-in-archive": path_in_archive,
+    }
+    used = [name for name, value in overrides.items() if value is not None]
+    if adapter_options:
+        used.append("--adapter-option")
+    if used:
+        joined = ", ".join(used)
+        raise click.UsageError(f"--manifest cannot be combined with dataset source options: {joined}.")
 
 
 def _echo_json(payload):
@@ -645,6 +685,7 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
 
 @main.command(name="evaluate-pairs")
 @click.argument("dataset_spec", required=False, metavar="DATASET_SPEC")
+@click.option("--manifest", type=click.Path(exists=True, dir_okay=False), help="Dataset loading manifest.")
 @click.option("--preset", help="Registered dataset preset to load.")
 @click.option("--source", help="Dataset source resolver to use with DATASET_SPEC or --identifier.")
 @click.option("--identifier", help="Dataset source identifier. Use this instead of DATASET_SPEC when clearer.")
@@ -721,6 +762,7 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
 )
 def evaluate_pairs(
     dataset_spec,
+    manifest,
     preset,
     source,
     identifier,
@@ -747,23 +789,41 @@ def evaluate_pairs(
     device,
 ):
     """Evaluate a pair-classification dataset from a path, source spec, or preset."""
-    resolved_dataset = load_pair_datasets(
-        _dataset_spec_from_cli(
-            dataset_spec,
-            task_family="pair",
-            preset=preset,
-            source=source,
-            identifier=identifier,
-            dataset_name=dataset_name,
-            adapter=adapter,
-            adapter_options=adapter_options,
-            destination=destination,
-            adapted_destination=adapted_destination,
-            revision=revision,
-            split=split,
-            path_in_archive=path_in_archive,
-        )
+    _ensure_manifest_has_no_dataset_cli_overrides(
+        manifest,
+        dataset_spec,
+        preset,
+        source,
+        identifier,
+        dataset_name,
+        adapter,
+        adapter_options,
+        destination,
+        adapted_destination,
+        revision,
+        split,
+        path_in_archive,
     )
+    if manifest is not None:
+        resolved_dataset = load_pair_datasets_from_manifest(manifest)
+    else:
+        resolved_dataset = load_pair_datasets(
+            _dataset_spec_from_cli(
+                dataset_spec,
+                task_family="pair",
+                preset=preset,
+                source=source,
+                identifier=identifier,
+                dataset_name=dataset_name,
+                adapter=adapter,
+                adapter_options=adapter_options,
+                destination=destination,
+                adapted_destination=adapted_destination,
+                revision=revision,
+                split=split,
+                path_in_archive=path_in_archive,
+            )
+        )
     selected_weights = feature_weights or ("levenshtein=1.0",)
     scored_pairs, metrics = evaluate_pair_dataset(
         resolved_dataset,
@@ -799,6 +859,7 @@ def evaluate_pairs(
 
 @main.command(name="evaluate-retrieval")
 @click.argument("dataset_spec", required=False, metavar="DATASET_SPEC")
+@click.option("--manifest", type=click.Path(exists=True, dir_okay=False), help="Dataset loading manifest.")
 @click.option("--preset", help="Registered dataset preset to load.")
 @click.option("--source", help="Dataset source resolver to use with DATASET_SPEC or --identifier.")
 @click.option("--identifier", help="Dataset source identifier. Use this instead of DATASET_SPEC when clearer.")
@@ -875,6 +936,7 @@ def evaluate_pairs(
 )
 def evaluate_retrieval(
     dataset_spec,
+    manifest,
     preset,
     source,
     identifier,
@@ -901,23 +963,41 @@ def evaluate_retrieval(
     device,
 ):
     """Evaluate a retrieval dataset from a path, source spec, or preset."""
-    resolved_dataset = load_retrieval_datasets(
-        _dataset_spec_from_cli(
-            dataset_spec,
-            task_family="retrieval",
-            preset=preset,
-            source=source,
-            identifier=identifier,
-            dataset_name=dataset_name,
-            adapter=adapter,
-            adapter_options=adapter_options,
-            destination=destination,
-            adapted_destination=adapted_destination,
-            revision=revision,
-            split=split,
-            path_in_archive=path_in_archive,
-        )
+    _ensure_manifest_has_no_dataset_cli_overrides(
+        manifest,
+        dataset_spec,
+        preset,
+        source,
+        identifier,
+        dataset_name,
+        adapter,
+        adapter_options,
+        destination,
+        adapted_destination,
+        revision,
+        split,
+        path_in_archive,
     )
+    if manifest is not None:
+        resolved_dataset = load_retrieval_datasets_from_manifest(manifest)
+    else:
+        resolved_dataset = load_retrieval_datasets(
+            _dataset_spec_from_cli(
+                dataset_spec,
+                task_family="retrieval",
+                preset=preset,
+                source=source,
+                identifier=identifier,
+                dataset_name=dataset_name,
+                adapter=adapter,
+                adapter_options=adapter_options,
+                destination=destination,
+                adapted_destination=adapted_destination,
+                revision=revision,
+                split=split,
+                path_in_archive=path_in_archive,
+            )
+        )
     selected_weights = feature_weights or ("levenshtein=1.0",)
     scored_results, metrics = evaluate_retrieval_dataset(
         resolved_dataset,

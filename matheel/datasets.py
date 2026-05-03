@@ -20,6 +20,16 @@ DATASET_TASK_TYPES = ("plagiarism",)
 DATASET_KINDS = ("pair_classification", "retrieval")
 DATASET_ACCESS_TYPES = ("bundled", "download", "manual", "external")
 DATASET_TASK_FAMILIES = ("pair", "retrieval")
+DATASET_MANIFEST_VERSION = 1
+DATASET_MANIFEST_CREDENTIAL_FIELDS = {
+    "access_token",
+    "api_key",
+    "apikey",
+    "client_secret",
+    "password",
+    "secret",
+    "token",
+}
 _DATASET_REGISTRY = {}
 _DATASET_SOURCE_HANDLERS = {}
 _DATASET_PRESETS = {}
@@ -256,6 +266,41 @@ def available_dataset_presets_by_task(task_family):
         for preset_name in available_dataset_presets()
         if requested in dataset_preset_task_families(preset_name)
     )
+
+
+def load_dataset_manifest(manifest_path):
+    path = _coerce_path(manifest_path)
+    payload = _read_dataset_manifest_payload(path)
+    if not isinstance(payload, dict):
+        raise ValueError("Dataset manifest must be a JSON/YAML object.")
+
+    version = payload.get("version")
+    if int(version or 0) != DATASET_MANIFEST_VERSION:
+        raise ValueError(f"Dataset manifest version must be {DATASET_MANIFEST_VERSION}.")
+
+    task = payload.get("task")
+    normalized_task = _normalize_task_family(task) if task is not None else None
+    specs = [
+        _normalize_dataset_manifest_spec(spec, path.parent)
+        for spec in _dataset_manifest_specs(payload)
+    ]
+    return {
+        "version": DATASET_MANIFEST_VERSION,
+        "task": normalized_task,
+        "datasets": specs,
+    }
+
+
+def load_pair_datasets_from_manifest(manifest_path):
+    manifest = load_dataset_manifest(manifest_path)
+    _ensure_manifest_supports_task(manifest, "pair")
+    return load_pair_datasets(manifest["datasets"])
+
+
+def load_retrieval_datasets_from_manifest(manifest_path):
+    manifest = load_dataset_manifest(manifest_path)
+    _ensure_manifest_supports_task(manifest, "retrieval")
+    return load_retrieval_datasets(manifest["datasets"])
 
 
 def load_pair_datasets(dataset_specs):
@@ -804,6 +849,112 @@ def _is_pair_dataset_root(path):
 def _is_retrieval_dataset_root(path):
     root = _coerce_path(path)
     return all((root / name).exists() for name in ("files.csv", "queries.csv", "corpus.csv", "qrels.csv"))
+
+
+def _read_dataset_manifest_payload(path):
+    target = _coerce_path(path)
+    text = target.read_text(encoding="utf-8")
+    if target.suffix.lower() in {".yaml", ".yml"}:
+        try:
+            import yaml
+        except ImportError as exc:
+            raise ImportError("YAML dataset manifests require PyYAML.") from exc
+        return yaml.safe_load(text)
+    return json.loads(text)
+
+
+def _dataset_manifest_specs(payload):
+    if "datasets" in payload:
+        raw_specs = payload["datasets"]
+    elif "dataset" in payload:
+        raw_specs = [payload["dataset"]]
+    else:
+        spec_keys = {
+            "adapter",
+            "adapted_destination",
+            "destination",
+            "identifier",
+            "name",
+            "path_in_archive",
+            "preset",
+            "retrieval_adapter",
+            "revision",
+            "source",
+            "split",
+            "task_families",
+        }
+        spec = {key: value for key, value in payload.items() if key in spec_keys}
+        if not spec:
+            raise ValueError("Dataset manifest must include dataset or datasets.")
+        raw_specs = [spec]
+
+    if isinstance(raw_specs, dict):
+        raw_specs = [raw_specs]
+    if isinstance(raw_specs, (str, os.PathLike)):
+        raw_specs = [raw_specs]
+    raw_specs = list(raw_specs or ())
+    if not raw_specs:
+        raise ValueError("Dataset manifest must include at least one dataset spec.")
+    return raw_specs
+
+
+def _normalize_dataset_manifest_spec(spec, manifest_dir):
+    _reject_dataset_manifest_credentials(spec)
+    if isinstance(spec, (str, os.PathLike)):
+        text = os.fspath(spec)
+        preset_key = text.strip().lower()
+        if preset_key in _DATASET_PRESETS:
+            _ensure_manifest_spec_is_reproducible(_coerce_dataset_spec(text))
+            return text
+        return _resolve_dataset_manifest_path(text, manifest_dir)
+    if not isinstance(spec, dict):
+        raise ValueError("Dataset manifest dataset specs must be objects, paths, or preset names.")
+
+    payload = dict(spec)
+    source = str(payload.get("source") or "local").strip().lower()
+    if source == "local" and "identifier" in payload:
+        payload["identifier"] = _resolve_dataset_manifest_path(payload["identifier"], manifest_dir)
+    for path_key in ("destination", "adapted_destination"):
+        if payload.get(path_key) is not None:
+            payload[path_key] = _resolve_dataset_manifest_path(payload[path_key], manifest_dir)
+
+    coerced = _coerce_dataset_spec(payload)
+    _ensure_manifest_spec_is_reproducible(coerced)
+    return payload
+
+
+def _ensure_manifest_spec_is_reproducible(coerced):
+    if (coerced.get("adapter") or coerced.get("retrieval_adapter")) and coerced.get("adapted_destination") is None:
+        raise ValueError("Dataset manifest specs that use adapters must include adapted_destination.")
+    if coerced.get("source") != "local" and coerced.get("destination") is None:
+        raise ValueError("Dataset manifest specs for remote sources must include destination.")
+
+
+def _resolve_dataset_manifest_path(value, manifest_dir):
+    path = Path(value).expanduser()
+    if path.is_absolute():
+        return path
+    return (manifest_dir / path).resolve()
+
+
+def _reject_dataset_manifest_credentials(value, path=()):
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            normalized_key = str(key).strip().lower()
+            if normalized_key in DATASET_MANIFEST_CREDENTIAL_FIELDS:
+                dotted_path = ".".join((*path, str(key)))
+                raise ValueError(f"Dataset manifests must not include credential fields: {dotted_path}")
+            _reject_dataset_manifest_credentials(nested, (*path, str(key)))
+    elif isinstance(value, (list, tuple)):
+        for index, nested in enumerate(value):
+            _reject_dataset_manifest_credentials(nested, (*path, str(index)))
+
+
+def _ensure_manifest_supports_task(manifest, task_family):
+    requested = _normalize_task_family(task_family)
+    manifest_task = manifest.get("task")
+    if manifest_task is not None and manifest_task != requested:
+        raise ValueError(f"Dataset manifest task {manifest_task!r} does not support {requested} loading.")
 
 
 def _coerce_dataset_specs(dataset_specs):
