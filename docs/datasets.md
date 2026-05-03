@@ -128,6 +128,49 @@ register_dataset_preset(
 )
 ```
 
+## Dataset CLI Utilities
+
+Use `matheel datasets list` to inspect registered sources, adapters, and presets:
+
+```bash
+matheel datasets list
+matheel datasets list --task retrieval --format json
+```
+
+Use `matheel datasets validate` to check a normalized dataset and print stable counts:
+
+```bash
+matheel datasets validate tiny_pairs --format json
+matheel datasets validate tiny_retrieval --kind retrieval
+```
+
+Use `matheel datasets adapt` to convert a raw local tabular dataset into normalized Matheel manifests. Always provide an explicit output directory so repeated runs write to the same location:
+
+```bash
+matheel datasets adapt ./data/raw_pairs \
+  --kind pair \
+  --output ./data/normalized_pairs \
+  --dataset-name custom_pairs \
+  --adapter-option pair_table=pairs.csv \
+  --adapter-option left_text_column=code_a \
+  --adapter-option right_text_column=code_b \
+  --adapter-option label_column=label \
+  --format json
+```
+
+For retrieval tables:
+
+```bash
+matheel datasets adapt ./data/raw_retrieval \
+  --kind retrieval \
+  --output ./data/normalized_retrieval \
+  --adapter-option retrieval_table=retrieval.csv \
+  --adapter-option query_text_column=query_code \
+  --adapter-option document_text_column=candidate_code \
+  --adapter-option relevance_column=relevance \
+  --format json
+```
+
 ## Dataset Registry
 
 Dataset tracking uses these fields:

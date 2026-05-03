@@ -264,6 +264,152 @@ def test_compare_command_rejects_inactive_code_metric_weight(tmp_path):
     assert "code_metric_weight requires an active code_metric" in str(result.exception)
 
 
+def test_datasets_list_command_outputs_reproducible_json():
+    runner = CliRunner()
+    result = runner.invoke(main, ["datasets", "list", "--task", "retrieval", "--format", "json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["sources"] == sorted(payload["sources"])
+    assert "local" in payload["sources"]
+    assert "auto_retrieval_tabular" in payload["adapters"]
+    assert payload["presets"]
+    assert all("retrieval" in preset["task_families"] for preset in payload["presets"])
+
+
+def test_datasets_validate_command_reports_pair_summary(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "c", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+            ]
+        ),
+        metadata={"name": "unit_pairs"},
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["datasets", "validate", str(dataset_root), "--format", "json"])
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["name"] == "unit_pairs"
+    assert payload["dataset_kind"] == "pair_classification"
+    assert payload["counts"] == {
+        "files": 3,
+        "negative_pairs": 1,
+        "pairs": 2,
+        "positive_pairs": 1,
+    }
+
+
+def test_datasets_adapt_command_writes_pair_dataset(tmp_path):
+    source_root = tmp_path / "raw_pairs"
+    source_root.mkdir()
+    pd.DataFrame(
+        [
+            {"left_code": "return a", "right_code": "return a", "label": 1},
+            {"left_code": "return a", "right_code": "return b", "label": 0},
+        ]
+    ).to_csv(source_root / "pairs.csv", index=False)
+    output_root = tmp_path / "normalized_pairs"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "datasets",
+            "adapt",
+            str(source_root),
+            "--kind",
+            "pair",
+            "--output",
+            str(output_root),
+            "--dataset-name",
+            "custom_pairs",
+            "--adapter-option",
+            "left_text_column=left_code",
+            "--adapter-option",
+            "right_text_column=right_code",
+            "--adapter-option",
+            "label_column=label",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["adapter"] == "auto_pair_tabular"
+    assert payload["counts"]["pairs"] == 2
+    assert (output_root / "files.csv").exists()
+    assert (output_root / "pairs.csv").exists()
+
+
+def test_datasets_adapt_command_writes_retrieval_dataset(tmp_path):
+    source_root = tmp_path / "raw_retrieval"
+    source_root.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "query_id": "q1",
+                "document_id": "d1",
+                "query_code": "print(1)",
+                "candidate_code": "print(1)",
+                "relevance": 1,
+            },
+            {
+                "query_id": "q1",
+                "document_id": "d2",
+                "query_code": "print(1)",
+                "candidate_code": "print(2)",
+                "relevance": 0,
+            },
+        ]
+    ).to_csv(source_root / "retrieval.csv", index=False)
+    output_root = tmp_path / "normalized_retrieval"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "datasets",
+            "adapt",
+            str(source_root),
+            "--kind",
+            "retrieval",
+            "--output",
+            str(output_root),
+            "--adapter-option",
+            "retrieval_table=retrieval.csv",
+            "--adapter-option",
+            "query_text_column=query_code",
+            "--adapter-option",
+            "document_text_column=candidate_code",
+            "--adapter-option",
+            "relevance_column=relevance",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["adapter"] == "auto_retrieval_tabular"
+    assert payload["counts"]["queries"] == 1
+    assert payload["counts"]["documents"] == 2
+    assert (output_root / "qrels.csv").exists()
+
+
 def test_evaluate_pairs_command_writes_scores_and_metrics(tmp_path):
     dataset_root = tmp_path / "pairs"
     write_pair_dataset(
