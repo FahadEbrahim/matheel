@@ -235,6 +235,46 @@ def test_run_comparison_suite_accepts_already_normalized_configs(monkeypatch):
     assert "run_name" not in captured_options[0]
 
 
+def test_run_comparison_suite_supports_custom_algorithm(tmp_path):
+    source_dir = tmp_path / "codes"
+    source_dir.mkdir()
+    (source_dir / "a.py").write_text("return 1\n", encoding="utf-8")
+    (source_dir / "b.py").write_text("return 1\n", encoding="utf-8")
+    (source_dir / "c.py").write_text("return 2\n", encoding="utf-8")
+    algorithm_path = tmp_path / "algo.py"
+    algorithm_path.write_text(
+        "\n".join(
+            [
+                "def score_pair(code_a, code_b, bias=0.0):",
+                "    return (1.0 if code_a == code_b else 0.0) + float(bias)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    reproducibility_path = tmp_path / "repro.json"
+
+    summary, result_frames = run_comparison_suite(
+        source_dir,
+        [
+            {
+                "run_name": "custom_exact",
+                "algorithm_path": str(algorithm_path),
+                "algorithm_options": {"bias": 0.1},
+                "number_results": 2,
+            },
+        ],
+        reproducibility_out=reproducibility_path,
+    )
+
+    assert summary.loc[0, "feature_set"] == "custom"
+    assert summary.loc[0, "algorithm_options"] == '{"bias": 0.1}'
+    assert summary.loc[0, "algorithm_source_sha256"]
+    assert result_frames["custom_exact"].attrs["algorithm"]["algorithm_options"] == {"bias": 0.1}
+    payload = json.loads(reproducibility_path.read_text(encoding="utf-8"))
+    assert payload["source"]["source_type"] == "directory"
+    assert payload["run_metadata"]["runs"]["custom_exact"]["algorithm"]["algorithm_options"] == {"bias": 0.1}
+
+
 def test_run_comparison_suite_reports_progress_events(monkeypatch):
     def fake_get_sim_list(zipped_file, **kwargs):
         callback = kwargs.get("progress_callback")

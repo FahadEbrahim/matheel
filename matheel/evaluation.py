@@ -2,6 +2,12 @@ import math
 
 import pandas as pd
 
+from .algorithms import (
+    attach_algorithm_metadata,
+    prepare_algorithm_dataset,
+    resolve_pair_algorithm,
+    score_pair_with_algorithm,
+)
 from .calibration import evaluate_threshold
 from .datasets import PairDataset, RetrievalDataset, load_code_texts, load_pair_dataset, load_retrieval_dataset
 from .resampling import summarize_metric_samples
@@ -13,18 +19,42 @@ def score_pair_dataset(
     scorer=None,
     similarity_options=None,
     score_column="similarity_score",
+    *,
+    algorithm=None,
+    algorithm_options=None,
 ):
     if not isinstance(dataset, PairDataset):
         dataset = load_pair_dataset(dataset)
+    if scorer is not None and algorithm is not None:
+        raise ValueError("Use either scorer or algorithm, not both.")
     texts = load_code_texts(dataset)
     options = dict(similarity_options or {})
+    resolved_algorithm = resolve_pair_algorithm(algorithm) if algorithm is not None else None
+    dataset_context = (
+        prepare_algorithm_dataset(
+            resolved_algorithm,
+            dataset,
+            algorithm_options=algorithm_options,
+        )
+        if resolved_algorithm is not None
+        else None
+    )
     rows = []
     for pair in dataset.pairs.to_dict(orient="records"):
         left_id = str(pair["left_id"])
         right_id = str(pair["right_id"])
         left_text = texts[left_id]
         right_text = texts[right_id]
-        if scorer is None:
+        if resolved_algorithm is not None:
+            score = score_pair_with_algorithm(
+                left_text,
+                right_text,
+                resolved_algorithm,
+                algorithm_options=algorithm_options,
+                dataset_context=dataset_context,
+                row=pair,
+            )
+        elif scorer is None:
             score = calculate_similarity(left_text, right_text, **options)
         else:
             score = scorer(left_text, right_text, pair)
@@ -34,7 +64,10 @@ def score_pair_dataset(
         row = dict(pair)
         row[score_column] = numeric_score
         rows.append(row)
-    return pd.DataFrame(rows)
+    scored = pd.DataFrame(rows)
+    if resolved_algorithm is not None:
+        attach_algorithm_metadata(scored, resolved_algorithm, algorithm_options=algorithm_options)
+    return scored
 
 
 def pair_classification_metrics(
@@ -63,12 +96,17 @@ def evaluate_pair_dataset(
     scorer=None,
     similarity_options=None,
     score_column="similarity_score",
+    *,
+    algorithm=None,
+    algorithm_options=None,
 ):
     scored_pairs = score_pair_dataset(
         dataset,
         scorer=scorer,
         similarity_options=similarity_options,
         score_column=score_column,
+        algorithm=algorithm,
+        algorithm_options=algorithm_options,
     )
     metrics = pair_classification_metrics(
         scored_pairs,
@@ -83,12 +121,27 @@ def score_retrieval_dataset(
     scorer=None,
     similarity_options=None,
     score_column="similarity_score",
+    *,
+    algorithm=None,
+    algorithm_options=None,
 ):
     if not isinstance(dataset, RetrievalDataset):
         dataset = load_retrieval_dataset(dataset)
+    if scorer is not None and algorithm is not None:
+        raise ValueError("Use either scorer or algorithm, not both.")
     texts = load_code_texts(dataset)
     options = dict(similarity_options or {})
     qrels_lookup = _qrels_lookup(dataset.qrels)
+    resolved_algorithm = resolve_pair_algorithm(algorithm) if algorithm is not None else None
+    dataset_context = (
+        prepare_algorithm_dataset(
+            resolved_algorithm,
+            dataset,
+            algorithm_options=algorithm_options,
+        )
+        if resolved_algorithm is not None
+        else None
+    )
     rows = []
 
     query_rows = dataset.queries.to_dict(orient="records")
@@ -108,7 +161,16 @@ def score_retrieval_dataset(
                 "document_file_id": document_file_id,
                 "relevance": float(qrels_lookup.get((query_id, document_id), 0.0)),
             }
-            if scorer is None:
+            if resolved_algorithm is not None:
+                score = score_pair_with_algorithm(
+                    query_text,
+                    document_text,
+                    resolved_algorithm,
+                    algorithm_options=algorithm_options,
+                    dataset_context=dataset_context,
+                    row=row,
+                )
+            elif scorer is None:
                 score = calculate_similarity(query_text, document_text, **options)
             else:
                 score = scorer(query_text, document_text, row)
@@ -118,7 +180,10 @@ def score_retrieval_dataset(
             row[score_column] = numeric_score
             rows.append(row)
 
-    return pd.DataFrame(rows)
+    scored = pd.DataFrame(rows)
+    if resolved_algorithm is not None:
+        attach_algorithm_metadata(scored, resolved_algorithm, algorithm_options=algorithm_options)
+    return scored
 
 
 def retrieval_ranking_metrics(
@@ -204,6 +269,9 @@ def evaluate_retrieval_dataset(
     scorer=None,
     similarity_options=None,
     score_column="similarity_score",
+    *,
+    algorithm=None,
+    algorithm_options=None,
 ):
     if not isinstance(dataset, RetrievalDataset):
         dataset = load_retrieval_dataset(dataset)
@@ -212,6 +280,8 @@ def evaluate_retrieval_dataset(
         scorer=scorer,
         similarity_options=similarity_options,
         score_column=score_column,
+        algorithm=algorithm,
+        algorithm_options=algorithm_options,
     )
     metrics = retrieval_ranking_metrics(
         scored_results,
