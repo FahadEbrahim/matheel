@@ -1,7 +1,10 @@
+import json
+
 from click.testing import CliRunner
 import pandas as pd
 
 from matheel.cli import main
+from matheel.datasets import write_pair_dataset
 
 
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
@@ -254,6 +257,50 @@ def test_compare_command_rejects_inactive_code_metric_weight(tmp_path):
     assert result.exit_code != 0
     assert isinstance(result.exception, ValueError)
     assert "code_metric_weight requires an active code_metric" in str(result.exception)
+
+
+def test_evaluate_pairs_command_writes_scores_and_metrics(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "c", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+            ]
+        ),
+    )
+    scores_path = tmp_path / "scores.csv"
+    metrics_path = tmp_path / "metrics.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-pairs",
+            str(dataset_root),
+            "--threshold",
+            "0.8",
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert scores_path.exists()
+    assert metrics_path.exists()
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert metrics["pair_count"] == 2
+    assert "accuracy=" in result.output
 
 
 def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
