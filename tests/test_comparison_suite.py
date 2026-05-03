@@ -149,6 +149,63 @@ def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):
     assert "0.9877" in strong_details_text
 
 
+def test_run_comparison_suite_marks_backend_inactive_without_semantic_feature(monkeypatch):
+    def fake_get_sim_list(zipped_file, **kwargs):
+        _ = (zipped_file, kwargs)
+        return pd.DataFrame(
+            [
+                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 1.0},
+            ]
+        )
+
+    monkeypatch.setattr("matheel.comparison_suite.get_sim_list", fake_get_sim_list)
+    times = iter([10.0, 10.25])
+    monkeypatch.setattr("matheel.comparison_suite.perf_counter", lambda: next(times))
+
+    summary, _ = run_comparison_suite(
+        "codes.zip",
+        [
+            {
+                "run_name": "lexical",
+                "feature_weights": {"levenshtein": 1.0},
+                "number_results": 10,
+            },
+        ],
+    )
+
+    assert summary.loc[0, "feature_set"] == "levenshtein"
+    assert summary.loc[0, "vector_backend"] == "inactive"
+
+
+def test_run_comparison_suite_keeps_backend_when_semantic_feature_is_active(monkeypatch):
+    def fake_get_sim_list(zipped_file, **kwargs):
+        _ = (zipped_file, kwargs)
+        return pd.DataFrame(
+            [
+                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 1.0},
+            ]
+        )
+
+    monkeypatch.setattr("matheel.comparison_suite.get_sim_list", fake_get_sim_list)
+    times = iter([10.0, 10.25])
+    monkeypatch.setattr("matheel.comparison_suite.perf_counter", lambda: next(times))
+
+    summary, _ = run_comparison_suite(
+        "codes.zip",
+        [
+            {
+                "run_name": "semantic",
+                "feature_weights": {"semantic": 1.0},
+                "vector_backend": "sentence_transformers",
+                "number_results": 10,
+            },
+        ],
+    )
+
+    assert summary.loc[0, "feature_set"] == "semantic"
+    assert summary.loc[0, "vector_backend"] == "sentence_transformers"
+
+
 def test_run_comparison_suite_accepts_already_normalized_configs(monkeypatch):
     captured_options = []
 

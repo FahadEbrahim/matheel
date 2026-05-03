@@ -192,6 +192,51 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert "features=code_metric,semantic" in result.stderr
 
 
+def test_compare_command_marks_backend_inactive_without_semantic_feature(tmp_path, monkeypatch):
+    archive_path = tmp_path / "codes.zip"
+    archive_path.write_bytes(b"placeholder")
+
+    def fake_get_sim_list(*args, **kwargs):
+        _ = (args, kwargs)
+        frame = pd.DataFrame(
+            [
+                {
+                    "file_name_1": "a.py",
+                    "file_name_2": "b.py",
+                    "similarity_score": 1.0,
+                }
+            ]
+        )
+        frame.attrs.update(
+            {
+                "elapsed_seconds": 0.5,
+                "feature_set": "levenshtein",
+                "vector_backend": "inactive",
+                "code_metric": "none",
+                "chunking_method": "none",
+            }
+        )
+        return frame
+
+    monkeypatch.setattr("matheel.cli.get_sim_list", fake_get_sim_list)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "compare",
+            str(archive_path),
+            "--feature-weight",
+            "levenshtein=1.0",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "features=levenshtein" in result.stderr
+    assert "backend=inactive" in result.stderr
+    assert "backend=auto" not in result.stderr
+
+
 def test_compare_command_accepts_directory_source(tmp_path, monkeypatch):
     source_dir = tmp_path / "codes"
     source_dir.mkdir()

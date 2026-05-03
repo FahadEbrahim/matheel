@@ -6,7 +6,12 @@ import pandas as pd
 
 from .feature_weights import default_feature_weights, parse_feature_weights
 from ._progress import progress_iter
-from ._run_metadata import elapsed_seconds_between, format_feature_set, perf_counter
+from ._run_metadata import (
+    elapsed_seconds_between,
+    format_feature_set,
+    perf_counter,
+    semantic_vector_backend_metadata,
+)
 from .similarity import DEFAULT_MODEL_NAME, get_sim_list
 
 
@@ -233,10 +238,14 @@ def _resolved_elapsed_seconds(results, elapsed_seconds):
 def _summary_metadata(options, results, elapsed_seconds):
     attrs = getattr(results, "attrs", {}) if results is not None else {}
     feature_weights = options.get("feature_weights")
+    vector_backend = attrs.get("vector_backend") or semantic_vector_backend_metadata(
+        feature_weights,
+        options.get("vector_backend", "auto"),
+    )
     return {
         "elapsed_seconds": round(float(elapsed_seconds), _SCORE_DECIMALS),
         "feature_set": attrs.get("feature_set") or format_feature_set(feature_weights),
-        "vector_backend": attrs.get("vector_backend") or options.get("vector_backend", "auto"),
+        "vector_backend": vector_backend,
         "code_metric": attrs.get("code_metric") or options.get("code_metric", "none"),
         "chunking_method": attrs.get("chunking_method") or options.get("chunking_method", "none"),
     }

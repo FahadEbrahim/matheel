@@ -475,9 +475,34 @@ def test_get_sim_list_reports_progress_events(tmp_path):
     assert pair_events[-1]["current"] == 3
     assert results.attrs["elapsed_seconds"] >= 0.0
     assert results.attrs["feature_set"] == "levenshtein"
-    assert results.attrs["vector_backend"] == "sentence_transformers"
+    assert results.attrs["vector_backend"] == "inactive"
     assert results.attrs["code_metric"] == "none"
     assert results.attrs["chunking_method"] == "none"
+
+
+def test_get_sim_list_keeps_vector_backend_metadata_when_semantic_is_active(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        similarity,
+        "load_backend_model",
+        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: FakeModel(),
+    )
+
+    source_dir = tmp_path / "codes"
+    source_dir.mkdir()
+    (source_dir / "a.py").write_text("alpha beta", encoding="utf-8")
+    (source_dir / "b.py").write_text("alpha gamma", encoding="utf-8")
+
+    results = similarity.get_sim_list(
+        source_dir,
+        model_name="fake",
+        threshold=0.0,
+        number_results=5,
+        feature_weights={"semantic": 1.0},
+        vector_backend="sentence_transformers",
+    )
+
+    assert results.attrs["feature_set"] == "semantic"
+    assert results.attrs["vector_backend"] == "sentence_transformers"
 
 
 def test_calculate_similarity_reports_progress_events():
