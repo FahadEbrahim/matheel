@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
 from ._progress import should_show_progress
@@ -23,6 +24,7 @@ from .datasets import (
     load_retrieval_datasets_from_manifest,
 )
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
+from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
 from .similarity import DEFAULT_MODEL_NAME, available_runtime_devices, get_sim_list
 from .chunking import available_chunk_aggregations, available_chunking_methods
 from .model_routing import available_vector_backends
@@ -47,6 +49,46 @@ def _parse_dataset_adapter_options(entries):
             raise click.UsageError("--adapter-option values must use name=value.")
         options[key] = value
     return options
+
+
+def _coerce_cli_option_value(raw_value):
+    text = str(raw_value).strip()
+    lowered = text.lower()
+    if lowered == "true":
+        return True
+    if lowered == "false":
+        return False
+    if lowered in {"none", "null"}:
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        return text
+
+
+def _parse_algorithm_options(entries):
+    options = {}
+    for entry in entries or ():
+        key, separator, value = str(entry).partition("=")
+        key = key.strip()
+        if not separator or not key:
+            raise click.UsageError("--algorithm-option values must use name=value.")
+        options[key] = _coerce_cli_option_value(value)
+    try:
+        return normalize_algorithm_options(options)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+
+def _write_cli_reproducibility(output_path, source_path, run_name, options, results):
+    if not output_path:
+        return None
+    snapshot = collect_reproducibility_snapshot(
+        source_path,
+        run_configs=[{"run_name": run_name, "options": options}],
+        result_attrs=getattr(results, "attrs", {}),
+    )
+    return write_reproducibility_snapshot(snapshot, output_path)
 
 
 def _dataset_spec_from_cli(
@@ -503,6 +545,24 @@ def datasets_adapt(
 @click.option('--threshold', default=0.0, help='Similarity Threshold')
 @click.option('--num', default=10, help='Number of Results to Display')
 @click.option(
+    '--algorithm-path',
+    default=None,
+    type=click.Path(exists=True, dir_okay=False),
+    help='Optional Python module/file path that defines score_pair for custom scoring.',
+)
+@click.option(
+    '--algorithm-option',
+    'algorithm_options',
+    multiple=True,
+    help='Custom algorithm option as name=value. JSON values are supported.',
+)
+@click.option(
+    '--reproducibility-out',
+    type=click.Path(),
+    default=None,
+    help='Optional path to write reproducibility metadata JSON.',
+)
+@click.option(
     '--progress/--no-progress',
     default=None,
     help='Show progress bars on stderr. Defaults to auto for interactive terminals.',
@@ -567,70 +627,107 @@ def compare(
     device,
     threshold,
     num,
+    algorithm_path,
+    algorithm_options,
+    reproducibility_out,
     progress,
 ):
     """Bulk similarity from a ZIP archive or a directory."""
-    results = get_sim_list(
+    show_progress = should_show_progress(progress, stream=sys.stderr)
+    parsed_algorithm_options = _parse_algorithm_options(algorithm_options)
+    if parsed_algorithm_options and not algorithm_path:
+        raise click.UsageError("--algorithm-option requires --algorithm-path.")
+    if algorithm_path:
+        results = score_source_pairs_with_algorithm(
+            source_path,
+            algorithm=algorithm_path,
+            preprocess_mode=preprocess_mode,
+            code_language=code_language,
+            algorithm_options=parsed_algorithm_options,
+            threshold=threshold,
+            number_results=num,
+            progress=show_progress,
+        )
+    else:
+        results = get_sim_list(
+            source_path,
+            model_name=model,
+            threshold=threshold,
+            number_results=num,
+            feature_weights=feature_weights,
+            preprocess_mode=preprocess_mode,
+            chunking_method=chunking_method,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            max_chunks=max_chunks,
+            chunk_language=chunk_language,
+            chunker_options=chunker_options,
+            chunk_aggregation=chunk_aggregation,
+            code_metric=code_metric,
+            code_metric_weight=code_metric_weight,
+            code_language=code_language,
+            codebleu_component_weights=codebleu_component_weights,
+            crystalbleu_max_order=crystalbleu_max_order,
+            crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
+            ruby_max_order=ruby_max_order,
+            ruby_epsilon=ruby_epsilon,
+            ruby_mode=ruby_mode,
+            ruby_tokenizer=ruby_tokenizer,
+            ruby_denominator=ruby_denominator,
+            ruby_graph_timeout_seconds=ruby_graph_timeout_seconds,
+            ruby_graph_use_edge_cost=ruby_graph_use_edge_cost,
+            ruby_graph_include_leaf_edges=ruby_graph_include_leaf_edges,
+            ruby_tree_max_nodes=ruby_tree_max_nodes,
+            ruby_tree_max_depth=ruby_tree_max_depth,
+            ruby_tree_max_children=ruby_tree_max_children,
+            tsed_delete_cost=tsed_delete_cost,
+            tsed_insert_cost=tsed_insert_cost,
+            tsed_rename_cost=tsed_rename_cost,
+            tsed_max_nodes=tsed_max_nodes,
+            tsed_max_depth=tsed_max_depth,
+            tsed_max_children=tsed_max_children,
+            codebertscore_model=codebertscore_model,
+            codebertscore_num_layers=(
+                None if int(codebertscore_num_layers or 0) <= 0 else int(codebertscore_num_layers)
+            ),
+            codebertscore_batch_size=codebertscore_batch_size,
+            codebertscore_max_length=codebertscore_max_length,
+            codebertscore_device=codebertscore_device,
+            codebertscore_lang=(str(codebertscore_lang).strip() or None),
+            codebertscore_idf=codebertscore_idf,
+            codebertscore_rescale_with_baseline=codebertscore_rescale_with_baseline,
+            codebertscore_use_fast_tokenizer=codebertscore_use_fast_tokenizer,
+            codebertscore_nthreads=codebertscore_nthreads,
+            codebertscore_verbose=codebertscore_verbose,
+            levenshtein_weights=levenshtein_weights,
+            jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+            winnowing_kgram=winnowing_kgram,
+            winnowing_window=winnowing_window,
+            gst_min_match_length=gst_min_match_length,
+            vector_backend=vector_backend,
+            similarity_function=similarity_function,
+            normalize_semantic_scores=normalize_semantic_scores,
+            static_vector_dim=static_vector_dim,
+            max_token_length=max_token_length,
+            pooling_method=pooling_method,
+            device=device,
+            progress=show_progress,
+        )
+    _write_cli_reproducibility(
+        reproducibility_out,
         source_path,
-        model_name=model,
-        threshold=threshold,
-        number_results=num,
-        feature_weights=feature_weights,
-        preprocess_mode=preprocess_mode,
-        chunking_method=chunking_method,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        max_chunks=max_chunks,
-        chunk_language=chunk_language,
-        chunker_options=chunker_options,
-        chunk_aggregation=chunk_aggregation,
-        code_metric=code_metric,
-        code_metric_weight=code_metric_weight,
-        code_language=code_language,
-        codebleu_component_weights=codebleu_component_weights,
-        crystalbleu_max_order=crystalbleu_max_order,
-        crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
-        ruby_max_order=ruby_max_order,
-        ruby_epsilon=ruby_epsilon,
-        ruby_mode=ruby_mode,
-        ruby_tokenizer=ruby_tokenizer,
-        ruby_denominator=ruby_denominator,
-        ruby_graph_timeout_seconds=ruby_graph_timeout_seconds,
-        ruby_graph_use_edge_cost=ruby_graph_use_edge_cost,
-        ruby_graph_include_leaf_edges=ruby_graph_include_leaf_edges,
-        ruby_tree_max_nodes=ruby_tree_max_nodes,
-        ruby_tree_max_depth=ruby_tree_max_depth,
-        ruby_tree_max_children=ruby_tree_max_children,
-        tsed_delete_cost=tsed_delete_cost,
-        tsed_insert_cost=tsed_insert_cost,
-        tsed_rename_cost=tsed_rename_cost,
-        tsed_max_nodes=tsed_max_nodes,
-        tsed_max_depth=tsed_max_depth,
-        tsed_max_children=tsed_max_children,
-        codebertscore_model=codebertscore_model,
-        codebertscore_num_layers=(None if int(codebertscore_num_layers or 0) <= 0 else int(codebertscore_num_layers)),
-        codebertscore_batch_size=codebertscore_batch_size,
-        codebertscore_max_length=codebertscore_max_length,
-        codebertscore_device=codebertscore_device,
-        codebertscore_lang=(str(codebertscore_lang).strip() or None),
-        codebertscore_idf=codebertscore_idf,
-        codebertscore_rescale_with_baseline=codebertscore_rescale_with_baseline,
-        codebertscore_use_fast_tokenizer=codebertscore_use_fast_tokenizer,
-        codebertscore_nthreads=codebertscore_nthreads,
-        codebertscore_verbose=codebertscore_verbose,
-        levenshtein_weights=levenshtein_weights,
-        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
-        winnowing_kgram=winnowing_kgram,
-        winnowing_window=winnowing_window,
-        gst_min_match_length=gst_min_match_length,
-        vector_backend=vector_backend,
-        similarity_function=similarity_function,
-        normalize_semantic_scores=normalize_semantic_scores,
-        static_vector_dim=static_vector_dim,
-        max_token_length=max_token_length,
-        pooling_method=pooling_method,
-        device=device,
-        progress=should_show_progress(progress, stream=sys.stderr),
+        "compare",
+        {
+            "algorithm_path": algorithm_path,
+            "algorithm_options": parsed_algorithm_options,
+            "model_name": model,
+            "threshold": threshold,
+            "number_results": num,
+            "feature_weights": feature_weights,
+            "preprocess_mode": preprocess_mode,
+            "code_language": code_language,
+        },
+        results,
     )
     click.echo(results.to_string(index=False))
     click.echo(_elapsed_summary_text(results), err=True)
@@ -662,11 +759,17 @@ def compare(
     help="Summary file format.",
 )
 @click.option(
+    "--reproducibility-out",
+    type=click.Path(),
+    default=None,
+    help="Optional path to write reproducibility metadata JSON.",
+)
+@click.option(
     "--progress/--no-progress",
     default=None,
     help="Show progress bars on stderr. Defaults to auto for interactive terminals.",
 )
-def compare_suite(source_path, config_file, summary_out, details_dir, output_format, progress):
+def compare_suite(source_path, config_file, summary_out, details_dir, output_format, reproducibility_out, progress):
     """Run multiple similarity configurations from a JSON config file."""
     run_configs = load_run_configs(config_file)
     summary, _ = run_comparison_suite(
@@ -675,6 +778,7 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
         summary_out=summary_out,
         details_dir=details_dir,
         output_format=output_format,
+        reproducibility_out=reproducibility_out,
         progress=should_show_progress(progress, stream=sys.stderr),
     )
     if summary.empty:
@@ -713,6 +817,24 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
 @click.option("--scores-out", type=click.Path(), default="scored_pairs.csv", show_default=True)
 @click.option("--metrics-out", type=click.Path(), default="pair_metrics.json", show_default=True)
 @click.option("--threshold", default=0.5, show_default=True, help="Classification threshold.")
+@click.option(
+    "--algorithm-path",
+    default=None,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Optional Python module/file path that defines score_pair for custom scoring.",
+)
+@click.option(
+    "--algorithm-option",
+    "algorithm_options",
+    multiple=True,
+    help="Custom algorithm option as name=value. JSON values are supported.",
+)
+@click.option(
+    "--reproducibility-out",
+    type=click.Path(),
+    default=None,
+    help="Optional path to write reproducibility metadata JSON.",
+)
 @click.option(
     "--feature-weight",
     "feature_weights",
@@ -777,6 +899,9 @@ def evaluate_pairs(
     scores_out,
     metrics_out,
     threshold,
+    algorithm_path,
+    algorithm_options,
+    reproducibility_out,
     feature_weights,
     model,
     preprocess_mode,
@@ -825,28 +950,54 @@ def evaluate_pairs(
             )
         )
     selected_weights = feature_weights or ("levenshtein=1.0",)
-    scored_pairs, metrics = evaluate_pair_dataset(
-        resolved_dataset,
-        threshold=threshold,
-        similarity_options={
-            "feature_weights": selected_weights,
-            "model_name": model,
-            "preprocess_mode": preprocess_mode,
-            "code_language": code_language,
-            "vector_backend": vector_backend,
-            "similarity_function": similarity_function,
-            "normalize_semantic_scores": normalize_semantic_scores,
-            "max_token_length": max_token_length,
-            "pooling_method": pooling_method,
-            "device": device,
-        },
-    )
+    parsed_algorithm_options = _parse_algorithm_options(algorithm_options)
+    if algorithm_path:
+        scored_pairs, metrics = evaluate_pair_dataset(
+            resolved_dataset,
+            threshold=threshold,
+            algorithm=algorithm_path,
+            algorithm_options=parsed_algorithm_options,
+        )
+    else:
+        if parsed_algorithm_options:
+            raise click.UsageError("--algorithm-option requires --algorithm-path.")
+        scored_pairs, metrics = evaluate_pair_dataset(
+            resolved_dataset,
+            threshold=threshold,
+            similarity_options={
+                "feature_weights": selected_weights,
+                "model_name": model,
+                "preprocess_mode": preprocess_mode,
+                "code_language": code_language,
+                "vector_backend": vector_backend,
+                "similarity_function": similarity_function,
+                "normalize_semantic_scores": normalize_semantic_scores,
+                "max_token_length": max_token_length,
+                "pooling_method": pooling_method,
+                "device": device,
+            },
+        )
     scores_path = Path(scores_out)
     metrics_path = Path(metrics_out)
     scores_path.parent.mkdir(parents=True, exist_ok=True)
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     scored_pairs.to_csv(scores_path, index=False)
     metrics_path.write_text(json.dumps(metrics, indent=2, sort_keys=True), encoding="utf-8")
+    _write_cli_reproducibility(
+        reproducibility_out,
+        resolved_dataset.root,
+        "evaluate_pairs",
+        {
+            "algorithm_path": algorithm_path,
+            "algorithm_options": parsed_algorithm_options,
+            "threshold": threshold,
+            "feature_weights": selected_weights,
+            "model_name": model,
+            "preprocess_mode": preprocess_mode,
+            "code_language": code_language,
+        },
+        scored_pairs,
+    )
     click.echo(f"Wrote {len(scored_pairs)} scored pair(s) to {scores_path}.")
     click.echo(f"Wrote metrics to {metrics_path}.")
     click.echo(
@@ -887,6 +1038,24 @@ def evaluate_pairs(
 @click.option("--scores-out", type=click.Path(), default="scored_retrieval.csv", show_default=True)
 @click.option("--metrics-out", type=click.Path(), default="retrieval_metrics.json", show_default=True)
 @click.option("--k", default=10, show_default=True, help="Ranking cutoff for top-k metrics.")
+@click.option(
+    "--algorithm-path",
+    default=None,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Optional Python module/file path that defines score_pair for custom scoring.",
+)
+@click.option(
+    "--algorithm-option",
+    "algorithm_options",
+    multiple=True,
+    help="Custom algorithm option as name=value. JSON values are supported.",
+)
+@click.option(
+    "--reproducibility-out",
+    type=click.Path(),
+    default=None,
+    help="Optional path to write reproducibility metadata JSON.",
+)
 @click.option(
     "--feature-weight",
     "feature_weights",
@@ -951,6 +1120,9 @@ def evaluate_retrieval(
     scores_out,
     metrics_out,
     k,
+    algorithm_path,
+    algorithm_options,
+    reproducibility_out,
     feature_weights,
     model,
     preprocess_mode,
@@ -999,28 +1171,54 @@ def evaluate_retrieval(
             )
         )
     selected_weights = feature_weights or ("levenshtein=1.0",)
-    scored_results, metrics = evaluate_retrieval_dataset(
-        resolved_dataset,
-        k=k,
-        similarity_options={
-            "feature_weights": selected_weights,
-            "model_name": model,
-            "preprocess_mode": preprocess_mode,
-            "code_language": code_language,
-            "vector_backend": vector_backend,
-            "similarity_function": similarity_function,
-            "normalize_semantic_scores": normalize_semantic_scores,
-            "max_token_length": max_token_length,
-            "pooling_method": pooling_method,
-            "device": device,
-        },
-    )
+    parsed_algorithm_options = _parse_algorithm_options(algorithm_options)
+    if algorithm_path:
+        scored_results, metrics = evaluate_retrieval_dataset(
+            resolved_dataset,
+            k=k,
+            algorithm=algorithm_path,
+            algorithm_options=parsed_algorithm_options,
+        )
+    else:
+        if parsed_algorithm_options:
+            raise click.UsageError("--algorithm-option requires --algorithm-path.")
+        scored_results, metrics = evaluate_retrieval_dataset(
+            resolved_dataset,
+            k=k,
+            similarity_options={
+                "feature_weights": selected_weights,
+                "model_name": model,
+                "preprocess_mode": preprocess_mode,
+                "code_language": code_language,
+                "vector_backend": vector_backend,
+                "similarity_function": similarity_function,
+                "normalize_semantic_scores": normalize_semantic_scores,
+                "max_token_length": max_token_length,
+                "pooling_method": pooling_method,
+                "device": device,
+            },
+        )
     scores_path = Path(scores_out)
     metrics_path = Path(metrics_out)
     scores_path.parent.mkdir(parents=True, exist_ok=True)
     metrics_path.parent.mkdir(parents=True, exist_ok=True)
     scored_results.to_csv(scores_path, index=False)
     metrics_path.write_text(json.dumps(metrics, indent=2, sort_keys=True), encoding="utf-8")
+    _write_cli_reproducibility(
+        reproducibility_out,
+        resolved_dataset.root,
+        "evaluate_retrieval",
+        {
+            "algorithm_path": algorithm_path,
+            "algorithm_options": parsed_algorithm_options,
+            "k": k,
+            "feature_weights": selected_weights,
+            "model_name": model,
+            "preprocess_mode": preprocess_mode,
+            "code_language": code_language,
+        },
+        scored_results,
+    )
     click.echo(f"Wrote {len(scored_results)} scored retrieval result(s) to {scores_path}.")
     click.echo(f"Wrote metrics to {metrics_path}.")
     click.echo(
@@ -1038,10 +1236,14 @@ def _elapsed_summary_text(results):
     vector_backend = results.attrs.get("vector_backend", "auto")
     code_metric = results.attrs.get("code_metric", "none")
     chunking_method = results.attrs.get("chunking_method", "none")
-    return (
+    summary = (
         f"Elapsed: {elapsed_seconds:.4f}s | "
         f"features={feature_set} | "
         f"backend={vector_backend} | "
         f"code_metric={code_metric} | "
         f"chunking={chunking_method}"
     )
+    algorithm = results.attrs.get("algorithm")
+    if algorithm:
+        summary = f"{summary} | algorithm={algorithm.get('algorithm_name')}"
+    return summary

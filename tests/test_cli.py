@@ -265,6 +265,48 @@ def test_compare_command_accepts_directory_source(tmp_path, monkeypatch):
     assert captured["args"][0] == str(source_dir)
 
 
+def test_compare_command_loads_custom_algorithm_and_writes_reproducibility(tmp_path):
+    source_dir = tmp_path / "codes"
+    source_dir.mkdir()
+    (source_dir / "a.py").write_text("print(1)\n", encoding="utf-8")
+    (source_dir / "b.py").write_text("print(1)\n", encoding="utf-8")
+    algorithm_path = tmp_path / "algo.py"
+    algorithm_path.write_text(
+        "\n".join(
+            [
+                "def score_pair(code_a, code_b, bias=0.0, **kwargs):",
+                "    _ = kwargs",
+                "    return (1.0 if code_a == code_b else 0.0) + float(bias)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    reproducibility_path = tmp_path / "repro.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "compare",
+            str(source_dir),
+            "--algorithm-path",
+            str(algorithm_path),
+            "--algorithm-option",
+            "bias=0.2",
+            "--reproducibility-out",
+            str(reproducibility_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "1.2" in result.output
+    assert "features=custom" in result.stderr
+    payload = json.loads(reproducibility_path.read_text(encoding="utf-8"))
+    assert payload["source"]["source_type"] == "directory"
+    assert payload["run_metadata"]["algorithm"]["algorithm_options"] == {"bias": 0.2}
+    assert len(payload["run_metadata"]["algorithm"]["algorithm_source_fingerprint"]["sha256"]) == 64
+
+
 def test_compare_command_rejects_regular_file_source(tmp_path):
     source_file = tmp_path / "single.py"
     source_file.write_text("print(1)", encoding="utf-8")
@@ -582,6 +624,64 @@ def test_evaluate_pairs_command_writes_scores_and_metrics(tmp_path):
     assert "accuracy=" in result.output
 
 
+def test_evaluate_pairs_command_uses_custom_algorithm(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "c", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+            ]
+        ),
+    )
+    algorithm_path = tmp_path / "pair_algo.py"
+    algorithm_path.write_text(
+        "\n".join(
+            [
+                "def score_pair(code_a, code_b, bias=0.0):",
+                "    return (1.0 if code_a == code_b else 0.0) + float(bias)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    scores_path = tmp_path / "custom_scores.csv"
+    metrics_path = tmp_path / "custom_metrics.json"
+    reproducibility_path = tmp_path / "custom_repro.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-pairs",
+            str(dataset_root),
+            "--algorithm-path",
+            str(algorithm_path),
+            "--algorithm-option",
+            "bias=0.1",
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+            "--reproducibility-out",
+            str(reproducibility_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    scored = pd.read_csv(scores_path)
+    assert scored["similarity_score"].tolist() == [1.1, 0.1]
+    payload = json.loads(reproducibility_path.read_text(encoding="utf-8"))
+    assert payload["run_metadata"]["algorithm"]["algorithm_options"] == {"bias": 0.1}
+
+
 def test_evaluate_pairs_command_loads_tabular_adapter_spec(tmp_path):
     raw_root = tmp_path / "raw_pairs"
     raw_root.mkdir()
@@ -792,6 +892,67 @@ def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
     assert "map=" in result.output
 
 
+def test_evaluate_retrieval_command_uses_custom_algorithm(tmp_path):
+    dataset_root = tmp_path / "retrieval"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "query_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "doc_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "doc_b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "query_a"}]),
+        corpus=pd.DataFrame(
+            [
+                {"document_id": "d1", "file_id": "doc_a"},
+                {"document_id": "d2", "file_id": "doc_b"},
+            ]
+        ),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+    )
+    algorithm_path = tmp_path / "retrieval_algo.py"
+    algorithm_path.write_text(
+        "\n".join(
+            [
+                "def score_pair(code_a, code_b, bias=0.0, row=None):",
+                "    return (1.0 if code_a == code_b else 0.0) + float(bias)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    scores_path = tmp_path / "custom_retrieval_scores.csv"
+    metrics_path = tmp_path / "custom_retrieval_metrics.json"
+    reproducibility_path = tmp_path / "custom_retrieval_repro.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-retrieval",
+            str(dataset_root),
+            "--algorithm-path",
+            str(algorithm_path),
+            "--algorithm-option",
+            "bias=0.1",
+            "--k",
+            "1",
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+            "--reproducibility-out",
+            str(reproducibility_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert pd.read_csv(scores_path)["similarity_score"].tolist() == [1.1, 0.1]
+    payload = json.loads(reproducibility_path.read_text(encoding="utf-8"))
+    assert payload["run_metadata"]["algorithm"]["algorithm_options"] == {"bias": 0.1}
+
+
 def test_evaluate_retrieval_command_loads_tabular_adapter_spec(tmp_path):
     raw_root = tmp_path / "raw_retrieval"
     raw_root.mkdir()
@@ -957,6 +1118,7 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
         summary_out,
         details_dir,
         output_format,
+        reproducibility_out,
         progress,
     ):
         captured["zipfile"] = zipfile
@@ -964,6 +1126,7 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
         captured["summary_out"] = summary_out
         captured["details_dir"] = details_dir
         captured["output_format"] = output_format
+        captured["reproducibility_out"] = reproducibility_out
         captured["progress"] = progress
         return (
             pd.DataFrame(
@@ -1014,4 +1177,5 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
     assert captured["summary_out"].endswith("summary.json")
     assert captured["details_dir"].endswith("details")
     assert captured["output_format"] == "json"
+    assert captured["reproducibility_out"] is None
     assert captured["progress"] is True

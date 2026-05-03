@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
 from .feature_weights import default_feature_weights, parse_feature_weights
 from ._progress import progress_iter
 from ._run_metadata import (
@@ -12,6 +13,7 @@ from ._run_metadata import (
     perf_counter,
     semantic_vector_backend_metadata,
 )
+from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
 from .similarity import DEFAULT_MODEL_NAME, get_sim_list
 
 
@@ -62,13 +64,20 @@ def normalize_run_config(config, index=1):
         options["model_name"] = options.pop("model")
     if "num" in options and "number_results" not in options:
         options["number_results"] = options.pop("num")
-    _normalize_run_feature_weights(options)
+    if "algorithm_options" in options:
+        options["algorithm_options"] = normalize_algorithm_options(options["algorithm_options"])
 
-    options.setdefault("model_name", DEFAULT_MODEL_NAME)
+    if not _run_uses_custom_algorithm(options):
+        _normalize_run_feature_weights(options)
+        options.setdefault("model_name", DEFAULT_MODEL_NAME)
     options.setdefault("threshold", 0.0)
     options.setdefault("number_results", 10)
 
     return {"run_name": run_name, "options": options}
+
+
+def _run_uses_custom_algorithm(options):
+    return options.get("algorithm") is not None or options.get("algorithm_path") is not None
 
 
 def _normalize_run_feature_weights(options):
@@ -173,6 +182,7 @@ def run_comparison_suite(
     summary_out=None,
     details_dir=None,
     output_format="csv",
+    reproducibility_out=None,
     progress=False,
     progress_callback=None,
 ):
@@ -196,12 +206,29 @@ def run_comparison_suite(
         run_options.setdefault("progress", progress)
         run_options.setdefault("progress_callback", _run_progress_callback(progress_callback, run_name))
         start_time = perf_counter()
-        results = _rounded_score_frame(
-            get_sim_list(
-                zipped_file,
-                **run_options,
+        if _run_uses_custom_algorithm(run_options):
+            algorithm = run_options.pop("algorithm", None) or run_options.pop("algorithm_path")
+            algorithm_options = normalize_algorithm_options(run_options.pop("algorithm_options", None))
+            results = _rounded_score_frame(
+                score_source_pairs_with_algorithm(
+                    zipped_file,
+                    algorithm=algorithm,
+                    preprocess_mode=run_options.get("preprocess_mode", "none"),
+                    code_language=run_options.get("code_language"),
+                    algorithm_options=algorithm_options,
+                    threshold=run_options.get("threshold", 0.0),
+                    number_results=run_options.get("number_results", 10),
+                    progress=run_options.get("progress", False),
+                    progress_callback=run_options.get("progress_callback"),
+                )
             )
-        )
+        else:
+            results = _rounded_score_frame(
+                get_sim_list(
+                    zipped_file,
+                    **run_options,
+                )
+            )
         elapsed_seconds = elapsed_seconds_between(start_time, perf_counter())
         results.attrs["elapsed_seconds"] = elapsed_seconds
         result_frames[run_name] = results
@@ -221,6 +248,13 @@ def run_comparison_suite(
 
     if summary_out:
         write_summary(summary, summary_out, output_format=output_format)
+    if reproducibility_out:
+        snapshot = collect_reproducibility_snapshot(
+            zipped_file,
+            run_configs=normalized_runs,
+            result_attrs={"runs": {name: frame.attrs for name, frame in result_frames.items()}},
+        )
+        write_reproducibility_snapshot(snapshot, reproducibility_out)
 
     return summary, result_frames
 
@@ -242,12 +276,20 @@ def _summary_metadata(options, results, elapsed_seconds):
         feature_weights,
         options.get("vector_backend", "auto"),
     )
+    algorithm = attrs.get("algorithm") or {}
+    algorithm_fingerprint = algorithm.get("algorithm_source_fingerprint") or {}
+    algorithm_options = algorithm.get("algorithm_options")
     return {
         "elapsed_seconds": round(float(elapsed_seconds), _SCORE_DECIMALS),
         "feature_set": attrs.get("feature_set") or format_feature_set(feature_weights),
         "vector_backend": vector_backend,
         "code_metric": attrs.get("code_metric") or options.get("code_metric", "none"),
         "chunking_method": attrs.get("chunking_method") or options.get("chunking_method", "none"),
+        "algorithm_name": algorithm.get("algorithm_name") or "matheel",
+        "algorithm_function": algorithm.get("algorithm_function") or "calculate_similarity",
+        "algorithm_package_version": algorithm.get("algorithm_package_version") or "",
+        "algorithm_options": json.dumps(algorithm_options or {}, sort_keys=True),
+        "algorithm_source_sha256": algorithm_fingerprint.get("sha256") or "",
     }
 
 

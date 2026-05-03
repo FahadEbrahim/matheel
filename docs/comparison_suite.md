@@ -8,6 +8,7 @@ The comparison suite runs multiple configurations against the same directory or 
 
 This is the right interface for repeatable ablations, backend comparisons, and parameter sweeps.
 For calibrated decision thresholds, keep labels outside the suite output and use the score reports with the calibration helpers described in [Scoring and calibration](scoring.md).
+Custom `score_pair` modules can also be included when you need to compare project-specific algorithms with Matheel's built-in scorers.
 
 ## Main Functions
 
@@ -57,6 +58,7 @@ The suite normalizes a few convenience aliases:
 - `num` -> `number_results`
 
 If no weights are supplied, the suite applies Matheel’s default feature blend.
+For custom runs, provide `algorithm_path` and optional `algorithm_options`; feature weights are not required for those runs.
 
 ## Outputs
 
@@ -79,8 +81,14 @@ One row per run, including:
 - `vector_backend`
 - `code_metric`
 - `chunking_method`
+- `algorithm_name`
+- `algorithm_function`
+- `algorithm_package_version`
+- `algorithm_options`
+- `algorithm_source_sha256`
 
 `elapsed_seconds` is rounded to 4 decimal places. `feature_set` lists the active nonzero feature weights for the run.
+For custom algorithm runs, `feature_set` is `custom`.
 
 ### Optional Files
 
@@ -94,6 +102,8 @@ One row per run, including:
   Enables tqdm progress bars when set to `True`.
 - `progress_callback`
   Receives structured progress event dictionaries for run-level and pair-level work.
+- `reproducibility_out`
+  Writes a JSON snapshot with package versions, source fingerprint, normalized run configs, and run metadata.
 - Numeric score fields are rounded to 4 decimal places in suite output artifacts.
 
 ## Python Example
@@ -111,6 +121,15 @@ runs = [
         },
     },
     {
+        "run_name": "custom_exact_match",
+        "options": {
+            "algorithm_path": "./my_algorithm.py",
+            "algorithm_options": {"bias": 0.2},
+            "preprocess_mode": "basic",
+            "number_results": 20,
+        },
+    },
+    {
         "run_name": "code_metric_blend",
         "options": {
             "model_name": "huggingface/CodeBERTa-small-v1",
@@ -125,7 +144,12 @@ runs = [
     },
 ]
 
-summary, details = run_comparison_suite("sample_pairs.zip", runs, progress=True)
+summary, details = run_comparison_suite(
+    "sample_pairs.zip",
+    runs,
+    reproducibility_out="results/reproducibility.json",
+    progress=True,
+)
 print(summary)
 print(details["dense_baseline"].head())
 ```

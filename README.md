@@ -38,7 +38,7 @@ score = calculate_similarity(
 print(round(score, 4))
 ```
 
-See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semantic models, archives, comparison suites, chunking, preprocessing, and code metrics.
+See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semantic models, archives, comparison suites, custom algorithms, chunking, preprocessing, and code metrics.
 
 ## Links
 

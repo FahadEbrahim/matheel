@@ -96,6 +96,34 @@ def test_evaluate_pair_dataset_returns_scored_pairs_and_metrics(tmp_path):
     assert metrics["f1"] == 1.0
 
 
+def test_evaluate_pair_dataset_supports_custom_algorithm_module(tmp_path):
+    dataset = _write_tiny_pair_dataset(tmp_path / "pairs")
+    module_path = tmp_path / "algo.py"
+    module_path.write_text(
+        "\n".join(
+            [
+                "def prepare_dataset(dataset, bias=0.0):",
+                "    return {'bias': float(bias), 'file_count': len(dataset.files)}",
+                "",
+                "def score_pair(code_a, code_b, dataset_context=None, row=None):",
+                "    return (1.0 if code_a == code_b else 0.0) + dataset_context['bias']",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    scored, metrics = evaluate_pair_dataset(
+        dataset,
+        threshold=0.5,
+        algorithm=module_path,
+        algorithm_options={"bias": 0.1},
+    )
+
+    assert scored["similarity_score"].tolist() == [1.1, 0.1]
+    assert metrics["accuracy"] == 1.0
+    assert scored.attrs["algorithm"]["algorithm_options"] == {"bias": 0.1}
+
+
 def test_pair_classification_metrics_requires_score_column():
     with pytest.raises(ValueError, match="similarity_score"):
         pair_classification_metrics([{"label": 1}], threshold=0.5)
@@ -132,6 +160,31 @@ def test_evaluate_retrieval_dataset_returns_ranking_metrics(tmp_path):
     assert metrics["precision_at_k"] == 1.0
     assert metrics["recall_at_k"] == 1.0
     assert metrics["ndcg_at_k"] == 1.0
+
+
+def test_evaluate_retrieval_dataset_supports_custom_algorithm_module(tmp_path):
+    dataset = _write_tiny_retrieval_dataset(tmp_path / "retrieval")
+    module_path = tmp_path / "retrieval_algo.py"
+    module_path.write_text(
+        "\n".join(
+            [
+                "def score_pair(code_a, code_b, boost=0.0, row=None):",
+                "    return (1.0 if code_a == code_b else 0.0) + float(boost)",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    scored, metrics = evaluate_retrieval_dataset(
+        dataset,
+        k=1,
+        algorithm=module_path,
+        algorithm_options={"boost": 0.1},
+    )
+
+    assert len(scored) == 6
+    assert scored.attrs["algorithm"]["algorithm_options"] == {"boost": 0.1}
+    assert metrics["mean_average_precision"] == 1.0
 
 
 def test_retrieval_ranking_metrics_handles_queries_without_relevant_documents():
