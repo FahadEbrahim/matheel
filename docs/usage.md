@@ -89,6 +89,7 @@ print(results.head())
 - Add `--preprocess-mode` when code should be normalized before scoring.
 - Add `--chunking-method` when large files should be split before embedding.
 - Use `matheel compare-suite` with a JSON config for repeatable multi-run comparisons.
+- Use `--algorithm-path` when you need a custom `score_pair` implementation.
 - Run the Gradio app or notebooks when you want an interactive workflow.
 
 ## Demos and Examples
@@ -107,6 +108,7 @@ print(results.head())
 - [Lexical metrics and baselines](lexical.md)
 - [Code metrics](code_metrics.md)
 - [Scoring and calibration](scoring.md)
+- [Custom algorithms](customization.md)
 - [Comparison suite](comparison_suite.md)
 - [Development](development.md)
 
@@ -118,4 +120,4 @@ print(results.head())
 - `vector_backend=auto` uses Hugging Face metadata and tag heuristics when available.
 - CLI progress bars write to stderr and default to interactive terminals only. Use `--progress` or `--no-progress` to override.
 - Python APIs accept `progress=True` for tqdm bars and `progress_callback=...` for structured progress events.
-- Collection results include run metadata in `DataFrame.attrs`, including `elapsed_seconds`, `feature_set`, `vector_backend`, `code_metric`, and `chunking_method`.
+- Collection results include run metadata in `DataFrame.attrs`, including `elapsed_seconds`, `feature_set`, `vector_backend`, `code_metric`, `chunking_method`, and custom algorithm metadata when applicable.

@@ -25,6 +25,7 @@ nav:
   - Code metrics: code_metrics.md
   - Scoring and calibration: scoring.md
   - Datasets and evaluation: datasets.md
+  - Custom algorithms: customization.md
   - Comparison suite: comparison_suite.md
   - Development: development.md
 

@@ -14,5 +14,6 @@ The published site is <https://fahadebrahim.github.io/matheel/>.
 - [Vectors and routing](vectors.md)
 - [Lexical metrics and baselines](lexical.md)
 - [Code metrics](code_metrics.md)
+- [Custom algorithms](customization.md)
 - [Comparison suite](comparison_suite.md)
 - [Development](development.md)
