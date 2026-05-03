@@ -1002,8 +1002,471 @@ def merge_retrieval_datasets(datasets, dataset_names=None):
     )
 
 
+def _find_tabular_files(root):
+    base = _coerce_path(root)
+    suffixes = {".csv", ".tsv", ".tab", ".json", ".jsonl"}
+    return sorted(path for path in base.rglob("*") if path.is_file() and path.suffix.lower() in suffixes)
+
+
+def _read_tabular_file(path):
+    target = _coerce_path(path)
+    suffix = target.suffix.lower()
+    if suffix == ".tsv" or suffix == ".tab":
+        return pd.read_csv(target, sep="\t")
+    if suffix == ".jsonl":
+        return pd.read_json(target, lines=True)
+    if suffix == ".json":
+        return pd.read_json(target)
+    return pd.read_csv(target)
+
+
+def _pick_column(columns, aliases):
+    lowered = {str(column).strip().lower(): column for column in columns}
+    for alias in aliases:
+        if alias in lowered:
+            return lowered[alias]
+    return None
+
+
+def _column_from_options(frame, options, option_name, aliases, label, required=False):
+    configured = options.get(option_name)
+    if configured:
+        if configured not in frame.columns:
+            raise ValueError(f"{label} column does not exist: {configured}")
+        return configured
+    column = _pick_column(frame.columns, aliases)
+    if required and column is None:
+        raise ValueError(f"Could not infer {label} column.")
+    return column
+
+
+def _prioritized_tabular_files(root, requested_table=None, split=None):
+    base = _coerce_path(root)
+    if requested_table:
+        table_path = Path(os.fspath(requested_table))
+        if not table_path.is_absolute():
+            table_path = base / table_path
+        return [_coerce_path(table_path)]
+
+    candidates = _find_tabular_files(base)
+    if split is None:
+        return candidates
+
+    variants = _split_name_variants(split)
+    matching = [path for path in candidates if path.stem.lower() in variants or path.name.lower() in variants]
+    remaining = [path for path in candidates if path not in matching]
+    return matching + remaining
+
+
+def _split_name_variants(split):
+    key = str(split or "").strip().lower()
+    if not key:
+        return set()
+    variants = {key, key.replace("-", "_"), key.replace("_", "-")}
+    return variants.union({f"{variant}.csv" for variant in variants})
+
+
+def _select_pair_table(root, options):
+    for path in _prioritized_tabular_files(
+        root,
+        requested_table=options.get("pair_table") or options.get("table"),
+        split=options.get("split"),
+    ):
+        frame = _read_tabular_file(path)
+        try:
+            _infer_pair_columns(frame, options)
+        except ValueError:
+            continue
+        return path, frame
+    raise ValueError("Could not find a tabular pair dataset with left, right, and label columns.")
+
+
+def _select_retrieval_table(root, options):
+    for path in _prioritized_tabular_files(
+        root,
+        requested_table=options.get("retrieval_table") or options.get("table"),
+        split=options.get("split"),
+    ):
+        frame = _read_tabular_file(path)
+        try:
+            _infer_retrieval_columns(frame, options)
+        except ValueError:
+            continue
+        return path, frame
+    raise ValueError("Could not find a tabular retrieval dataset with query, document, and relevance columns.")
+
+
+def _infer_pair_columns(frame, options):
+    left_text = _column_from_options(
+        frame,
+        options,
+        "left_text_column",
+        ("left_text", "code1", "code_1", "func1", "submission_1_text", "source_1_text"),
+        "left text",
+    )
+    right_text = _column_from_options(
+        frame,
+        options,
+        "right_text_column",
+        ("right_text", "code2", "code_2", "func2", "submission_2_text", "source_2_text"),
+        "right text",
+    )
+    left_path = _column_from_options(
+        frame,
+        options,
+        "left_path_column",
+        ("left_path", "file1", "file_1", "path1", "submission_1", "source_1_path"),
+        "left path",
+    )
+    right_path = _column_from_options(
+        frame,
+        options,
+        "right_path_column",
+        ("right_path", "file2", "file_2", "path2", "submission_2", "source_2_path"),
+        "right path",
+    )
+    if left_text is None and left_path is None:
+        raise ValueError("Pair table needs a left text or left path column.")
+    if right_text is None and right_path is None:
+        raise ValueError("Pair table needs a right text or right path column.")
+
+    label = _column_from_options(
+        frame,
+        options,
+        "label_column",
+        ("label", "is_clone", "is_plagiarism", "plagiarism", "verdict", "target"),
+        "label",
+        required=True,
+    )
+    return {
+        "left_id": _column_from_options(
+            frame,
+            options,
+            "left_id_column",
+            ("left_id", "left_file_id", "id1", "file_id_1", "submission_1_id"),
+            "left id",
+        ),
+        "right_id": _column_from_options(
+            frame,
+            options,
+            "right_id_column",
+            ("right_id", "right_file_id", "id2", "file_id_2", "submission_2_id"),
+            "right id",
+        ),
+        "left_text": left_text,
+        "right_text": right_text,
+        "left_path": left_path,
+        "right_path": right_path,
+        "label": label,
+    }
+
+
+def _infer_retrieval_columns(frame, options):
+    query_text = _column_from_options(
+        frame,
+        options,
+        "query_text_column",
+        ("query_text", "query_code", "left_text", "code1", "code_1", "func1"),
+        "query text",
+    )
+    document_text = _column_from_options(
+        frame,
+        options,
+        "document_text_column",
+        ("document_text", "doc_text", "document_code", "right_text", "code2", "code_2", "func2"),
+        "document text",
+    )
+    query_path = _column_from_options(
+        frame,
+        options,
+        "query_path_column",
+        ("query_path", "query_file", "left_path", "file1", "file_1", "path1"),
+        "query path",
+    )
+    document_path = _column_from_options(
+        frame,
+        options,
+        "document_path_column",
+        ("document_path", "doc_path", "document_file", "right_path", "file2", "file_2", "path2"),
+        "document path",
+    )
+    if query_text is None and query_path is None:
+        raise ValueError("Retrieval table needs a query text or query path column.")
+    if document_text is None and document_path is None:
+        raise ValueError("Retrieval table needs a document text or document path column.")
+
+    relevance = _column_from_options(
+        frame,
+        options,
+        "relevance_column",
+        ("relevance", "label", "is_relevant", "is_clone", "is_plagiarism", "verdict", "target"),
+        "relevance",
+        required=True,
+    )
+    return {
+        "query_id": _column_from_options(
+            frame,
+            options,
+            "query_id_column",
+            ("query_id", "qid", "left_id", "submission_1_id"),
+            "query id",
+        ),
+        "document_id": _column_from_options(
+            frame,
+            options,
+            "document_id_column",
+            ("document_id", "doc_id", "did", "right_id", "submission_2_id"),
+            "document id",
+        ),
+        "query_text": query_text,
+        "document_text": document_text,
+        "query_path": query_path,
+        "document_path": document_path,
+        "relevance": relevance,
+    }
+
+
+def _has_value(value):
+    if value is None:
+        return False
+    try:
+        if pd.isna(value):
+            return False
+    except (TypeError, ValueError):
+        pass
+    return str(value).strip() != ""
+
+
+def _table_value(row, column):
+    if column is None:
+        return None
+    value = row.get(column)
+    return value if _has_value(value) else None
+
+
+def _resolve_tabular_source_path(source_root, value):
+    path = Path(os.fspath(value))
+    if not path.is_absolute():
+        path = _coerce_path(source_root) / path
+    if not path.exists():
+        raise ValueError(f"Tabular adapter source file does not exist: {value}")
+    return path
+
+
+def _coerce_binary_like(value):
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, str):
+        key = value.strip().lower()
+        if key in {"1", "true", "yes", "y", "clone", "positive", "plagiarized", "plagiarism", "match"}:
+            return 1
+        if key in {
+            "0",
+            "false",
+            "no",
+            "n",
+            "non-clone",
+            "negative",
+            "original",
+            "nonplagiarized",
+            "not plagiarized",
+            "non_plagiarism",
+            "non-match",
+        }:
+            return 0
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Unable to coerce binary label value: {value}") from exc
+    if not math.isfinite(numeric):
+        raise ValueError(f"Unable to coerce binary label value: {value}")
+    return int(numeric > 0.0)
+
+
+def _coerce_relevance_like(value):
+    if isinstance(value, bool):
+        return float(value)
+    if isinstance(value, str):
+        key = value.strip().lower()
+        if key in {"true", "yes", "y", "relevant", "positive", "plagiarized", "plagiarism", "match"}:
+            return 1.0
+        if key in {"false", "no", "n", "irrelevant", "negative", "non-match"}:
+            return 0.0
+    return _normalize_nonnegative_relevance(value)
+
+
+def _external_id_or_generated(value, label, prefix):
+    if _has_value(value):
+        try:
+            return _normalize_id(value, label)
+        except ValueError:
+            return _generated_id(prefix, value)
+    return None
+
+
+def _generated_id(prefix, value):
+    digest = sha1(str(value).encode("utf-8")).hexdigest()[:16]
+    return _normalize_id(f"{prefix}_{digest}", prefix)
+
+
+def _add_tabular_file(files, file_ids_by_key, source_root, role, id_value, text_value, path_value, suffix):
+    if _has_value(id_value):
+        identity_role = "source" if role in {"left", "right"} else role
+        key = ("id", identity_role, str(id_value))
+        preferred_id = _generated_id(identity_role, id_value)
+    elif _has_value(path_value):
+        resolved_path = _resolve_tabular_source_path(source_root, path_value)
+        key = ("path", resolved_path.as_posix())
+        preferred_id = _generated_id(role, resolved_path.as_posix())
+    else:
+        key = ("text", str(text_value))
+        preferred_id = _generated_id(role, text_value)
+
+    if key in file_ids_by_key:
+        return file_ids_by_key[key]
+
+    file_id = preferred_id
+    file_ids_by_key[key] = file_id
+    row = {"file_id": file_id}
+    if _has_value(path_value):
+        source_path = _resolve_tabular_source_path(source_root, path_value)
+        row["source_path"] = source_path
+        row["suffix"] = source_path.suffix or suffix
+    else:
+        row["text"] = str(text_value)
+        row["suffix"] = suffix
+    files.append(row)
+    return file_id
+
+
+def _adapt_pair_dataset_auto(source_root, destination, dataset_name=None, **options):
+    root = _coerce_path(source_root)
+    _, frame = _select_pair_table(root, options)
+    columns = _infer_pair_columns(frame, options)
+    suffix = str(options.get("suffix") or ".txt")
+
+    files = []
+    file_ids_by_key = {}
+    pairs = []
+    for index, row in enumerate(frame.to_dict(orient="records")):
+        left_id = _add_tabular_file(
+            files,
+            file_ids_by_key,
+            root,
+            "left",
+            _table_value(row, columns["left_id"]),
+            _table_value(row, columns["left_text"]),
+            _table_value(row, columns["left_path"]),
+            suffix,
+        )
+        right_id = _add_tabular_file(
+            files,
+            file_ids_by_key,
+            root,
+            "right",
+            _table_value(row, columns["right_id"]),
+            _table_value(row, columns["right_text"]),
+            _table_value(row, columns["right_path"]),
+            suffix,
+        )
+        pairs.append(
+            {
+                "left_id": left_id,
+                "right_id": right_id,
+                "label": _coerce_binary_like(row[columns["label"]]),
+                "row_index": index,
+            }
+        )
+
+    metadata = {
+        "name": dataset_name or root.name,
+        "task_type": "plagiarism",
+        "dataset_kind": "pair_classification",
+        "adapter": "auto_pair_tabular",
+    }
+    if options.get("split") is not None:
+        metadata["split"] = str(options["split"])
+    return write_pair_dataset(destination, files=pd.DataFrame(files), pairs=pd.DataFrame(pairs), metadata=metadata).root
+
+
+def _adapt_retrieval_dataset_auto(source_root, destination, dataset_name=None, **options):
+    root = _coerce_path(source_root)
+    _, frame = _select_retrieval_table(root, options)
+    columns = _infer_retrieval_columns(frame, options)
+    suffix = str(options.get("suffix") or ".txt")
+
+    files = []
+    file_ids_by_key = {}
+    queries_by_id = {}
+    corpus_by_id = {}
+    qrels_by_pair = {}
+    for index, row in enumerate(frame.to_dict(orient="records")):
+        query_identity = _table_value(row, columns["query_id"])
+        document_identity = _table_value(row, columns["document_id"])
+        query_file_id = _add_tabular_file(
+            files,
+            file_ids_by_key,
+            root,
+            "query",
+            query_identity,
+            _table_value(row, columns["query_text"]),
+            _table_value(row, columns["query_path"]),
+            suffix,
+        )
+        document_file_id = _add_tabular_file(
+            files,
+            file_ids_by_key,
+            root,
+            "document",
+            document_identity,
+            _table_value(row, columns["document_text"]),
+            _table_value(row, columns["document_path"]),
+            suffix,
+        )
+        query_id = _external_id_or_generated(query_identity, "query_id", "query")
+        if query_id is None:
+            query_id = _generated_id("query", query_file_id)
+        document_id = _external_id_or_generated(document_identity, "document_id", "document")
+        if document_id is None:
+            document_id = _generated_id("document", document_file_id)
+
+        queries_by_id.setdefault(query_id, {"query_id": query_id, "file_id": query_file_id})
+        corpus_by_id.setdefault(document_id, {"document_id": document_id, "file_id": document_file_id})
+        relevance = _coerce_relevance_like(row[columns["relevance"]])
+        key = (query_id, document_id)
+        qrels_by_pair[key] = max(relevance, qrels_by_pair.get(key, relevance))
+
+    metadata = {
+        "name": dataset_name or root.name,
+        "task_type": "plagiarism",
+        "dataset_kind": "retrieval",
+        "adapter": "auto_retrieval_tabular",
+    }
+    if options.get("split") is not None:
+        metadata["split"] = str(options["split"])
+
+    qrels = [
+        {"query_id": query_id, "document_id": document_id, "relevance": relevance}
+        for (query_id, document_id), relevance in qrels_by_pair.items()
+    ]
+    return write_retrieval_dataset(
+        destination,
+        files=pd.DataFrame(files),
+        queries=pd.DataFrame(queries_by_id.values()),
+        corpus=pd.DataFrame(corpus_by_id.values()),
+        qrels=pd.DataFrame(qrels),
+        metadata=metadata,
+    ).root
+
+
+def register_default_dataset_adapters(overwrite=False):
+    register_dataset_adapter("auto_pair_tabular", _adapt_pair_dataset_auto, overwrite=overwrite)
+    register_dataset_adapter("auto_retrieval_tabular", _adapt_retrieval_dataset_auto, overwrite=overwrite)
+
+
 def register_default_dataset_sources(overwrite=False):
     register_dataset_source("local", _resolve_local_dataset_source, overwrite=overwrite)
 
 
 register_default_dataset_sources(overwrite=True)
+register_default_dataset_adapters(overwrite=True)

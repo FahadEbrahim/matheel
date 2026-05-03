@@ -130,6 +130,98 @@ def test_custom_adapter_registry_can_adapt_pair_dataset(tmp_path):
     assert loaded.pairs["label"].tolist() == [1]
 
 
+def test_auto_pair_tabular_adapter_supports_configured_text_columns(tmp_path):
+    source_root = tmp_path / "raw_pairs"
+    source_root.mkdir()
+    pd.DataFrame(
+        [
+            {"lhs": "print('x')", "rhs": "print('x')", "target": "plagiarism"},
+            {"lhs": "print('x')", "rhs": "print('y')", "target": "negative"},
+        ]
+    ).to_csv(source_root / "custom.csv", index=False)
+
+    adapted_root = adapt_pair_dataset(
+        source_root,
+        adapter="auto_pair_tabular",
+        dataset_name="custom_pairs",
+        adapter_options={
+            "pair_table": "custom.csv",
+            "left_text_column": "lhs",
+            "right_text_column": "rhs",
+            "label_column": "target",
+            "suffix": ".py",
+        },
+    )
+    loaded = load_pair_dataset(adapted_root)
+    texts = load_code_texts(loaded)
+
+    assert len(loaded.pairs) == 2
+    assert sorted(loaded.pairs["label"].tolist()) == [0, 1]
+    assert loaded.metadata["adapter"] == "auto_pair_tabular"
+    assert "print('x')" in set(texts.values())
+
+
+def test_auto_pair_tabular_adapter_supports_path_columns(tmp_path):
+    source_root = tmp_path / "raw_path_pairs"
+    source_root.mkdir()
+    (source_root / "a.py").write_text("print('a')\n", encoding="utf-8")
+    (source_root / "b.py").write_text("print('b')\n", encoding="utf-8")
+    pd.DataFrame(
+        [{"left_file": "a.py", "right_file": "b.py", "is_match": False}]
+    ).to_csv(source_root / "pairs.csv", index=False)
+
+    adapted_root = adapt_pair_dataset(
+        source_root,
+        adapter="auto_pair_tabular",
+        adapter_options={
+            "left_path_column": "left_file",
+            "right_path_column": "right_file",
+            "label_column": "is_match",
+        },
+    )
+    loaded = load_pair_dataset(adapted_root)
+    texts = load_code_texts(loaded)
+
+    assert loaded.pairs["label"].tolist() == [0]
+    assert sorted(texts.values()) == ["print('a')\n", "print('b')\n"]
+
+
+def test_auto_retrieval_tabular_adapter_supports_configured_columns(tmp_path):
+    source_root = tmp_path / "raw_retrieval"
+    source_root.mkdir()
+    pd.DataFrame(
+        [
+            {"qid": "q1", "did": "d1", "query": "print('x')", "candidate": "print('x')", "rel": 1},
+            {"qid": "q1", "did": "d2", "query": "print('x')", "candidate": "print('y')", "rel": 0},
+        ]
+    ).to_csv(source_root / "retrieval.csv", index=False)
+
+    adapted_root = adapt_pair_dataset(source_root, adapter=None)
+    assert adapted_root == source_root.resolve()
+    adapted_root = load_retrieval_datasets(
+        [
+            {
+                "source": "local",
+                "identifier": source_root,
+                "name": "custom_retrieval",
+                "adapter": "auto_retrieval_tabular",
+                "adapter_options": {
+                    "retrieval_table": "retrieval.csv",
+                    "query_text_column": "query",
+                    "document_text_column": "candidate",
+                    "relevance_column": "rel",
+                },
+            }
+        ]
+    ).root
+    loaded = load_retrieval_dataset(adapted_root)
+
+    assert loaded.metadata["adapter"] == "auto_retrieval_tabular"
+    assert loaded.queries["query_id"].tolist() == ["q1"]
+    assert loaded.corpus["document_id"].tolist() == ["d1", "d2"]
+    assert sorted(loaded.qrels["relevance"].tolist()) == [0.0, 1.0]
+
+
 def test_load_retrieval_datasets_rejects_pair_only_preset(tmp_path):
     dataset_root = tmp_path / "pairs"
     write_pair_dataset(
