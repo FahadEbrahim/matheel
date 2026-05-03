@@ -2,7 +2,10 @@ import json
 import math
 import os
 import shutil
+import tempfile
 from dataclasses import dataclass
+from hashlib import sha1
+from inspect import signature
 from pathlib import Path
 
 import pandas as pd
@@ -11,7 +14,11 @@ import pandas as pd
 DATASET_TASK_TYPES = ("plagiarism",)
 DATASET_KINDS = ("pair_classification", "retrieval")
 DATASET_ACCESS_TYPES = ("bundled", "download", "manual", "external")
+DATASET_TASK_FAMILIES = ("pair", "retrieval")
 _DATASET_REGISTRY = {}
+_DATASET_SOURCE_HANDLERS = {}
+_DATASET_PRESETS = {}
+_DATASET_ADAPTERS = {}
 
 
 @dataclass(frozen=True)
@@ -100,6 +107,200 @@ def register_dataset_entry(
     )
     _DATASET_REGISTRY[key] = entry
     return entry
+
+
+def available_dataset_sources():
+    return tuple(sorted(_DATASET_SOURCE_HANDLERS))
+
+
+def register_dataset_source(name, resolver, overwrite=False):
+    key = _normalize_name(name)
+    if not callable(resolver):
+        raise ValueError("Dataset source resolver must be callable.")
+    if key in _DATASET_SOURCE_HANDLERS and not overwrite:
+        raise ValueError(f"Dataset source already exists: {key}")
+    _DATASET_SOURCE_HANDLERS[key] = resolver
+    return resolver
+
+
+def resolve_dataset_source(
+    source,
+    identifier,
+    destination=None,
+    revision="main",
+    token=None,
+    split=None,
+):
+    source_key = _normalize_name(source or "local")
+    if source_key not in _DATASET_SOURCE_HANDLERS:
+        supported = ", ".join(available_dataset_sources())
+        raise KeyError(f"Unknown dataset source: {source_key}. Available sources: {supported}")
+
+    resolved_destination = destination
+    if resolved_destination is None and source_key != "local":
+        resolved_destination = _default_dataset_destination(source_key, identifier)
+    if resolved_destination is not None:
+        resolved_destination = _coerce_path(resolved_destination)
+
+    resolver = _DATASET_SOURCE_HANDLERS[source_key]
+    resolved = _invoke_with_supported_kwargs(
+        resolver,
+        identifier=identifier,
+        destination=resolved_destination,
+        revision=revision,
+        token=token,
+        split=split,
+    )
+    return _coerce_path(resolved)
+
+
+def resolve_dataset_path(*args, **kwargs):
+    return resolve_dataset_source(*args, **kwargs)
+
+
+def available_dataset_adapters():
+    return tuple(sorted(_DATASET_ADAPTERS))
+
+
+def register_dataset_adapter(name, adapter, overwrite=False):
+    key = _normalize_name(name)
+    if not callable(adapter):
+        raise ValueError("Dataset adapter must be callable.")
+    if key in _DATASET_ADAPTERS and not overwrite:
+        raise ValueError(f"Dataset adapter already exists: {key}")
+    _DATASET_ADAPTERS[key] = adapter
+    return adapter
+
+
+def adapt_pair_dataset(
+    source_root,
+    adapter="auto_pair_tabular",
+    destination=None,
+    dataset_name=None,
+    adapter_options=None,
+):
+    return _adapt_dataset(
+        source_root,
+        dataset_kind="pair_classification",
+        adapter=adapter,
+        destination=destination,
+        dataset_name=dataset_name,
+        adapter_options=adapter_options,
+    )
+
+
+def adapt_retrieval_dataset(
+    source_root,
+    adapter="auto_retrieval_tabular",
+    destination=None,
+    dataset_name=None,
+    adapter_options=None,
+):
+    return _adapt_dataset(
+        source_root,
+        dataset_kind="retrieval",
+        adapter=adapter,
+        destination=destination,
+        dataset_name=dataset_name,
+        adapter_options=adapter_options,
+    )
+
+
+def available_dataset_presets():
+    return tuple(sorted(_DATASET_PRESETS))
+
+
+def register_dataset_preset(name, spec, overwrite=False):
+    key = _normalize_name(name)
+    if not isinstance(spec, dict):
+        raise ValueError("Dataset preset spec must be a dict.")
+    if "identifier" not in spec:
+        raise ValueError("Dataset preset spec must include an identifier.")
+    if key in _DATASET_PRESETS and not overwrite:
+        raise ValueError(f"Dataset preset already exists: {key}")
+
+    payload = dict(spec)
+    payload.setdefault("name", key)
+    payload["task_families"] = _normalize_task_families(
+        payload.get("task_families") or payload.get("task_family") or ("pair",)
+    )
+    _DATASET_PRESETS[key] = payload
+    return get_dataset_preset(key)
+
+
+def get_dataset_preset(name):
+    key = _normalize_name(name)
+    try:
+        preset = _DATASET_PRESETS[key]
+    except KeyError as exc:
+        supported = ", ".join(available_dataset_presets())
+        raise KeyError(f"Unknown dataset preset: {key}. Available presets: {supported}") from exc
+    payload = dict(preset)
+    payload["task_families"] = tuple(payload.get("task_families") or ("pair",))
+    return payload
+
+
+def dataset_preset_task_families(name):
+    return get_dataset_preset(name)["task_families"]
+
+
+def available_dataset_presets_by_task(task_family):
+    requested = _normalize_task_family(task_family)
+    return tuple(
+        preset_name
+        for preset_name in available_dataset_presets()
+        if requested in dataset_preset_task_families(preset_name)
+    )
+
+
+def load_pair_datasets(dataset_specs):
+    specs = _coerce_dataset_specs(dataset_specs)
+    loaded = []
+    names = []
+    for spec in specs:
+        _ensure_spec_supports_task(spec, "pair")
+        root = _resolve_dataset_spec_root(spec)
+        adapter = spec.get("adapter")
+        if adapter:
+            options = _adapter_options_with_split(spec)
+            root = adapt_pair_dataset(
+                root,
+                adapter=adapter,
+                destination=spec.get("adapted_destination"),
+                dataset_name=spec.get("name"),
+                adapter_options=options,
+            )
+        loaded.append(load_pair_dataset(root))
+        names.append(spec["name"])
+
+    if len(loaded) == 1:
+        return loaded[0]
+    return merge_pair_datasets(loaded, dataset_names=names)
+
+
+def load_retrieval_datasets(dataset_specs):
+    specs = _coerce_dataset_specs(dataset_specs)
+    loaded = []
+    names = []
+    for spec in specs:
+        _ensure_spec_supports_task(spec, "retrieval")
+        root = _resolve_dataset_spec_root(spec)
+        adapter = spec.get("retrieval_adapter") or spec.get("adapter")
+        if adapter:
+            options = _adapter_options_with_split(spec)
+            root = adapt_retrieval_dataset(
+                root,
+                adapter=adapter,
+                destination=spec.get("adapted_destination"),
+                dataset_name=spec.get("name"),
+                adapter_options=options,
+            )
+        loaded.append(load_retrieval_dataset(root))
+        names.append(spec["name"])
+
+    if len(loaded) == 1:
+        return loaded[0]
+    return merge_retrieval_datasets(loaded, dataset_names=names)
 
 
 def load_pair_dataset(dataset_root):
@@ -504,3 +705,305 @@ def _load_files_manifest(dataset_root):
     if not files_path.exists():
         raise ValueError(f"Missing files manifest: {files_path}")
     return pd.read_csv(files_path)
+
+
+def _normalize_task_family(value):
+    key = str(value or "").strip().lower()
+    if key == "pair_classification":
+        key = "pair"
+    if key not in DATASET_TASK_FAMILIES:
+        supported = ", ".join(DATASET_TASK_FAMILIES)
+        raise ValueError(f"task_family must be one of: {supported}. Got: {value}")
+    return key
+
+
+def _normalize_task_families(values):
+    if isinstance(values, str):
+        raw_values = (values,)
+    else:
+        raw_values = tuple(values or ())
+    families = tuple(dict.fromkeys(_normalize_task_family(value) for value in raw_values))
+    if not families:
+        raise ValueError("Dataset presets must support at least one task family.")
+    return families
+
+
+def _invoke_with_supported_kwargs(func, **kwargs):
+    parameters = signature(func).parameters
+    if any(parameter.kind == parameter.VAR_KEYWORD for parameter in parameters.values()):
+        return func(**kwargs)
+    accepted = {key: value for key, value in kwargs.items() if key in parameters}
+    return func(**accepted)
+
+
+def _default_dataset_destination(source, identifier):
+    digest = sha1(str(identifier).encode("utf-8")).hexdigest()[:12]
+    safe_identifier = _safe_name_component(identifier)[:48]
+    return Path(tempfile.gettempdir()) / "matheel_datasets" / f"{source}_{safe_identifier}_{digest}"
+
+
+def _safe_name_component(value):
+    text = str(value or "").strip().lower()
+    safe = "".join(character if character.isalnum() or character in "._-" else "_" for character in text)
+    safe = "_".join(part for part in safe.split("_") if part)
+    return safe or "dataset"
+
+
+def _resolve_local_dataset_source(identifier, destination=None, revision="main", token=None, split=None):
+    _ = (destination, revision, token, split)
+    root = _coerce_path(identifier)
+    if not root.exists():
+        raise ValueError(f"Local dataset source does not exist: {identifier}")
+    return root
+
+
+def _adapt_dataset(source_root, dataset_kind, adapter, destination, dataset_name, adapter_options):
+    root = _coerce_path(source_root)
+    if adapter is None:
+        return root
+    if dataset_kind == "pair_classification" and _is_pair_dataset_root(root):
+        return root
+    if dataset_kind == "retrieval" and _is_retrieval_dataset_root(root):
+        return root
+
+    adapter_name = _normalize_name(adapter)
+    try:
+        adapter_fn = _DATASET_ADAPTERS[adapter_name]
+    except KeyError as exc:
+        supported = ", ".join(available_dataset_adapters())
+        raise KeyError(f"Unknown dataset adapter: {adapter_name}. Available adapters: {supported}") from exc
+
+    target = _coerce_path(destination) if destination is not None else _temporary_dataset_root(adapter_name)
+    target.mkdir(parents=True, exist_ok=True)
+    options = dict(adapter_options or {})
+    adapted = _invoke_with_supported_kwargs(
+        adapter_fn,
+        source_root=root,
+        destination=target,
+        dataset_name=dataset_name,
+        **options,
+    )
+    return _coerce_path(adapted)
+
+
+def _temporary_dataset_root(label):
+    safe_label = _safe_name_component(label)
+    return Path(tempfile.mkdtemp(prefix=f"matheel_{safe_label}_"))
+
+
+def _is_pair_dataset_root(path):
+    root = _coerce_path(path)
+    return (root / "files.csv").exists() and (root / "pairs.csv").exists()
+
+
+def _is_retrieval_dataset_root(path):
+    root = _coerce_path(path)
+    return all((root / name).exists() for name in ("files.csv", "queries.csv", "corpus.csv", "qrels.csv"))
+
+
+def _coerce_dataset_specs(dataset_specs):
+    if isinstance(dataset_specs, (str, os.PathLike, dict)):
+        raw_specs = [dataset_specs]
+    else:
+        raw_specs = list(dataset_specs)
+    if not raw_specs:
+        raise ValueError("At least one dataset spec is required.")
+    return [_coerce_dataset_spec(spec) for spec in raw_specs]
+
+
+def _coerce_dataset_spec(spec):
+    if isinstance(spec, (str, os.PathLike)):
+        text = os.fspath(spec)
+        preset_key = text.strip().lower()
+        if preset_key in _DATASET_PRESETS:
+            return _preset_to_spec(preset_key, {})
+        return _explicit_dataset_spec({"source": "local", "identifier": spec})
+
+    if isinstance(spec, dict):
+        payload = dict(spec)
+        preset_name = payload.pop("preset", None)
+        if preset_name is None and "identifier" not in payload:
+            maybe_name = str(payload.get("name") or "").strip().lower()
+            if maybe_name in _DATASET_PRESETS:
+                preset_name = maybe_name
+        if preset_name is not None:
+            return _preset_to_spec(preset_name, payload)
+        return _explicit_dataset_spec(payload)
+
+    raise ValueError("Dataset specs must be path-like values, preset names, or dicts.")
+
+
+def _preset_to_spec(name, overrides):
+    preset = get_dataset_preset(name)
+    payload = dict(preset)
+    payload.update(overrides)
+    payload["task_families"] = preset["task_families"]
+    return _explicit_dataset_spec(payload)
+
+
+def _explicit_dataset_spec(payload):
+    if "identifier" not in payload:
+        raise ValueError("Dataset specs must include an identifier.")
+
+    name = str(payload.get("name") or Path(str(payload["identifier"])).name or "dataset").strip()
+    task_families = payload.get("task_families") or DATASET_TASK_FAMILIES
+    return {
+        "source": str(payload.get("source") or "local").strip().lower(),
+        "identifier": payload["identifier"],
+        "name": _safe_name_component(name),
+        "revision": str(payload.get("revision") or "main"),
+        "destination": payload.get("destination"),
+        "token": payload.get("token"),
+        "split": payload.get("split"),
+        "path_in_archive": payload.get("path_in_archive"),
+        "adapter": payload.get("adapter"),
+        "retrieval_adapter": payload.get("retrieval_adapter"),
+        "adapter_options": dict(payload.get("adapter_options") or {}),
+        "adapted_destination": payload.get("adapted_destination"),
+        "task_families": _normalize_task_families(task_families),
+    }
+
+
+def _ensure_spec_supports_task(spec, task_family):
+    requested = _normalize_task_family(task_family)
+    if requested not in spec["task_families"]:
+        name = spec.get("name") or "dataset"
+        raise ValueError(f"Dataset spec {name!r} does not support {requested} loading.")
+
+
+def _resolve_dataset_spec_root(spec):
+    root = resolve_dataset_source(
+        spec.get("source") or "local",
+        spec["identifier"],
+        destination=spec.get("destination"),
+        revision=spec.get("revision") or "main",
+        token=spec.get("token"),
+        split=spec.get("split"),
+    )
+    nested = spec.get("path_in_archive")
+    if nested:
+        root = root / _normalize_relative_file_path(nested)
+    return _coerce_path(root)
+
+
+def _adapter_options_with_split(spec):
+    options = dict(spec.get("adapter_options") or {})
+    if spec.get("split") is not None and "split" not in options:
+        options["split"] = spec["split"]
+    return options
+
+
+def _prefixed_id(prefix, value):
+    raw = _normalize_id(value, "file_id")
+    return _normalize_id(f"{_safe_name_component(prefix)}__{raw}", "file_id")
+
+
+def merge_pair_datasets(datasets, dataset_names=None):
+    resolved_datasets = [validate_pair_dataset(dataset) for dataset in list(datasets)]
+    if not resolved_datasets:
+        raise ValueError("merge_pair_datasets requires at least one dataset.")
+
+    names = list(dataset_names or [f"dataset_{index + 1}" for index in range(len(resolved_datasets))])
+    if len(names) != len(resolved_datasets):
+        raise ValueError("dataset_names must have the same length as datasets.")
+
+    files = []
+    pairs = []
+    for dataset_name, dataset in zip(names, resolved_datasets):
+        texts = load_code_texts(dataset)
+        for file_row in dataset.files.to_dict(orient="records"):
+            old_id = str(file_row["file_id"])
+            files.append(
+                {
+                    "file_id": _prefixed_id(dataset_name, old_id),
+                    "text": texts[old_id],
+                    "suffix": Path(str(file_row["file_path"])).suffix or ".txt",
+                    "dataset_name": dataset_name,
+                    "original_file_id": old_id,
+                }
+            )
+        for pair_row in dataset.pairs.to_dict(orient="records"):
+            merged = dict(pair_row)
+            merged["left_id"] = _prefixed_id(dataset_name, pair_row["left_id"])
+            merged["right_id"] = _prefixed_id(dataset_name, pair_row["right_id"])
+            merged["dataset_name"] = dataset_name
+            pairs.append(merged)
+
+    return write_pair_dataset(
+        _temporary_dataset_root("merged_pair"),
+        files=pd.DataFrame(files),
+        pairs=pd.DataFrame(pairs),
+        metadata={
+            "name": "merged_pair_dataset",
+            "task_type": "plagiarism",
+            "dataset_kind": "pair_classification",
+            "sources": names,
+        },
+    )
+
+
+def merge_retrieval_datasets(datasets, dataset_names=None):
+    resolved_datasets = [validate_retrieval_dataset(dataset) for dataset in list(datasets)]
+    if not resolved_datasets:
+        raise ValueError("merge_retrieval_datasets requires at least one dataset.")
+
+    names = list(dataset_names or [f"dataset_{index + 1}" for index in range(len(resolved_datasets))])
+    if len(names) != len(resolved_datasets):
+        raise ValueError("dataset_names must have the same length as datasets.")
+
+    files = []
+    queries = []
+    corpus = []
+    qrels = []
+    for dataset_name, dataset in zip(names, resolved_datasets):
+        texts = load_code_texts(dataset)
+        for file_row in dataset.files.to_dict(orient="records"):
+            old_id = str(file_row["file_id"])
+            files.append(
+                {
+                    "file_id": _prefixed_id(dataset_name, old_id),
+                    "text": texts[old_id],
+                    "suffix": Path(str(file_row["file_path"])).suffix or ".txt",
+                    "dataset_name": dataset_name,
+                    "original_file_id": old_id,
+                }
+            )
+        for query_row in dataset.queries.to_dict(orient="records"):
+            merged = dict(query_row)
+            merged["query_id"] = _prefixed_id(dataset_name, query_row["query_id"])
+            merged["file_id"] = _prefixed_id(dataset_name, query_row["file_id"])
+            merged["dataset_name"] = dataset_name
+            queries.append(merged)
+        for corpus_row in dataset.corpus.to_dict(orient="records"):
+            merged = dict(corpus_row)
+            merged["document_id"] = _prefixed_id(dataset_name, corpus_row["document_id"])
+            merged["file_id"] = _prefixed_id(dataset_name, corpus_row["file_id"])
+            merged["dataset_name"] = dataset_name
+            corpus.append(merged)
+        for qrel_row in dataset.qrels.to_dict(orient="records"):
+            merged = dict(qrel_row)
+            merged["query_id"] = _prefixed_id(dataset_name, qrel_row["query_id"])
+            merged["document_id"] = _prefixed_id(dataset_name, qrel_row["document_id"])
+            merged["dataset_name"] = dataset_name
+            qrels.append(merged)
+
+    return write_retrieval_dataset(
+        _temporary_dataset_root("merged_retrieval"),
+        files=pd.DataFrame(files),
+        queries=pd.DataFrame(queries),
+        corpus=pd.DataFrame(corpus),
+        qrels=pd.DataFrame(qrels),
+        metadata={
+            "name": "merged_retrieval_dataset",
+            "task_type": "plagiarism",
+            "dataset_kind": "retrieval",
+            "sources": names,
+        },
+    )
+
+
+def register_default_dataset_sources(overwrite=False):
+    register_dataset_source("local", _resolve_local_dataset_source, overwrite=overwrite)
+
+
+register_default_dataset_sources(overwrite=True)

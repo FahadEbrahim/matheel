@@ -2,14 +2,26 @@ import pandas as pd
 import pytest
 
 from matheel.datasets import (
+    adapt_pair_dataset,
+    available_dataset_adapters,
     available_dataset_kinds,
+    available_dataset_presets,
+    available_dataset_presets_by_task,
+    available_dataset_sources,
     available_dataset_task_types,
     get_dataset_entry,
+    get_dataset_preset,
     load_code_texts,
     load_pair_dataset,
+    load_pair_datasets,
     load_retrieval_dataset,
+    load_retrieval_datasets,
     registered_datasets,
+    register_dataset_adapter,
     register_dataset_entry,
+    register_dataset_preset,
+    register_dataset_source,
+    resolve_dataset_source,
     write_retrieval_dataset,
     write_pair_dataset,
 )
@@ -31,6 +43,113 @@ def test_dataset_registry_tracks_plagiarism_entries():
     assert "pair_classification" in available_dataset_kinds()
     assert get_dataset_entry("unit_plagiarism_pairs") == entry
     assert entry in registered_datasets(task_type="plagiarism", dataset_kind="pair_classification")
+
+
+def test_dataset_source_registry_resolves_local_sources(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)"},
+                {"file_id": "b", "text": "print(2)"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]),
+    )
+
+    assert "local" in available_dataset_sources()
+    assert resolve_dataset_source("local", dataset_root) == dataset_root.resolve()
+
+
+def test_custom_source_and_preset_load_pair_dataset(tmp_path):
+    dataset_root = tmp_path / "custom_pair"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "x"},
+                {"file_id": "b", "text": "y"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": "negative"}]),
+        metadata={"name": "custom_pair", "task_type": "plagiarism"},
+    )
+    captured = {}
+
+    def resolver(identifier, destination=None, revision="main", token=None, split=None):
+        captured["identifier"] = identifier
+        captured["destination"] = destination
+        captured["revision"] = revision
+        captured["token"] = token
+        captured["split"] = split
+        return tmp_path / str(identifier)
+
+    register_dataset_source("unit_source", resolver, overwrite=True)
+    preset = register_dataset_preset(
+        "unit_pair_preset",
+        {"source": "unit_source", "identifier": "custom_pair", "task_families": ("pair",)},
+        overwrite=True,
+    )
+
+    loaded = load_pair_datasets(["unit_pair_preset"])
+
+    assert "unit_pair_preset" in available_dataset_presets()
+    assert get_dataset_preset("unit_pair_preset") == preset
+    assert available_dataset_presets_by_task("pair").count("unit_pair_preset") == 1
+    assert len(loaded.pairs) == 1
+    assert captured["identifier"] == "custom_pair"
+    assert captured["revision"] == "main"
+
+
+def test_custom_adapter_registry_can_adapt_pair_dataset(tmp_path):
+    source_root = tmp_path / "raw"
+    source_root.mkdir()
+
+    def adapter(source_root, destination, dataset_name=None):
+        assert source_root == source_root.resolve()
+        return write_pair_dataset(
+            destination,
+            files=pd.DataFrame(
+                [
+                    {"file_id": "a", "text": "x"},
+                    {"file_id": "b", "text": "x"},
+                ]
+            ),
+            pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+            metadata={"name": dataset_name or "adapted"},
+        ).root
+
+    register_dataset_adapter("unit_pair_adapter", adapter, overwrite=True)
+    adapted_root = adapt_pair_dataset(source_root, adapter="unit_pair_adapter", dataset_name="unit")
+    loaded = load_pair_dataset(adapted_root)
+
+    assert "unit_pair_adapter" in available_dataset_adapters()
+    assert loaded.metadata["dataset_kind"] == "pair_classification"
+    assert loaded.metadata["task_type"] == "plagiarism"
+    assert loaded.pairs["label"].tolist() == [1]
+
+
+def test_load_retrieval_datasets_rejects_pair_only_preset(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "x"},
+                {"file_id": "b", "text": "y"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]),
+    )
+    register_dataset_preset(
+        "unit_pair_only_preset",
+        {"source": "local", "identifier": dataset_root, "task_families": ("pair",)},
+        overwrite=True,
+    )
+
+    with pytest.raises(ValueError, match="does not support retrieval"):
+        load_retrieval_datasets(["unit_pair_only_preset"])
 
 
 def test_pair_dataset_roundtrip_writes_manifest_files(tmp_path):
