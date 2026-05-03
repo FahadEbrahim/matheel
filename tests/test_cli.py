@@ -1,10 +1,15 @@
 import json
+import os
+from pathlib import Path
+import subprocess
+import sys
 
 from click.testing import CliRunner
 import pandas as pd
 
+import matheel.datasets as datasets_module
 from matheel.cli import main
-from matheel.datasets import write_pair_dataset, write_retrieval_dataset
+from matheel.datasets import register_dataset_preset, write_pair_dataset, write_retrieval_dataset
 
 
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
@@ -303,6 +308,90 @@ def test_evaluate_pairs_command_writes_scores_and_metrics(tmp_path):
     assert "accuracy=" in result.output
 
 
+def test_evaluate_pairs_command_loads_tabular_adapter_spec(tmp_path):
+    raw_root = tmp_path / "raw_pairs"
+    raw_root.mkdir()
+    pd.DataFrame(
+        [
+            {"left_code": "print(1)", "right_code": "print(1)", "target": 1},
+            {"left_code": "print(1)", "right_code": "print(2)", "target": 0},
+        ]
+    ).to_csv(raw_root / "pairs.csv", index=False)
+    scores_path = tmp_path / "adapter_scores.csv"
+    metrics_path = tmp_path / "adapter_metrics.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-pairs",
+            str(raw_root),
+            "--adapter",
+            "auto_pair_tabular",
+            "--adapter-option",
+            "left_text_column=left_code",
+            "--adapter-option",
+            "right_text_column=right_code",
+            "--adapter-option",
+            "label_column=target",
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert metrics["pair_count"] == 2
+    assert pd.read_csv(scores_path)["label"].tolist() == [1, 0]
+
+
+def test_evaluate_pairs_command_loads_registered_preset(tmp_path, monkeypatch):
+    monkeypatch.setattr(datasets_module, "_DATASET_PRESETS", dict(datasets_module._DATASET_PRESETS))
+    dataset_root = tmp_path / "preset_pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "return 1", "suffix": ".py"},
+                {"file_id": "b", "text": "return 1", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+    )
+    register_dataset_preset(
+        "unit_cli_pair_preset",
+        {
+            "source": "local",
+            "identifier": dataset_root,
+            "task_families": ("pair",),
+        },
+        overwrite=True,
+    )
+    scores_path = tmp_path / "preset_scores.csv"
+    metrics_path = tmp_path / "preset_metrics.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-pairs",
+            "--preset",
+            "unit_cli_pair_preset",
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert pd.read_csv(scores_path)["label"].tolist() == [1]
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert metrics["pair_count"] == 1
+
+
 def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
     dataset_root = tmp_path / "retrieval"
     write_retrieval_dataset(
@@ -348,6 +437,82 @@ def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
     assert metrics["query_count"] == 1
     assert metrics["result_count"] == 2
     assert "map=" in result.output
+
+
+def test_evaluate_retrieval_command_loads_tabular_adapter_spec(tmp_path):
+    raw_root = tmp_path / "raw_retrieval"
+    raw_root.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "query_id": "q1",
+                "document_id": "d1",
+                "query_code": "print(1)",
+                "candidate_code": "print(1)",
+                "relevance": 1,
+            },
+            {
+                "query_id": "q1",
+                "document_id": "d2",
+                "query_code": "print(1)",
+                "candidate_code": "print(2)",
+                "relevance": 0,
+            },
+        ]
+    ).to_csv(raw_root / "retrieval.csv", index=False)
+    scores_path = tmp_path / "adapter_retrieval_scores.csv"
+    metrics_path = tmp_path / "adapter_retrieval_metrics.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-retrieval",
+            str(raw_root),
+            "--adapter",
+            "auto_retrieval_tabular",
+            "--adapter-option",
+            "retrieval_table=retrieval.csv",
+            "--adapter-option",
+            "query_text_column=query_code",
+            "--adapter-option",
+            "document_text_column=candidate_code",
+            "--adapter-option",
+            "relevance_column=relevance",
+            "--k",
+            "1",
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert metrics["query_count"] == 1
+    assert metrics["result_count"] == 2
+    assert set(pd.read_csv(scores_path)["document_id"]) == {"d1", "d2"}
+
+
+def test_dataset_example_script_runs():
+    repo_root = Path(__file__).resolve().parents[1]
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        part for part in (str(repo_root), env.get("PYTHONPATH", "")) if part
+    )
+
+    result = subprocess.run(
+        [sys.executable, "examples/datasets_demo.py"],
+        cwd=repo_root,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Generic tabular retrieval adapter" in result.stdout
+    assert "Custom source and preset" in result.stdout
 
 
 def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):

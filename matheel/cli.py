@@ -7,6 +7,7 @@ import click
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
 from ._progress import should_show_progress
+from .datasets import load_pair_datasets, load_retrieval_datasets
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .similarity import DEFAULT_MODEL_NAME, available_runtime_devices, get_sim_list
 from .chunking import available_chunk_aggregations, available_chunking_methods
@@ -21,6 +22,73 @@ from .vectors import (
 def main():
     """Matheel CLI - Compute Code Similarity"""
     pass
+
+
+def _parse_dataset_adapter_options(entries):
+    options = {}
+    for entry in entries or ():
+        key, separator, value = str(entry).partition("=")
+        key = key.strip()
+        if not separator or not key:
+            raise click.UsageError("--adapter-option values must use name=value.")
+        options[key] = value
+    return options
+
+
+def _dataset_spec_from_cli(
+    dataset_spec,
+    *,
+    task_family,
+    preset,
+    source,
+    identifier,
+    dataset_name,
+    adapter,
+    adapter_options,
+    destination,
+    adapted_destination,
+    revision,
+    split,
+    path_in_archive,
+):
+    parsed_adapter_options = _parse_dataset_adapter_options(adapter_options)
+    if preset and dataset_spec:
+        raise click.UsageError("Use either DATASET_SPEC or --preset, not both.")
+    if dataset_spec and identifier:
+        raise click.UsageError("Use either DATASET_SPEC or --identifier, not both.")
+    if parsed_adapter_options and adapter is None and preset is None:
+        raise click.UsageError("--adapter-option requires --adapter or --preset.")
+
+    adapter_key = "adapter" if task_family == "pair" else "retrieval_adapter"
+    optional_values = {
+        "source": source,
+        "identifier": identifier,
+        "name": dataset_name,
+        adapter_key: adapter,
+        "adapter_options": parsed_adapter_options or None,
+        "destination": destination,
+        "adapted_destination": adapted_destination,
+        "revision": revision,
+        "split": split,
+        "path_in_archive": path_in_archive,
+    }
+
+    if preset:
+        payload = {"preset": preset}
+        payload.update({key: value for key, value in optional_values.items() if value is not None})
+        return payload
+
+    if dataset_spec is None and identifier is None:
+        raise click.UsageError("Provide DATASET_SPEC, --identifier, or --preset.")
+
+    resolved_identifier = identifier if identifier is not None else dataset_spec
+    has_dataset_controls = any(value is not None for value in optional_values.values())
+    if not has_dataset_controls:
+        return resolved_identifier
+
+    payload = {"identifier": resolved_identifier}
+    payload.update({key: value for key, value in optional_values.items() if value is not None})
+    return payload
 
 
 @main.command()
@@ -362,7 +430,31 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
 
 
 @main.command(name="evaluate-pairs")
-@click.argument("dataset_path", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.argument("dataset_spec", required=False, metavar="DATASET_SPEC")
+@click.option("--preset", help="Registered dataset preset to load.")
+@click.option("--source", help="Dataset source resolver to use with DATASET_SPEC or --identifier.")
+@click.option("--identifier", help="Dataset source identifier. Use this instead of DATASET_SPEC when clearer.")
+@click.option("--dataset-name", help="Name to assign to the loaded or adapted dataset.")
+@click.option("--adapter", help="Dataset adapter to apply before evaluation.")
+@click.option(
+    "--adapter-option",
+    "adapter_options",
+    multiple=True,
+    help="Adapter option as name=value. Repeat to pass multiple options.",
+)
+@click.option(
+    "--destination",
+    type=click.Path(file_okay=False, dir_okay=True),
+    help="Directory where a source resolver should place raw data.",
+)
+@click.option(
+    "--adapted-destination",
+    type=click.Path(file_okay=False, dir_okay=True),
+    help="Directory where an adapter should write the normalized dataset.",
+)
+@click.option("--revision", help="Source revision, branch, tag, or version when the resolver supports it.")
+@click.option("--split", help="Dataset split name forwarded to the resolver or adapter.")
+@click.option("--path-in-archive", help="Relative nested path inside the resolved source root.")
 @click.option("--scores-out", type=click.Path(), default="scored_pairs.csv", show_default=True)
 @click.option("--metrics-out", type=click.Path(), default="pair_metrics.json", show_default=True)
 @click.option("--threshold", default=0.5, show_default=True, help="Classification threshold.")
@@ -414,7 +506,18 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
     show_default=True,
 )
 def evaluate_pairs(
-    dataset_path,
+    dataset_spec,
+    preset,
+    source,
+    identifier,
+    dataset_name,
+    adapter,
+    adapter_options,
+    destination,
+    adapted_destination,
+    revision,
+    split,
+    path_in_archive,
     scores_out,
     metrics_out,
     threshold,
@@ -429,10 +532,27 @@ def evaluate_pairs(
     pooling_method,
     device,
 ):
-    """Evaluate a local pair-classification dataset."""
+    """Evaluate a pair-classification dataset from a path, source spec, or preset."""
+    resolved_dataset = load_pair_datasets(
+        _dataset_spec_from_cli(
+            dataset_spec,
+            task_family="pair",
+            preset=preset,
+            source=source,
+            identifier=identifier,
+            dataset_name=dataset_name,
+            adapter=adapter,
+            adapter_options=adapter_options,
+            destination=destination,
+            adapted_destination=adapted_destination,
+            revision=revision,
+            split=split,
+            path_in_archive=path_in_archive,
+        )
+    )
     selected_weights = feature_weights or ("levenshtein=1.0",)
     scored_pairs, metrics = evaluate_pair_dataset(
-        dataset_path,
+        resolved_dataset,
         threshold=threshold,
         similarity_options={
             "feature_weights": selected_weights,
@@ -464,7 +584,31 @@ def evaluate_pairs(
 
 
 @main.command(name="evaluate-retrieval")
-@click.argument("dataset_path", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.argument("dataset_spec", required=False, metavar="DATASET_SPEC")
+@click.option("--preset", help="Registered dataset preset to load.")
+@click.option("--source", help="Dataset source resolver to use with DATASET_SPEC or --identifier.")
+@click.option("--identifier", help="Dataset source identifier. Use this instead of DATASET_SPEC when clearer.")
+@click.option("--dataset-name", help="Name to assign to the loaded or adapted dataset.")
+@click.option("--adapter", help="Dataset adapter to apply before evaluation.")
+@click.option(
+    "--adapter-option",
+    "adapter_options",
+    multiple=True,
+    help="Adapter option as name=value. Repeat to pass multiple options.",
+)
+@click.option(
+    "--destination",
+    type=click.Path(file_okay=False, dir_okay=True),
+    help="Directory where a source resolver should place raw data.",
+)
+@click.option(
+    "--adapted-destination",
+    type=click.Path(file_okay=False, dir_okay=True),
+    help="Directory where an adapter should write the normalized dataset.",
+)
+@click.option("--revision", help="Source revision, branch, tag, or version when the resolver supports it.")
+@click.option("--split", help="Dataset split name forwarded to the resolver or adapter.")
+@click.option("--path-in-archive", help="Relative nested path inside the resolved source root.")
 @click.option("--scores-out", type=click.Path(), default="scored_retrieval.csv", show_default=True)
 @click.option("--metrics-out", type=click.Path(), default="retrieval_metrics.json", show_default=True)
 @click.option("--k", default=10, show_default=True, help="Ranking cutoff for top-k metrics.")
@@ -516,7 +660,18 @@ def evaluate_pairs(
     show_default=True,
 )
 def evaluate_retrieval(
-    dataset_path,
+    dataset_spec,
+    preset,
+    source,
+    identifier,
+    dataset_name,
+    adapter,
+    adapter_options,
+    destination,
+    adapted_destination,
+    revision,
+    split,
+    path_in_archive,
     scores_out,
     metrics_out,
     k,
@@ -531,10 +686,27 @@ def evaluate_retrieval(
     pooling_method,
     device,
 ):
-    """Evaluate a local retrieval dataset."""
+    """Evaluate a retrieval dataset from a path, source spec, or preset."""
+    resolved_dataset = load_retrieval_datasets(
+        _dataset_spec_from_cli(
+            dataset_spec,
+            task_family="retrieval",
+            preset=preset,
+            source=source,
+            identifier=identifier,
+            dataset_name=dataset_name,
+            adapter=adapter,
+            adapter_options=adapter_options,
+            destination=destination,
+            adapted_destination=adapted_destination,
+            revision=revision,
+            split=split,
+            path_in_archive=path_in_archive,
+        )
+    )
     selected_weights = feature_weights or ("levenshtein=1.0",)
     scored_results, metrics = evaluate_retrieval_dataset(
-        dataset_path,
+        resolved_dataset,
         k=k,
         similarity_options={
             "feature_weights": selected_weights,
