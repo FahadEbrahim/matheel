@@ -55,6 +55,29 @@ def test_load_run_configs_supports_feature_weights_dict(tmp_path):
     }
 
 
+def test_load_run_configs_resolves_algorithm_path_relative_to_config(tmp_path):
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    algorithm_path = config_dir / "algo.py"
+    algorithm_path.write_text("def score_pair(code_a, code_b):\n    return 1.0\n", encoding="utf-8")
+    config_path = config_dir / "runs.json"
+    config_path.write_text(
+        json.dumps(
+            [
+                {
+                    "run_name": "custom",
+                    "algorithm_path": "algo.py",
+                },
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    runs = load_run_configs(config_path)
+
+    assert runs[0]["options"]["algorithm_path"] == str(algorithm_path.resolve())
+
+
 def test_parse_run_configs_accepts_json_text():
     runs = parse_run_configs(
         '[{"run_name":"baseline","model":"demo-model","feature_weights":"semantic=0.2,code_metric=0.8"}]'
@@ -273,6 +296,32 @@ def test_run_comparison_suite_supports_custom_algorithm(tmp_path):
     payload = json.loads(reproducibility_path.read_text(encoding="utf-8"))
     assert payload["source"]["source_type"] == "directory"
     assert payload["run_metadata"]["runs"]["custom_exact"]["algorithm"]["algorithm_options"] == {"bias": 0.1}
+
+
+def test_run_comparison_suite_uses_config_relative_custom_algorithm(tmp_path, monkeypatch):
+    source_dir = tmp_path / "codes"
+    source_dir.mkdir()
+    (source_dir / "a.py").write_text("return 1\n", encoding="utf-8")
+    (source_dir / "b.py").write_text("return 1\n", encoding="utf-8")
+
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    (config_dir / "algo.py").write_text(
+        "def score_pair(code_a, code_b):\n    return 1.0 if code_a == code_b else 0.0\n",
+        encoding="utf-8",
+    )
+    config_path = config_dir / "runs.json"
+    config_path.write_text(
+        json.dumps([{"run_name": "custom", "algorithm_path": "algo.py"}]),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+
+    runs = load_run_configs(config_path)
+    summary, _ = run_comparison_suite(source_dir, runs)
+
+    assert summary.loc[0, "run_name"] == "custom"
+    assert summary.loc[0, "top_score"] == pytest.approx(1.0)
 
 
 def test_run_comparison_suite_reports_progress_events(monkeypatch):

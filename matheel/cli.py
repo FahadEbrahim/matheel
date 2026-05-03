@@ -957,6 +957,10 @@ def evaluate_pairs(
             threshold=threshold,
             algorithm=algorithm_path,
             algorithm_options=parsed_algorithm_options,
+            similarity_options={
+                "preprocess_mode": preprocess_mode,
+                "code_language": code_language,
+            },
         )
     else:
         if parsed_algorithm_options:
@@ -1178,6 +1182,10 @@ def evaluate_retrieval(
             k=k,
             algorithm=algorithm_path,
             algorithm_options=parsed_algorithm_options,
+            similarity_options={
+                "preprocess_mode": preprocess_mode,
+                "code_language": code_language,
+            },
         )
     else:
         if parsed_algorithm_options:

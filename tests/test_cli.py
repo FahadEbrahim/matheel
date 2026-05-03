@@ -630,7 +630,7 @@ def test_evaluate_pairs_command_uses_custom_algorithm(tmp_path):
         dataset_root,
         files=pd.DataFrame(
             [
-                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "a", "text": "print(1)  # comment", "suffix": ".py"},
                 {"file_id": "b", "text": "print(1)", "suffix": ".py"},
                 {"file_id": "c", "text": "print(2)", "suffix": ".py"},
             ]
@@ -666,6 +666,8 @@ def test_evaluate_pairs_command_uses_custom_algorithm(tmp_path):
             str(algorithm_path),
             "--algorithm-option",
             "bias=0.1",
+            "--preprocess-mode",
+            "basic",
             "--scores-out",
             str(scores_path),
             "--metrics-out",
@@ -898,7 +900,7 @@ def test_evaluate_retrieval_command_uses_custom_algorithm(tmp_path):
         dataset_root,
         files=pd.DataFrame(
             [
-                {"file_id": "query_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "query_a", "text": "print(1)  # comment", "suffix": ".py"},
                 {"file_id": "doc_a", "text": "print(1)", "suffix": ".py"},
                 {"file_id": "doc_b", "text": "print(2)", "suffix": ".py"},
             ]
@@ -936,6 +938,8 @@ def test_evaluate_retrieval_command_uses_custom_algorithm(tmp_path):
             str(algorithm_path),
             "--algorithm-option",
             "bias=0.1",
+            "--preprocess-mode",
+            "basic",
             "--k",
             "1",
             "--scores-out",

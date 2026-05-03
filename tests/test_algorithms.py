@@ -80,6 +80,11 @@ def test_resolve_pair_algorithm_from_module_path_with_prepare_hook(tmp_path):
 
     assert context["n"] == 3
     assert score == pytest.approx(1.2)
+    assert metadata["algorithm_name"] == "custom_algorithm"
+    assert metadata["algorithm_module"] == "custom_algorithm"
+    assert metadata["algorithm_package"] is None
+    assert "matheel_user_algorithm" not in metadata["algorithm_name"]
+    assert "matheel_user_algorithm" not in metadata["algorithm_module"]
     assert metadata["algorithm_source_fingerprint"]["file_name"] == "custom_algorithm.py"
     assert len(metadata["algorithm_source_fingerprint"]["sha256"]) == 64
     assert metadata["algorithm_options"] == {"bonus": 0.2}
@@ -119,3 +124,29 @@ def test_score_source_pairs_with_algorithm_attaches_reproducibility_metadata(tmp
     assert results.attrs["vector_backend"] == "inactive"
     assert results.attrs["algorithm"]["algorithm_options"] == {"bias": 0.1}
     assert len(results.attrs["algorithm"]["algorithm_source_fingerprint"]["sha256"]) == 64
+
+
+def test_score_source_pairs_with_algorithm_reports_progress(tmp_path):
+    source_root = tmp_path / "codes"
+    source_root.mkdir()
+    (source_root / "a.py").write_text("print(1)\n", encoding="utf-8")
+    (source_root / "b.py").write_text("print(1)\n", encoding="utf-8")
+
+    def score_pair(code_a, code_b):
+        return 1.0 if code_a == code_b else 0.0
+
+    events = []
+    score_source_pairs_with_algorithm(
+        source_root,
+        algorithm=score_pair,
+        progress_callback=events.append,
+    )
+
+    prepare_events = [event for event in events if event["stage"] == "prepare_files"]
+    score_events = [event for event in events if event["stage"] == "score_pairs"]
+    assert prepare_events[0]["current"] == 0
+    assert prepare_events[-1]["current"] == 2
+    assert prepare_events[-1]["total"] == 2
+    assert score_events[0]["current"] == 0
+    assert score_events[-1]["current"] == 1
+    assert score_events[-1]["total"] == 1

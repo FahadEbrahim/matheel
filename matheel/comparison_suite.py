@@ -32,8 +32,10 @@ _RUNTIME_FIELDS = ("elapsed_seconds",)
 
 
 def load_run_configs(config_path):
-    raw_data = Path(config_path).read_text(encoding="utf-8")
-    return parse_run_configs(raw_data)
+    path = Path(config_path)
+    raw_data = path.read_text(encoding="utf-8")
+    runs = parse_run_configs(raw_data)
+    return [_resolve_run_paths(run, base_dir=path.parent) for run in runs]
 
 
 def parse_run_configs(raw_data):
@@ -78,6 +80,32 @@ def normalize_run_config(config, index=1):
 
 def _run_uses_custom_algorithm(options):
     return options.get("algorithm") is not None or options.get("algorithm_path") is not None
+
+
+def _resolve_run_paths(run, base_dir):
+    options = dict(run["options"])
+    if "algorithm_path" in options:
+        options["algorithm_path"] = _resolve_config_relative_path(options["algorithm_path"], base_dir)
+    return {"run_name": run["run_name"], "options": options}
+
+
+def _resolve_config_relative_path(value, base_dir):
+    if not isinstance(value, str):
+        return value
+    text = value.strip()
+    if not text or Path(text).expanduser().is_absolute() or not _looks_like_path(text):
+        return value
+    return str((Path(base_dir) / text).resolve())
+
+
+def _looks_like_path(value):
+    text = str(value)
+    return (
+        text.startswith(".")
+        or text.endswith(".py")
+        or "/" in text
+        or "\\" in text
+    )
 
 
 def _normalize_run_feature_weights(options):
