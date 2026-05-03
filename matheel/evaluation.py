@@ -10,6 +10,7 @@ from .algorithms import (
 )
 from .calibration import evaluate_threshold
 from .datasets import PairDataset, RetrievalDataset, load_code_texts, load_pair_dataset, load_retrieval_dataset
+from .preprocessing import preprocess_code
 from .resampling import summarize_metric_samples
 from .similarity import calculate_similarity
 
@@ -30,6 +31,8 @@ def score_pair_dataset(
     texts = load_code_texts(dataset)
     options = dict(similarity_options or {})
     resolved_algorithm = resolve_pair_algorithm(algorithm) if algorithm is not None else None
+    if resolved_algorithm is not None:
+        texts = _preprocess_algorithm_texts(texts, options)
     dataset_context = (
         prepare_algorithm_dataset(
             resolved_algorithm,
@@ -133,6 +136,8 @@ def score_retrieval_dataset(
     options = dict(similarity_options or {})
     qrels_lookup = _qrels_lookup(dataset.qrels)
     resolved_algorithm = resolve_pair_algorithm(algorithm) if algorithm is not None else None
+    if resolved_algorithm is not None:
+        texts = _preprocess_algorithm_texts(texts, options)
     dataset_context = (
         prepare_algorithm_dataset(
             resolved_algorithm,
@@ -402,6 +407,15 @@ def _qrels_lookup(
         relevance = _normalize_nonnegative_relevance(row[relevance_column])
         lookup[(query_id, document_id)] = max(lookup.get((query_id, document_id), 0.0), relevance)
     return lookup
+
+
+def _preprocess_algorithm_texts(texts, similarity_options):
+    preprocess_mode = (similarity_options or {}).get("preprocess_mode", "none")
+    code_language = (similarity_options or {}).get("code_language")
+    return {
+        file_id: preprocess_code(text, mode=preprocess_mode, language=code_language)
+        for file_id, text in texts.items()
+    }
 
 
 def _rank_query_results(frame, document_column, score_column):

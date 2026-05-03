@@ -14,6 +14,7 @@ from collections.abc import Mapping
 
 import pandas as pd
 
+from ._progress import progress_iter
 from ._run_metadata import attach_run_metadata, elapsed_seconds_since, perf_counter
 from .preprocessing import preprocess_code
 from .similarity import RESULT_COLUMNS, calculate_similarity, extract_and_read_source
@@ -112,6 +113,9 @@ def _load_module_from_path(module_path):
     module = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
+    module.__matheel_algorithm_name__ = target.stem
+    module.__matheel_algorithm_module__ = target.stem
+    module.__matheel_algorithm_package__ = None
     return module
 
 
@@ -148,10 +152,18 @@ def resolve_pair_algorithm(
         prepare_dataset = getattr(module, prepare_name, None)
         if prepare_dataset is not None and not callable(prepare_dataset):
             raise ValueError(f"'{prepare_name}' must be callable when provided.")
-        module_name = getattr(module, "__name__", None)
-        package_name = _package_name_from_module(module_name)
+        module_name = getattr(module, "__matheel_algorithm_module__", None) or getattr(module, "__name__", None)
+        package_name = (
+            getattr(module, "__matheel_algorithm_package__")
+            if hasattr(module, "__matheel_algorithm_package__")
+            else _package_name_from_module(module_name)
+        )
         return PairAlgorithm(
-            name=str(name or getattr(module, "__name__", "custom_algorithm")),
+            name=str(
+                name
+                or getattr(module, "__matheel_algorithm_name__", None)
+                or getattr(module, "__name__", "custom_algorithm")
+            ),
             score_pair=score_pair,
             prepare_dataset=prepare_dataset,
             module_name=module_name,
@@ -295,7 +307,15 @@ def score_source_pairs_with_algorithm(
     file_names, raw_codes = extract_and_read_source(source_path)
     codes = [
         preprocess_code(code, mode=preprocess_mode, language=code_language)
-        for code in raw_codes
+        for code in progress_iter(
+            raw_codes,
+            total=len(raw_codes),
+            desc="Prepare files",
+            unit="file",
+            progress=progress,
+            progress_callback=progress_callback,
+            stage="prepare_files",
+        )
     ]
     source_context = {
         "source_kind": "source_pairs",
@@ -310,7 +330,17 @@ def score_source_pairs_with_algorithm(
     )
 
     rows = []
-    for i, j in combinations(range(len(codes)), 2):
+    pair_count = max(0, len(codes) * (len(codes) - 1) // 2)
+    pair_iter = progress_iter(
+        combinations(range(len(codes)), 2),
+        total=pair_count,
+        desc="Score custom pairs",
+        unit="pair",
+        progress=progress,
+        progress_callback=progress_callback,
+        stage="score_pairs",
+    )
+    for i, j in pair_iter:
         row = {"file_name_1": file_names[i], "file_name_2": file_names[j]}
         score = score_pair_with_algorithm(
             codes[i],
