@@ -105,8 +105,6 @@ Approved built-in plagiarism presets:
 | `irplag` | pair, retrieval | GitHub | `oscarkarnalim/sourcecodeplagiarismdataset` |
 | `conplag` | pair | Zenodo | `7332790` |
 
-BigCloneBench and POJ104 are not registered presets.
-
 Custom projects can register their own source resolvers, presets, and adapters:
 
 ```python

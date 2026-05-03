@@ -77,9 +77,7 @@ def test_default_dataset_presets_include_only_approved_plagiarism_presets():
     pair_presets = set(available_dataset_presets_by_task("pair"))
     retrieval_presets = set(available_dataset_presets_by_task("retrieval"))
 
-    assert {"soco14", "irplag", "conplag"}.issubset(presets)
-    assert "bigclonebench" not in presets
-    assert "poj104" not in presets
+    assert presets == {"soco14", "irplag", "conplag"}
     assert "soco14" not in pair_presets
     assert {"irplag", "conplag"}.issubset(pair_presets)
     assert {"soco14", "irplag"}.issubset(retrieval_presets)
