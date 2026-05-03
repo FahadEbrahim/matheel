@@ -13,11 +13,19 @@ Matheel is a Python package and CLI for source-code similarity. It combines sema
 
 Matheel supports Python `3.10` to `3.13`.
 
+Recommended install:
+
+```bash
+pip install "matheel[all]"
+```
+
+For a lightweight install without optional semantic, chunking, metrics, and Gradio dependencies:
+
 ```bash
 pip install matheel
 ```
 
-Optional semantic, chunking, metrics, and Gradio extras are covered in the [usage guide](https://fahadebrahim.github.io/matheel/usage/#installation).
+Installation options are covered in the [usage guide](https://fahadebrahim.github.io/matheel/usage/#installation).
 
 ## Quick Start
 
