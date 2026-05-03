@@ -35,6 +35,16 @@ class PairDataset:
     metadata: dict
 
 
+@dataclass(frozen=True)
+class RetrievalDataset:
+    root: Path
+    files: pd.DataFrame
+    queries: pd.DataFrame
+    corpus: pd.DataFrame
+    qrels: pd.DataFrame
+    metadata: dict
+
+
 def available_dataset_task_types():
     return DATASET_TASK_TYPES
 
@@ -157,11 +167,179 @@ def validate_pair_dataset(dataset):
     return PairDataset(root=dataset.root, files=files, pairs=pairs, metadata=metadata)
 
 
+def load_retrieval_dataset(dataset_root):
+    root = _coerce_path(dataset_root)
+    metadata = _read_json(root / "metadata.json")
+    files = _load_files_manifest(root)
+
+    queries_path = root / "queries.csv"
+    corpus_path = root / "corpus.csv"
+    qrels_path = root / "qrels.csv"
+    for label, path in (
+        ("queries manifest", queries_path),
+        ("corpus manifest", corpus_path),
+        ("qrels manifest", qrels_path),
+    ):
+        if not path.exists():
+            raise ValueError(f"Missing {label}: {path}")
+
+    dataset = RetrievalDataset(
+        root=root,
+        files=files,
+        queries=pd.read_csv(queries_path),
+        corpus=pd.read_csv(corpus_path),
+        qrels=pd.read_csv(qrels_path),
+        metadata=metadata,
+    )
+    return validate_retrieval_dataset(dataset)
+
+
+def write_retrieval_dataset(dataset_root, files, queries, corpus, qrels, metadata=None):
+    root = _coerce_path(dataset_root)
+    root.mkdir(parents=True, exist_ok=True)
+    files_manifest = _write_files_manifest(root, files)
+
+    queries_frame = _coerce_frame(queries, required_columns=("query_id", "file_id"), frame_name="queries")
+    corpus_frame = _coerce_frame(corpus, required_columns=("document_id", "file_id"), frame_name="corpus")
+    qrels_frame = _coerce_frame(
+        qrels,
+        required_columns=("query_id", "document_id", "relevance"),
+        frame_name="qrels",
+    )
+
+    queries_frame["query_id"] = queries_frame["query_id"].map(lambda value: _normalize_id(value, "query_id"))
+    queries_frame["file_id"] = queries_frame["file_id"].map(lambda value: _normalize_id(value, "file_id"))
+    corpus_frame["document_id"] = corpus_frame["document_id"].map(
+        lambda value: _normalize_id(value, "document_id")
+    )
+    corpus_frame["file_id"] = corpus_frame["file_id"].map(lambda value: _normalize_id(value, "file_id"))
+    qrels_frame["query_id"] = qrels_frame["query_id"].map(lambda value: _normalize_id(value, "query_id"))
+    qrels_frame["document_id"] = qrels_frame["document_id"].map(
+        lambda value: _normalize_id(value, "document_id")
+    )
+    qrels_frame["relevance"] = qrels_frame["relevance"].map(_normalize_nonnegative_relevance)
+
+    queries_frame.to_csv(root / "queries.csv", index=False)
+    corpus_frame.to_csv(root / "corpus.csv", index=False)
+    qrels_frame.to_csv(root / "qrels.csv", index=False)
+
+    payload = _normalize_metadata(metadata, dataset_kind="retrieval")
+    _write_json(root / "metadata.json", payload)
+    return validate_retrieval_dataset(
+        RetrievalDataset(
+            root=root,
+            files=files_manifest,
+            queries=queries_frame,
+            corpus=corpus_frame,
+            qrels=qrels_frame,
+            metadata=payload,
+        )
+    )
+
+
+def validate_retrieval_dataset(dataset):
+    if isinstance(dataset, (str, os.PathLike)):
+        dataset = load_retrieval_dataset(dataset)
+    if not isinstance(dataset, RetrievalDataset):
+        raise ValueError("validate_retrieval_dataset expects a RetrievalDataset or dataset path.")
+
+    metadata = _normalize_metadata(dataset.metadata, dataset_kind="retrieval")
+    if metadata["dataset_kind"] != "retrieval":
+        raise ValueError("Retrieval datasets must use dataset_kind='retrieval'.")
+
+    files = _coerce_frame(dataset.files, required_columns=("file_id", "file_path"), frame_name="files")
+    queries = _coerce_frame(dataset.queries, required_columns=("query_id", "file_id"), frame_name="queries")
+    corpus = _coerce_frame(dataset.corpus, required_columns=("document_id", "file_id"), frame_name="corpus")
+    qrels = _coerce_frame(
+        dataset.qrels,
+        required_columns=("query_id", "document_id", "relevance"),
+        frame_name="qrels",
+    )
+
+    files["file_id"] = files["file_id"].map(lambda value: _normalize_id(value, "file_id"))
+    files["file_path"] = files["file_path"].map(_normalize_relative_file_path)
+    queries["query_id"] = queries["query_id"].map(lambda value: _normalize_id(value, "query_id"))
+    queries["file_id"] = queries["file_id"].map(lambda value: _normalize_id(value, "file_id"))
+    corpus["document_id"] = corpus["document_id"].map(lambda value: _normalize_id(value, "document_id"))
+    corpus["file_id"] = corpus["file_id"].map(lambda value: _normalize_id(value, "file_id"))
+    qrels["query_id"] = qrels["query_id"].map(lambda value: _normalize_id(value, "query_id"))
+    qrels["document_id"] = qrels["document_id"].map(lambda value: _normalize_id(value, "document_id"))
+    qrels["relevance"] = qrels["relevance"].map(_normalize_nonnegative_relevance)
+
+    duplicate_file_ids = files["file_id"][files["file_id"].duplicated()].tolist()
+    if duplicate_file_ids:
+        raise ValueError(
+            f"files.csv contains duplicate file_id values: {', '.join(sorted(set(duplicate_file_ids)))}"
+        )
+
+    duplicate_query_ids = queries["query_id"][queries["query_id"].duplicated()].tolist()
+    if duplicate_query_ids:
+        raise ValueError(
+            f"queries.csv contains duplicate query_id values: {', '.join(sorted(set(duplicate_query_ids)))}"
+        )
+
+    duplicate_document_ids = corpus["document_id"][corpus["document_id"].duplicated()].tolist()
+    if duplicate_document_ids:
+        raise ValueError(
+            "corpus.csv contains duplicate document_id values: "
+            f"{', '.join(sorted(set(duplicate_document_ids)))}"
+        )
+
+    duplicate_qrels = qrels[qrels.duplicated(subset=["query_id", "document_id"])]
+    if not duplicate_qrels.empty:
+        pairs = sorted(
+            f"{row['query_id']}->{row['document_id']}"
+            for row in duplicate_qrels.to_dict(orient="records")
+        )
+        raise ValueError(f"qrels.csv contains duplicate query/document judgments: {', '.join(pairs)}")
+
+    file_ids = set(files["file_id"].tolist())
+    missing_query_files = sorted(file_id for file_id in queries["file_id"].tolist() if file_id not in file_ids)
+    if missing_query_files:
+        raise ValueError(f"queries.csv references unknown file ids: {', '.join(missing_query_files)}")
+
+    missing_corpus_files = sorted(file_id for file_id in corpus["file_id"].tolist() if file_id not in file_ids)
+    if missing_corpus_files:
+        raise ValueError(f"corpus.csv references unknown file ids: {', '.join(missing_corpus_files)}")
+
+    query_ids = set(queries["query_id"].tolist())
+    document_ids = set(corpus["document_id"].tolist())
+    missing_queries = sorted(query_id for query_id in qrels["query_id"].tolist() if query_id not in query_ids)
+    if missing_queries:
+        raise ValueError(f"qrels.csv references unknown query ids: {', '.join(missing_queries)}")
+
+    missing_documents = sorted(
+        document_id for document_id in qrels["document_id"].tolist() if document_id not in document_ids
+    )
+    if missing_documents:
+        raise ValueError(f"qrels.csv references unknown document ids: {', '.join(missing_documents)}")
+
+    for file_path in files["file_path"].tolist():
+        target = dataset.root / file_path
+        if not target.exists():
+            raise ValueError(f"files.csv references missing file: {file_path}")
+
+    return RetrievalDataset(
+        root=dataset.root,
+        files=files,
+        queries=queries,
+        corpus=corpus,
+        qrels=qrels,
+        metadata=metadata,
+    )
+
+
 def load_code_texts(dataset):
     if isinstance(dataset, (str, os.PathLike)):
-        dataset = load_pair_dataset(dataset)
-    if not isinstance(dataset, PairDataset):
-        raise ValueError("load_code_texts expects a PairDataset or dataset path.")
+        root = _coerce_path(dataset)
+        metadata = _read_json(root / "metadata.json")
+        dataset_kind = str(metadata.get("dataset_kind") or "").strip().lower()
+        if dataset_kind == "retrieval":
+            dataset = load_retrieval_dataset(root)
+        else:
+            dataset = load_pair_dataset(root)
+    if not isinstance(dataset, (PairDataset, RetrievalDataset)):
+        raise ValueError("load_code_texts expects a PairDataset, RetrievalDataset, or dataset path.")
 
     texts = {}
     for row in dataset.files.to_dict(orient="records"):
@@ -257,6 +435,16 @@ def _normalize_binary_label(value):
     if not math.isfinite(numeric) or numeric not in (0.0, 1.0):
         raise ValueError(f"Binary labels must be 0 or 1. Got: {value}")
     return int(numeric)
+
+
+def _normalize_nonnegative_relevance(value):
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Relevance values must be finite and non-negative. Got: {value}") from exc
+    if not math.isfinite(numeric) or numeric < 0:
+        raise ValueError(f"Relevance values must be finite and non-negative. Got: {value}")
+    return numeric
 
 
 def _output_suffix(row):

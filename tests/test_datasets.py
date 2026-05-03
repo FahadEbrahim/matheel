@@ -7,8 +7,10 @@ from matheel.datasets import (
     get_dataset_entry,
     load_code_texts,
     load_pair_dataset,
+    load_retrieval_dataset,
     registered_datasets,
     register_dataset_entry,
+    write_retrieval_dataset,
     write_pair_dataset,
 )
 
@@ -84,3 +86,60 @@ def test_pair_dataset_rejects_path_separator_file_ids(tmp_path):
             files=pd.DataFrame([{"file_id": "../a", "text": "print(1)"}]),
             pairs=pd.DataFrame([{"left_id": "../a", "right_id": "../a", "label": 1}]),
         )
+
+
+def test_retrieval_dataset_roundtrip_writes_manifests(tmp_path):
+    dataset_root = tmp_path / "retrieval"
+
+    written = write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "query_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "doc_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "doc_b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "query_a"}]),
+        corpus=pd.DataFrame(
+            [
+                {"document_id": "d1", "file_id": "doc_a"},
+                {"document_id": "d2", "file_id": "doc_b"},
+            ]
+        ),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+        metadata={"name": "tiny_retrieval_fixture", "task_type": "plagiarism"},
+    )
+    loaded = load_retrieval_dataset(dataset_root)
+    texts = load_code_texts(loaded)
+
+    assert written.metadata["dataset_kind"] == "retrieval"
+    assert loaded.metadata["task_type"] == "plagiarism"
+    assert loaded.queries["query_id"].tolist() == ["q1"]
+    assert loaded.corpus["document_id"].tolist() == ["d1", "d2"]
+    assert loaded.qrels["relevance"].tolist() == [1.0]
+    assert texts["query_a"] == "print(1)"
+    assert (dataset_root / "queries.csv").exists()
+    assert (dataset_root / "corpus.csv").exists()
+    assert (dataset_root / "qrels.csv").exists()
+
+
+def test_retrieval_dataset_rejects_unknown_qrels_reference(tmp_path):
+    dataset_root = tmp_path / "retrieval"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "query_a", "text": "print(1)"},
+                {"file_id": "doc_a", "text": "print(1)"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "query_a"}]),
+        corpus=pd.DataFrame([{"document_id": "d1", "file_id": "doc_a"}]),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+    )
+    qrels_path = dataset_root / "qrels.csv"
+    qrels_path.write_text("query_id,document_id,relevance\nq1,missing,1\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="unknown document ids: missing"):
+        load_retrieval_dataset(dataset_root)

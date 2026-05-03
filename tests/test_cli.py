@@ -4,7 +4,7 @@ from click.testing import CliRunner
 import pandas as pd
 
 from matheel.cli import main
-from matheel.datasets import write_pair_dataset
+from matheel.datasets import write_pair_dataset, write_retrieval_dataset
 
 
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
@@ -301,6 +301,53 @@ def test_evaluate_pairs_command_writes_scores_and_metrics(tmp_path):
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert metrics["pair_count"] == 2
     assert "accuracy=" in result.output
+
+
+def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
+    dataset_root = tmp_path / "retrieval"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "query_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "doc_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "doc_b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "query_a"}]),
+        corpus=pd.DataFrame(
+            [
+                {"document_id": "d1", "file_id": "doc_a"},
+                {"document_id": "d2", "file_id": "doc_b"},
+            ]
+        ),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+    )
+    scores_path = tmp_path / "retrieval_scores.csv"
+    metrics_path = tmp_path / "retrieval_metrics.json"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-retrieval",
+            str(dataset_root),
+            "--k",
+            "1",
+            "--scores-out",
+            str(scores_path),
+            "--metrics-out",
+            str(metrics_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert scores_path.exists()
+    assert metrics_path.exists()
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    assert metrics["query_count"] == 1
+    assert metrics["result_count"] == 2
+    assert "map=" in result.output
 
 
 def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
