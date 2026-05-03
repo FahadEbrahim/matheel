@@ -1,3 +1,4 @@
+import json
 import zipfile
 
 import pandas as pd
@@ -15,10 +16,13 @@ from matheel.datasets import (
     get_dataset_entry,
     get_dataset_preset,
     load_code_texts,
+    load_dataset_manifest,
     load_pair_dataset,
     load_pair_datasets,
+    load_pair_datasets_from_manifest,
     load_retrieval_dataset,
     load_retrieval_datasets,
+    load_retrieval_datasets_from_manifest,
     registered_datasets,
     register_dataset_adapter,
     register_dataset_entry,
@@ -136,6 +140,177 @@ def test_custom_source_and_preset_load_pair_dataset(tmp_path):
     assert len(loaded.pairs) == 1
     assert captured["identifier"] == "custom_pair"
     assert captured["revision"] == "main"
+
+
+def test_load_pair_datasets_from_manifest_resolves_relative_paths(tmp_path):
+    project_root = tmp_path / "project"
+    raw_root = project_root / "raw_pairs"
+    raw_root.mkdir(parents=True)
+    pd.DataFrame(
+        [
+            {"left_code": "print('x')", "right_code": "print('x')", "label": 1},
+            {"left_code": "print('x')", "right_code": "print('y')", "label": 0},
+        ]
+    ).to_csv(raw_root / "pairs.csv", index=False)
+    manifest_path = project_root / "datasets.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "task": "pair",
+                "datasets": [
+                    {
+                        "source": "local",
+                        "identifier": "raw_pairs",
+                        "name": "manifest_pairs",
+                        "adapter": "auto_pair_tabular",
+                        "adapted_destination": "normalized_pairs",
+                        "adapter_options": {
+                            "left_text_column": "left_code",
+                            "right_text_column": "right_code",
+                            "label_column": "label",
+                        },
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    manifest = load_dataset_manifest(manifest_path)
+    loaded = load_pair_datasets_from_manifest(manifest_path)
+
+    spec = manifest["datasets"][0]
+    assert spec["identifier"] == raw_root.resolve()
+    assert spec["adapted_destination"] == (project_root / "normalized_pairs").resolve()
+    assert loaded.metadata["name"] == "manifest_pairs"
+    assert loaded.pairs["label"].tolist() == [1, 0]
+
+
+def test_dataset_manifest_resolves_relative_normalized_dataset_paths(tmp_path):
+    project_root = tmp_path / "project"
+    dataset_root = project_root / "normalized_pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "x"},
+                {"file_id": "b", "text": "x"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+    )
+    manifest_path = project_root / "datasets.json"
+    manifest_path.write_text(
+        json.dumps({"version": 1, "task": "pair", "datasets": ["normalized_pairs"]}),
+        encoding="utf-8",
+    )
+
+    manifest = load_dataset_manifest(manifest_path)
+    loaded = load_pair_datasets_from_manifest(manifest_path)
+
+    assert manifest["datasets"] == [dataset_root.resolve()]
+    assert len(loaded.pairs) == 1
+
+
+def test_load_retrieval_datasets_from_manifest_supports_yaml_when_available(tmp_path):
+    yaml = pytest.importorskip("yaml")
+    project_root = tmp_path / "retrieval_project"
+    raw_root = project_root / "raw_retrieval"
+    raw_root.mkdir(parents=True)
+    pd.DataFrame(
+        [
+            {
+                "query_id": "q1",
+                "document_id": "d1",
+                "query_code": "print(1)",
+                "candidate_code": "print(1)",
+                "relevance": 1,
+            },
+            {
+                "query_id": "q1",
+                "document_id": "d2",
+                "query_code": "print(1)",
+                "candidate_code": "print(2)",
+                "relevance": 0,
+            },
+        ]
+    ).to_csv(raw_root / "retrieval.csv", index=False)
+    manifest_path = project_root / "datasets.yaml"
+    manifest_path.write_text(
+        yaml.safe_dump(
+            {
+                "version": 1,
+                "task": "retrieval",
+                "dataset": {
+                    "source": "local",
+                    "identifier": "raw_retrieval",
+                    "adapter": "auto_retrieval_tabular",
+                    "adapted_destination": "normalized_retrieval",
+                    "adapter_options": {
+                        "retrieval_table": "retrieval.csv",
+                        "query_text_column": "query_code",
+                        "document_text_column": "candidate_code",
+                        "relevance_column": "relevance",
+                    },
+                },
+            },
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_retrieval_datasets_from_manifest(manifest_path)
+
+    assert loaded.queries["query_id"].tolist() == ["q1"]
+    assert loaded.corpus["document_id"].tolist() == ["d1", "d2"]
+    assert sorted(loaded.qrels["relevance"].tolist()) == [0.0, 1.0]
+
+
+def test_dataset_manifest_rejects_credentials(tmp_path):
+    manifest_path = tmp_path / "datasets.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "datasets": [
+                    {
+                        "source": "local",
+                        "identifier": "raw_pairs",
+                        "adapter": "auto_pair_tabular",
+                        "adapted_destination": "normalized_pairs",
+                        "token": "do-not-store",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="credential fields"):
+        load_dataset_manifest(manifest_path)
+
+
+def test_dataset_manifest_requires_reproducible_adapter_destination(tmp_path):
+    manifest_path = tmp_path / "datasets.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "datasets": [
+                    {
+                        "source": "local",
+                        "identifier": "raw_pairs",
+                        "adapter": "auto_pair_tabular",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="adapted_destination"):
+        load_dataset_manifest(manifest_path)
 
 
 def test_custom_adapter_registry_can_adapt_pair_dataset(tmp_path):

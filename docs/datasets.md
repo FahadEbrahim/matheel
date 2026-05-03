@@ -52,6 +52,76 @@ retrieval_dataset = load_retrieval_datasets(
 
 Source resolvers write to user-provided destinations when supplied. For remote sources without an explicit destination, Matheel uses a temporary/cache location outside the repository.
 
+## Reproducible Loading Manifests
+
+Use a dataset manifest when you want source, adapter, and output choices captured in a reviewable file. Manifest paths are resolved relative to the manifest file, so the workflow does not depend on the shell's current working directory.
+
+```json
+{
+  "version": 1,
+  "task": "pair",
+  "datasets": [
+    {
+      "name": "custom_pairs",
+      "source": "local",
+      "identifier": "./data/raw_pairs",
+      "adapter": "auto_pair_tabular",
+      "adapted_destination": "./data/normalized_pairs",
+      "adapter_options": {
+        "pair_table": "pairs.csv",
+        "left_text_column": "code_a",
+        "right_text_column": "code_b",
+        "label_column": "label"
+      }
+    }
+  ]
+}
+```
+
+Adapter-backed manifest specs must set `adapted_destination`; remote source specs must set `destination`. Keep credentials out of manifests. Authenticate with external tools or environment-specific configuration instead.
+
+Load a manifest from Python:
+
+```python
+from matheel.datasets import load_pair_datasets_from_manifest
+
+dataset = load_pair_datasets_from_manifest("datasets.pair.json")
+```
+
+Or evaluate directly from the CLI:
+
+```bash
+matheel evaluate-pairs --manifest datasets.pair.json \
+  --scores-out scored_pairs.csv \
+  --metrics-out pair_metrics.json
+```
+
+Retrieval manifests use `task: "retrieval"` and the retrieval adapter options:
+
+```json
+{
+  "version": 1,
+  "task": "retrieval",
+  "datasets": [
+    {
+      "name": "custom_retrieval",
+      "source": "local",
+      "identifier": "./data/raw_retrieval",
+      "adapter": "auto_retrieval_tabular",
+      "adapted_destination": "./data/normalized_retrieval",
+      "adapter_options": {
+        "retrieval_table": "retrieval.csv",
+        "query_text_column": "query_code",
+        "document_text_column": "candidate_code",
+        "relevance_column": "relevance"
+      }
+    }
+  ]
+}
+```
+
+JSON manifests are supported by default. YAML manifests are supported when PyYAML is installed.
+
 ## Sources, Presets, and Adapters
 
 Use the registry APIs to inspect and extend dataset loading:
