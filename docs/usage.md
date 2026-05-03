@@ -90,6 +90,7 @@ print(results.head())
 - Add `--chunking-method` when large files should be split before embedding.
 - Use `matheel compare-suite` with a JSON config for repeatable multi-run comparisons.
 - Use `--algorithm-path` when you need a custom `score_pair` implementation.
+- Run the reproducible benchmark demo when you need a small auditable evaluation workflow.
 - Run the Gradio app or notebooks when you want an interactive workflow.
 
 ## Demos and Examples
@@ -108,6 +109,7 @@ print(results.head())
 - [Lexical metrics and baselines](lexical.md)
 - [Code metrics](code_metrics.md)
 - [Scoring and calibration](scoring.md)
+- [Reproducible benchmark demo](reproducible_benchmark.md)
 - [Custom algorithms](customization.md)
 - [Comparison suite](comparison_suite.md)
 - [Development](development.md)

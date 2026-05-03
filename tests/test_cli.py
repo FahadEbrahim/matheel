@@ -1104,6 +1104,43 @@ def test_dataset_example_script_runs():
     assert "Custom source and preset" in result.stdout
 
 
+def test_reproducible_benchmark_example_script_runs(tmp_path):
+    repo_root = Path(__file__).resolve().parents[1]
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        part for part in (str(repo_root), env.get("PYTHONPATH", "")) if part
+    )
+    output_dir = tmp_path / "benchmark"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "examples/reproducible_benchmark_demo.py",
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=repo_root,
+        env=env,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert "Reproducible synthetic pair benchmark" in result.stdout
+    assert (output_dir / "dataset_manifest.json").exists()
+    assert (output_dir / "benchmark_config.json").exists()
+    assert (output_dir / "results" / "scored_pairs.csv").exists()
+    assert (output_dir / "results" / "resample_summary.csv").exists()
+
+    metrics = json.loads((output_dir / "results" / "pair_metrics.json").read_text(encoding="utf-8"))
+    assert metrics["pair_count"] == 8
+    reproducibility = json.loads(
+        (output_dir / "results" / "reproducibility.json").read_text(encoding="utf-8")
+    )
+    assert reproducibility["schema_version"] == 1
+    assert reproducibility["source"]["source_type"] == "directory"
+
+
 def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
     archive_path = tmp_path / "codes.zip"
     archive_path.write_bytes(b"placeholder")
