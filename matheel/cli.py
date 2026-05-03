@@ -7,7 +7,19 @@ import click
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
 from ._progress import should_show_progress
-from .datasets import load_pair_datasets, load_retrieval_datasets
+from .datasets import (
+    adapt_pair_dataset,
+    adapt_retrieval_dataset,
+    available_dataset_adapters,
+    available_dataset_presets,
+    available_dataset_presets_by_task,
+    available_dataset_sources,
+    dataset_preset_task_families,
+    load_pair_dataset,
+    load_pair_datasets,
+    load_retrieval_dataset,
+    load_retrieval_datasets,
+)
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .similarity import DEFAULT_MODEL_NAME, available_runtime_devices, get_sim_list
 from .chunking import available_chunk_aggregations, available_chunking_methods
@@ -89,6 +101,208 @@ def _dataset_spec_from_cli(
     payload = {"identifier": resolved_identifier}
     payload.update({key: value for key, value in optional_values.items() if value is not None})
     return payload
+
+
+def _echo_json(payload):
+    click.echo(json.dumps(payload, indent=2, sort_keys=True))
+
+
+def _dataset_list_payload(task):
+    if task is None:
+        preset_names = available_dataset_presets()
+    else:
+        preset_names = available_dataset_presets_by_task(task)
+    return {
+        "sources": list(available_dataset_sources()),
+        "adapters": list(available_dataset_adapters()),
+        "presets": [
+            {
+                "name": name,
+                "task_families": list(dataset_preset_task_families(name)),
+            }
+            for name in preset_names
+        ],
+    }
+
+
+def _dataset_kind_from_path(dataset_path, requested_kind):
+    if requested_kind != "auto":
+        return requested_kind
+
+    root = Path(dataset_path)
+    if all((root / name).exists() for name in ("files.csv", "queries.csv", "corpus.csv", "qrels.csv")):
+        return "retrieval"
+    if (root / "files.csv").exists() and (root / "pairs.csv").exists():
+        return "pair"
+    raise click.UsageError("Could not detect dataset kind. Use --kind pair or --kind retrieval.")
+
+
+def _pair_dataset_summary(dataset):
+    positive_count = int(dataset.pairs["label"].sum()) if "label" in dataset.pairs else 0
+    pair_count = int(len(dataset.pairs))
+    return {
+        "dataset_kind": "pair_classification",
+        "name": str(dataset.metadata.get("name") or dataset.root.name),
+        "counts": {
+            "files": int(len(dataset.files)),
+            "pairs": pair_count,
+            "positive_pairs": positive_count,
+            "negative_pairs": pair_count - positive_count,
+        },
+        "metadata": dataset.metadata,
+    }
+
+
+def _retrieval_dataset_summary(dataset):
+    return {
+        "dataset_kind": "retrieval",
+        "name": str(dataset.metadata.get("name") or dataset.root.name),
+        "counts": {
+            "files": int(len(dataset.files)),
+            "queries": int(len(dataset.queries)),
+            "documents": int(len(dataset.corpus)),
+            "qrels": int(len(dataset.qrels)),
+        },
+        "metadata": dataset.metadata,
+    }
+
+
+def _echo_dataset_summary(summary, output_format):
+    if output_format == "json":
+        _echo_json(summary)
+        return
+
+    click.echo(f"name={summary['name']}")
+    click.echo(f"dataset_kind={summary['dataset_kind']}")
+    for key, value in summary["counts"].items():
+        click.echo(f"{key}={value}")
+    task_type = summary["metadata"].get("task_type")
+    if task_type:
+        click.echo(f"task_type={task_type}")
+
+
+@main.group(name="datasets")
+def datasets_cli():
+    """Inspect, validate, and adapt Matheel datasets."""
+    pass
+
+
+@datasets_cli.command(name="list")
+@click.option("--task", type=click.Choice(("pair", "retrieval")), help="Filter presets by task.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def datasets_list(task, output_format):
+    """List registered dataset sources, adapters, and presets."""
+    payload = _dataset_list_payload(task)
+    if output_format == "json":
+        _echo_json(payload)
+        return
+
+    click.echo("Sources:")
+    for source in payload["sources"]:
+        click.echo(f"- {source}")
+    click.echo("Adapters:")
+    for adapter in payload["adapters"]:
+        click.echo(f"- {adapter}")
+    click.echo("Presets:")
+    for preset in payload["presets"]:
+        tasks = ", ".join(preset["task_families"])
+        click.echo(f"- {preset['name']} ({tasks})")
+
+
+@datasets_cli.command(name="validate")
+@click.argument("dataset_path", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.option(
+    "--kind",
+    type=click.Choice(("auto", "pair", "retrieval")),
+    default="auto",
+    show_default=True,
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def datasets_validate(dataset_path, kind, output_format):
+    """Validate a normalized pair or retrieval dataset."""
+    dataset_kind = _dataset_kind_from_path(dataset_path, kind)
+    if dataset_kind == "pair":
+        summary = _pair_dataset_summary(load_pair_dataset(dataset_path))
+    else:
+        summary = _retrieval_dataset_summary(load_retrieval_dataset(dataset_path))
+    _echo_dataset_summary(summary, output_format)
+
+
+@datasets_cli.command(name="adapt")
+@click.argument("source_path", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.option("--kind", type=click.Choice(("pair", "retrieval")), required=True)
+@click.option("--adapter", help="Dataset adapter name. Defaults to the generic tabular adapter.")
+@click.option(
+    "--adapter-option",
+    "adapter_options",
+    multiple=True,
+    help="Adapter option as name=value. Repeat to pass multiple options.",
+)
+@click.option(
+    "--output",
+    "output_path",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=True,
+    help="Directory where the normalized dataset will be written.",
+)
+@click.option("--dataset-name", help="Name to write into normalized dataset metadata.")
+@click.option("--split", help="Dataset split name forwarded to the adapter.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def datasets_adapt(
+    source_path,
+    kind,
+    adapter,
+    adapter_options,
+    output_path,
+    dataset_name,
+    split,
+    output_format,
+):
+    """Adapt a local raw dataset into Matheel's normalized manifests."""
+    parsed_options = _parse_dataset_adapter_options(adapter_options)
+    if split is not None and "split" not in parsed_options:
+        parsed_options["split"] = split
+
+    if kind == "pair":
+        adapter_name = adapter or "auto_pair_tabular"
+        adapted_root = adapt_pair_dataset(
+            source_path,
+            adapter=adapter_name,
+            destination=output_path,
+            dataset_name=dataset_name,
+            adapter_options=parsed_options,
+        )
+        summary = _pair_dataset_summary(load_pair_dataset(adapted_root))
+    else:
+        adapter_name = adapter or "auto_retrieval_tabular"
+        adapted_root = adapt_retrieval_dataset(
+            source_path,
+            adapter=adapter_name,
+            destination=output_path,
+            dataset_name=dataset_name,
+            adapter_options=parsed_options,
+        )
+        summary = _retrieval_dataset_summary(load_retrieval_dataset(adapted_root))
+    summary["adapter"] = adapter_name
+    _echo_dataset_summary(summary, output_format)
 
 
 @main.command()
