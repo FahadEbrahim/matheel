@@ -150,6 +150,48 @@ def test_evaluate_pair_dataset_preprocesses_custom_algorithm_inputs(tmp_path):
     assert metrics["accuracy"] == 1.0
 
 
+def test_evaluate_pair_dataset_prepare_hook_receives_prepared_texts(tmp_path):
+    dataset = write_pair_dataset(
+        tmp_path / "prepared_pairs",
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)  # comment", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+    )
+    module_path = tmp_path / "prepared_algo.py"
+    module_path.write_text(
+        "\n".join(
+            [
+                "def prepare_dataset(dataset, prepared_texts):",
+                "    return {",
+                "        'same': prepared_texts['a'] == prepared_texts['b'],",
+                "        'files': len(dataset.files),",
+                "    }",
+                "",
+                "def score_pair(code_a, code_b, dataset_context=None):",
+                "    _ = (code_a, code_b)",
+                "    return 1.0 if (",
+                "        dataset_context['same'] and dataset_context['files'] == 2",
+                "    ) else 0.0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    scored, metrics = evaluate_pair_dataset(
+        dataset,
+        threshold=0.5,
+        algorithm=module_path,
+        similarity_options={"preprocess_mode": "basic", "code_language": "python"},
+    )
+
+    assert scored["similarity_score"].tolist() == [1.0]
+    assert metrics["accuracy"] == 1.0
+
+
 def test_pair_classification_metrics_requires_score_column():
     with pytest.raises(ValueError, match="similarity_score"):
         pair_classification_metrics([{"label": 1}], threshold=0.5)
@@ -234,6 +276,50 @@ def test_evaluate_retrieval_dataset_preprocesses_custom_algorithm_inputs(tmp_pat
         dataset,
         k=1,
         algorithm=score_pair,
+        similarity_options={"preprocess_mode": "basic", "code_language": "python"},
+    )
+
+    assert scored["similarity_score"].tolist() == [1.0]
+    assert metrics["mean_average_precision"] == 1.0
+
+
+def test_evaluate_retrieval_dataset_prepare_hook_receives_prepared_texts(tmp_path):
+    dataset = write_retrieval_dataset(
+        tmp_path / "prepared_retrieval",
+        files=pd.DataFrame(
+            [
+                {"file_id": "query_a", "text": "print(1)  # comment", "suffix": ".py"},
+                {"file_id": "doc_a", "text": "print(1)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "query_a"}]),
+        corpus=pd.DataFrame([{"document_id": "d1", "file_id": "doc_a"}]),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+    )
+    module_path = tmp_path / "prepared_retrieval_algo.py"
+    module_path.write_text(
+        "\n".join(
+            [
+                "def prepare_dataset(dataset, prepared_texts):",
+                "    return {",
+                "        'same': prepared_texts['query_a'] == prepared_texts['doc_a'],",
+                "        'queries': len(dataset.queries),",
+                "    }",
+                "",
+                "def score_pair(code_a, code_b, dataset_context=None):",
+                "    _ = (code_a, code_b)",
+                "    return 1.0 if (",
+                "        dataset_context['same'] and dataset_context['queries'] == 1",
+                "    ) else 0.0",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    scored, metrics = evaluate_retrieval_dataset(
+        dataset,
+        k=1,
+        algorithm=module_path,
         similarity_options={"preprocess_mode": "basic", "code_language": "python"},
     )
 

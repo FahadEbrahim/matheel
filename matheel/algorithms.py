@@ -38,7 +38,7 @@ class PairAlgorithm:
     source_fingerprint: dict | None = None
 
 
-_PREPARE_RESERVED_KEYS = frozenset({"dataset", "algorithm_options"})
+_PREPARE_RESERVED_KEYS = frozenset({"dataset", "prepared_texts", "algorithm_options"})
 _SCORE_RESERVED_KEYS = frozenset(
     {"code_a", "code_b", "dataset_context", "row", "algorithm_options"}
 )
@@ -111,8 +111,19 @@ def _load_module_from_path(module_path):
     if spec is None or spec.loader is None:
         raise ValueError(f"Unable to load algorithm module from: {target.name}")
     module = importlib.util.module_from_spec(spec)
+    algorithm_dir = str(target.parent)
+    sys.path.insert(0, algorithm_dir)
     sys.modules[module_name] = module
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except Exception:
+        sys.modules.pop(module_name, None)
+        raise
+    finally:
+        try:
+            sys.path.remove(algorithm_dir)
+        except ValueError:
+            pass
     module.__matheel_algorithm_name__ = target.stem
     module.__matheel_algorithm_module__ = target.stem
     module.__matheel_algorithm_package__ = None
@@ -211,11 +222,14 @@ def _build_call_values(base_values, algorithm_options, reserved_keys):
     }
 
 
-def prepare_algorithm_dataset(algorithm, dataset, algorithm_options=None):
+def prepare_algorithm_dataset(algorithm, dataset, algorithm_options=None, prepared_texts=None):
     resolved = resolve_pair_algorithm(algorithm)
     if resolved.prepare_dataset is None:
         return None
-    values = _build_call_values({"dataset": dataset}, algorithm_options, _PREPARE_RESERVED_KEYS)
+    base_values = {"dataset": dataset}
+    if prepared_texts is not None:
+        base_values["prepared_texts"] = dict(prepared_texts)
+    values = _build_call_values(base_values, algorithm_options, _PREPARE_RESERVED_KEYS)
     return _call_supported(resolved.prepare_dataset, values)
 
 
@@ -233,7 +247,7 @@ def score_pair_with_algorithm(
             "code_a": code_a,
             "code_b": code_b,
             "dataset_context": dataset_context,
-            "row": dict(row or {}),
+            "row": {} if row is None else dict(row),
         },
         algorithm_options,
         _SCORE_RESERVED_KEYS,
@@ -327,6 +341,7 @@ def score_source_pairs_with_algorithm(
         resolved_algorithm,
         source_context,
         algorithm_options=options,
+        prepared_texts=dict(zip(file_names, codes, strict=True)),
     )
 
     rows = []

@@ -29,6 +29,19 @@ _SCORE_FIELDS = (
     "similarity_score",
 )
 _RUNTIME_FIELDS = ("elapsed_seconds",)
+_CUSTOM_ALGORITHM_OPTION_NAMES = frozenset(
+    {
+        "algorithm",
+        "algorithm_path",
+        "algorithm_options",
+        "preprocess_mode",
+        "code_language",
+        "threshold",
+        "number_results",
+        "progress",
+        "progress_callback",
+    }
+)
 
 
 def load_run_configs(config_path):
@@ -69,7 +82,9 @@ def normalize_run_config(config, index=1):
     if "algorithm_options" in options:
         options["algorithm_options"] = normalize_algorithm_options(options["algorithm_options"])
 
-    if not _run_uses_custom_algorithm(options):
+    if _run_uses_custom_algorithm(options):
+        _validate_custom_algorithm_options(options)
+    else:
         _normalize_run_feature_weights(options)
         options.setdefault("model_name", DEFAULT_MODEL_NAME)
     options.setdefault("threshold", 0.0)
@@ -80,6 +95,17 @@ def normalize_run_config(config, index=1):
 
 def _run_uses_custom_algorithm(options):
     return options.get("algorithm") is not None or options.get("algorithm_path") is not None
+
+
+def _validate_custom_algorithm_options(options):
+    unknown = sorted(set(options).difference(_CUSTOM_ALGORITHM_OPTION_NAMES))
+    if unknown:
+        names = ", ".join(unknown)
+        supported = ", ".join(sorted(_CUSTOM_ALGORITHM_OPTION_NAMES - {"algorithm", "progress_callback"}))
+        raise ValueError(
+            f"Unsupported custom algorithm option(s): {names}. "
+            f"Supported custom options are: {supported}."
+        )
 
 
 def _resolve_run_paths(run, base_dir):

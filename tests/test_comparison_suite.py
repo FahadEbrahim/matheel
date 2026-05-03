@@ -110,6 +110,13 @@ def test_parse_run_configs_rejects_legacy_weight_keys():
         )
 
 
+def test_parse_run_configs_rejects_unknown_custom_algorithm_options():
+    with pytest.raises(ValueError, match="Unsupported custom algorithm option.*threshhold"):
+        parse_run_configs(
+            '[{"run_name":"custom","algorithm_path":"algo.py","threshhold":0.5}]'
+        )
+
+
 def test_slugify_run_name_removes_path_separators():
     assert slugify_run_name("../baseline/strong") == "baseline_strong"
     assert slugify_run_name("...") == "run"

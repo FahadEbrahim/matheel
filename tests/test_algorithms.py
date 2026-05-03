@@ -1,5 +1,7 @@
+import sys
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from matheel.algorithms import (
@@ -41,6 +43,16 @@ def test_score_pair_with_algorithm_passes_options_context_and_row():
     )
 
     assert score == pytest.approx(2.75)
+
+
+def test_score_pair_with_algorithm_accepts_series_row():
+    def score_pair(code_a, code_b, row=None):
+        _ = (code_a, code_b)
+        return float(row["bonus"])
+
+    score = score_pair_with_algorithm("a", "b", score_pair, row=pd.Series({"bonus": 0.25}))
+
+    assert score == pytest.approx(0.25)
 
 
 def test_algorithm_options_are_validated():
@@ -88,6 +100,24 @@ def test_resolve_pair_algorithm_from_module_path_with_prepare_hook(tmp_path):
     assert metadata["algorithm_source_fingerprint"]["file_name"] == "custom_algorithm.py"
     assert len(metadata["algorithm_source_fingerprint"]["sha256"]) == 64
     assert metadata["algorithm_options"] == {"bonus": 0.2}
+
+
+def test_resolve_pair_algorithm_from_module_path_imports_sibling_helper(tmp_path):
+    module_path = tmp_path / "custom_algorithm.py"
+    helper_path = tmp_path / "helper.py"
+    helper_path.write_text("BIAS = 0.25\n", encoding="utf-8")
+    module_path.write_text(
+        "from helper import BIAS\n\n"
+        "def score_pair(code_a, code_b):\n"
+        "    _ = (code_a, code_b)\n"
+        "    return BIAS\n",
+        encoding="utf-8",
+    )
+
+    algorithm = resolve_pair_algorithm(module_path)
+
+    assert score_pair_with_algorithm("a", "b", algorithm) == pytest.approx(0.25)
+    assert str(tmp_path) not in sys.path
 
 
 def test_score_source_pairs_with_algorithm_attaches_reproducibility_metadata(tmp_path):
