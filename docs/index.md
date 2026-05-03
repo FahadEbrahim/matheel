@@ -23,7 +23,6 @@ Start with the [usage guide](usage.md) for installation, optional extras, quick 
 - [Datasets and evaluation](datasets.md)
 - [Comparison suite](comparison_suite.md)
 - [Development](development.md)
-- [Release checklist](release_checklist.md)
 
 ## Demos and Examples
 

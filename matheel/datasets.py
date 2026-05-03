@@ -273,6 +273,7 @@ def load_dataset_manifest(manifest_path):
     payload = _read_dataset_manifest_payload(path)
     if not isinstance(payload, dict):
         raise ValueError("Dataset manifest must be a JSON/YAML object.")
+    _reject_dataset_manifest_credentials(payload)
 
     version = payload.get("version")
     if int(version or 0) != DATASET_MANIFEST_VERSION:
@@ -812,9 +813,9 @@ def _adapt_dataset(source_root, dataset_kind, adapter, destination, dataset_name
     if adapter is None:
         return root
     if dataset_kind == "pair_classification" and _is_pair_dataset_root(root):
-        return root
+        return _copy_normalized_dataset(root, dataset_kind, destination, dataset_name)
     if dataset_kind == "retrieval" and _is_retrieval_dataset_root(root):
-        return root
+        return _copy_normalized_dataset(root, dataset_kind, destination, dataset_name)
 
     adapter_name = _normalize_name(adapter)
     try:
@@ -834,6 +835,50 @@ def _adapt_dataset(source_root, dataset_kind, adapter, destination, dataset_name
         **options,
     )
     return _coerce_path(adapted)
+
+
+def _copy_normalized_dataset(source_root, dataset_kind, destination=None, dataset_name=None):
+    root = _coerce_path(source_root)
+    if destination is None:
+        return root
+
+    target = _coerce_path(destination)
+    if target == root:
+        return root
+
+    if dataset_kind == "pair_classification":
+        dataset = load_pair_dataset(root)
+        texts = load_code_texts(dataset)
+        files = _files_with_embedded_text(dataset, texts)
+        metadata = _metadata_with_name(dataset.metadata, dataset_name)
+        return write_pair_dataset(target, files=files, pairs=dataset.pairs, metadata=metadata).root
+
+    dataset = load_retrieval_dataset(root)
+    texts = load_code_texts(dataset)
+    files = _files_with_embedded_text(dataset, texts)
+    metadata = _metadata_with_name(dataset.metadata, dataset_name)
+    return write_retrieval_dataset(
+        target,
+        files=files,
+        queries=dataset.queries,
+        corpus=dataset.corpus,
+        qrels=dataset.qrels,
+        metadata=metadata,
+    ).root
+
+
+def _files_with_embedded_text(dataset, texts):
+    files = dataset.files.copy()
+    files["text"] = files["file_id"].map(lambda file_id: texts[str(file_id)])
+    files["suffix"] = files["file_path"].map(lambda value: Path(str(value)).suffix or ".txt")
+    return files
+
+
+def _metadata_with_name(metadata, dataset_name):
+    payload = dict(metadata or {})
+    if dataset_name is not None:
+        payload["name"] = dataset_name
+    return payload
 
 
 def _temporary_dataset_root(label):
@@ -1223,33 +1268,67 @@ def _split_name_variants(split):
 
 
 def _select_pair_table(root, options):
+    requested_table = options.get("pair_table") or options.get("table")
+    strict_errors = bool(requested_table) or _has_explicit_tabular_options(
+        options,
+        (
+            "left_id_column",
+            "left_path_column",
+            "left_text_column",
+            "right_id_column",
+            "right_path_column",
+            "right_text_column",
+            "label_column",
+        ),
+    )
     for path in _prioritized_tabular_files(
         root,
-        requested_table=options.get("pair_table") or options.get("table"),
+        requested_table=requested_table,
         split=options.get("split"),
     ):
         frame = _read_tabular_file(path)
         try:
             _infer_pair_columns(frame, options)
         except ValueError:
+            if strict_errors:
+                raise
             continue
         return path, frame
     raise ValueError("Could not find a tabular pair dataset with left, right, and label columns.")
 
 
 def _select_retrieval_table(root, options):
+    requested_table = options.get("retrieval_table") or options.get("table")
+    strict_errors = bool(requested_table) or _has_explicit_tabular_options(
+        options,
+        (
+            "query_id_column",
+            "query_path_column",
+            "query_text_column",
+            "document_id_column",
+            "document_path_column",
+            "document_text_column",
+            "relevance_column",
+        ),
+    )
     for path in _prioritized_tabular_files(
         root,
-        requested_table=options.get("retrieval_table") or options.get("table"),
+        requested_table=requested_table,
         split=options.get("split"),
     ):
         frame = _read_tabular_file(path)
         try:
             _infer_retrieval_columns(frame, options)
         except ValueError:
+            if strict_errors:
+                raise
             continue
         return path, frame
     raise ValueError("Could not find a tabular retrieval dataset with query, document, and relevance columns.")
+
+
+def _has_explicit_tabular_options(options, names):
+    return any(options.get(name) is not None for name in names)
 
 
 def _infer_pair_columns(frame, options):

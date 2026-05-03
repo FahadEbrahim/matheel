@@ -47,8 +47,6 @@ python -m build
 python -m twine check dist/*
 ```
 
-Use the [release checklist](release_checklist.md) for the full release flow.
-
 ## Cache Safety
 
 Matheel uses module-level caches for Hugging Face model metadata, detected tokenizer limits, CodeBLEU keyword sets, tree-sitter parsers, and CodeBERTScore scorer objects.

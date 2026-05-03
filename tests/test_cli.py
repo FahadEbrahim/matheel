@@ -355,6 +355,47 @@ def test_datasets_adapt_command_writes_pair_dataset(tmp_path):
     assert (output_root / "pairs.csv").exists()
 
 
+def test_datasets_adapt_command_copies_normalized_pair_dataset_to_output(tmp_path):
+    dataset_root = tmp_path / "normalized_source"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+        metadata={"name": "source_pairs"},
+    )
+    output_root = tmp_path / "normalized_copy"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "datasets",
+            "adapt",
+            str(dataset_root),
+            "--kind",
+            "pair",
+            "--output",
+            str(output_root),
+            "--dataset-name",
+            "copied_pairs",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["name"] == "copied_pairs"
+    assert payload["counts"]["pairs"] == 1
+    assert (output_root / "files.csv").exists()
+    assert (output_root / "pairs.csv").exists()
+
+
 def test_datasets_adapt_command_writes_retrieval_dataset(tmp_path):
     source_root = tmp_path / "raw_retrieval"
     source_root.mkdir()
@@ -407,6 +448,48 @@ def test_datasets_adapt_command_writes_retrieval_dataset(tmp_path):
     assert payload["adapter"] == "auto_retrieval_tabular"
     assert payload["counts"]["queries"] == 1
     assert payload["counts"]["documents"] == 2
+    assert (output_root / "qrels.csv").exists()
+
+
+def test_datasets_adapt_command_copies_normalized_retrieval_dataset_to_output(tmp_path):
+    dataset_root = tmp_path / "normalized_retrieval_source"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "query_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "doc_a", "text": "print(1)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "query_a"}]),
+        corpus=pd.DataFrame([{"document_id": "d1", "file_id": "doc_a"}]),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+        metadata={"name": "source_retrieval"},
+    )
+    output_root = tmp_path / "normalized_retrieval_copy"
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "datasets",
+            "adapt",
+            str(dataset_root),
+            "--kind",
+            "retrieval",
+            "--output",
+            str(output_root),
+            "--dataset-name",
+            "copied_retrieval",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["name"] == "copied_retrieval"
+    assert payload["counts"]["queries"] == 1
     assert (output_root / "qrels.csv").exists()
 
 
@@ -592,6 +675,29 @@ def test_evaluate_pairs_command_loads_dataset_manifest(tmp_path):
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert metrics["pair_count"] == 2
     assert (tmp_path / "normalized_pairs" / "pairs.csv").exists()
+
+
+def test_evaluate_pairs_command_rejects_manifest_with_dataset_options(tmp_path):
+    manifest_path = tmp_path / "pair_manifest.json"
+    manifest_path.write_text(
+        json.dumps({"version": 1, "task": "pair", "datasets": ["normalized_pairs"]}),
+        encoding="utf-8",
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "evaluate-pairs",
+            "--manifest",
+            str(manifest_path),
+            "--adapter",
+            "auto_pair_tabular",
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "--manifest cannot be combined with dataset source options" in result.output
 
 
 def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
