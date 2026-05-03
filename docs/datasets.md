@@ -1,9 +1,134 @@
 # Datasets and Evaluation
 
-Matheel supports local labeled pair and retrieval datasets as the first step toward benchmark workflows.
+Matheel supports local labeled pair and retrieval datasets, plus an extensible source/preset/adapter workflow for benchmark experiments.
 
-No external datasets are bundled or downloaded by default. Add public datasets only after checking licensing, provenance, access requirements, and expected task meaning.
-Use `task_type: plagiarism` for plagiarism-oriented datasets so they remain easy to separate from future dataset families.
+No external datasets are bundled or downloaded by default. Users provide or download datasets according to each source's terms, license, provenance, and access requirements. Use `task_type: plagiarism` for plagiarism-oriented datasets so they remain easy to separate from future dataset families.
+
+## Dataset Loading Workflow
+
+Dataset loading has three explicit steps:
+
+1. Resolve a source, such as a local directory, GitHub repository, Zenodo record, Hugging Face dataset repository, or Kaggle dataset.
+2. Adapt the raw layout into Matheel manifests with a registered adapter.
+3. Load one or more normalized pair or retrieval datasets.
+
+```python
+from matheel.datasets import load_pair_datasets, load_retrieval_datasets
+
+pair_dataset = load_pair_datasets(
+    [
+        {
+            "source": "local",
+            "identifier": "./data/raw_pairs",
+            "name": "custom_pairs",
+            "adapter": "auto_pair_tabular",
+            "adapter_options": {
+                "pair_table": "pairs.csv",
+                "left_text_column": "code_a",
+                "right_text_column": "code_b",
+                "label_column": "label",
+            },
+        }
+    ]
+)
+
+retrieval_dataset = load_retrieval_datasets(
+    [
+        {
+            "source": "local",
+            "identifier": "./data/raw_retrieval",
+            "name": "custom_retrieval",
+            "adapter": "auto_retrieval_tabular",
+            "adapter_options": {
+                "retrieval_table": "qrels.csv",
+                "query_text_column": "query_code",
+                "document_text_column": "candidate_code",
+                "relevance_column": "relevance",
+            },
+        }
+    ]
+)
+```
+
+Source resolvers write to user-provided destinations when supplied. For remote sources without an explicit destination, Matheel uses a temporary/cache location outside the repository.
+
+## Sources, Presets, and Adapters
+
+Use the registry APIs to inspect and extend dataset loading:
+
+```python
+from matheel.datasets import (
+    available_dataset_adapters,
+    available_dataset_presets,
+    available_dataset_presets_by_task,
+    available_dataset_sources,
+    register_dataset_adapter,
+    register_dataset_preset,
+    register_dataset_source,
+)
+
+print(available_dataset_sources())
+print(available_dataset_adapters())
+print(available_dataset_presets())
+print(available_dataset_presets_by_task("pair"))
+print(available_dataset_presets_by_task("retrieval"))
+```
+
+Built-in generic source resolvers:
+
+| Source | Purpose | Notes |
+| --- | --- | --- |
+| `local` | Use a local directory containing raw or normalized data. | Offline and deterministic. |
+| `github` | Download a repository archive by `owner/repo`. | Public repositories need no token. |
+| `zenodo` | Download files for a Zenodo record id. | Archives are extracted with path traversal checks. |
+| `huggingface` | Resolve a Hugging Face dataset repository. | Requires optional Hugging Face Hub support. |
+| `kaggle` | Download a Kaggle dataset. | Requires optional Kaggle API or CLI credentials. |
+
+Hugging Face and Kaggle are generic resolvers only; their presence is not a dataset endorsement.
+
+Built-in adapters:
+
+| Adapter | Output kind | Purpose |
+| --- | --- | --- |
+| `auto_pair_tabular` | `pair_classification` | Convert CSV/TSV/JSON rows with left/right code text or file paths and a label. |
+| `auto_retrieval_tabular` | `retrieval` | Convert CSV/TSV/JSON rows with query/document code text or file paths and relevance. |
+| `soco14_retrieval` | `retrieval` | Convert SOCO14 qrel/source layouts. |
+| `irplag_pair` | `pair_classification` | Convert IRPlag pair layouts. |
+| `irplag_retrieval` | `retrieval` | Convert IRPlag pair layouts into retrieval manifests. |
+| `conplag_pair` | `pair_classification` | Convert ConPlag pair layouts. |
+
+Approved built-in plagiarism presets:
+
+| Preset | Task families | Source | Identifier |
+| --- | --- | --- | --- |
+| `soco14` | retrieval | Zenodo | `7433031` |
+| `irplag` | pair, retrieval | GitHub | `oscarkarnalim/sourcecodeplagiarismdataset` |
+| `conplag` | pair | Zenodo | `7332790` |
+
+BigCloneBench and POJ104 are not registered presets.
+
+Custom projects can register their own source resolvers, presets, and adapters:
+
+```python
+from matheel.datasets import register_dataset_adapter, register_dataset_preset, register_dataset_source
+
+
+def resolve_internal_dataset(identifier, destination=None, revision="main", token=None, split=None):
+    return f"./data/{identifier}"
+
+
+register_dataset_source("internal", resolve_internal_dataset, overwrite=True)
+register_dataset_preset(
+    "internal_pairs",
+    {
+        "source": "internal",
+        "identifier": "raw_pairs",
+        "adapter": "auto_pair_tabular",
+        "task_families": ("pair",),
+    },
+    overwrite=True,
+)
+```
 
 ## Dataset Registry
 
@@ -21,7 +146,7 @@ Dataset tracking uses these fields:
 | `citation` | Citation text or DOI when available. |
 | `notes` | Short caveats about labels, splits, or preprocessing. |
 
-The built-in registry starts empty. Register datasets in code only after deciding they should be tracked by Matheel:
+This metadata registry is separate from source/preset loading and starts empty. Register datasets in code only after deciding they should be tracked by Matheel:
 
 ```python
 from matheel.datasets import register_dataset_entry
