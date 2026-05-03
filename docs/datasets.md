@@ -236,6 +236,21 @@ matheel evaluate-pairs tiny_pairs \
 
 The command defaults to `levenshtein=1.0` so small local evaluations are offline-friendly. Add semantic features explicitly when you want model-backed scoring.
 
+You can also adapt a raw custom pair table directly from the CLI:
+
+```bash
+matheel evaluate-pairs ./data/raw_pairs \
+  --adapter auto_pair_tabular \
+  --adapter-option pair_table=pairs.csv \
+  --adapter-option left_text_column=code_a \
+  --adapter-option right_text_column=code_b \
+  --adapter-option label_column=label \
+  --scores-out scored_pairs.csv \
+  --metrics-out pair_metrics.json
+```
+
+Use `--preset NAME` for registered presets, or combine `--source`, `--identifier`, `--destination`, `--revision`, `--split`, and `--path-in-archive` when a resolver needs an explicit source spec. Matheel does not require or store credentials in these commands.
+
 ## Retrieval Dataset Format
 
 A retrieval dataset directory contains:
@@ -321,6 +336,20 @@ matheel evaluate-retrieval tiny_retrieval \
 ```
 
 The metrics include mean average precision, mean reciprocal rank, precision at `k`, recall at `k`, and nDCG at `k`.
+
+Raw custom retrieval tables can be adapted the same way:
+
+```bash
+matheel evaluate-retrieval ./data/raw_retrieval \
+  --adapter auto_retrieval_tabular \
+  --adapter-option retrieval_table=retrieval.csv \
+  --adapter-option query_text_column=query_code \
+  --adapter-option document_text_column=candidate_code \
+  --adapter-option relevance_column=relevance \
+  --k 10 \
+  --scores-out scored_retrieval.csv \
+  --metrics-out retrieval_metrics.json
+```
 
 ## Resampling and Uncertainty
 
