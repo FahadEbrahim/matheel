@@ -2,6 +2,7 @@ from time import perf_counter
 
 
 _METADATA_DECIMALS = 4
+INACTIVE_SEMANTIC_BACKEND = "inactive"
 
 
 def active_feature_names(feature_weights):
@@ -15,6 +16,16 @@ def active_feature_names(feature_weights):
 
 def format_feature_set(feature_weights):
     return ",".join(active_feature_names(feature_weights))
+
+
+def semantic_is_active(feature_weights):
+    return float((feature_weights or {}).get("semantic", 0.0)) > 0.0
+
+
+def semantic_vector_backend_metadata(feature_weights, vector_backend):
+    if semantic_is_active(feature_weights):
+        return vector_backend
+    return INACTIVE_SEMANTIC_BACKEND
 
 
 def elapsed_seconds_since(start_time):
@@ -36,7 +47,7 @@ def attach_run_metadata(
 ):
     frame.attrs["elapsed_seconds"] = round(float(elapsed_seconds), _METADATA_DECIMALS)
     frame.attrs["feature_set"] = format_feature_set(feature_weights)
-    frame.attrs["vector_backend"] = vector_backend
+    frame.attrs["vector_backend"] = semantic_vector_backend_metadata(feature_weights, vector_backend)
     frame.attrs["code_metric"] = code_metric
     frame.attrs["chunking_method"] = chunking_method
     return frame
