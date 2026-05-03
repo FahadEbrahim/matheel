@@ -14,17 +14,28 @@ from .code_metrics import (
 )
 from .datasets import (
     PairDataset,
+    RetrievalDataset,
     available_dataset_kinds,
     available_dataset_task_types,
     get_dataset_entry,
     load_code_texts,
     load_pair_dataset,
+    load_retrieval_dataset,
     registered_datasets,
     register_dataset_entry,
     validate_pair_dataset,
+    validate_retrieval_dataset,
     write_pair_dataset,
+    write_retrieval_dataset,
 )
-from .evaluation import evaluate_pair_dataset, pair_classification_metrics, score_pair_dataset
+from .evaluation import (
+    evaluate_pair_dataset,
+    evaluate_retrieval_dataset,
+    pair_classification_metrics,
+    retrieval_ranking_metrics,
+    score_pair_dataset,
+    score_retrieval_dataset,
+)
 from .feature_weights import available_default_features, default_feature_weights, normalize_feature_weights
 from .model_routing import infer_model_backend, infer_model_capabilities, available_vector_backends
 from .preprocessing import preprocess_code
@@ -76,11 +87,18 @@ __all__ = [
     "preprocess_code",
     "registered_datasets",
     "register_dataset_entry",
+    "RetrievalDataset",
+    "retrieval_ranking_metrics",
     "run_comparison_suite",
     "score_pair_dataset",
+    "score_retrieval_dataset",
     "score_code_metric_pair",
     "detect_default_device",
     "similarity_function_score_range",
     "validate_pair_dataset",
+    "validate_retrieval_dataset",
     "write_pair_dataset",
+    "write_retrieval_dataset",
+    "evaluate_retrieval_dataset",
+    "load_retrieval_dataset",
 ]

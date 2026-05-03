@@ -7,7 +7,7 @@ import click
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
 from ._progress import should_show_progress
-from .evaluation import evaluate_pair_dataset
+from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .similarity import DEFAULT_MODEL_NAME, available_runtime_devices, get_sim_list
 from .chunking import available_chunk_aggregations, available_chunking_methods
 from .model_routing import available_vector_backends
@@ -460,6 +460,109 @@ def evaluate_pairs(
         f"precision={metrics['precision']:.4f} "
         f"recall={metrics['recall']:.4f} "
         f"f1={metrics['f1']:.4f}"
+    )
+
+
+@main.command(name="evaluate-retrieval")
+@click.argument("dataset_path", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.option("--scores-out", type=click.Path(), default="scored_retrieval.csv", show_default=True)
+@click.option("--metrics-out", type=click.Path(), default="retrieval_metrics.json", show_default=True)
+@click.option("--k", default=10, show_default=True, help="Ranking cutoff for top-k metrics.")
+@click.option(
+    "--feature-weight",
+    "feature_weights",
+    multiple=True,
+    help=(
+        "Normalized feature weights as name=value. "
+        "Defaults to levenshtein=1.0 for offline-friendly evaluation."
+    ),
+)
+@click.option("--model", default=DEFAULT_MODEL_NAME, show_default=True, help="Embedding model name.")
+@click.option(
+    "--preprocess-mode",
+    type=click.Choice(available_preprocess_modes()),
+    default="none",
+    show_default=True,
+)
+@click.option("--code-language", default="python", show_default=True)
+@click.option(
+    "--vector-backend",
+    type=click.Choice(available_vector_backends()),
+    default="auto",
+    show_default=True,
+)
+@click.option(
+    "--similarity-function",
+    type=click.Choice(available_similarity_functions()),
+    default="cosine",
+    show_default=True,
+)
+@click.option(
+    "--normalize-semantic-scores/--raw-semantic-scores",
+    default=False,
+    show_default=True,
+)
+@click.option("--max-token-length", default=0, show_default=True)
+@click.option(
+    "--pooling-method",
+    type=click.Choice(available_pooling_methods()),
+    default="mean",
+    show_default=True,
+)
+@click.option(
+    "--device",
+    type=click.Choice(("auto",) + available_runtime_devices()),
+    default="auto",
+    show_default=True,
+)
+def evaluate_retrieval(
+    dataset_path,
+    scores_out,
+    metrics_out,
+    k,
+    feature_weights,
+    model,
+    preprocess_mode,
+    code_language,
+    vector_backend,
+    similarity_function,
+    normalize_semantic_scores,
+    max_token_length,
+    pooling_method,
+    device,
+):
+    """Evaluate a local retrieval dataset."""
+    selected_weights = feature_weights or ("levenshtein=1.0",)
+    scored_results, metrics = evaluate_retrieval_dataset(
+        dataset_path,
+        k=k,
+        similarity_options={
+            "feature_weights": selected_weights,
+            "model_name": model,
+            "preprocess_mode": preprocess_mode,
+            "code_language": code_language,
+            "vector_backend": vector_backend,
+            "similarity_function": similarity_function,
+            "normalize_semantic_scores": normalize_semantic_scores,
+            "max_token_length": max_token_length,
+            "pooling_method": pooling_method,
+            "device": device,
+        },
+    )
+    scores_path = Path(scores_out)
+    metrics_path = Path(metrics_out)
+    scores_path.parent.mkdir(parents=True, exist_ok=True)
+    metrics_path.parent.mkdir(parents=True, exist_ok=True)
+    scored_results.to_csv(scores_path, index=False)
+    metrics_path.write_text(json.dumps(metrics, indent=2, sort_keys=True), encoding="utf-8")
+    click.echo(f"Wrote {len(scored_results)} scored retrieval result(s) to {scores_path}.")
+    click.echo(f"Wrote metrics to {metrics_path}.")
+    click.echo(
+        f"map={metrics['mean_average_precision']:.4f} "
+        f"mrr={metrics['mean_reciprocal_rank']:.4f} "
+        f"precision_at_{metrics['k']}={metrics['precision_at_k']:.4f} "
+        f"recall_at_{metrics['k']}={metrics['recall_at_k']:.4f} "
+        f"ndcg_at_{metrics['k']}={metrics['ndcg_at_k']:.4f}"
     )
 
 
