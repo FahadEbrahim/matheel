@@ -42,42 +42,13 @@ jobs:
       - name: Verify Gradio app version references
         run: python scripts/sync_gradio_app_version.py --check
 
-      - name: Wait for pinned Matheel release on PyPI
+      - name: Check pinned Matheel release on PyPI
+        id: pinned-release
         timeout-minutes: 12
-        run: |
-          python - <<'PY'
-          import re
-          import time
-          import urllib.error
-          import urllib.request
-          from pathlib import Path
-
-          requirements = Path("gradio_app/requirements.txt").read_text(encoding="utf-8")
-          match = re.search(r"^matheel(?:\[[^\]]+\])?==([^\s;]+)", requirements, re.MULTILINE)
-          if not match:
-              raise SystemExit("No pinned matheel requirement found in gradio_app/requirements.txt.")
-
-          version = match.group(1)
-          url = f"https://pypi.org/pypi/matheel/{version}/json"
-          deadline = time.monotonic() + 10 * 60
-          delay = 30
-
-          while True:
-              try:
-                  with urllib.request.urlopen(url, timeout=10) as response:
-                      if response.status == 200:
-                          print(f"matheel {version} is available on PyPI.")
-                          break
-              except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError) as exc:
-                  print(f"matheel {version} is not available on PyPI yet: {exc}")
-
-              if time.monotonic() >= deadline:
-                  raise SystemExit(f"Timed out waiting for matheel {version} on PyPI.")
-
-              time.sleep(delay)
-          PY
+        run: python scripts/check_pinned_matheel_release.py
 
       - name: Sync Gradio app to Hugging Face Space
+        if: steps.pinned-release.outputs.should_sync_space == 'true'
         uses: huggingface/hub-sync@v0.1.0
         with:
           github_repo_id: ${{ github.repository }}
