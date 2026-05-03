@@ -524,3 +524,5 @@ comparison = compare_metric_samples(
 ```
 
 The comparison report includes mean difference, interval bounds, win/loss/tie counts, and a two-sided sign-test p-value.
+
+For a complete tiny workflow that writes a manifest, scored rows, metrics, resampling summaries, and reproducibility metadata, see the [reproducible benchmark demo](reproducible_benchmark.md).

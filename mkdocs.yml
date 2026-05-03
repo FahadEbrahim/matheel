@@ -15,19 +15,24 @@ theme:
   highlightjs: true
 
 nav:
-  - Home: index.md
-  - Usage: usage.md
-  - Preprocessing: preprocessing.md
-  - Tokenization and limits: tokenization.md
-  - Chunking: chunking.md
-  - Vectors and routing: vectors.md
-  - Lexical metrics and baselines: lexical.md
-  - Code metrics: code_metrics.md
-  - Scoring and calibration: scoring.md
-  - Datasets and evaluation: datasets.md
-  - Custom algorithms: customization.md
-  - Comparison suite: comparison_suite.md
-  - Development: development.md
+  - Getting Started:
+      - Home: index.md
+      - Usage: usage.md
+  - Scoring:
+      - Preprocessing: preprocessing.md
+      - Tokenization and limits: tokenization.md
+      - Chunking: chunking.md
+      - Vectors and routing: vectors.md
+      - Lexical metrics and baselines: lexical.md
+      - Code metrics: code_metrics.md
+  - Evaluation:
+      - Scoring and calibration: scoring.md
+      - Datasets and evaluation: datasets.md
+      - Reproducible benchmark demo: reproducible_benchmark.md
+      - Custom algorithms: customization.md
+      - Comparison suite: comparison_suite.md
+  - Project:
+      - Development: development.md
 
 exclude_docs: |
   README.md

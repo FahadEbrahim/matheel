@@ -8,3 +8,4 @@ build/
 dist/
 site/
 docs/releases/
+benchmark_outputs/

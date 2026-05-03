@@ -20,7 +20,9 @@ Start with the [usage guide](usage.md) for installation, optional extras, quick 
 - [Vectors and routing](vectors.md)
 - [Lexical metrics and baselines](lexical.md)
 - [Code metrics](code_metrics.md)
+- [Scoring and calibration](scoring.md)
 - [Datasets and evaluation](datasets.md)
+- [Reproducible benchmark demo](reproducible_benchmark.md)
 - [Custom algorithms](customization.md)
 - [Comparison suite](comparison_suite.md)
 - [Development](development.md)
@@ -39,5 +41,6 @@ Start with the [usage guide](usage.md) for installation, optional extras, quick 
 3. Add [Chunking](chunking.md) and [Preprocessing](preprocessing.md) if you need code-aware shaping before scoring.
 4. Add [Lexical metrics and baselines](lexical.md) and [Code metrics](code_metrics.md) if you want hybrid scoring.
 5. Use [Datasets and evaluation](datasets.md) for labeled pair and retrieval datasets.
-6. Use [Custom algorithms](customization.md) for project-specific scorers.
-7. Use [Comparison suite](comparison_suite.md) for repeatable multi-run experiments.
+6. Run the [reproducible benchmark demo](reproducible_benchmark.md) for a small auditable workflow.
+7. Use [Custom algorithms](customization.md) for project-specific scorers.
+8. Use [Comparison suite](comparison_suite.md) for repeatable multi-run experiments.
