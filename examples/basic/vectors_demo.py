@@ -1,8 +1,12 @@
+import sys
+from pathlib import Path
+
 from matheel.model_routing import available_vector_backends, infer_model_capabilities
 from matheel.similarity import calculate_similarity
 from matheel.vectors import available_pooling_methods, available_similarity_functions
 
-from _sample_data import CODE_A_NAME, CODE_B_NAME, load_sample_pair
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from sample_data import CODE_A_NAME, CODE_B_NAME, load_sample_pair  # noqa: E402
 
 
 def main():

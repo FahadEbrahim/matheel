@@ -59,6 +59,7 @@ pip install "matheel[chunking_code]"
 ## CLI Example
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --chunking-method code \
   --chunk-language java \

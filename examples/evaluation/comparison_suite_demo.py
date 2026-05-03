@@ -1,6 +1,10 @@
+import sys
+from pathlib import Path
+
 from matheel.comparison_suite import run_comparison_suite
 
-from _sample_data import SAMPLE_ARCHIVE
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from sample_data import sample_archive_path  # noqa: E402
 
 
 RUNS = [
@@ -35,7 +39,7 @@ RUNS = [
 
 
 def main():
-    summary, details = run_comparison_suite(SAMPLE_ARCHIVE, RUNS)
+    summary, details = run_comparison_suite(sample_archive_path(), RUNS)
     print(summary.round(4))
     print()
     print(details["semantic_levenshtein_blend"].head().round(4))

@@ -36,11 +36,12 @@ Examples that use semantic weights assume `matheel[semantic]` or `matheel[all]` 
 
 ## Quick Checks
 
-The repository root includes `sample_pairs.zip`, a small Java archive you can use immediately.
+Generate the tiny Java sample archive from source strings:
 
 Base CLI check:
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --feature-weight levenshtein=1.0 \
   --num 10
@@ -96,8 +97,10 @@ print(results.head())
 ## Demos and Examples
 
 - Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
-- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_gradio_colab_demo.ipynb)
-- Examples Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/matheel_examples_colab.ipynb)
+- Core workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/01_core_workflows.ipynb)
+- Dataset workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)
+- Custom algorithms Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/03_custom_algorithms.ipynb)
+- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb)
 - Examples folder: [github.com/FahadEbrahim/matheel/tree/main/examples](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 
 ## Documentation Map

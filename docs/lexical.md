@@ -48,6 +48,7 @@ feature_weights = {
 CLI:
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --feature-weight semantic=0.5 \
   --feature-weight levenshtein=0.25 \
@@ -83,6 +84,7 @@ If you omit `feature_weights`, Matheel uses:
 CLI:
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --feature-weight winnowing=1.0 \
   --winnowing-kgram 5 \
@@ -90,6 +92,7 @@ matheel compare sample_pairs.zip \
 ```
 
 ```bash
+python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --feature-weight gst=1.0 \
   --gst-min-match-length 5
