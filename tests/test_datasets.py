@@ -1,3 +1,5 @@
+import zipfile
+
 import pandas as pd
 import pytest
 
@@ -24,6 +26,7 @@ from matheel.datasets import (
     resolve_dataset_source,
     write_retrieval_dataset,
     write_pair_dataset,
+    _safe_extract_archive,
 )
 
 
@@ -60,6 +63,23 @@ def test_dataset_source_registry_resolves_local_sources(tmp_path):
 
     assert "local" in available_dataset_sources()
     assert resolve_dataset_source("local", dataset_root) == dataset_root.resolve()
+
+
+def test_default_dataset_sources_include_generic_resolvers():
+    sources = set(available_dataset_sources())
+
+    assert {"local", "github", "zenodo", "huggingface", "kaggle"}.issubset(sources)
+
+
+def test_safe_archive_extraction_rejects_path_traversal(tmp_path):
+    archive_path = tmp_path / "unsafe.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("../escape.txt", "nope")
+
+    with pytest.raises(ValueError, match="escape output directory"):
+        _safe_extract_archive(archive_path, tmp_path / "out")
+
+    assert not (tmp_path / "escape.txt").exists()
 
 
 def test_custom_source_and_preset_load_pair_dataset(tmp_path):

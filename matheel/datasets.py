@@ -2,7 +2,12 @@ import json
 import math
 import os
 import shutil
+import subprocess
+import tarfile
 import tempfile
+import urllib.parse
+import urllib.request
+import zipfile
 from dataclasses import dataclass
 from hashlib import sha1
 from inspect import signature
@@ -1464,8 +1469,200 @@ def register_default_dataset_adapters(overwrite=False):
     register_dataset_adapter("auto_retrieval_tabular", _adapt_retrieval_dataset_auto, overwrite=overwrite)
 
 
+def _is_relative_to(path, parent):
+    try:
+        _coerce_path(path).relative_to(_coerce_path(parent))
+    except ValueError:
+        return False
+    return True
+
+
+def _safe_extract_zip(archive_path, output_dir):
+    archive = _coerce_path(archive_path)
+    destination = _coerce_path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive) as archive_file:
+        for member in archive_file.infolist():
+            target = destination / member.filename
+            if not _is_relative_to(target, destination):
+                raise ValueError(f"Archive member would escape output directory: {member.filename}")
+        archive_file.extractall(destination)
+    return destination
+
+
+def _safe_extract_tar(archive_path, output_dir):
+    archive = _coerce_path(archive_path)
+    destination = _coerce_path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    with tarfile.open(archive) as archive_file:
+        for member in archive_file.getmembers():
+            target = destination / member.name
+            if not _is_relative_to(target, destination):
+                raise ValueError(f"Archive member would escape output directory: {member.name}")
+            if member.issym() or member.islnk():
+                link_target = target.parent / member.linkname
+                if not _is_relative_to(link_target, destination):
+                    raise ValueError(f"Archive link would escape output directory: {member.name}")
+        archive_file.extractall(destination)
+    return destination
+
+
+def _safe_extract_archive(archive_path, output_dir):
+    archive = _coerce_path(archive_path)
+    if zipfile.is_zipfile(archive):
+        return _safe_extract_zip(archive, output_dir)
+    if tarfile.is_tarfile(archive):
+        return _safe_extract_tar(archive, output_dir)
+    raise ValueError(f"Unsupported archive format: {archive.name}")
+
+
+def _single_child_directory_or_self(path):
+    root = _coerce_path(path)
+    children = [child for child in root.iterdir() if child.is_dir()]
+    files = [child for child in root.iterdir() if child.is_file()]
+    if len(children) == 1 and not files:
+        return children[0]
+    return root
+
+
+def _download_url_to_file(url, output_file, headers=None):
+    target = _coerce_path(output_file)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    request = urllib.request.Request(url, headers=dict(headers or {}))
+    with urllib.request.urlopen(request) as response:
+        with target.open("wb") as handle:
+            shutil.copyfileobj(response, handle)
+    return target
+
+
+def _read_json_url(url, headers=None):
+    request = urllib.request.Request(url, headers=dict(headers or {}))
+    with urllib.request.urlopen(request) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _authorization_headers(token):
+    if token is None:
+        return {}
+    return {"Authorization": f"Bearer {token}"}
+
+
+def _resolve_github_dataset_source(identifier, destination, revision="main", token=None, split=None):
+    _ = split
+    repo = str(identifier).strip().rstrip("/")
+    prefix = "https://github.com/"
+    if repo.startswith(prefix):
+        repo = repo[len(prefix) :]
+    if repo.endswith(".git"):
+        repo = repo[:-4]
+    parts = [part for part in repo.split("/") if part]
+    if len(parts) < 2:
+        raise ValueError("GitHub dataset identifiers must use 'owner/repo'.")
+    owner_repo = "/".join(parts[:2])
+
+    destination = _coerce_path(destination)
+    if destination.exists() and any(destination.iterdir()):
+        return _single_child_directory_or_self(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+
+    revision_path = urllib.parse.quote(str(revision or "main"), safe="")
+    archive_url = f"https://github.com/{owner_repo}/archive/{revision_path}.zip"
+    archive_path = destination / "github_archive.zip"
+    _download_url_to_file(archive_url, archive_path, headers=_authorization_headers(token))
+    _safe_extract_zip(archive_path, destination)
+    archive_path.unlink(missing_ok=True)
+    return _single_child_directory_or_self(destination)
+
+
+def _resolve_zenodo_dataset_source(identifier, destination, revision="main", token=None, split=None):
+    _ = (revision, split)
+    record_id = str(identifier).strip()
+    destination = _coerce_path(destination)
+    if destination.exists() and any(destination.iterdir()):
+        return destination
+    destination.mkdir(parents=True, exist_ok=True)
+
+    record = _read_json_url(
+        f"https://zenodo.org/api/records/{urllib.parse.quote(record_id)}",
+        headers=_authorization_headers(token),
+    )
+    for file_info in record.get("files", []):
+        key = Path(str(file_info.get("key") or file_info.get("filename") or "download")).name
+        links = file_info.get("links") or {}
+        file_url = links.get("self") or links.get("download")
+        if not file_url:
+            continue
+        output_file = _download_url_to_file(
+            file_url,
+            destination / key,
+            headers=_authorization_headers(token),
+        )
+        if zipfile.is_zipfile(output_file) or tarfile.is_tarfile(output_file):
+            _safe_extract_archive(output_file, destination / output_file.stem)
+    return destination
+
+
+def _resolve_huggingface_dataset_source(identifier, destination, revision="main", token=None, split=None):
+    _ = split
+    try:
+        from huggingface_hub import snapshot_download
+    except ImportError as exc:
+        raise ImportError(
+            "Hugging Face dataset resolution requires the optional 'huggingface_hub' package."
+        ) from exc
+
+    destination = _coerce_path(destination)
+    destination.mkdir(parents=True, exist_ok=True)
+    return _invoke_with_supported_kwargs(
+        snapshot_download,
+        repo_id=str(identifier),
+        repo_type="dataset",
+        revision=revision,
+        token=token,
+        local_dir=destination,
+    )
+
+
+def _resolve_kaggle_dataset_source(identifier, destination, revision="main", token=None, split=None):
+    _ = (revision, token, split)
+    destination = _coerce_path(destination)
+    if destination.exists() and any(destination.iterdir()):
+        return destination
+    destination.mkdir(parents=True, exist_ok=True)
+
+    try:
+        from kaggle.api.kaggle_api_extended import KaggleApi
+    except ImportError:
+        kaggle_binary = shutil.which("kaggle")
+        if kaggle_binary is None:
+            raise ImportError("Kaggle dataset resolution requires the optional Kaggle API or CLI.")
+        subprocess.run(
+            [
+                kaggle_binary,
+                "datasets",
+                "download",
+                "-d",
+                str(identifier),
+                "-p",
+                os.fspath(destination),
+                "--unzip",
+            ],
+            check=True,
+        )
+        return destination
+
+    api = KaggleApi()
+    api.authenticate()
+    api.dataset_download_files(str(identifier), path=os.fspath(destination), unzip=True)
+    return destination
+
+
 def register_default_dataset_sources(overwrite=False):
     register_dataset_source("local", _resolve_local_dataset_source, overwrite=overwrite)
+    register_dataset_source("github", _resolve_github_dataset_source, overwrite=overwrite)
+    register_dataset_source("zenodo", _resolve_zenodo_dataset_source, overwrite=overwrite)
+    register_dataset_source("huggingface", _resolve_huggingface_dataset_source, overwrite=overwrite)
+    register_dataset_source("kaggle", _resolve_kaggle_dataset_source, overwrite=overwrite)
 
 
 register_default_dataset_sources(overwrite=True)
