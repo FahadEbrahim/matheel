@@ -198,3 +198,58 @@ matheel evaluate-retrieval tiny_retrieval \
 ```
 
 The metrics include mean average precision, mean reciprocal rank, precision at `k`, recall at `k`, and nDCG at `k`.
+
+## Resampling and Uncertainty
+
+Use resampling when you want uncertainty summaries instead of only one point metric. Matheel provides split generators for single splits, k-fold, repeated k-fold, and bootstrap:
+
+```python
+from matheel.resampling import bootstrap_resamples, kfold_splits, single_split
+
+single = single_split(100, train_size=0.7, validation_size=0.1, seed=7)
+folds = kfold_splits(100, n_splits=5, seed=7)
+bootstraps = bootstrap_resamples(100, n_rounds=100, seed=7)
+```
+
+For pair-classification results, splits are applied to scored pair rows:
+
+```python
+from matheel.evaluation import evaluate_pair_resamples
+from matheel.resampling import kfold_splits
+
+splits = kfold_splits(len(scored_pairs), n_splits=5, seed=7)
+fold_metrics, fold_summary = evaluate_pair_resamples(
+    scored_pairs,
+    splits,
+    threshold=0.8,
+)
+```
+
+For retrieval results, splits are applied to query ids, so every selected query keeps its candidate documents:
+
+```python
+from matheel.evaluation import evaluate_retrieval_resamples
+from matheel.resampling import kfold_splits
+
+query_ids = sorted(scored_retrieval["query_id"].unique())
+splits = kfold_splits(query_ids, n_splits=5, seed=7)
+fold_metrics, fold_summary = evaluate_retrieval_resamples(
+    scored_retrieval,
+    splits,
+    k=10,
+)
+```
+
+`fold_summary` contains percentile intervals for each metric across the selected resamples. For paired comparisons between two configurations, use `compare_metric_samples(...)` on matching split-level metric values:
+
+```python
+from matheel.resampling import compare_metric_samples
+
+comparison = compare_metric_samples(
+    baseline_fold_metrics["f1"],
+    candidate_fold_metrics["f1"],
+    metric_name="f1",
+)
+```
+
+The comparison report includes mean difference, interval bounds, win/loss/tie counts, and a two-sided sign-test p-value.

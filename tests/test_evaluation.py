@@ -4,12 +4,15 @@ import pytest
 from matheel.datasets import write_pair_dataset, write_retrieval_dataset
 from matheel.evaluation import (
     evaluate_pair_dataset,
+    evaluate_pair_resamples,
     evaluate_retrieval_dataset,
+    evaluate_retrieval_resamples,
     pair_classification_metrics,
     retrieval_ranking_metrics,
     score_pair_dataset,
     score_retrieval_dataset,
 )
+from matheel.resampling import kfold_splits
 
 
 def _write_tiny_pair_dataset(path):
@@ -153,3 +156,39 @@ def test_retrieval_ranking_metrics_handles_queries_without_relevant_documents():
 def test_retrieval_ranking_metrics_requires_score_column():
     with pytest.raises(ValueError, match="similarity_score"):
         retrieval_ranking_metrics([{"query_id": "q1", "document_id": "d1", "relevance": 1}])
+
+
+def test_evaluate_pair_resamples_returns_fold_metrics_and_summary():
+    scored_pairs = pd.DataFrame(
+        [
+            {"similarity_score": 0.9, "label": 1},
+            {"similarity_score": 0.8, "label": 1},
+            {"similarity_score": 0.4, "label": 0},
+            {"similarity_score": 0.3, "label": 0},
+        ]
+    )
+    splits = kfold_splits(len(scored_pairs), n_splits=2, shuffle=False)
+
+    metrics, summary = evaluate_pair_resamples(scored_pairs, splits, threshold=0.5)
+
+    assert metrics["split"].tolist() == ["fold_1", "fold_2"]
+    assert metrics["accuracy"].tolist() == [1.0, 1.0]
+    assert summary.loc[summary["metric"] == "accuracy", "mean"].item() == pytest.approx(1.0)
+
+
+def test_evaluate_retrieval_resamples_uses_query_level_splits():
+    scored_results = pd.DataFrame(
+        [
+            {"query_id": "q1", "document_id": "d1", "similarity_score": 1.0, "relevance": 1},
+            {"query_id": "q1", "document_id": "d2", "similarity_score": 0.1, "relevance": 0},
+            {"query_id": "q2", "document_id": "d1", "similarity_score": 0.2, "relevance": 0},
+            {"query_id": "q2", "document_id": "d2", "similarity_score": 0.9, "relevance": 1},
+        ]
+    )
+    splits = kfold_splits(["q1", "q2"], n_splits=2, shuffle=False)
+
+    metrics, summary = evaluate_retrieval_resamples(scored_results, splits, k=1)
+
+    assert metrics["query_count"].tolist() == [1, 1]
+    assert metrics["mean_average_precision"].tolist() == [1.0, 1.0]
+    assert summary.loc[summary["metric"] == "ndcg_at_k", "mean"].item() == pytest.approx(1.0)
