@@ -29,12 +29,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.12"
           cache: pip
@@ -47,13 +47,26 @@ jobs:
         timeout-minutes: 12
         run: python scripts/check_pinned_matheel_release.py
 
+      - name: Set up uv
+        if: steps.pinned-release.outputs.should_sync_space == 'true'
+        uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: true
+
       - name: Sync Gradio app to Hugging Face Space
         if: steps.pinned-release.outputs.should_sync_space == 'true'
-        uses: huggingface/hub-sync@v0.1.0
-        with:
-          github_repo_id: ${{ github.repository }}
-          huggingface_repo_id: ${{ vars.HF_SPACE_REPO || 'buelfhood/matheel-framework' }}
-          hf_token: ${{ secrets.HF_TOKEN }}
-          repo_type: space
-          space_sdk: gradio
-          subdirectory: gradio_app
+        env:
+          HF_REPO_ID: ${{ vars.HF_SPACE_REPO || 'buelfhood/matheel-framework' }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          uvx hf repo create "${HF_REPO_ID}" --repo-type space --space-sdk gradio --exist-ok
+          uvx hf upload \
+            "${HF_REPO_ID}" \
+            gradio_app \
+            --repo-type space \
+            --exclude=".git*" \
+            --exclude=".github*" \
+            --delete="*" \
+            --commit-message="Sync from GitHub Actions"
