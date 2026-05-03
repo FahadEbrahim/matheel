@@ -4,6 +4,7 @@ import pandas as pd
 
 from .calibration import evaluate_threshold
 from .datasets import PairDataset, RetrievalDataset, load_code_texts, load_pair_dataset, load_retrieval_dataset
+from .resampling import summarize_metric_samples
 from .similarity import calculate_similarity
 
 
@@ -221,6 +222,102 @@ def evaluate_retrieval_dataset(
     return scored_results, metrics
 
 
+def evaluate_pair_resamples(
+    scored_pairs,
+    splits,
+    threshold=0.5,
+    score_column="similarity_score",
+    label_column="label",
+    metric_columns=None,
+    confidence=0.95,
+):
+    frame = scored_pairs.copy() if isinstance(scored_pairs, pd.DataFrame) else pd.DataFrame(scored_pairs)
+    rows = []
+    for split in _normalize_splits(splits):
+        subset = _test_subset(frame, split, item_label="pair rows")
+        row = _split_metadata(split)
+        row.update(
+            pair_classification_metrics(
+                subset,
+                threshold=threshold,
+                score_column=score_column,
+                label_column=label_column,
+            )
+        )
+        rows.append(row)
+
+    metrics = pd.DataFrame(rows)
+    summary = summarize_metric_samples(
+        metrics,
+        metric_columns=metric_columns or ("accuracy", "precision", "recall", "f1"),
+        confidence=confidence,
+    )
+    return metrics, summary
+
+
+def evaluate_retrieval_resamples(
+    scored_results,
+    splits,
+    qrels=None,
+    k=10,
+    score_column="similarity_score",
+    query_column="query_id",
+    document_column="document_id",
+    relevance_column="relevance",
+    metric_columns=None,
+    confidence=0.95,
+):
+    frame = scored_results.copy() if isinstance(scored_results, pd.DataFrame) else pd.DataFrame(scored_results)
+    if query_column not in frame.columns:
+        raise ValueError(f"scored_results is missing required column: {query_column}")
+    query_ids = tuple(sorted(frame[query_column].astype(str).unique().tolist()))
+    qrels_frame = qrels.copy() if isinstance(qrels, pd.DataFrame) else None
+    if qrels is not None and qrels_frame is None:
+        qrels_frame = pd.DataFrame(qrels)
+
+    rows = []
+    for split in _normalize_splits(splits):
+        selected_queries = _selected_query_ids(query_ids, split)
+        subset = frame[frame[query_column].astype(str).isin(selected_queries)].copy()
+        if subset.empty:
+            raise ValueError(f"Split {split.name!r} selected no retrieval results.")
+
+        split_qrels = None
+        if qrels_frame is not None:
+            if query_column not in qrels_frame.columns:
+                raise ValueError(f"qrels is missing required column: {query_column}")
+            split_qrels = qrels_frame[qrels_frame[query_column].astype(str).isin(selected_queries)].copy()
+
+        row = _split_metadata(split)
+        row.update(
+            retrieval_ranking_metrics(
+                subset,
+                qrels=split_qrels,
+                k=k,
+                score_column=score_column,
+                query_column=query_column,
+                document_column=document_column,
+                relevance_column=relevance_column,
+            )
+        )
+        rows.append(row)
+
+    metrics = pd.DataFrame(rows)
+    summary = summarize_metric_samples(
+        metrics,
+        metric_columns=metric_columns
+        or (
+            "mean_average_precision",
+            "mean_reciprocal_rank",
+            "precision_at_k",
+            "recall_at_k",
+            "ndcg_at_k",
+        ),
+        confidence=confidence,
+    )
+    return metrics, summary
+
+
 def _qrels_lookup(
     qrels,
     query_column="query_id",
@@ -311,3 +408,42 @@ def _normalize_nonnegative_relevance(value):
     if not math.isfinite(numeric) or numeric < 0:
         raise ValueError(f"Relevance values must be finite and non-negative. Got: {value}")
     return numeric
+
+
+def _normalize_splits(splits):
+    selected = tuple(splits)
+    if not selected:
+        raise ValueError("At least one split is required.")
+    return selected
+
+
+def _split_metadata(split):
+    return {
+        "split": str(split.name),
+        "split_method": str(split.method),
+        "train_count": int(len(split.train_indices)),
+        "validation_count": int(len(split.validation_indices)),
+        "test_count": int(len(split.test_indices)),
+    }
+
+
+def _test_subset(frame, split, item_label):
+    indices = _checked_indices(split.test_indices, len(frame), split.name)
+    if not indices:
+        raise ValueError(f"Split {split.name!r} has no test {item_label}.")
+    return frame.iloc[list(indices)].copy()
+
+
+def _selected_query_ids(query_ids, split):
+    indices = _checked_indices(split.test_indices, len(query_ids), split.name)
+    if not indices:
+        raise ValueError(f"Split {split.name!r} has no test queries.")
+    return {query_ids[index] for index in indices}
+
+
+def _checked_indices(indices, item_count, split_name):
+    checked = tuple(int(index) for index in indices)
+    invalid = [index for index in checked if index < 0 or index >= item_count]
+    if invalid:
+        raise ValueError(f"Split {split_name!r} contains out-of-range test indices: {invalid}")
+    return checked
