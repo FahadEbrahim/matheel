@@ -273,6 +273,7 @@ def test_dataset_manifest_rejects_credentials(tmp_path):
         json.dumps(
             {
                 "version": 1,
+                "api_key": "do-not-store",
                 "datasets": [
                     {
                         "source": "local",
@@ -287,7 +288,31 @@ def test_dataset_manifest_rejects_credentials(tmp_path):
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="credential fields"):
+    with pytest.raises(ValueError, match="api_key"):
+        load_dataset_manifest(manifest_path)
+
+
+def test_dataset_manifest_rejects_nested_credentials(tmp_path):
+    manifest_path = tmp_path / "datasets.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "datasets": [
+                    {
+                        "source": "local",
+                        "identifier": "raw_pairs",
+                        "adapter": "auto_pair_tabular",
+                        "adapted_destination": "normalized_pairs",
+                        "adapter_options": {"token": "do-not-store"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="adapter_options.token"):
         load_dataset_manifest(manifest_path)
 
 
@@ -310,6 +335,27 @@ def test_dataset_manifest_requires_reproducible_adapter_destination(tmp_path):
     )
 
     with pytest.raises(ValueError, match="adapted_destination"):
+        load_dataset_manifest(manifest_path)
+
+
+def test_dataset_manifest_requires_remote_destination(tmp_path):
+    manifest_path = tmp_path / "datasets.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "datasets": [
+                    {
+                        "source": "github",
+                        "identifier": "owner/repo",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="remote sources must include destination"):
         load_dataset_manifest(manifest_path)
 
 
@@ -397,6 +443,26 @@ def test_auto_pair_tabular_adapter_supports_path_columns(tmp_path):
     assert sorted(texts.values()) == ["print('a')\n", "print('b')\n"]
 
 
+def test_auto_pair_tabular_adapter_preserves_explicit_column_errors(tmp_path):
+    source_root = tmp_path / "raw_pairs"
+    source_root.mkdir()
+    pd.DataFrame(
+        [{"left_code": "print('x')", "right_code": "print('x')", "label": 1}]
+    ).to_csv(source_root / "pairs.csv", index=False)
+
+    with pytest.raises(ValueError, match="left text column does not exist: missing_left"):
+        adapt_pair_dataset(
+            source_root,
+            adapter="auto_pair_tabular",
+            adapter_options={
+                "pair_table": "pairs.csv",
+                "left_text_column": "missing_left",
+                "right_text_column": "right_code",
+                "label_column": "label",
+            },
+        )
+
+
 def test_auto_retrieval_tabular_adapter_supports_configured_columns(tmp_path):
     source_root = tmp_path / "raw_retrieval"
     source_root.mkdir()
@@ -431,6 +497,32 @@ def test_auto_retrieval_tabular_adapter_supports_configured_columns(tmp_path):
     assert loaded.queries["query_id"].tolist() == ["q1"]
     assert loaded.corpus["document_id"].tolist() == ["d1", "d2"]
     assert sorted(loaded.qrels["relevance"].tolist()) == [0.0, 1.0]
+
+
+def test_auto_retrieval_tabular_adapter_preserves_explicit_column_errors(tmp_path):
+    source_root = tmp_path / "raw_retrieval"
+    source_root.mkdir()
+    pd.DataFrame(
+        [
+            {
+                "query_code": "print('x')",
+                "candidate_code": "print('x')",
+                "relevance": 1,
+            }
+        ]
+    ).to_csv(source_root / "retrieval.csv", index=False)
+
+    with pytest.raises(ValueError, match="document text column does not exist: missing_document"):
+        adapt_retrieval_dataset(
+            source_root,
+            adapter="auto_retrieval_tabular",
+            adapter_options={
+                "retrieval_table": "retrieval.csv",
+                "query_text_column": "query_code",
+                "document_text_column": "missing_document",
+                "relevance_column": "relevance",
+            },
+        )
 
 
 def test_soco14_retrieval_adapter_uses_document_id_schema(tmp_path):

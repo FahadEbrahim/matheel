@@ -27,7 +27,6 @@ nav:
   - Datasets and evaluation: datasets.md
   - Comparison suite: comparison_suite.md
   - Development: development.md
-  - Release checklist: release_checklist.md
 
 exclude_docs: |
   README.md

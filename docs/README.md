@@ -16,4 +16,3 @@ The published site is <https://fahadebrahim.github.io/matheel/>.
 - [Code metrics](code_metrics.md)
 - [Comparison suite](comparison_suite.md)
 - [Development](development.md)
-- [Release checklist](release_checklist.md)
