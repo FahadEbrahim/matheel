@@ -1,6 +1,6 @@
 import html
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pandas as pd
 
@@ -35,6 +35,8 @@ _TASK_ALIASES = {
     "ranking": "retrieval",
 }
 _PATH_KEYS = {"identifier", "path", "algorithm_path"}
+_ALWAYS_LOCAL_PATH_KEYS = {"path", "algorithm_path"}
+_MAYBE_LOCAL_PATH_KEYS = {"identifier"}
 
 
 def available_leaderboard_metrics(task_family=None):
@@ -169,9 +171,10 @@ def write_leaderboard_artifacts(report, output_dir, basename="leaderboard"):
         "html": target / f"{stem}.html",
         "reproducibility_json": target / f"{stem}_reproducibility.json",
     }
+    payload = leaderboard_payload(report)
     report["per_dataset"].to_csv(artifacts["per_dataset_csv"], index=False)
     report["aggregate"].to_csv(artifacts["aggregate_csv"], index=False)
-    artifacts["json"].write_text(json.dumps(leaderboard_payload(report), indent=2, sort_keys=True), encoding="utf-8")
+    artifacts["json"].write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     from .reports import benchmark_report_html
 
     artifacts["html"].write_text(
@@ -186,7 +189,7 @@ def write_leaderboard_artifacts(report, output_dir, basename="leaderboard"):
         ),
         encoding="utf-8",
     )
-    snapshot = collect_reproducibility_snapshot(run_configs=[report.get("manifest", {})])
+    snapshot = collect_reproducibility_snapshot(run_configs=[payload.get("manifest", {})])
     write_reproducibility_snapshot(snapshot, artifacts["reproducibility_json"])
     return artifacts
 
@@ -417,16 +420,44 @@ def _frame_records(frame):
     return [_json_safe(row) for row in frame.to_dict(orient="records")]
 
 
-def _json_safe(value):
+def _json_safe(value, key_name=None):
     if isinstance(value, dict):
-        return {str(key): _json_safe(item) for key, item in sorted(value.items(), key=lambda item: str(item[0]))}
+        return {
+            str(key): _json_safe(item, key_name=str(key))
+            for key, item in sorted(value.items(), key=lambda item: str(item[0]))
+        }
     if isinstance(value, (list, tuple)):
-        return [_json_safe(item) for item in value]
+        return [_json_safe(item, key_name=key_name) for item in value]
+    if isinstance(value, Path):
+        return value.name
+    if isinstance(value, str) and _should_sanitize_manifest_path(key_name, value):
+        return _path_name(value)
     if pd.isna(value):
         return None
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
     return value.item() if hasattr(value, "item") else str(value)
+
+
+def _should_sanitize_manifest_path(key_name, value):
+    name = str(key_name or "")
+    if name in _ALWAYS_LOCAL_PATH_KEYS:
+        return True
+    if name not in _MAYBE_LOCAL_PATH_KEYS:
+        return False
+    text = str(value or "").strip()
+    if not text:
+        return False
+    windows_path = PureWindowsPath(text)
+    return Path(text).expanduser().is_absolute() or windows_path.is_absolute() or text.startswith(".")
+
+
+def _path_name(value):
+    text = str(value or "")
+    windows_path = PureWindowsPath(text)
+    if windows_path.drive or "\\" in text:
+        return windows_path.name or text
+    return Path(text).name or text
 
 
 def _safe_basename(value):

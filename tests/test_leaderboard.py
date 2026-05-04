@@ -55,6 +55,11 @@ def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
     assert artifacts["html"].exists()
     assert artifacts["reproducibility_json"].exists()
     payload = json.loads(artifacts["json"].read_text(encoding="utf-8"))
+    reproducibility = json.loads(artifacts["reproducibility_json"].read_text(encoding="utf-8"))
+    assert str(tmp_path) not in json.dumps(payload)
+    assert str(tmp_path) not in json.dumps(reproducibility)
+    assert payload["manifest"]["datasets"][0]["spec"]["identifier"] == "pairs"
+    assert payload["manifest"]["algorithms"][0]["algorithm_path"] == "exact.py"
     assert payload["cards"]["datasets"][0]["name"] == "pairs"
     assert payload["cards"]["algorithms"][0]["name"] == "exact"
     per_dataset = report["per_dataset"]
@@ -121,9 +126,34 @@ def test_leaderboard_payload_and_html_escape_values(tmp_path):
     output = leaderboard_html(report, title="<unsafe>")
 
     assert payload["metadata"]["name"] == "<unsafe>"
+    assert payload["manifest"]["datasets"][0]["spec"]["identifier"] == "pairs"
+    assert payload["manifest"]["algorithms"][0]["algorithm_path"] == "exact.py"
     assert "<unsafe>" not in output
     assert "&lt;unsafe&gt;" in output
     assert "<exact>" not in output
+
+
+def test_leaderboard_payload_keeps_remote_identifiers():
+    payload = leaderboard_payload(
+        {
+            "metadata": {"name": "remote"},
+            "manifest": {
+                "datasets": [
+                    {
+                        "name": "remote_pairs",
+                        "task_family": "pair",
+                        "spec": {"source": "github", "identifier": "owner/repository"},
+                    }
+                ],
+                "algorithms": [{"name": "builtin", "similarity_options": {}}],
+            },
+            "cards": {"datasets": [], "algorithms": []},
+            "per_dataset": pd.DataFrame(),
+            "aggregate": pd.DataFrame(),
+        }
+    )
+
+    assert payload["manifest"]["datasets"][0]["spec"]["identifier"] == "owner/repository"
 
 
 def _write_pair_fixture(tmp_path):
