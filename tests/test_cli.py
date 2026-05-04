@@ -199,6 +199,59 @@ def test_calibration_report_command_writes_artifacts(tmp_path):
     assert (output_dir / "tiny_report.json").exists()
 
 
+def test_leaderboard_command_writes_artifacts(tmp_path, monkeypatch):
+    config_path = tmp_path / "leaderboard.json"
+    config_path.write_text('{"datasets": [], "algorithms": []}', encoding="utf-8")
+    output_dir = tmp_path / "leaderboard"
+    captured = {}
+
+    def fake_load_leaderboard_manifest(config_file):
+        captured["config_file"] = config_file
+        return {"name": "tiny", "datasets": [], "algorithms": []}
+
+    def fake_run_leaderboard(manifest, output_dir, basename):
+        captured["manifest"] = manifest
+        captured["output_dir"] = output_dir
+        captured["basename"] = basename
+        target = Path(output_dir)
+        target.mkdir()
+        artifacts = {"json": target / f"{basename}.json"}
+        artifacts["json"].write_text("{}", encoding="utf-8")
+        return (
+            {
+                "metadata": {"name": manifest["name"]},
+                "aggregate": pd.DataFrame([{"rank": 1}]),
+                "per_dataset": pd.DataFrame([{"rank": 1}]),
+            },
+            artifacts,
+        )
+
+    monkeypatch.setattr("matheel.cli.load_leaderboard_manifest", fake_load_leaderboard_manifest)
+    monkeypatch.setattr("matheel.cli.run_leaderboard", fake_run_leaderboard)
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "leaderboard",
+            str(config_path),
+            "--output-dir",
+            str(output_dir),
+            "--basename",
+            "tiny",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    summary = json.loads(result.output)
+    assert captured["config_file"] == str(config_path)
+    assert captured["basename"] == "tiny"
+    assert summary["aggregate_rows"] == 1
+    assert summary["per_dataset_rows"] == 1
+    assert (output_dir / "tiny.json").exists()
+
+
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     archive_path = tmp_path / "codes.zip"
     archive_path.write_bytes(b"placeholder")
