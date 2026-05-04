@@ -94,7 +94,7 @@ print(results.head())
 - Use `matheel compare-suite` with a JSON config for repeatable multi-run comparisons.
 - Use `--algorithm-path` when you need a custom `score_pair` implementation.
 - Run the reproducible benchmark demo when you need a small auditable evaluation workflow.
-- Run the Gradio app or notebooks when you want an interactive workflow, including normalized dataset evaluation and downloadable leaderboard artifacts.
+- Run the Gradio app or notebooks when you want an interactive workflow, including normalized dataset evaluation, visualization artifacts, and leaderboard inspection.
 
 ## Demos and Examples
 
@@ -124,7 +124,7 @@ print(results.head())
 ## Interface Notes
 
 - CLI and Python API accept either a directory or a ZIP archive.
-- Gradio remains ZIP-only for uploads, including normalized dataset uploads.
+- Gradio remains ZIP-first for dataset uploads and supports JSON or ZIP leaderboard artifacts.
 - `feature_weights` is the canonical scoring input.
 - `vector_backend=auto` uses Hugging Face metadata and tag heuristics when available.
 - CLI progress bars write to stderr and default to interactive terminals only. Use `--progress` or `--no-progress` to override.

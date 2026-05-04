@@ -588,3 +588,131 @@ def test_dataset_retrieval_resampling_reports_invalid_query_folds(tmp_path):
 
     with pytest.raises(gradio_app.gr.Error, match="number of queries"):
         gradio_app._resample_retrieval_scores(scored, dataset, folds=2, seed=7, k=1)
+
+
+def test_gradio_dataset_map_exports_visualization_artifacts(tmp_path):
+    dataset_root = tmp_path / "map_pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "c", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+            ]
+        ),
+        metadata={"name": "tiny_map_pairs"},
+    )
+    archive_path = _zip_directory(dataset_root, tmp_path / "map_pairs.zip")
+
+    summary_html, points_frame, map_html, artifacts_path = gradio_app.generate_dataset_map_gradio(
+        archive_path,
+        "Pair Classification",
+        "pca",
+        7,
+        32,
+        "role",
+        progress=None,
+    )
+
+    assert "Dataset Map" in summary_html
+    assert "tiny_map_pairs" in summary_html
+    assert "document_id" in points_frame.columns
+    assert len(points_frame) == 3
+    assert "<svg" in map_html
+
+    with zipfile.ZipFile(artifacts_path) as archive:
+        assert archive.namelist() == ["dataset_map.csv", "dataset_map.html", "dataset_map.json"]
+
+
+def test_gradio_pair_explanation_exports_safe_html(tmp_path):
+    _ = tmp_path
+    summary_html, matches_frame, explanation_html, artifacts_path = (
+        gradio_app.generate_pair_explanation_gradio(
+            "print('<script>')\nprint(1)",
+            "print('<script>')\nprint(2)",
+            "line",
+            0.85,
+            0.6,
+            0.3,
+            5,
+        )
+    )
+
+    assert "Pair Explanation" in summary_html
+    assert not matches_frame.empty
+    assert "<script>" not in explanation_html
+    assert "&lt;script&gt;" in explanation_html
+
+    with zipfile.ZipFile(artifacts_path) as archive:
+        assert archive.namelist() == ["pair_explanation.html", "pair_explanation.json"]
+
+
+def test_gradio_leaderboard_inspection_renders_uploaded_zip(tmp_path):
+    payload = {
+        "schema_version": 1,
+        "metadata": {"name": "<tiny leaderboard>", "seed": 7},
+        "manifest": {"name": "<tiny leaderboard>"},
+        "cards": {
+            "datasets": [{"name": "pairs", "card_type": "dataset", "task_family": "pair"}],
+            "algorithms": [{"name": "<exact>", "card_type": "algorithm", "algorithm_kind": "builtin"}],
+        },
+        "aggregate": [
+            {
+                "task_family": "pair",
+                "algorithm_name": "<exact>",
+                "metric": "f1",
+                "mean_score": 1.0,
+                "median_score": 1.0,
+                "dataset_count": 1,
+                "sample_count": 2,
+                "rank": 1,
+            }
+        ],
+        "per_dataset": [
+            {
+                "task_family": "pair",
+                "dataset_name": "pairs",
+                "algorithm_name": "<exact>",
+                "metric": "f1",
+                "score": 1.0,
+                "sample_count": 2,
+                "dataset_source": "local",
+                "algorithm_kind": "builtin",
+                "rank": 1,
+            }
+        ],
+    }
+    payload_path = tmp_path / "leaderboard.json"
+    payload_path.write_text(json.dumps(payload), encoding="utf-8")
+    zip_path = tmp_path / "leaderboard_artifacts.zip"
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.write(payload_path, arcname="nested/leaderboard.json")
+
+    summary_html, aggregate, per_dataset, report_html, artifacts_path = (
+        gradio_app.inspect_leaderboard_artifacts_gradio(zip_path)
+    )
+
+    assert "Leaderboard Inspection" in summary_html
+    assert "nested" not in summary_html
+    assert not aggregate.empty
+    assert not per_dataset.empty
+    assert "<tiny leaderboard>" not in report_html
+    assert "&lt;tiny leaderboard&gt;" in report_html
+    assert "<exact>" not in report_html
+    assert "&lt;exact&gt;" in report_html
+
+    with zipfile.ZipFile(artifacts_path) as archive:
+        assert archive.namelist() == [
+            "leaderboard_report.html",
+            "leaderboard_report.json",
+            "leaderboard_report_aggregate.csv",
+            "leaderboard_report_per_dataset.csv",
+            "leaderboard_report_reproducibility.json",
+        ]
