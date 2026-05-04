@@ -24,6 +24,42 @@ def test_cli_and_package_expose_version():
     assert matheel.__version__ == version("matheel")
 
 
+def test_visualize_dataset_command_writes_artifacts(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]),
+        metadata={"name": "tiny_pairs"},
+    )
+    output_dir = tmp_path / "viz"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "visualize-dataset",
+            str(dataset_root),
+            "--kind",
+            "pair",
+            "--method",
+            "pca",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "projection_method=pca" in result.output
+    assert (output_dir / "dataset_map.csv").exists()
+    assert (output_dir / "dataset_map.json").exists()
+    assert (output_dir / "dataset_map.html").exists()
+
+
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     archive_path = tmp_path / "codes.zip"
     archive_path.write_bytes(b"placeholder")
