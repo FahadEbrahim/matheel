@@ -19,8 +19,10 @@ except ModuleNotFoundError:
     from html_utils import escape_html
 
 from matheel.chunking import available_chunk_aggregations, available_chunking_methods
+from matheel.calibration import write_threshold_tuning_report_artifacts
 from matheel.comparison_suite import run_comparison_suite, slugify_run_name
 from matheel.code_metrics import available_code_metric_languages, available_code_metrics
+from matheel.dataset_validation import write_dataset_validation_report
 from matheel.datasets import (
     available_dataset_presets,
     get_dataset_preset,
@@ -133,6 +135,7 @@ READY_LEADERBOARD_RETRIEVAL_METRICS = (
     "precision_at_k",
     "recall_at_k",
 )
+THRESHOLD_OPTIMIZE_CHOICES = ("f1", "accuracy", "precision", "recall")
 PAIR_DATASET_SCORE_COLUMNS = [
     "left_id",
     "right_id",
@@ -1519,6 +1522,22 @@ def empty_ready_leaderboard_summary_html():
     )
 
 
+def empty_dataset_validation_summary_html():
+    return summary_panel_html(
+        "Dataset Validation",
+        [("Status", "No dataset checked"), ("Artifacts", "None")],
+        variant="empty",
+    )
+
+
+def empty_threshold_tuning_summary_html():
+    return summary_panel_html(
+        "Threshold Tuning",
+        [("Status", "No pair scores available"), ("Artifacts", "None")],
+        variant="empty",
+    )
+
+
 def ready_leaderboard_registered_datasets_frame():
     rows = []
     for preset_name in available_dataset_presets():
@@ -2253,6 +2272,16 @@ def _write_leaderboard_artifacts(
         resample_summary_path = root / f"{prefix}_resampling_summary.csv"
         resample_summary.to_csv(resample_summary_path, index=False)
         files["resampling_summary"] = resample_summary_path.name
+    if prefix == "pair":
+        _, threshold_artifacts = write_threshold_tuning_report_artifacts(
+            scored,
+            root,
+            score_key="similarity_score",
+            label_key="label",
+            basename="pair_threshold_tuning",
+        )
+        for name, path in threshold_artifacts.items():
+            files[f"threshold_{name}"] = Path(path).name
 
     manifest = {
         "schema_version": 1,
@@ -2320,6 +2349,158 @@ def _validate_pair_resampling_folds(scored, folds):
 
 def _validate_retrieval_resampling_folds(query_ids, folds):
     _validate_resampling_fold_count(len(query_ids), folds, "queries")
+
+
+def dataset_validation_summary_html(report):
+    return summary_panel_html(
+        "Dataset Validation",
+        [
+            ("Dataset", str(report.get("dataset_name") or "dataset")),
+            ("Kind", str(report.get("dataset_kind") or "unknown").replace("_", " ")),
+            ("Status", str(report.get("status") or "unknown")),
+            ("Errors", str(report.get("error_count", 0))),
+            ("Warnings", str(report.get("warning_count", 0))),
+        ],
+        variant="error" if report.get("error_count") else "empty" if report.get("warning_count") else "summary",
+    )
+
+
+def dataset_validation_issues_frame(report):
+    issues = list((report or {}).get("issues") or [])
+    if not issues:
+        return pd.DataFrame(columns=["Severity", "Code", "Message", "Count"])
+    frame = pd.DataFrame(issues)
+    return frame.rename(
+        columns={
+            "severity": "Severity",
+            "code": "Code",
+            "message": "Message",
+            "count": "Count",
+        }
+    )[["Severity", "Code", "Message", "Count"]]
+
+
+def validate_dataset_gradio(dataset_file, task_label, progress=gr.Progress(track_tqdm=True)):
+    if dataset_file is None:
+        return empty_dataset_validation_summary_html(), pd.DataFrame(), "", None
+    dataset_root = _dataset_root_from_upload(dataset_file, task_label)
+    if progress is not None:
+        progress(0.3, desc="Inspecting dataset")
+    export_root = Path(tempfile.mkdtemp(prefix="matheel-dataset-validation-"))
+    report, artifacts = write_dataset_validation_report(
+        dataset_root,
+        export_root,
+        kind=_dataset_kind_from_task_label(task_label),
+        basename="dataset_validation",
+    )
+    artifacts_zip = _zip_artifact_paths(
+        artifacts.values(),
+        export_root / "dataset_validation_artifacts.zip",
+    )
+    if progress is not None:
+        progress(1.0, desc="Dataset validation complete")
+    return (
+        dataset_validation_summary_html(report),
+        dataset_validation_issues_frame(report),
+        artifacts["report_html"].read_text(encoding="utf-8"),
+        artifacts_zip,
+    )
+
+
+def threshold_tuning_summary_html(report):
+    summary = report["summary"]
+    optimized = summary["optimized_threshold"]
+    items = [
+        ("Pairs", str(summary["pair_count"])),
+        ("Positive Labels", str(summary["positive_count"])),
+        ("Negative Labels", str(summary["negative_count"])),
+        ("Optimized Metric", str(summary["optimized_metric"])),
+        ("Best Threshold", f"{float(optimized['threshold']):.4f}"),
+        ("Best F1", f"{float(optimized['f1']):.3f}"),
+        ("Best Accuracy", f"{float(optimized['accuracy']):.3f}"),
+    ]
+    if summary.get("auroc") is not None:
+        items.append(("AUROC", f"{float(summary['auroc']):.3f}"))
+    if summary.get("average_precision") is not None:
+        items.append(("Average Precision", f"{float(summary['average_precision']):.3f}"))
+    return summary_panel_html(
+        "Threshold Tuning",
+        items,
+        variant="empty" if summary.get("warnings") else "summary",
+    )
+
+
+def threshold_sweep_display_frame(report):
+    frame = report["threshold_sweep"].copy()
+    if frame.empty:
+        return pd.DataFrame(columns=["Threshold", "Precision", "Recall", "F1", "Accuracy"])
+    for column in ("threshold", "precision", "recall", "f1", "accuracy"):
+        if column in frame.columns:
+            frame[column] = frame[column].astype(float).round(4)
+    columns = [
+        column
+        for column in (
+            "threshold",
+            "true_positive",
+            "false_positive",
+            "true_negative",
+            "false_negative",
+            "precision",
+            "recall",
+            "f1",
+            "accuracy",
+        )
+        if column in frame.columns
+    ]
+    return frame[columns].rename(
+        columns={
+            "threshold": "Threshold",
+            "true_positive": "TP",
+            "false_positive": "FP",
+            "true_negative": "TN",
+            "false_negative": "FN",
+            "precision": "Precision",
+            "recall": "Recall",
+            "f1": "F1",
+            "accuracy": "Accuracy",
+        }
+    )
+
+
+def threshold_tuning_gradio(scored_state, optimize, progress=gr.Progress(track_tqdm=True)):
+    if not scored_state:
+        return empty_threshold_tuning_summary_html(), pd.DataFrame(), "", None
+    if scored_state.get("task") != "pair":
+        raise gr.Error("Threshold tuning is only available for pair-classification scores.")
+    scored = pd.DataFrame(scored_state.get("scored") or [])
+    if scored.empty:
+        return empty_threshold_tuning_summary_html(), pd.DataFrame(), "", None
+    if progress is not None:
+        progress(0.35, desc="Sweeping thresholds")
+    export_root = Path(tempfile.mkdtemp(prefix="matheel-threshold-tuning-"))
+    try:
+        report, artifacts = write_threshold_tuning_report_artifacts(
+            scored,
+            export_root,
+            score_key="similarity_score",
+            label_key="label",
+            optimize=optimize,
+            basename="threshold_tuning",
+        )
+    except ValueError as exc:
+        raise gr.Error(str(exc)) from exc
+    artifacts_zip = _zip_artifact_paths(
+        artifacts.values(),
+        export_root / "threshold_tuning_artifacts.zip",
+    )
+    if progress is not None:
+        progress(1.0, desc="Threshold tuning complete")
+    return (
+        threshold_tuning_summary_html(report),
+        threshold_sweep_display_frame(report),
+        artifacts["report_html"].read_text(encoding="utf-8"),
+        artifacts_zip,
+    )
 
 
 def evaluate_dataset_gradio(
@@ -2415,6 +2596,34 @@ def evaluate_dataset_gradio(
         resample_summary,
         str(artifacts_zip),
     )
+
+
+def evaluate_dataset_gradio_with_state(*args, **kwargs):
+    outputs = evaluate_dataset_gradio(*args, **kwargs)
+    scored = outputs[2]
+    task_label = args[1] if len(args) > 1 else kwargs.get("task_label", DEFAULT_DATASET_TASK)
+    state = {
+        "task": "retrieval" if str(task_label).startswith("Retrieval") else "pair",
+        "scored": _state_scored_records(scored),
+    }
+    return (*outputs, state)
+
+
+def _state_scored_records(display_frame):
+    frame = display_frame.copy() if isinstance(display_frame, pd.DataFrame) else pd.DataFrame(display_frame)
+    if frame.empty:
+        return []
+    rename = {
+        "Left File": "left_id",
+        "Right File": "right_id",
+        "Label": "label",
+        "Similarity Score": "similarity_score",
+        "Query": "query_id",
+        "Document": "document_id",
+        "Relevance": "relevance",
+    }
+    frame = frame.rename(columns=rename)
+    return frame.to_dict(orient="records")
 
 
 def score_card_html(
@@ -4005,10 +4214,28 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                 )
 
         with gr.Tab("Datasets"):
+            dataset_scored_state = gr.State(None)
             with gr.Row():
                 with gr.Column(scale=8):
                     dataset_file = gr.File(label="Normalized Dataset ZIP", file_types=[".zip"])
-                    dataset_run = gr.Button("Run Dataset Evaluation", variant="primary")
+                    with gr.Row():
+                        dataset_validate = gr.Button("Validate Dataset", variant="secondary")
+                        dataset_run = gr.Button("Run Dataset Evaluation", variant="primary")
+                    dataset_validation_summary = gr.HTML(
+                        value=empty_dataset_validation_summary_html(),
+                        padding=False,
+                    )
+                    dataset_validation_issues = gr.Dataframe(
+                        label="Validation Issues",
+                        wrap=False,
+                        interactive=False,
+                        max_height=220,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    dataset_validation_report = gr.HTML(value="", padding=False)
+                    dataset_validation_artifacts = gr.File(label="Validation Artifacts")
                     dataset_summary = gr.HTML(
                         value=summary_panel_html(
                             "Dataset Evaluation",
@@ -4054,6 +4281,21 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                         elem_classes=["matheel-table"],
                     )
                     dataset_artifacts = gr.File(label="Leaderboard Artifacts")
+                    dataset_threshold_summary = gr.HTML(
+                        value=empty_threshold_tuning_summary_html(),
+                        padding=False,
+                    )
+                    dataset_threshold_sweep = gr.Dataframe(
+                        label="Threshold Sweep",
+                        wrap=False,
+                        interactive=False,
+                        max_height=300,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    dataset_threshold_report = gr.HTML(value="", padding=False)
+                    dataset_threshold_artifacts = gr.File(label="Threshold Tuning Artifacts")
 
                 with gr.Column(scale=5):
                     with gr.Accordion("Dataset", open=True):
@@ -4128,14 +4370,30 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             precision=0,
                             label="Resampling Seed",
                         )
+                        dataset_threshold_optimize = gr.Dropdown(
+                            choices=list(THRESHOLD_OPTIMIZE_CHOICES),
+                            value="f1",
+                            label="Threshold Tuning Metric",
+                        )
+                        dataset_threshold_tune = gr.Button("Tune Pair Threshold", variant="secondary")
 
             dataset_task.change(
                 update_dataset_task_sections,
                 inputs=dataset_task,
                 outputs=[dataset_pair_group, dataset_retrieval_group],
             )
+            dataset_validate.click(
+                validate_dataset_gradio,
+                inputs=[dataset_file, dataset_task],
+                outputs=[
+                    dataset_validation_summary,
+                    dataset_validation_issues,
+                    dataset_validation_report,
+                    dataset_validation_artifacts,
+                ],
+            )
             dataset_run.click(
-                evaluate_dataset_gradio,
+                evaluate_dataset_gradio_with_state,
                 inputs=[
                     dataset_file,
                     dataset_task,
@@ -4158,6 +4416,17 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     dataset_resampling_metrics,
                     dataset_resampling_summary,
                     dataset_artifacts,
+                    dataset_scored_state,
+                ],
+            )
+            dataset_threshold_tune.click(
+                threshold_tuning_gradio,
+                inputs=[dataset_scored_state, dataset_threshold_optimize],
+                outputs=[
+                    dataset_threshold_summary,
+                    dataset_threshold_sweep,
+                    dataset_threshold_report,
+                    dataset_threshold_artifacts,
                 ],
             )
 

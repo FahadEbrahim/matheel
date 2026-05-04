@@ -478,9 +478,62 @@ def test_dataset_pair_evaluation_exports_leaderboard_artifacts(tmp_path):
         assert "pair_scored_rows.csv" in names
         assert "pair_metrics.json" in names
         assert "pair_resampling_summary.csv" in names
+        assert "pair_threshold_tuning_threshold_sweep.csv" in names
         manifest = json.loads(archive.read("leaderboard_manifest.json").decode("utf-8"))
     assert manifest["workflow"] == "gradio_dataset_evaluation"
     assert manifest["dataset_kind"] == "pair_classification"
+
+
+def test_gradio_dataset_validation_exports_report(tmp_path):
+    dataset_root = tmp_path / "pair_dataset"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]),
+        metadata={"name": "validation_pairs"},
+    )
+    archive_path = _zip_directory(dataset_root, tmp_path / "pair_dataset.zip")
+
+    summary_html, issues_frame, report_html, artifacts_path = gradio_app.validate_dataset_gradio(
+        archive_path,
+        "Pair Classification",
+        progress=None,
+    )
+
+    assert "Dataset Validation" in summary_html
+    assert "validation_pairs" in summary_html
+    assert "single_class_labels" in issues_frame["Code"].tolist()
+    assert "Matheel Dataset Validation" in report_html
+    with zipfile.ZipFile(artifacts_path) as archive:
+        assert "dataset_validation_report.json" in archive.namelist()
+
+
+def test_gradio_threshold_tuning_uses_scored_pair_state(tmp_path):
+    _ = tmp_path
+    state = {
+        "task": "pair",
+        "scored": [
+            {"left_id": "a", "right_id": "b", "similarity_score": 0.9, "label": 1},
+            {"left_id": "c", "right_id": "d", "similarity_score": 0.2, "label": 0},
+        ],
+    }
+
+    summary_html, sweep_frame, report_html, artifacts_path = gradio_app.threshold_tuning_gradio(
+        state,
+        "f1",
+        progress=None,
+    )
+
+    assert "Threshold Tuning" in summary_html
+    assert not sweep_frame.empty
+    assert "Threshold Tuning" in report_html
+    with zipfile.ZipFile(artifacts_path) as archive:
+        assert "threshold_tuning_threshold_sweep.csv" in archive.namelist()
 
 
 def test_dataset_pair_resampling_reports_invalid_label_folds():

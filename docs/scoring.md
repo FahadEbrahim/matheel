@@ -86,6 +86,42 @@ report = calibrate_threshold(
 
 Use `evaluate_threshold(...)` when you already have a threshold and want confusion counts, precision, recall, F1, and accuracy.
 
+## Threshold Tuning Reports
+
+Use `tune-threshold` for a reproducible threshold sweep over scored pair rows. Unlike the fuller calibration report, this workflow also works for all-positive or all-negative samples and records a warning when ROC or precision-recall summaries are not meaningful.
+
+```bash
+matheel tune-threshold scored_pairs.csv \
+  --score-column similarity_score \
+  --label-column label \
+  --optimize f1 \
+  --output-dir threshold_tuning
+```
+
+The output includes:
+
+- `threshold_tuning_threshold_sweep.csv`: threshold, confusion counts, precision, recall, F1, and accuracy.
+- `threshold_tuning_summary.json`: selected threshold and reproducibility settings.
+- `threshold_tuning_report.json`: machine-readable report payload.
+- `threshold_tuning_report.html`: local HTML summary.
+
+Python usage:
+
+```python
+from matheel.calibration import write_threshold_tuning_report_artifacts
+
+report, artifacts = write_threshold_tuning_report_artifacts(
+    scored_pairs,
+    "threshold_tuning",
+    score_key="similarity_score",
+    label_key="label",
+    optimize="f1",
+)
+
+print(report["summary"]["optimized_threshold"]["threshold"])
+print(artifacts["threshold_sweep_csv"])
+```
+
 ## Calibration Reports
 
 For scored pair CSVs, export a threshold sweep, ROC curve, precision-recall curve, and summary JSON:
