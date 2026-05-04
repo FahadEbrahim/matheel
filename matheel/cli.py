@@ -30,6 +30,7 @@ from .similarity import (
     DEFAULT_MODEL_NAME,
     available_lexical_tokenizers,
     available_runtime_devices,
+    extract_and_read_source,
     get_sim_list,
 )
 from .chunking import available_chunk_aggregations, available_chunking_methods
@@ -39,7 +40,13 @@ from .vectors import (
     available_pooling_methods,
     available_similarity_functions,
 )
-from .visualization import available_projection_methods, write_dataset_embedding_map
+from .visualization import (
+    available_pair_explanation_segment_modes,
+    available_projection_methods,
+    write_dataset_embedding_map,
+    write_pair_dataset_explanation,
+    write_pair_explanation,
+)
 
 @click.group()
 @click.version_option(version=__version__, prog_name="matheel")
@@ -283,6 +290,49 @@ def _echo_visualization_summary(summary, output_format):
         click.echo(f"{name}={path}")
 
 
+def _echo_pair_explanation_summary(summary, output_format):
+    if output_format == "json":
+        _echo_json(summary)
+        return
+    click.echo(f"left_id={summary['left_id']}")
+    click.echo(f"right_id={summary['right_id']}")
+    click.echo(f"segment_mode={summary['segment_mode']}")
+    click.echo(f"matches={summary['matches']}")
+    for level, count in summary["levels"].items():
+        click.echo(f"{level}={count}")
+    for name, path in summary["artifacts"].items():
+        click.echo(f"{name}={path}")
+
+
+def _pair_explanation_summary(explanation, artifacts):
+    levels = {"high": 0, "medium": 0, "low": 0, "none": 0}
+    for side in ("left", "right"):
+        for segment in explanation[side]["segments"]:
+            level = str(segment.get("level") or "none")
+            levels[level if level in levels else "none"] += 1
+    metadata = explanation["metadata"]
+    return {
+        "left_id": metadata["left_id"],
+        "right_id": metadata["right_id"],
+        "segment_mode": metadata["segment_mode"],
+        "matches": int(len(explanation.get("matches", []))),
+        "levels": levels,
+        "artifacts": {name: str(path) for name, path in artifacts.items()},
+    }
+
+
+def _source_pair_texts(source_path, left_name, right_name):
+    if not left_name or not right_name:
+        raise click.UsageError("--source requires --left-name and --right-name.")
+    file_names, codes = extract_and_read_source(source_path)
+    by_name = dict(zip(file_names, codes, strict=True))
+    missing = [name for name in (left_name, right_name) if name not in by_name]
+    if missing:
+        joined = ", ".join(missing)
+        raise click.UsageError(f"Source does not contain requested file(s): {joined}")
+    return by_name[left_name], by_name[right_name]
+
+
 @main.group(name="datasets")
 def datasets_cli():
     """Inspect, validate, and adapt Matheel datasets."""
@@ -458,6 +508,134 @@ def visualize_dataset(dataset_path, kind, method, seed, static_vector_dim, outpu
         "artifacts": {name: str(path) for name, path in artifacts.items()},
     }
     _echo_visualization_summary(summary, output_format)
+
+
+@main.command(name="explain-pair")
+@click.argument("left_path", required=False, type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.argument("right_path", required=False, type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.option(
+    "--dataset",
+    "dataset_path",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True),
+    help="Normalized pair dataset to read the selected pair from.",
+)
+@click.option("--pair-index", default=0, show_default=True, help="Zero-based pair row for --dataset.")
+@click.option("--left-id", help="Left file id for selecting a dataset pair.")
+@click.option("--right-id", help="Right file id for selecting a dataset pair.")
+@click.option(
+    "--source",
+    "source_path",
+    type=click.Path(exists=True, file_okay=True, dir_okay=True),
+    help="Directory or ZIP archive used by compare results.",
+)
+@click.option("--left-name", help="Left relative file name inside --source.")
+@click.option("--right-name", help="Right relative file name inside --source.")
+@click.option(
+    "--segment-mode",
+    type=click.Choice(available_pair_explanation_segment_modes()),
+    default="line",
+    show_default=True,
+    help="Granularity for local matching.",
+)
+@click.option("--high-threshold", default=0.85, show_default=True, help="Minimum score for high matches.")
+@click.option("--medium-threshold", default=0.6, show_default=True, help="Minimum score for medium matches.")
+@click.option("--low-threshold", default=0.3, show_default=True, help="Minimum score for low matches.")
+@click.option("--chunk-size", default=5, show_default=True, help="Line count for chunk segment mode.")
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=True,
+    help="Directory where pair explanation artifacts will be written.",
+)
+@click.option("--basename", help="Artifact filename stem. Defaults to the selected pair ids.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def explain_pair(
+    left_path,
+    right_path,
+    dataset_path,
+    pair_index,
+    left_id,
+    right_id,
+    source_path,
+    left_name,
+    right_name,
+    segment_mode,
+    high_threshold,
+    medium_threshold,
+    low_threshold,
+    chunk_size,
+    output_dir,
+    basename,
+    output_format,
+):
+    """Write pair-level similarity explanation artifacts."""
+    using_files = left_path is not None or right_path is not None
+    selected_modes = sum(bool(value) for value in (using_files, dataset_path, source_path))
+    if selected_modes != 1:
+        raise click.UsageError("Use exactly one input mode: LEFT_PATH RIGHT_PATH, --dataset, or --source.")
+    if using_files and (left_path is None or right_path is None):
+        raise click.UsageError("Provide both LEFT_PATH and RIGHT_PATH.")
+    if dataset_path and (left_name or right_name):
+        raise click.UsageError("--dataset uses --left-id/--right-id, not --left-name/--right-name.")
+    if source_path and (left_id or right_id):
+        raise click.UsageError("--source uses --left-name/--right-name, not --left-id/--right-id.")
+
+    if dataset_path:
+        explanation, artifacts = write_pair_dataset_explanation(
+            dataset_path,
+            output_dir,
+            pair_index=pair_index,
+            left_id=left_id,
+            right_id=right_id,
+            segment_mode=segment_mode,
+            high_threshold=high_threshold,
+            medium_threshold=medium_threshold,
+            low_threshold=low_threshold,
+            chunk_size=chunk_size,
+            basename=basename,
+        )
+    elif source_path:
+        left_code, right_code = _source_pair_texts(source_path, left_name, right_name)
+        explanation, artifacts = write_pair_explanation(
+            left_code,
+            right_code,
+            output_dir,
+            left_id=left_name,
+            right_id=right_name,
+            segment_mode=segment_mode,
+            high_threshold=high_threshold,
+            medium_threshold=medium_threshold,
+            low_threshold=low_threshold,
+            chunk_size=chunk_size,
+            basename=basename,
+        )
+    else:
+        left_file = Path(left_path)
+        right_file = Path(right_path)
+        explanation, artifacts = write_pair_explanation(
+            left_file.read_text(encoding="utf-8", errors="ignore"),
+            right_file.read_text(encoding="utf-8", errors="ignore"),
+            output_dir,
+            left_id=left_file.name,
+            right_id=right_file.name,
+            segment_mode=segment_mode,
+            high_threshold=high_threshold,
+            medium_threshold=medium_threshold,
+            low_threshold=low_threshold,
+            chunk_size=chunk_size,
+            basename=basename,
+        )
+
+    _echo_pair_explanation_summary(
+        _pair_explanation_summary(explanation, artifacts),
+        output_format,
+    )
 
 
 @main.command()

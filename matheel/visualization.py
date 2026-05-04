@@ -1,15 +1,20 @@
 import html
 import json
+import re
+from bisect import bisect_right
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from rapidfuzz.distance import Levenshtein
 
 from .datasets import PairDataset, RetrievalDataset, load_code_texts, load_pair_dataset, load_retrieval_dataset
 from .vectors import build_static_hash_vectors
 
 
 _PROJECTION_METHODS = ("auto", "umap", "pca")
+_PAIR_SEGMENT_MODES = ("line", "token", "chunk")
+_TOKEN_PATTERN = re.compile(r"\w+|[^\s\w]", re.UNICODE)
 _PALETTE = (
     "#2563eb",
     "#dc2626",
@@ -24,6 +29,10 @@ _PALETTE = (
 
 def available_projection_methods():
     return _PROJECTION_METHODS
+
+
+def available_pair_explanation_segment_modes():
+    return _PAIR_SEGMENT_MODES
 
 
 def project_embeddings(embeddings, method="auto", seed=7):
@@ -183,6 +192,517 @@ def write_dataset_embedding_map(dataset, output_dir, kind="auto", method="auto",
         color_column="role" if "role" in projection.columns else None,
     )
     return projection, artifacts
+
+
+def build_pair_explanation(
+    left_code,
+    right_code,
+    left_id="left",
+    right_id="right",
+    segment_mode="line",
+    high_threshold=0.85,
+    medium_threshold=0.6,
+    low_threshold=0.3,
+    chunk_size=5,
+):
+    selected_mode = _normalize_pair_segment_mode(segment_mode)
+    thresholds = _normalize_pair_thresholds(
+        high_threshold=high_threshold,
+        medium_threshold=medium_threshold,
+        low_threshold=low_threshold,
+    )
+    left_segments = _segment_code(left_code, selected_mode, chunk_size=chunk_size)
+    right_segments = _segment_code(right_code, selected_mode, chunk_size=chunk_size)
+    matches = _match_segments(left_segments, right_segments, thresholds=thresholds)
+    _apply_pair_matches(left_segments, right_segments, matches)
+    return {
+        "schema_version": 1,
+        "metadata": {
+            "left_id": str(left_id),
+            "right_id": str(right_id),
+            "segment_mode": selected_mode,
+            "similarity_metric": "levenshtein_normalized_similarity",
+            "thresholds": thresholds,
+            "chunk_size": int(chunk_size or 0) if selected_mode == "chunk" else None,
+            "tokenizer": "regex_code_tokens" if selected_mode == "token" else None,
+        },
+        "left": {
+            "document_id": str(left_id),
+            "segments": left_segments,
+        },
+        "right": {
+            "document_id": str(right_id),
+            "segments": right_segments,
+        },
+        "matches": matches,
+    }
+
+
+def pair_explanation_payload(explanation):
+    return _json_safe_pair_explanation(explanation)
+
+
+def pair_explanation_html(explanation, title="Matheel Pair Explanation"):
+    payload = pair_explanation_payload(explanation)
+    metadata = payload["metadata"]
+    escaped_title = html.escape(str(title))
+    left_id = html.escape(str(payload["left"]["document_id"]))
+    right_id = html.escape(str(payload["right"]["document_id"]))
+    left_rows = "\n".join(_pair_segment_html(segment) for segment in payload["left"]["segments"])
+    right_rows = "\n".join(_pair_segment_html(segment) for segment in payload["right"]["segments"])
+    thresholds = metadata.get("thresholds", {})
+    match_rows = "\n".join(_pair_match_table_row(match) for match in payload["matches"])
+    if not match_rows:
+        match_rows = '<tr><td colspan="4">No matching regions above the low threshold.</td></tr>'
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{escaped_title}</title>
+  <style>
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 24px; color: #111827; }}
+    h1 {{ font-size: 1.5rem; margin: 0 0 8px; }}
+    .meta {{ color: #4b5563; margin: 0 0 16px; }}
+    .layout {{ display: grid; grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr); gap: 16px; align-items: start; }}
+    .panel {{ border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; background: #ffffff; }}
+    .panel h2 {{ font-size: 1rem; margin: 0; padding: 10px 12px; background: #f3f4f6; border-bottom: 1px solid #d1d5db; }}
+    pre {{ margin: 0; padding: 8px; overflow-x: auto; background: #f9fafb; }}
+    .segment {{ display: grid; grid-template-columns: 4.5rem minmax(0, 1fr); gap: 8px; padding: 3px 6px; border-left: 4px solid transparent; white-space: pre-wrap; }}
+    .line-number {{ color: #6b7280; user-select: none; text-align: right; }}
+    .level-high {{ background: #fee2e2; border-left-color: #dc2626; }}
+    .level-medium {{ background: #fef3c7; border-left-color: #d97706; }}
+    .level-low {{ background: #dbeafe; border-left-color: #2563eb; }}
+    .level-none {{ color: #374151; }}
+    .legend {{ display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 16px; font-size: 0.9rem; }}
+    .swatch {{ display: inline-block; width: 12px; height: 12px; margin-right: 4px; vertical-align: -1px; border: 1px solid #9ca3af; }}
+    table {{ border-collapse: collapse; width: 100%; margin-top: 18px; font-size: 0.9rem; }}
+    th, td {{ border-bottom: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }}
+    th {{ background: #f3f4f6; }}
+  </style>
+</head>
+<body>
+  <h1>{escaped_title}</h1>
+  <p class="meta">mode={html.escape(str(metadata.get("segment_mode")))}; high>={float(thresholds.get("high", 0.0)):.2f}; medium>={float(thresholds.get("medium", 0.0)):.2f}; low>={float(thresholds.get("low", 0.0)):.2f}</p>
+  <div class="legend">
+    <span><span class="swatch level-high"></span>high</span>
+    <span><span class="swatch level-medium"></span>medium</span>
+    <span><span class="swatch level-low"></span>low</span>
+    <span><span class="swatch level-none"></span>no match</span>
+  </div>
+  <div class="layout">
+    <section class="panel">
+      <h2>{left_id}</h2>
+      <pre>{left_rows}</pre>
+    </section>
+    <section class="panel">
+      <h2>{right_id}</h2>
+      <pre>{right_rows}</pre>
+    </section>
+  </div>
+  <table>
+    <thead><tr><th>Match</th><th>Level</th><th>Score</th><th>Segments</th></tr></thead>
+    <tbody>
+{match_rows}
+    </tbody>
+  </table>
+</body>
+</html>
+"""
+
+
+def write_pair_explanation_artifacts(explanation, output_dir, basename="pair_explanation", title=None):
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    safe_basename = _safe_artifact_basename(basename or "pair_explanation")
+    json_path = target / f"{safe_basename}.json"
+    html_path = target / f"{safe_basename}.html"
+    payload = pair_explanation_payload(explanation)
+    json_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    html_title = title or f"{payload['metadata']['left_id']} vs {payload['metadata']['right_id']}"
+    html_path.write_text(pair_explanation_html(payload, title=html_title), encoding="utf-8")
+    return {"json": json_path, "html": html_path}
+
+
+def write_pair_explanation(
+    left_code,
+    right_code,
+    output_dir,
+    left_id="left",
+    right_id="right",
+    segment_mode="line",
+    high_threshold=0.85,
+    medium_threshold=0.6,
+    low_threshold=0.3,
+    chunk_size=5,
+    basename=None,
+    title=None,
+):
+    explanation = build_pair_explanation(
+        left_code,
+        right_code,
+        left_id=left_id,
+        right_id=right_id,
+        segment_mode=segment_mode,
+        high_threshold=high_threshold,
+        medium_threshold=medium_threshold,
+        low_threshold=low_threshold,
+        chunk_size=chunk_size,
+    )
+    resolved_basename = basename or f"{left_id}_vs_{right_id}"
+    artifacts = write_pair_explanation_artifacts(
+        explanation,
+        output_dir,
+        basename=resolved_basename,
+        title=title,
+    )
+    return explanation, artifacts
+
+
+def build_pair_dataset_explanation(
+    dataset,
+    pair_index=0,
+    left_id=None,
+    right_id=None,
+    segment_mode="line",
+    high_threshold=0.85,
+    medium_threshold=0.6,
+    low_threshold=0.3,
+    chunk_size=5,
+):
+    loaded = dataset if isinstance(dataset, PairDataset) else load_pair_dataset(dataset)
+    pair = _select_pair_row(loaded, pair_index=pair_index, left_id=left_id, right_id=right_id)
+    texts = load_code_texts(loaded)
+    resolved_left_id = str(pair["left_id"])
+    resolved_right_id = str(pair["right_id"])
+    explanation = build_pair_explanation(
+        texts[resolved_left_id],
+        texts[resolved_right_id],
+        left_id=resolved_left_id,
+        right_id=resolved_right_id,
+        segment_mode=segment_mode,
+        high_threshold=high_threshold,
+        medium_threshold=medium_threshold,
+        low_threshold=low_threshold,
+        chunk_size=chunk_size,
+    )
+    explanation["metadata"]["dataset_name"] = str(loaded.metadata.get("name") or loaded.root.name)
+    explanation["metadata"]["pair_index"] = int(pair.name) if getattr(pair, "name", None) is not None else int(pair_index)
+    explanation["metadata"]["label"] = int(pair["label"])
+    return explanation
+
+
+def write_pair_dataset_explanation(
+    dataset,
+    output_dir,
+    pair_index=0,
+    left_id=None,
+    right_id=None,
+    segment_mode="line",
+    high_threshold=0.85,
+    medium_threshold=0.6,
+    low_threshold=0.3,
+    chunk_size=5,
+    basename=None,
+    title=None,
+):
+    explanation = build_pair_dataset_explanation(
+        dataset,
+        pair_index=pair_index,
+        left_id=left_id,
+        right_id=right_id,
+        segment_mode=segment_mode,
+        high_threshold=high_threshold,
+        medium_threshold=medium_threshold,
+        low_threshold=low_threshold,
+        chunk_size=chunk_size,
+    )
+    metadata = explanation["metadata"]
+    resolved_basename = basename or f"{metadata['left_id']}_vs_{metadata['right_id']}"
+    artifacts = write_pair_explanation_artifacts(
+        explanation,
+        output_dir,
+        basename=resolved_basename,
+        title=title,
+    )
+    return explanation, artifacts
+
+
+def _normalize_pair_segment_mode(segment_mode):
+    selected = str(segment_mode or "line").strip().lower().replace("-", "_")
+    if selected not in _PAIR_SEGMENT_MODES:
+        supported = ", ".join(_PAIR_SEGMENT_MODES)
+        raise ValueError(f"segment_mode must be one of: {supported}. Got: {segment_mode}")
+    return selected
+
+
+def _normalize_pair_thresholds(high_threshold=0.85, medium_threshold=0.6, low_threshold=0.3):
+    thresholds = {
+        "high": float(high_threshold),
+        "medium": float(medium_threshold),
+        "low": float(low_threshold),
+    }
+    if any(not np.isfinite(value) for value in thresholds.values()):
+        raise ValueError("Pair explanation thresholds must be finite.")
+    if not 0.0 <= thresholds["low"] <= thresholds["medium"] <= thresholds["high"] <= 1.0:
+        raise ValueError("Pair explanation thresholds must satisfy 0 <= low <= medium <= high <= 1.")
+    return thresholds
+
+
+def _segment_code(code, segment_mode, chunk_size=5):
+    text = str(code or "")
+    if segment_mode == "line":
+        return _line_segments(text)
+    if segment_mode == "token":
+        return _token_segments(text)
+    return _chunk_segments(text, chunk_size=chunk_size)
+
+
+def _line_segments(text):
+    raw_lines = text.splitlines(keepends=True)
+    if not raw_lines:
+        raw_lines = [""]
+    segments = []
+    offset = 0
+    for index, raw_line in enumerate(raw_lines):
+        clean_line = raw_line.rstrip("\r\n")
+        end_offset = offset + len(raw_line)
+        segments.append(
+            _base_segment(
+                index=index,
+                text=clean_line,
+                start_char=offset,
+                end_char=end_offset,
+                start_line=index + 1,
+                end_line=index + 1,
+            )
+        )
+        offset = end_offset
+    return segments
+
+
+def _chunk_segments(text, chunk_size=5):
+    lines = _line_segments(text)
+    resolved_chunk_size = max(1, int(chunk_size or 1))
+    chunks = []
+    for start in range(0, len(lines), resolved_chunk_size):
+        group = lines[start : start + resolved_chunk_size]
+        chunks.append(
+            _base_segment(
+                index=len(chunks),
+                text="\n".join(segment["text"] for segment in group),
+                start_char=group[0]["start_char"],
+                end_char=group[-1]["end_char"],
+                start_line=group[0]["start_line"],
+                end_line=group[-1]["end_line"],
+            )
+        )
+    return chunks
+
+
+def _token_segments(text):
+    matches = list(_TOKEN_PATTERN.finditer(text))
+    if not matches:
+        return [
+            _base_segment(
+                index=0,
+                text="",
+                start_char=0,
+                end_char=0,
+                start_line=1,
+                end_line=1,
+            )
+        ]
+    line_starts = _line_start_offsets(text)
+    segments = []
+    for index, match in enumerate(matches):
+        start_line = _line_number_for_offset(line_starts, match.start())
+        end_line = _line_number_for_offset(line_starts, max(match.end() - 1, match.start()))
+        segments.append(
+            _base_segment(
+                index=index,
+                text=match.group(0),
+                start_char=match.start(),
+                end_char=match.end(),
+                start_line=start_line,
+                end_line=end_line,
+            )
+        )
+    return segments
+
+
+def _base_segment(index, text, start_char, end_char, start_line, end_line):
+    return {
+        "index": int(index),
+        "text": str(text),
+        "start_char": int(start_char),
+        "end_char": int(end_char),
+        "start_line": int(start_line),
+        "end_line": int(end_line),
+        "match_id": None,
+        "matched_index": None,
+        "score": 0.0,
+        "level": "none",
+    }
+
+
+def _line_start_offsets(text):
+    starts = [0]
+    for match in re.finditer(r"\n", text):
+        starts.append(match.end())
+    return starts
+
+
+def _line_number_for_offset(line_starts, offset):
+    return max(1, bisect_right(line_starts, int(offset)))
+
+
+def _match_segments(left_segments, right_segments, thresholds):
+    candidates = []
+    low_threshold = float(thresholds["low"])
+    for left in left_segments:
+        for right in right_segments:
+            score = _segment_similarity(left["text"], right["text"])
+            if score >= low_threshold:
+                candidates.append((score, left["index"], right["index"]))
+    candidates.sort(key=lambda item: (-item[0], item[1], item[2]))
+
+    used_left = set()
+    used_right = set()
+    accepted = []
+    for score, left_index, right_index in candidates:
+        if left_index in used_left or right_index in used_right:
+            continue
+        used_left.add(left_index)
+        used_right.add(right_index)
+        accepted.append((left_index, right_index, score))
+
+    matches = []
+    for match_number, (left_index, right_index, score) in enumerate(sorted(accepted), start=1):
+        matches.append(
+            {
+                "match_id": f"m{match_number}",
+                "left_index": int(left_index),
+                "right_index": int(right_index),
+                "score": _rounded_score(score),
+                "level": _score_level(score, thresholds),
+            }
+        )
+    return matches
+
+
+def _segment_similarity(left_text, right_text):
+    left = str(left_text or "").strip()
+    right = str(right_text or "").strip()
+    if not left or not right:
+        return 0.0
+    return float(Levenshtein.normalized_similarity(left, right))
+
+
+def _score_level(score, thresholds):
+    value = float(score)
+    if value >= float(thresholds["high"]):
+        return "high"
+    if value >= float(thresholds["medium"]):
+        return "medium"
+    if value >= float(thresholds["low"]):
+        return "low"
+    return "none"
+
+
+def _rounded_score(score):
+    return round(float(score), 6)
+
+
+def _apply_pair_matches(left_segments, right_segments, matches):
+    left_by_index = {segment["index"]: segment for segment in left_segments}
+    right_by_index = {segment["index"]: segment for segment in right_segments}
+    for match in matches:
+        left = left_by_index[match["left_index"]]
+        right = right_by_index[match["right_index"]]
+        for segment, matched_index in ((left, right["index"]), (right, left["index"])):
+            segment["match_id"] = match["match_id"]
+            segment["matched_index"] = int(matched_index)
+            segment["score"] = match["score"]
+            segment["level"] = match["level"]
+
+
+def _select_pair_row(dataset, pair_index=0, left_id=None, right_id=None):
+    pairs = dataset.pairs.copy()
+    if left_id is not None or right_id is not None:
+        if left_id is None or right_id is None:
+            raise ValueError("Both left_id and right_id are required when selecting a pair by id.")
+        mask = (pairs["left_id"].astype(str) == str(left_id)) & (pairs["right_id"].astype(str) == str(right_id))
+        if not mask.any():
+            reverse_mask = (pairs["left_id"].astype(str) == str(right_id)) & (
+                pairs["right_id"].astype(str) == str(left_id)
+            )
+            if reverse_mask.any():
+                mask = reverse_mask
+        matches = pairs[mask]
+        if matches.empty:
+            raise ValueError(f"Pair dataset does not contain pair: {left_id} vs {right_id}")
+        return matches.iloc[0]
+    resolved_index = int(pair_index or 0)
+    if resolved_index < 0 or resolved_index >= len(pairs):
+        raise ValueError(f"pair_index must be between 0 and {len(pairs) - 1}. Got: {pair_index}")
+    return pairs.iloc[resolved_index]
+
+
+def _pair_segment_html(segment):
+    level = _safe_css_level(segment.get("level"))
+    line_label = _line_label(segment)
+    text = html.escape(str(segment.get("text") or ""))
+    if text == "":
+        text = '<span class="empty">empty</span>'
+    match_id = html.escape(str(segment.get("match_id") or ""))
+    score = float(segment.get("score") or 0.0)
+    title = f'{match_id} score={score:.4f}' if match_id else "no match"
+    return (
+        f'<span class="segment level-{level}" data-match-id="{match_id}" title="{html.escape(title)}">'
+        f'<span class="line-number">{html.escape(line_label)}</span>'
+        f"<code>{text}</code></span>"
+    )
+
+
+def _line_label(segment):
+    start_line = int(segment.get("start_line") or 1)
+    end_line = int(segment.get("end_line") or start_line)
+    if start_line == end_line:
+        return str(start_line)
+    return f"{start_line}-{end_line}"
+
+
+def _safe_css_level(level):
+    value = str(level or "none").strip().lower()
+    if value in ("high", "medium", "low", "none"):
+        return value
+    return "none"
+
+
+def _pair_match_table_row(match):
+    match_id = html.escape(str(match["match_id"]))
+    level = html.escape(str(match["level"]))
+    score = float(match["score"])
+    segments = f"{int(match['left_index']) + 1} -> {int(match['right_index']) + 1}"
+    return f"<tr><td>{match_id}</td><td>{level}</td><td>{score:.4f}</td><td>{segments}</td></tr>"
+
+
+def _json_safe_pair_explanation(explanation):
+    payload = json.loads(json.dumps(explanation))
+    for side in ("left", "right"):
+        for segment in payload[side]["segments"]:
+            segment["level"] = _safe_css_level(segment.get("level"))
+            segment["score"] = _rounded_score(segment.get("score", 0.0))
+    for match in payload.get("matches", []):
+        match["level"] = _safe_css_level(match.get("level"))
+        match["score"] = _rounded_score(match.get("score", 0.0))
+    return payload
+
+
+def _safe_artifact_basename(value):
+    basename = re.sub(r"[^A-Za-z0-9_.-]+", "_", str(value or "").strip())
+    basename = basename.strip("._")
+    return basename or "pair_explanation"
 
 
 def _normalize_projection_method(method):

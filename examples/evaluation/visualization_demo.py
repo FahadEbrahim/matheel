@@ -10,7 +10,7 @@ _MPLCONFIGDIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", os.fspath(_MPLCONFIGDIR))
 
 from matheel.datasets import write_pair_dataset  # noqa: E402
-from matheel.visualization import write_dataset_embedding_map  # noqa: E402
+from matheel.visualization import write_dataset_embedding_map, write_pair_dataset_explanation  # noqa: E402
 
 
 def main():
@@ -44,6 +44,17 @@ def main():
 
         print(projection[["document_id", "x", "y", "role"]].to_string(index=False))
         print("HTML artifact:", artifacts["html"])
+
+        explanation, pair_artifacts = write_pair_dataset_explanation(
+            dataset_root,
+            workspace / "pair_explanations",
+            left_id="a",
+            right_id="b",
+            segment_mode="line",
+        )
+
+        print("Pair matches:", len(explanation["matches"]))
+        print("Pair HTML artifact:", pair_artifacts["html"])
 
 
 if __name__ == "__main__":
