@@ -18,6 +18,7 @@ The base package includes the CLI, preprocessing, lexical similarity, and the co
 pip install "matheel[semantic]"
 pip install "matheel[chunking]"
 pip install "matheel[metrics]"
+pip install "matheel[visualization]"
 pip install "matheel[gradio]"
 pip install "matheel[all]"
 ```
@@ -27,6 +28,7 @@ pip install "matheel[all]"
 | `matheel[semantic]` | Sentence Transformers, Model2Vec, and PyLate semantic scoring backends. |
 | `matheel[chunking]` | Chonkie chunkers for splitting code before embedding. |
 | `matheel[metrics]` | Optional code metric runtimes such as TSED and CodeBERTScore. |
+| `matheel[visualization]` | UMAP projection for dataset visualization. |
 | `matheel[gradio]` | Dependencies for running the Gradio web app. |
 | `matheel[all]` | All supported optional backends in one install. |
 

@@ -28,6 +28,7 @@ nav:
   - Evaluation:
       - Scoring and calibration: scoring.md
       - Datasets and evaluation: datasets.md
+      - Visualization: visualization.md
       - Reproducible benchmark demo: reproducible_benchmark.md
       - Custom algorithms: customization.md
       - Comparison suite: comparison_suite.md

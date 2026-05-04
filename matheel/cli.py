@@ -39,6 +39,7 @@ from .vectors import (
     available_pooling_methods,
     available_similarity_functions,
 )
+from .visualization import available_projection_methods, write_dataset_embedding_map
 
 @click.group()
 @click.version_option(version=__version__, prog_name="matheel")
@@ -270,6 +271,18 @@ def _echo_dataset_summary(summary, output_format):
         click.echo(f"task_type={task_type}")
 
 
+def _echo_visualization_summary(summary, output_format):
+    if output_format == "json":
+        _echo_json(summary)
+        return
+    click.echo(f"dataset_name={summary['dataset_name']}")
+    click.echo(f"dataset_kind={summary['dataset_kind']}")
+    click.echo(f"projection_method={summary['projection_method']}")
+    click.echo(f"documents={summary['documents']}")
+    for name, path in summary["artifacts"].items():
+        click.echo(f"{name}={path}")
+
+
 @main.group(name="datasets")
 def datasets_cli():
     """Inspect, validate, and adapt Matheel datasets."""
@@ -392,6 +405,59 @@ def datasets_adapt(
         summary = _retrieval_dataset_summary(load_retrieval_dataset(adapted_root))
     summary["adapter"] = adapter_name
     _echo_dataset_summary(summary, output_format)
+
+
+@main.command(name="visualize-dataset")
+@click.argument("dataset_path", type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.option(
+    "--kind",
+    type=click.Choice(("auto", "pair", "retrieval")),
+    default="auto",
+    show_default=True,
+    help="Normalized dataset kind. Auto detects pair or retrieval manifests.",
+)
+@click.option(
+    "--method",
+    type=click.Choice(available_projection_methods()),
+    default="auto",
+    show_default=True,
+    help="Projection method. Auto uses UMAP when installed, otherwise deterministic PCA.",
+)
+@click.option("--seed", default=7, show_default=True, help="Projection seed for stochastic reducers.")
+@click.option("--static-vector-dim", default=256, show_default=True, help="Static hash embedding dimension.")
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=True,
+    help="Directory where dataset map artifacts will be written.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def visualize_dataset(dataset_path, kind, method, seed, static_vector_dim, output_dir, output_format):
+    """Write dataset-level embedding map artifacts for a normalized dataset."""
+    projection, artifacts = write_dataset_embedding_map(
+        dataset_path,
+        output_dir,
+        kind=kind,
+        method=method,
+        seed=seed,
+        static_vector_dim=static_vector_dim,
+    )
+    summary = {
+        "dataset_name": projection.attrs.get("dataset_name"),
+        "dataset_kind": projection.attrs.get("dataset_kind"),
+        "projection_method": projection.attrs.get("projection_method"),
+        "requested_projection_method": projection.attrs.get("requested_projection_method"),
+        "embedding_source": projection.attrs.get("embedding_source"),
+        "documents": int(len(projection)),
+        "artifacts": {name: str(path) for name, path in artifacts.items()},
+    }
+    _echo_visualization_summary(summary, output_format)
 
 
 @main.command()

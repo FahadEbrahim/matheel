@@ -97,6 +97,16 @@ from .vectors import (
     available_similarity_functions,
     similarity_function_score_range,
 )
+from .visualization import (
+    available_projection_methods,
+    build_dataset_embedding_map,
+    build_embedding_projection,
+    dataset_map_html,
+    dataset_map_payload,
+    project_embeddings,
+    write_dataset_embedding_map,
+    write_dataset_map_artifacts,
+)
 from .similarity import (
     available_lexical_tokenizers,
     available_runtime_devices,
@@ -121,6 +131,7 @@ __all__ = [
     "available_dataset_task_types",
     "available_lexical_tokenizers",
     "available_pooling_methods",
+    "available_projection_methods",
     "available_resampling_methods",
     "available_runtime_devices",
     "available_similarity_functions",
@@ -200,5 +211,12 @@ __all__ = [
     "kfold_splits",
     "bootstrap_resamples",
     "build_matheel_pair_algorithm",
+    "build_dataset_embedding_map",
+    "build_embedding_projection",
+    "dataset_map_html",
+    "dataset_map_payload",
     "tokenize_for_lexical_matching",
+    "project_embeddings",
+    "write_dataset_embedding_map",
+    "write_dataset_map_artifacts",
 ]
