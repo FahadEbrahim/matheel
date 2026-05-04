@@ -11,7 +11,7 @@ pinned: false
 
 Interactive code-similarity analysis with configurable embedding, lexical, chunking, preprocessing, and code-aware metrics.
 
-This Space is aligned with `matheel==0.5.2` and includes:
+This Space is aligned with `matheel==0.5.3` and includes:
 
 - Pair, collection, comparison-suite, normalized-dataset, dataset-validation, threshold-tuning, visualization, ready-leaderboard, and leaderboard-inspection workflows
 - Metric presets for balanced, lexical, embedding-only, and code-aware runs
