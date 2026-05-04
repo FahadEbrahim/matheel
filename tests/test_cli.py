@@ -1,5 +1,6 @@
 import json
 import os
+from importlib.metadata import version
 from pathlib import Path
 import subprocess
 import sys
@@ -8,9 +9,19 @@ from zipfile import ZipFile
 from click.testing import CliRunner
 import pandas as pd
 
+import matheel
 import matheel.datasets as datasets_module
 from matheel.cli import main
 from matheel.datasets import register_dataset_preset, write_pair_dataset, write_retrieval_dataset
+
+
+def test_cli_and_package_expose_version():
+    runner = CliRunner()
+    result = runner.invoke(main, ["--version"])
+
+    assert result.exit_code == 0
+    assert version("matheel") in result.output
+    assert matheel.__version__ == version("matheel")
 
 
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
