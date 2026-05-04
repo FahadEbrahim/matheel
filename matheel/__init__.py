@@ -64,6 +64,7 @@ from .code_metrics import (
     codebleu_components,
     score_code_metric_pair,
 )
+from .custom_templates import custom_algorithm_template, write_custom_algorithm_template
 from .datasets import (
     PairDataset,
     RetrievalDataset,
@@ -122,6 +123,12 @@ from .leaderboard import (
     normalize_leaderboard_manifest,
     run_leaderboard,
     write_leaderboard_artifacts,
+)
+from .leaderboard_presets import (
+    available_leaderboard_algorithm_presets,
+    get_leaderboard_algorithm_preset,
+    leaderboard_algorithm_preset_configs,
+    register_leaderboard_algorithm_preset,
 )
 from .model_routing import infer_model_backend, infer_model_capabilities, available_vector_backends
 from .preprocessing import preprocess_code
@@ -195,6 +202,7 @@ __all__ = [
     "available_dataset_sources",
     "available_dataset_task_types",
     "available_leaderboard_metrics",
+    "available_leaderboard_algorithm_presets",
     "available_lexical_tokenizers",
     "available_pooling_methods",
     "available_pair_explanation_segment_modes",
@@ -224,6 +232,7 @@ __all__ = [
     "collect_reproducibility_snapshot",
     "compare_benchmark_runs",
     "compare_metric_samples",
+    "custom_algorithm_template",
     "DataSplit",
     "adapt_pair_dataset",
     "adapt_retrieval_dataset",
@@ -243,10 +252,12 @@ __all__ = [
     "get_sim_list",
     "get_dataset_entry",
     "get_dataset_preset",
+    "get_leaderboard_algorithm_preset",
     "infer_model_backend",
     "infer_model_capabilities",
     "inspect_model_settings",
     "leaderboard_cards",
+    "leaderboard_algorithm_preset_configs",
     "leaderboard_html",
     "leaderboard_payload",
     "list_benchmark_runs",
@@ -281,6 +292,7 @@ __all__ = [
     "register_dataset_entry",
     "register_dataset_preset",
     "register_dataset_source",
+    "register_leaderboard_algorithm_preset",
     "repeated_kfold_splits",
     "RetrievalDataset",
     "retrieval_ranking_metrics",
@@ -332,6 +344,7 @@ __all__ = [
     "write_benchmark_detail_report",
     "write_benchmark_report",
     "write_benchmark_registry",
+    "write_custom_algorithm_template",
     "write_leaderboard_artifacts",
     "write_pair_dataset_explanation",
     "write_pair_explanation",

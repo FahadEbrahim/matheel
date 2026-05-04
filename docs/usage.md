@@ -120,6 +120,8 @@ print(results.head())
 - [Reproducible benchmark demo](reproducible_benchmark.md)
 - [Custom algorithms](customization.md)
 - [Comparison suite](comparison_suite.md)
+- [Contributing algorithms](contributing_algorithms.md)
+- [Contributing datasets](contributing_datasets.md)
 - [Development](development.md)
 
 ## Interface Notes

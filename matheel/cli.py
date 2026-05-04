@@ -11,6 +11,7 @@ from .benchmark_registry import compare_benchmark_runs, list_benchmark_runs, reg
 from .calibration import write_calibration_report_artifacts, write_threshold_tuning_report_artifacts
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
+from .custom_templates import write_custom_algorithm_template
 from ._progress import should_show_progress
 from .datasets import (
     adapt_pair_dataset,
@@ -59,6 +60,29 @@ from .visualization import (
 def main():
     """Matheel CLI - Compute Code Similarity"""
     pass
+
+
+@main.command(name="init-custom-algorithm")
+@click.argument("output_path", type=click.Path(dir_okay=False))
+@click.option("--name", help="Algorithm name used in the generated template metadata.")
+@click.option("--overwrite", is_flag=True, help="Overwrite the output file if it already exists.")
+@click.option(
+    "--without-prepare",
+    is_flag=True,
+    help="Generate only score_pair without a prepare_dataset hook.",
+)
+def init_custom_algorithm_command(output_path, name, overwrite, without_prepare):
+    """Write a starter custom score_pair algorithm module."""
+    try:
+        target = write_custom_algorithm_template(
+            output_path,
+            name=name,
+            overwrite=overwrite,
+            include_prepare=not without_prepare,
+        )
+    except FileExistsError as exc:
+        raise click.UsageError(str(exc)) from exc
+    click.echo(f"output={target}")
 
 
 def _parse_dataset_adapter_options(entries):

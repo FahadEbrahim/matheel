@@ -19,6 +19,12 @@ from matheel.leaderboard import (
     run_leaderboard,
     write_leaderboard_artifacts,
 )
+from matheel.leaderboard_presets import (
+    available_leaderboard_algorithm_presets,
+    get_leaderboard_algorithm_preset,
+    leaderboard_algorithm_preset_configs,
+    register_leaderboard_algorithm_preset,
+)
 from matheel.reports import benchmark_detail_report_html
 
 
@@ -30,8 +36,46 @@ def test_leaderboard_helpers_are_exported_from_package_root():
     assert matheel.normalize_leaderboard_manifest is normalize_leaderboard_manifest
     assert matheel.run_leaderboard is run_leaderboard
     assert matheel.write_leaderboard_artifacts is write_leaderboard_artifacts
+    assert matheel.available_leaderboard_algorithm_presets is available_leaderboard_algorithm_presets
+    assert matheel.get_leaderboard_algorithm_preset is get_leaderboard_algorithm_preset
+    assert matheel.leaderboard_algorithm_preset_configs is leaderboard_algorithm_preset_configs
+    assert matheel.register_leaderboard_algorithm_preset is register_leaderboard_algorithm_preset
     assert matheel.benchmark_detail_report_html is benchmark_detail_report_html
     assert matheel.register_benchmark_run is register_benchmark_run
+
+
+def test_leaderboard_algorithm_presets_include_offline_baselines():
+    names = available_leaderboard_algorithm_presets()
+    configs = leaderboard_algorithm_preset_configs(["Lexical Only", "Jaro-Winkler"])
+    preset = get_leaderboard_algorithm_preset("jaro-winkler")
+
+    assert "Jaro-Winkler" in names
+    assert "Winnowing" in names
+    assert "GST" in names
+    assert "CodeBLEU" in names
+    assert configs[0]["name"] == "Lexical Only"
+    assert configs[1]["feature_weights"] == {"jaro_winkler": 1.0}
+    assert preset["name"] == "Jaro-Winkler"
+
+
+def test_register_leaderboard_algorithm_preset_for_custom_method():
+    registered = register_leaderboard_algorithm_preset(
+        "Jaro-Winkler",
+        {
+            "description": "test overwrite for same built-in preset",
+            "similarity_options": {
+                "feature_weights": {"jaro_winkler": 1.0},
+                "code_metric": "codebleu",
+                "code_metric_weight": 0.0,
+            },
+        },
+        overwrite=True,
+    )
+
+    assert registered["name"] == "Jaro-Winkler"
+    assert get_leaderboard_algorithm_preset("Jaro-Winkler")["similarity_options"]["feature_weights"] == {
+        "jaro_winkler": 1.0
+    }
 
 
 def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
@@ -96,6 +140,27 @@ def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
     assert str(tmp_path) not in details_html
     assert "Dataset Details" in details_html
     assert "Algorithm Details" in details_html
+
+
+def test_leaderboard_manifest_accepts_algorithm_presets(tmp_path):
+    pair_root = _write_pair_fixture(tmp_path)
+    manifest = {
+        "name": "preset_leaderboard",
+        "datasets": [{"name": "pairs", "task": "pair", "path": str(pair_root)}],
+        "algorithms": [
+            "Lexical Only",
+            {"preset": "Jaro-Winkler", "name": "jw"},
+        ],
+    }
+
+    report, _ = run_leaderboard(manifest)
+    payload = leaderboard_payload(report)
+
+    assert set(report["aggregate"]["algorithm_name"]) == {"Lexical Only", "jw"}
+    assert payload["manifest"]["algorithms"][0]["name"] == "Lexical Only"
+    assert payload["manifest"]["algorithms"][1]["similarity_options"]["feature_weights"] == {
+        "jaro_winkler": 1.0
+    }
 
 
 def test_leaderboard_manifest_resolves_relative_paths(tmp_path):

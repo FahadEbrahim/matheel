@@ -204,6 +204,8 @@ register_dataset_preset(
 )
 ```
 
+For package-level dataset support, use the [contributing dataset support](contributing_datasets.md) guide. It covers source/adapters/presets, fixture expectations, and reproducibility requirements.
+
 ## Dataset CLI Utilities
 
 Use `matheel datasets list` to inspect registered sources, adapters, and presets:

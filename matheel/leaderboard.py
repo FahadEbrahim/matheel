@@ -9,6 +9,7 @@ from .benchmark_cards import leaderboard_cards
 from .calibration import calibration_report
 from .datasets import load_pair_datasets, load_retrieval_datasets
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
+from .leaderboard_presets import get_leaderboard_algorithm_preset
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
 
 
@@ -342,16 +343,28 @@ def _normalize_leaderboard_dataset(item, index=1, base_dir=None):
 
 
 def _normalize_leaderboard_algorithm(item, index=1, base_dir=None):
+    if isinstance(item, str):
+        item = {"preset": item}
     if not isinstance(item, dict):
         raise ValueError("Leaderboard algorithms must be JSON objects.")
     payload = dict(item)
+    preset_name = payload.pop("preset", None) or payload.pop("algorithm_preset", None)
+    preset_options = {}
+    preset_display_name = None
+    if preset_name is not None:
+        preset = get_leaderboard_algorithm_preset(preset_name)
+        preset_options = dict(preset.get("similarity_options") or {})
+        preset_display_name = preset.get("name")
+        if payload.get("algorithm_path"):
+            raise ValueError("Leaderboard algorithm presets cannot be combined with algorithm_path.")
     options = dict(payload.pop("options", {}))
+    options = {**preset_options, **options}
     options.update(payload.pop("similarity_options", {}))
     for key in list(payload):
         if key not in {"name", "algorithm_path", "algorithm_options", "threshold", "k"}:
             options[key] = payload.pop(key)
     payload = _resolve_relative_paths(payload, base_dir=base_dir)
-    name = str(payload.get("name") or f"algorithm_{index}")
+    name = str(payload.get("name") or preset_display_name or f"algorithm_{index}")
     return {
         "name": name,
         "algorithm_path": payload.get("algorithm_path"),

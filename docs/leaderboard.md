@@ -32,6 +32,7 @@ Create a JSON manifest with datasets, algorithms, and metrics:
     }
   ],
   "algorithms": [
+    "Lexical Only",
     {
       "name": "levenshtein",
       "feature_weights": {"levenshtein": 1.0}
@@ -45,6 +46,8 @@ Create a JSON manifest with datasets, algorithms, and metrics:
 ```
 
 Relative dataset paths and custom algorithm paths are resolved from the manifest file location.
+
+Algorithm entries can be full option objects or built-in preset names. Built-in presets include `Balanced`, `Lexical Only`, `Embedding Only`, `Code-Aware`, `Jaro-Winkler`, `Winnowing`, `GST`, and `CodeBLEU`.
 
 ## CLI
 
@@ -108,8 +111,11 @@ The ranked algorithm table is sorted by task, metric, rank, and algorithm name. 
 ## Python
 
 ```python
+from matheel import available_leaderboard_algorithm_presets
 from matheel.leaderboard import load_leaderboard_manifest, run_leaderboard
 from matheel.reports import write_benchmark_report
+
+print(available_leaderboard_algorithm_presets())
 
 manifest = load_leaderboard_manifest("leaderboard.json")
 report, artifacts = run_leaderboard(
