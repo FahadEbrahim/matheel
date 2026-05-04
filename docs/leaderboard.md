@@ -59,16 +59,21 @@ Artifacts:
 
 The JSON artifact also includes dataset cards and algorithm cards. Cards keep concise metadata such as task family, counts, source type, license when present, sanitized source identifiers, algorithm options, package versions, and content fingerprints. Local absolute paths and credential-like fields are not included in card fields.
 
+The HTML artifact is a static benchmark report. It bundles aggregate rankings, per-dataset rankings, dataset cards, algorithm cards, and sanitized links to the exported CSV/JSON metadata files.
+
 ## Python
 
 ```python
 from matheel.leaderboard import load_leaderboard_manifest, run_leaderboard
+from matheel.reports import write_benchmark_report
 
 manifest = load_leaderboard_manifest("leaderboard.json")
 report, artifacts = run_leaderboard(
     manifest,
     output_dir="leaderboard_artifacts",
 )
+
+write_benchmark_report(report, "leaderboard_artifacts/leaderboard_report.html")
 
 print(report["aggregate"])
 print(artifacts["json"])

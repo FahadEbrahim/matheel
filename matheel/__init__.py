@@ -122,6 +122,7 @@ from .reproducibility import (
     fingerprint_source,
     write_reproducibility_snapshot,
 )
+from .reports import benchmark_report_html, write_benchmark_report
 from .vectors import (
     available_pooling_methods,
     available_similarity_functions,
@@ -182,6 +183,7 @@ __all__ = [
     "benchmark_cache_key_for_run",
     "benchmark_cache_paths",
     "benchmark_dependency_versions",
+    "benchmark_report_html",
     "calibrate_threshold",
     "calibration_curve",
     "calibration_report",
@@ -285,6 +287,7 @@ __all__ = [
     "write_dataset_map_artifacts",
     "write_calibration_report_artifacts",
     "write_benchmark_cache_result",
+    "write_benchmark_report",
     "write_leaderboard_artifacts",
     "write_pair_dataset_explanation",
     "write_pair_explanation",
