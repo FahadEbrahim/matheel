@@ -4,7 +4,11 @@ Matheel supports custom pair scorers without editing package internals. A custom
 
 ## Contract
 
-Create a Python module with a callable `score_pair`:
+Generate a starter module, or create a Python module with a callable `score_pair`:
+
+```bash
+matheel init-custom-algorithm my_algorithm.py
+```
 
 ```python
 # my_algorithm.py
@@ -148,6 +152,8 @@ scored, metrics = evaluate_pair_dataset(
 ```
 
 See `examples/custom/custom_algorithm_demo.py` for a runnable local example.
+
+For package-level contributions, use the [contributing similarity algorithms](contributing_algorithms.md) guide. It covers tests, docs, and offline leaderboard presets for new methods.
 
 ## Reproducibility
 

@@ -19,4 +19,6 @@ The published site is <https://fahadebrahim.github.io/matheel/>.
 - [Leaderboard](leaderboard.md)
 - [Custom algorithms](customization.md)
 - [Comparison suite](comparison_suite.md)
+- [Contributing algorithms](contributing_algorithms.md)
+- [Contributing datasets](contributing_datasets.md)
 - [Development](development.md)

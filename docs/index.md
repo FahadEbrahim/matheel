@@ -27,6 +27,8 @@ Start with the [usage guide](usage.md) for installation, optional extras, quick 
 - [Reproducible benchmark demo](reproducible_benchmark.md)
 - [Custom algorithms](customization.md)
 - [Comparison suite](comparison_suite.md)
+- [Contributing algorithms](contributing_algorithms.md)
+- [Contributing datasets](contributing_datasets.md)
 - [Development](development.md)
 
 ## Demos and Examples
@@ -50,3 +52,4 @@ Start with the [usage guide](usage.md) for installation, optional extras, quick 
 7. Run the [reproducible benchmark demo](reproducible_benchmark.md) for a small auditable workflow.
 8. Use [Custom algorithms](customization.md) for project-specific scorers.
 9. Use [Comparison suite](comparison_suite.md) for repeatable multi-run experiments.
+10. Use the contribution guides for [algorithms](contributing_algorithms.md) and [datasets](contributing_datasets.md) before opening benchmark-facing PRs.

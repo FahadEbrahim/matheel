@@ -250,12 +250,16 @@ def test_score_card_html_displays_elapsed_time():
 def test_metric_presets_resolve_common_workflows():
     lexical = gradio_app.metric_preset_options("Lexical Only")
     code_aware = gradio_app.metric_preset_options("Code-Aware")
+    jaro = gradio_app.metric_preset_options("Jaro-Winkler")
 
     assert lexical["features"] == ["Levenshtein", "Winnowing", "GST"]
     assert lexical["semantic_weight"] == 0.0
     assert code_aware["features"] == ["Embedding", "Levenshtein", "Code Metric"]
     assert code_aware["code_metric"] == "codebleu"
     assert code_aware["code_metric_weight"] == 0.25
+    assert jaro["features"] == ["Jaro-Winkler"]
+    assert "Winnowing" in gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES
+    assert "CodeBLEU" in gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES
 
 
 def test_empty_result_panels_use_readable_states():

@@ -36,6 +36,7 @@ from matheel.evaluation import (
     evaluate_retrieval_resamples,
 )
 from matheel.leaderboard import run_leaderboard, write_leaderboard_artifacts
+from matheel.leaderboard_presets import available_leaderboard_algorithm_presets, get_leaderboard_algorithm_preset
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
 from matheel.reports import benchmark_report_html
@@ -99,31 +100,36 @@ FEATURE_UI_CHOICES = [
     "Code Metric",
 ]
 DEFAULT_FEATURE_SELECTION = ["Embedding", "Levenshtein"]
+
+
+def _metric_preset_from_leaderboard_preset(name):
+    preset = get_leaderboard_algorithm_preset(name)
+    options = dict(preset["similarity_options"])
+    weights = dict(options.get("feature_weights") or {})
+    features = []
+    if weights.get("semantic", 0.0) > 0:
+        features.append("Embedding")
+    if weights.get("levenshtein", 0.0) > 0:
+        features.append("Levenshtein")
+    if weights.get("jaro_winkler", 0.0) > 0:
+        features.append("Jaro-Winkler")
+    if weights.get("winnowing", 0.0) > 0:
+        features.append("Winnowing")
+    if weights.get("gst", 0.0) > 0:
+        features.append("GST")
+    if weights.get("code_metric", 0.0) > 0:
+        features.append("Code Metric")
+    return {
+        "features": features or list(DEFAULT_FEATURE_SELECTION),
+        "weights": weights,
+        "code_metric": str(options.get("code_metric") or "codebleu"),
+        "code_metric_weight": float(options.get("code_metric_weight") or weights.get("code_metric", 0.0)),
+    }
+
+
 METRIC_PRESETS = {
-    "Balanced": {
-        "features": ["Embedding", "Levenshtein"],
-        "weights": {"semantic": 0.7, "levenshtein": 0.3},
-        "code_metric": "codebleu",
-        "code_metric_weight": 0.0,
-    },
-    "Lexical Only": {
-        "features": ["Levenshtein", "Winnowing", "GST"],
-        "weights": {"levenshtein": 0.5, "winnowing": 0.25, "gst": 0.25},
-        "code_metric": "codebleu",
-        "code_metric_weight": 0.0,
-    },
-    "Embedding Only": {
-        "features": ["Embedding"],
-        "weights": {"semantic": 1.0},
-        "code_metric": "codebleu",
-        "code_metric_weight": 0.0,
-    },
-    "Code-Aware": {
-        "features": ["Embedding", "Levenshtein", "Code Metric"],
-        "weights": {"semantic": 0.5, "levenshtein": 0.25, "code_metric": 0.25},
-        "code_metric": "codebleu",
-        "code_metric_weight": 0.25,
-    },
+    name: _metric_preset_from_leaderboard_preset(name)
+    for name in available_leaderboard_algorithm_presets()
 }
 DATASET_TASK_CHOICES = ("Pair Classification", "Retrieval")
 DEFAULT_DATASET_TASK = DATASET_TASK_CHOICES[0]

@@ -20,6 +20,12 @@ Then run any archive-based example:
 python examples/basic/sample_pairs_demo.py
 ```
 
+Generate a starter custom algorithm module:
+
+```bash
+matheel init-custom-algorithm my_algorithm.py
+```
+
 Run the local visualization and leaderboard examples when you want generated artifacts to inspect:
 
 ```bash

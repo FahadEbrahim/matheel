@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 from importlib.metadata import version
@@ -58,6 +59,32 @@ def test_visualize_dataset_command_writes_artifacts(tmp_path):
     assert (output_dir / "dataset_map.csv").exists()
     assert (output_dir / "dataset_map.json").exists()
     assert (output_dir / "dataset_map.html").exists()
+
+
+def test_init_custom_algorithm_command_writes_importable_template(tmp_path):
+    output_path = tmp_path / "my_algorithm.py"
+
+    assert callable(matheel.custom_algorithm_template)
+    assert callable(matheel.write_custom_algorithm_template)
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "init-custom-algorithm",
+            str(output_path),
+            "--name",
+            "demo algorithm",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert output_path.exists()
+    assert "score_pair" in output_path.read_text(encoding="utf-8")
+    spec = importlib.util.spec_from_file_location("generated_algorithm", output_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.score_pair("print(1)", "print(1)") == 1.0
+    assert module.score_pair("print(1)", "print(2)") == 0.0
 
 
 def test_explain_pair_command_writes_file_pair_artifacts(tmp_path):
