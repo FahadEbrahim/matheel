@@ -172,8 +172,18 @@ def write_leaderboard_artifacts(report, output_dir, basename="leaderboard"):
     report["per_dataset"].to_csv(artifacts["per_dataset_csv"], index=False)
     report["aggregate"].to_csv(artifacts["aggregate_csv"], index=False)
     artifacts["json"].write_text(json.dumps(leaderboard_payload(report), indent=2, sort_keys=True), encoding="utf-8")
+    from .reports import benchmark_report_html
+
     artifacts["html"].write_text(
-        leaderboard_html(report, title=str(report["metadata"].get("name") or "Matheel Leaderboard")),
+        benchmark_report_html(
+            report,
+            title=str(report["metadata"].get("name") or "Matheel Leaderboard"),
+            artifact_links={
+                name: path
+                for name, path in artifacts.items()
+                if name != "html"
+            },
+        ),
         encoding="utf-8",
     )
     snapshot = collect_reproducibility_snapshot(run_configs=[report.get("manifest", {})])
