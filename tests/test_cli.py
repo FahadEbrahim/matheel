@@ -1378,6 +1378,9 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
         details_dir,
         output_format,
         reproducibility_out,
+        cache_dir,
+        use_cache,
+        cache_seed,
         progress,
     ):
         captured["zipfile"] = zipfile
@@ -1386,6 +1389,9 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
         captured["details_dir"] = details_dir
         captured["output_format"] = output_format
         captured["reproducibility_out"] = reproducibility_out
+        captured["cache_dir"] = cache_dir
+        captured["use_cache"] = use_cache
+        captured["cache_seed"] = cache_seed
         captured["progress"] = progress
         return (
             pd.DataFrame(
@@ -1426,6 +1432,10 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
             str(tmp_path / "details"),
             "--format",
             "json",
+            "--cache-dir",
+            str(tmp_path / "cache"),
+            "--cache-seed",
+            "demo",
             "--progress",
         ],
     )
@@ -1437,4 +1447,7 @@ def test_compare_suite_command_runs_config_file(tmp_path, monkeypatch):
     assert captured["details_dir"].endswith("details")
     assert captured["output_format"] == "json"
     assert captured["reproducibility_out"] is None
+    assert captured["cache_dir"].endswith("cache")
+    assert captured["use_cache"] is True
+    assert captured["cache_seed"] == "demo"
     assert captured["progress"] is True

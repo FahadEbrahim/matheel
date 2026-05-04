@@ -179,6 +179,108 @@ def test_run_comparison_suite_writes_summary_and_details(tmp_path, monkeypatch):
     assert "0.9877" in strong_details_text
 
 
+def test_run_comparison_suite_uses_cache_on_second_run(tmp_path, monkeypatch):
+    calls = {"count": 0}
+
+    def fake_get_sim_list(zipped_file, **kwargs):
+        calls["count"] += 1
+        return pd.DataFrame(
+            [
+                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 0.8},
+            ]
+        )
+
+    monkeypatch.setattr("matheel.comparison_suite.get_sim_list", fake_get_sim_list)
+    times = iter([10.0, 10.5])
+    monkeypatch.setattr("matheel.comparison_suite.perf_counter", lambda: next(times))
+    run_configs = [{"run_name": "baseline", "feature_weights": {"levenshtein": 1.0}}]
+    cache_dir = tmp_path / "cache"
+
+    first_summary, first_results = run_comparison_suite(
+        "codes.zip",
+        run_configs,
+        cache_dir=cache_dir,
+        cache_seed=7,
+    )
+    second_summary, second_results = run_comparison_suite(
+        "codes.zip",
+        run_configs,
+        cache_dir=cache_dir,
+        cache_seed=7,
+    )
+
+    assert calls["count"] == 1
+    assert first_summary.loc[0, "cache_status"] == "miss"
+    assert second_summary.loc[0, "cache_status"] == "hit"
+    assert first_summary.loc[0, "cache_key"] == second_summary.loc[0, "cache_key"]
+    pd.testing.assert_frame_equal(first_results["baseline"], second_results["baseline"])
+
+
+def test_run_comparison_suite_cache_invalidates_when_config_changes(tmp_path, monkeypatch):
+    calls = {"count": 0}
+
+    def fake_get_sim_list(zipped_file, **kwargs):
+        calls["count"] += 1
+        return pd.DataFrame(
+            [
+                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": kwargs["threshold"]},
+            ]
+        )
+
+    monkeypatch.setattr("matheel.comparison_suite.get_sim_list", fake_get_sim_list)
+    times = iter([10.0, 10.5, 20.0, 20.5])
+    monkeypatch.setattr("matheel.comparison_suite.perf_counter", lambda: next(times))
+    cache_dir = tmp_path / "cache"
+
+    first_summary, _ = run_comparison_suite(
+        "codes.zip",
+        [{"run_name": "baseline", "feature_weights": {"levenshtein": 1.0}, "threshold": 0.4}],
+        cache_dir=cache_dir,
+    )
+    second_summary, _ = run_comparison_suite(
+        "codes.zip",
+        [{"run_name": "baseline", "feature_weights": {"levenshtein": 1.0}, "threshold": 0.6}],
+        cache_dir=cache_dir,
+    )
+
+    assert calls["count"] == 2
+    assert first_summary.loc[0, "cache_key"] != second_summary.loc[0, "cache_key"]
+
+
+def test_run_comparison_suite_cache_can_be_disabled(tmp_path, monkeypatch):
+    calls = {"count": 0}
+
+    def fake_get_sim_list(zipped_file, **kwargs):
+        calls["count"] += 1
+        return pd.DataFrame(
+            [
+                {"file_name_1": "a.py", "file_name_2": "b.py", "similarity_score": 0.8},
+            ]
+        )
+
+    monkeypatch.setattr("matheel.comparison_suite.get_sim_list", fake_get_sim_list)
+    times = iter([10.0, 10.5, 20.0, 20.5])
+    monkeypatch.setattr("matheel.comparison_suite.perf_counter", lambda: next(times))
+    run_configs = [{"run_name": "baseline", "feature_weights": {"levenshtein": 1.0}}]
+
+    first_summary, _ = run_comparison_suite(
+        "codes.zip",
+        run_configs,
+        cache_dir=tmp_path / "cache",
+        use_cache=False,
+    )
+    second_summary, _ = run_comparison_suite(
+        "codes.zip",
+        run_configs,
+        cache_dir=tmp_path / "cache",
+        use_cache=False,
+    )
+
+    assert calls["count"] == 2
+    assert first_summary.loc[0, "cache_status"] == "disabled"
+    assert second_summary.loc[0, "cache_status"] == "disabled"
+
+
 def test_run_comparison_suite_marks_backend_inactive_without_semantic_feature(monkeypatch):
     def fake_get_sim_list(zipped_file, **kwargs):
         _ = (zipped_file, kwargs)

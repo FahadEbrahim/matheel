@@ -88,6 +88,8 @@ One row per run, including:
 - `algorithm_package_version`
 - `algorithm_options`
 - `algorithm_source_sha256`
+- `cache_status`
+- `cache_key`
 
 `elapsed_seconds` is rounded to 4 decimal places. `feature_set` lists the active nonzero feature weights for the run.
 For custom algorithm runs, `feature_set` is `custom`.
@@ -106,7 +108,15 @@ For custom algorithm runs, `feature_set` is `custom`.
   Receives structured progress event dictionaries for run-level and pair-level work.
 - `reproducibility_out`
   Writes a JSON snapshot with package versions, source fingerprint, normalized run configs, and run metadata.
+- `cache_dir`
+  Enables a local filesystem cache for detailed run outputs.
+- `use_cache`
+  Disable this when you want to force fresh scoring even when `cache_dir` is set.
+- `cache_seed`
+  Optional run version or seed value included in cache keys.
 - Numeric score fields are rounded to 4 decimal places in suite output artifacts.
+
+Cache keys include the source fingerprint, normalized run config, dependency versions, optional seed, and custom algorithm source fingerprint when one is available. Cache entries are stored under the user-selected cache directory, not inside the repository.
 
 ## Python Example
 
@@ -153,6 +163,8 @@ summary, details = run_comparison_suite(
     sample_archive,
     runs,
     reproducibility_out="results/reproducibility.json",
+    cache_dir="results/cache",
+    cache_seed="demo-v1",
     progress=True,
 )
 print(summary)

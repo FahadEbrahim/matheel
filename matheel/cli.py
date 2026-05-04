@@ -1122,11 +1122,36 @@ def compare(
     help="Optional path to write reproducibility metadata JSON.",
 )
 @click.option(
+    "--cache-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    default=None,
+    help="Optional local directory for cached comparison run results.",
+)
+@click.option(
+    "--cache/--no-cache",
+    "use_cache",
+    default=True,
+    show_default=True,
+    help="Use cached comparison results when --cache-dir is set.",
+)
+@click.option("--cache-seed", default=None, help="Optional seed/version value included in cache keys.")
+@click.option(
     "--progress/--no-progress",
     default=None,
     help="Show progress bars on stderr. Defaults to auto for interactive terminals.",
 )
-def compare_suite(source_path, config_file, summary_out, details_dir, output_format, reproducibility_out, progress):
+def compare_suite(
+    source_path,
+    config_file,
+    summary_out,
+    details_dir,
+    output_format,
+    reproducibility_out,
+    cache_dir,
+    use_cache,
+    cache_seed,
+    progress,
+):
     """Run multiple similarity configurations from a JSON config file."""
     run_configs = load_run_configs(config_file)
     summary, _ = run_comparison_suite(
@@ -1136,6 +1161,9 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
         details_dir=details_dir,
         output_format=output_format,
         reproducibility_out=reproducibility_out,
+        cache_dir=cache_dir,
+        use_cache=use_cache,
+        cache_seed=cache_seed,
         progress=should_show_progress(progress, stream=sys.stderr),
     )
     if summary.empty:
