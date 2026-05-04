@@ -5,6 +5,11 @@ from pathlib import Path
 import pandas as pd
 
 from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
+from .benchmark_cache import (
+    benchmark_cache_key_for_run,
+    load_benchmark_cache_result,
+    write_benchmark_cache_result,
+)
 from .feature_weights import default_feature_weights, parse_feature_weights
 from ._progress import progress_iter
 from ._run_metadata import (
@@ -237,6 +242,9 @@ def run_comparison_suite(
     details_dir=None,
     output_format="csv",
     reproducibility_out=None,
+    cache_dir=None,
+    use_cache=True,
+    cache_seed=None,
     progress=False,
     progress_callback=None,
 ):
@@ -259,32 +267,25 @@ def run_comparison_suite(
         run_options = dict(options)
         run_options.setdefault("progress", progress)
         run_options.setdefault("progress_callback", _run_progress_callback(progress_callback, run_name))
-        start_time = perf_counter()
-        if _run_uses_custom_algorithm(run_options):
-            algorithm = run_options.pop("algorithm", None) or run_options.pop("algorithm_path")
-            algorithm_options = normalize_algorithm_options(run_options.pop("algorithm_options", None))
-            results = _rounded_score_frame(
-                score_source_pairs_with_algorithm(
-                    zipped_file,
-                    algorithm=algorithm,
-                    preprocess_mode=run_options.get("preprocess_mode", "none"),
-                    code_language=run_options.get("code_language"),
-                    algorithm_options=algorithm_options,
-                    threshold=run_options.get("threshold", 0.0),
-                    number_results=run_options.get("number_results", 10),
-                    progress=run_options.get("progress", False),
-                    progress_callback=run_options.get("progress_callback"),
+        cache_payload = _cache_key_payload(zipped_file, run, cache_dir, use_cache, cache_seed)
+        cached = _load_cached_run(cache_dir, cache_payload)
+        if cached is None:
+            start_time = perf_counter()
+            results = _score_suite_run(zipped_file, run_options)
+            elapsed_seconds = elapsed_seconds_between(start_time, perf_counter())
+            results.attrs["elapsed_seconds"] = elapsed_seconds
+            if cache_payload is not None:
+                results.attrs["cache_status"] = "miss"
+                results.attrs["cache_key"] = cache_payload["key"]
+                write_benchmark_cache_result(
+                    cache_dir,
+                    cache_payload,
+                    results,
+                    metadata={"run_name": run_name},
                 )
-            )
         else:
-            results = _rounded_score_frame(
-                get_sim_list(
-                    zipped_file,
-                    **run_options,
-                )
-            )
-        elapsed_seconds = elapsed_seconds_between(start_time, perf_counter())
-        results.attrs["elapsed_seconds"] = elapsed_seconds
+            results, _ = cached
+            elapsed_seconds = results.attrs.get("elapsed_seconds")
         result_frames[run_name] = results
         write_run_details(run_name, results, details_dir=details_dir)
         summary_rows.append(
@@ -311,6 +312,44 @@ def run_comparison_suite(
         write_reproducibility_snapshot(snapshot, reproducibility_out)
 
     return summary, result_frames
+
+
+def _cache_key_payload(source_path, run, cache_dir, use_cache, cache_seed):
+    if cache_dir is None or not use_cache:
+        return None
+    return benchmark_cache_key_for_run(source_path, run, seed=cache_seed)
+
+
+def _load_cached_run(cache_dir, cache_payload):
+    if cache_payload is None:
+        return None
+    return load_benchmark_cache_result(cache_dir, cache_payload["key"])
+
+
+def _score_suite_run(zipped_file, run_options):
+    run_options = dict(run_options)
+    if _run_uses_custom_algorithm(run_options):
+        algorithm = run_options.pop("algorithm", None) or run_options.pop("algorithm_path")
+        algorithm_options = normalize_algorithm_options(run_options.pop("algorithm_options", None))
+        return _rounded_score_frame(
+            score_source_pairs_with_algorithm(
+                zipped_file,
+                algorithm=algorithm,
+                preprocess_mode=run_options.get("preprocess_mode", "none"),
+                code_language=run_options.get("code_language"),
+                algorithm_options=algorithm_options,
+                threshold=run_options.get("threshold", 0.0),
+                number_results=run_options.get("number_results", 10),
+                progress=run_options.get("progress", False),
+                progress_callback=run_options.get("progress_callback"),
+            )
+        )
+    return _rounded_score_frame(
+        get_sim_list(
+            zipped_file,
+            **run_options,
+        )
+    )
 
 
 def _resolved_elapsed_seconds(results, elapsed_seconds):
@@ -345,6 +384,8 @@ def _summary_metadata(options, results, elapsed_seconds):
         "algorithm_package_version": algorithm.get("algorithm_package_version") or "",
         "algorithm_options": json.dumps(algorithm_options or {}, sort_keys=True),
         "algorithm_source_sha256": algorithm_fingerprint.get("sha256") or "",
+        "cache_status": attrs.get("cache_status") or "disabled",
+        "cache_key": attrs.get("cache_key") or "",
     }
 
 

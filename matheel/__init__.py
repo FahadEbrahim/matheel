@@ -16,6 +16,15 @@ from .algorithms import (
     score_pair_with_algorithm,
     score_source_pairs_with_algorithm,
 )
+from .benchmark_cache import (
+    benchmark_cache_key,
+    benchmark_cache_key_for_run,
+    benchmark_cache_paths,
+    benchmark_dependency_versions,
+    clear_benchmark_cache,
+    load_benchmark_cache_result,
+    write_benchmark_cache_result,
+)
 from .chunking import chunk_text, chunker_parameter_names
 from .calibration import (
     calibrate_threshold,
@@ -152,6 +161,10 @@ __all__ = [
     "available_similarity_functions",
     "available_vector_backends",
     "attach_algorithm_metadata",
+    "benchmark_cache_key",
+    "benchmark_cache_key_for_run",
+    "benchmark_cache_paths",
+    "benchmark_dependency_versions",
     "calibrate_threshold",
     "calibration_curve",
     "calibration_report",
@@ -159,6 +172,7 @@ __all__ = [
     "calculate_similarity",
     "chunk_text",
     "chunker_parameter_names",
+    "clear_benchmark_cache",
     "codebleu_components",
     "collect_reproducibility_snapshot",
     "compare_metric_samples",
@@ -181,6 +195,7 @@ __all__ = [
     "infer_model_capabilities",
     "inspect_model_settings",
     "load_code_texts",
+    "load_benchmark_cache_result",
     "load_dataset_manifest",
     "load_pair_dataset",
     "load_pair_datasets",
@@ -244,6 +259,7 @@ __all__ = [
     "write_dataset_embedding_map",
     "write_dataset_map_artifacts",
     "write_calibration_report_artifacts",
+    "write_benchmark_cache_result",
     "write_pair_dataset_explanation",
     "write_pair_explanation",
     "write_pair_explanation_artifacts",
