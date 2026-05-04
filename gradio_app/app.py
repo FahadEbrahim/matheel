@@ -3,6 +3,7 @@ import math
 import os
 import tempfile
 import zipfile
+from pathlib import Path
 
 mpl_config_dir = os.path.join(tempfile.gettempdir(), "matheel-mpl")
 os.makedirs(mpl_config_dir, exist_ok=True)
@@ -20,8 +21,17 @@ except ModuleNotFoundError:
 from matheel.chunking import available_chunk_aggregations, available_chunking_methods
 from matheel.comparison_suite import run_comparison_suite, slugify_run_name
 from matheel.code_metrics import available_code_metric_languages, available_code_metrics
+from matheel.datasets import load_pair_dataset, load_retrieval_dataset
+from matheel.evaluation import (
+    evaluate_pair_dataset,
+    evaluate_pair_resamples,
+    evaluate_retrieval_dataset,
+    evaluate_retrieval_resamples,
+)
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
+from matheel.reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
+from matheel.resampling import kfold_splits
 from matheel._run_metadata import elapsed_seconds_between, perf_counter
 from matheel.similarity import (
     DEFAULT_MODEL_NAME,
@@ -68,6 +78,64 @@ FEATURE_UI_CHOICES = [
     "Code Metric",
 ]
 DEFAULT_FEATURE_SELECTION = ["Embedding", "Levenshtein"]
+METRIC_PRESETS = {
+    "Balanced": {
+        "features": ["Embedding", "Levenshtein"],
+        "weights": {"semantic": 0.7, "levenshtein": 0.3},
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0,
+    },
+    "Lexical Only": {
+        "features": ["Levenshtein", "Winnowing", "GST"],
+        "weights": {"levenshtein": 0.5, "winnowing": 0.25, "gst": 0.25},
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0,
+    },
+    "Embedding Only": {
+        "features": ["Embedding"],
+        "weights": {"semantic": 1.0},
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0,
+    },
+    "Code-Aware": {
+        "features": ["Embedding", "Levenshtein", "Code Metric"],
+        "weights": {"semantic": 0.5, "levenshtein": 0.25, "code_metric": 0.25},
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.25,
+    },
+}
+DATASET_TASK_CHOICES = ("Pair Classification", "Retrieval")
+DEFAULT_DATASET_TASK = DATASET_TASK_CHOICES[0]
+PAIR_DATASET_SCORE_COLUMNS = [
+    "left_id",
+    "right_id",
+    "label",
+    "similarity_score",
+]
+RETRIEVAL_DATASET_SCORE_COLUMNS = [
+    "query_id",
+    "document_id",
+    "relevance",
+    "similarity_score",
+]
+METRIC_LABELS = {
+    "accuracy": "Accuracy",
+    "precision": "Precision",
+    "recall": "Recall",
+    "f1": "F1",
+    "pair_count": "Pair Count",
+    "positive_count": "Positive Count",
+    "negative_count": "Negative Count",
+    "query_count": "Query Count",
+    "result_count": "Result Count",
+    "relevant_count": "Relevant Count",
+    "mean_average_precision": "Mean Average Precision",
+    "mean_reciprocal_rank": "Mean Reciprocal Rank",
+    "precision_at_k": "Precision at k",
+    "recall_at_k": "Recall at k",
+    "ndcg_at_k": "NDCG at k",
+    "k": "k",
+}
 
 
 def gradio_progress_callback(progress):
@@ -201,6 +269,32 @@ def status_panel_html(label, message, variant="status"):
 
 def format_elapsed_seconds(value):
     return f"{float(value):.3f}s"
+
+
+def score_interpretation(score, threshold=None):
+    numeric_score = float(score)
+    if numeric_score >= 0.85:
+        label = "Very High"
+        guidance = "Review this pair first."
+    elif numeric_score >= 0.65:
+        label = "High"
+        guidance = "Likely worth manual review."
+    elif numeric_score >= 0.35:
+        label = "Moderate"
+        guidance = "Use supporting evidence before deciding."
+    else:
+        label = "Low"
+        guidance = "Usually lower priority."
+
+    if threshold is not None:
+        decision = "Meets threshold" if numeric_score >= float(threshold) else "Below threshold"
+        guidance = f"{decision}. {guidance}"
+    return label, guidance
+
+
+def score_band_label(score, threshold=None):
+    label, guidance = score_interpretation(score, threshold=threshold)
+    return f"{label}: {guidance}"
 
 
 def build_feature_weights(
@@ -463,6 +557,11 @@ def update_code_preparation_sections(selected_steps):
     )
 
 
+def update_dataset_task_sections(task_label):
+    is_retrieval = str(task_label or "").startswith("Retrieval")
+    return gr.update(visible=not is_retrieval), gr.update(visible=is_retrieval)
+
+
 def update_code_metric_sections(code_metric):
     normalized = (code_metric or "codebleu").strip().lower()
     return (
@@ -471,6 +570,42 @@ def update_code_metric_sections(code_metric):
         gr.update(visible=normalized == "ruby"),
         gr.update(visible=normalized == "tsed"),
         gr.update(visible=normalized == "codebertscore"),
+    )
+
+
+def metric_preset_names():
+    return tuple(METRIC_PRESETS)
+
+
+def metric_preset_options(preset_name):
+    preset = METRIC_PRESETS.get(str(preset_name or "").strip()) or METRIC_PRESETS["Balanced"]
+    weights = dict(preset["weights"])
+    return {
+        "features": list(preset["features"]),
+        "semantic_weight": float(weights.get("semantic", 0.0)),
+        "levenshtein_weight": float(weights.get("levenshtein", 0.0)),
+        "jaro_winkler_weight": float(weights.get("jaro_winkler", 0.0)),
+        "winnowing_weight": float(weights.get("winnowing", 0.0)),
+        "gst_weight": float(weights.get("gst", 0.0)),
+        "code_metric": str(preset.get("code_metric") or "codebleu"),
+        "code_metric_weight": float(preset.get("code_metric_weight") or weights.get("code_metric", 0.0)),
+    }
+
+
+def apply_metric_preset_gradio(preset_name):
+    options = metric_preset_options(preset_name)
+    features = options["features"]
+    section_updates = update_feature_sections(features)
+    return (
+        gr.update(value=features),
+        gr.update(value=options["semantic_weight"]),
+        gr.update(value=options["levenshtein_weight"]),
+        gr.update(value=options["jaro_winkler_weight"]),
+        gr.update(value=options["winnowing_weight"]),
+        gr.update(value=options["gst_weight"]),
+        gr.update(value=options["code_metric"]),
+        gr.update(value=options["code_metric_weight"]),
+        *section_updates,
     )
 
 
@@ -1266,15 +1401,383 @@ def run_suite_gradio(
     )
 
 
+def _uploaded_file_path(uploaded_file):
+    if uploaded_file is None:
+        return None
+    if isinstance(uploaded_file, (list, tuple)):
+        if not uploaded_file:
+            return None
+        uploaded_file = uploaded_file[0]
+    if isinstance(uploaded_file, dict):
+        uploaded_file = uploaded_file.get("path") or uploaded_file.get("name")
+    if isinstance(uploaded_file, (str, os.PathLike)):
+        return Path(uploaded_file)
+    if hasattr(uploaded_file, "name"):
+        uploaded_file = uploaded_file.name
+    return Path(uploaded_file)
+
+
+def _is_relative_to(path, parent):
+    try:
+        Path(path).resolve().relative_to(Path(parent).resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _safe_extract_uploaded_zip(archive_path, output_dir):
+    archive = Path(archive_path)
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive) as archive_file:
+        for member in archive_file.infolist():
+            target = destination / member.filename
+            if not _is_relative_to(target, destination):
+                raise gr.Error(f"Dataset archive contains an unsafe path: {member.filename}")
+        archive_file.extractall(destination)
+    return destination
+
+
+def _looks_like_pair_dataset_root(root):
+    path = Path(root)
+    return all((path / name).exists() for name in ("metadata.json", "files.csv", "pairs.csv"))
+
+
+def _looks_like_retrieval_dataset_root(root):
+    path = Path(root)
+    return all(
+        (path / name).exists()
+        for name in ("metadata.json", "files.csv", "queries.csv", "corpus.csv", "qrels.csv")
+    )
+
+
+def _find_normalized_dataset_root(root, task_label):
+    path = Path(root)
+    matcher = (
+        _looks_like_retrieval_dataset_root
+        if str(task_label or "").lower().startswith("retrieval")
+        else _looks_like_pair_dataset_root
+    )
+    if matcher(path):
+        return path
+
+    candidates = [candidate for candidate in path.rglob("metadata.json") if matcher(candidate.parent)]
+    if len(candidates) == 1:
+        return candidates[0].parent
+    if len(candidates) > 1:
+        raise gr.Error("Dataset archive contains multiple normalized datasets. Upload one dataset at a time.")
+    raise gr.Error("Could not find a normalized Matheel dataset in the uploaded archive.")
+
+
+def _dataset_root_from_upload(uploaded_file, task_label):
+    uploaded_path = _uploaded_file_path(uploaded_file)
+    if uploaded_path is None:
+        raise gr.Error("Upload a normalized dataset ZIP first.")
+    if uploaded_path.is_dir():
+        return _find_normalized_dataset_root(uploaded_path, task_label)
+    if not zipfile.is_zipfile(uploaded_path):
+        raise gr.Error("Dataset upload must be a ZIP archive or a normalized dataset directory.")
+
+    extract_root = Path(tempfile.mkdtemp(prefix="matheel-dataset-upload-"))
+    _safe_extract_uploaded_zip(uploaded_path, extract_root)
+    return _find_normalized_dataset_root(extract_root, task_label)
+
+
+def dataset_similarity_options(
+    preset_name,
+    model_name,
+    vector_backend,
+    runtime_device,
+    preprocess_mode,
+    code_language,
+):
+    preset = metric_preset_options(preset_name)
+    feature_weights = {
+        "semantic": preset["semantic_weight"],
+        "levenshtein": preset["levenshtein_weight"],
+        "jaro_winkler": preset["jaro_winkler_weight"],
+        "winnowing": preset["winnowing_weight"],
+        "gst": preset["gst_weight"],
+    }
+    if "Code Metric" in preset["features"]:
+        feature_weights["code_metric"] = preset["code_metric_weight"]
+
+    code_metric = preset["code_metric"] if "Code Metric" in preset["features"] else "none"
+    return {
+        "feature_weights": normalize_feature_weights_map(feature_weights),
+        "model_name": str(model_name or DEFAULT_MODEL).strip() or DEFAULT_MODEL,
+        "vector_backend": str(vector_backend or "auto").strip() or "auto",
+        "device": str(runtime_device or "auto").strip() or "auto",
+        "preprocess_mode": str(preprocess_mode or "none").strip() or "none",
+        "code_language": str(code_language or "python").strip() or "python",
+        "code_metric": code_metric,
+        "code_metric_weight": preset["code_metric_weight"] if code_metric != "none" else 0.0,
+    }
+
+
+def metrics_dict_frame(metrics):
+    rows = []
+    for key, value in (metrics or {}).items():
+        label = METRIC_LABELS.get(str(key), str(key).replace("_", " ").title())
+        if isinstance(value, float):
+            display_value = round(value, 4)
+        else:
+            display_value = value
+        rows.append({"Metric": label, "Value": display_value})
+    return pd.DataFrame(rows, columns=["Metric", "Value"])
+
+
+def dataset_scores_display_frame(scored, task_label):
+    frame = scored.copy() if isinstance(scored, pd.DataFrame) else pd.DataFrame(scored)
+    columns = RETRIEVAL_DATASET_SCORE_COLUMNS if str(task_label).startswith("Retrieval") else PAIR_DATASET_SCORE_COLUMNS
+    selected = [column for column in columns if column in frame.columns]
+    if not selected:
+        return frame
+    display = frame[selected].copy()
+    if "similarity_score" in display.columns:
+        display["similarity_score"] = display["similarity_score"].astype(float).round(4)
+        display["Interpretation"] = display["similarity_score"].map(score_band_label)
+    return display.rename(
+        columns={
+            "left_id": "Left File",
+            "right_id": "Right File",
+            "label": "Label",
+            "query_id": "Query",
+            "document_id": "Document",
+            "relevance": "Relevance",
+            "similarity_score": "Similarity Score",
+        }
+    )
+
+
+def _dataset_count_items(task_label, dataset, scored):
+    if str(task_label).startswith("Retrieval"):
+        return [
+            ("Queries", str(len(dataset.queries))),
+            ("Documents", str(len(dataset.corpus))),
+            ("Results", str(len(scored))),
+        ]
+    positives = int(scored["label"].sum()) if "label" in scored else 0
+    return [
+        ("Pairs", str(len(scored))),
+        ("Positive Labels", str(positives)),
+        ("Negative Labels", str(max(0, len(scored) - positives))),
+    ]
+
+
+def dataset_evaluation_summary_html(task_label, dataset, scored, metrics, elapsed_seconds, preset_name):
+    scores = scored["similarity_score"].astype(float) if "similarity_score" in scored else pd.Series(dtype=float)
+    top_score = scores.max() if not scores.empty else 0.0
+    task_name = "Retrieval Dataset" if str(task_label).startswith("Retrieval") else "Pair Dataset"
+    items = [
+        ("Dataset", str(dataset.metadata.get("name") or dataset.root.name)),
+        ("Task", task_name),
+        ("Metric Preset", str(preset_name or "Balanced")),
+        ("Top Score", f"{float(top_score):.3f}"),
+        ("Top Interpretation", score_band_label(float(top_score))),
+        ("Elapsed", format_elapsed_seconds(elapsed_seconds)),
+    ]
+    items.extend(_dataset_count_items(task_label, dataset, scored))
+    if str(task_label).startswith("Retrieval"):
+        items.append(("MAP", f"{float(metrics.get('mean_average_precision', 0.0)):.3f}"))
+        items.append(("NDCG at k", f"{float(metrics.get('ndcg_at_k', 0.0)):.3f}"))
+    else:
+        items.append(("F1", f"{float(metrics.get('f1', 0.0)):.3f}"))
+        items.append(("Accuracy", f"{float(metrics.get('accuracy', 0.0)):.3f}"))
+    return summary_panel_html("Dataset Evaluation", items)
+
+
+def _write_json(path, payload):
+    Path(path).write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    return Path(path)
+
+
+def _write_leaderboard_artifacts(
+    output_dir,
+    task_label,
+    dataset,
+    scored,
+    metrics,
+    similarity_options,
+    resample_metrics=None,
+    resample_summary=None,
+):
+    root = Path(output_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    prefix = "retrieval" if str(task_label).startswith("Retrieval") else "pair"
+    scored_path = root / f"{prefix}_scored_rows.csv"
+    metrics_path = root / f"{prefix}_metrics.json"
+    manifest_path = root / "leaderboard_manifest.json"
+    reproducibility_path = root / "reproducibility.json"
+    scored.to_csv(scored_path, index=False)
+    _write_json(metrics_path, metrics)
+
+    files = {
+        "scored_rows": scored_path.name,
+        "metrics": metrics_path.name,
+        "reproducibility": reproducibility_path.name,
+    }
+    if resample_metrics is not None and not resample_metrics.empty:
+        resample_metrics_path = root / f"{prefix}_resampling_metrics.csv"
+        resample_metrics.to_csv(resample_metrics_path, index=False)
+        files["resampling_metrics"] = resample_metrics_path.name
+    if resample_summary is not None and not resample_summary.empty:
+        resample_summary_path = root / f"{prefix}_resampling_summary.csv"
+        resample_summary.to_csv(resample_summary_path, index=False)
+        files["resampling_summary"] = resample_summary_path.name
+
+    manifest = {
+        "schema_version": 1,
+        "workflow": "gradio_dataset_evaluation",
+        "dataset_kind": "retrieval" if str(task_label).startswith("Retrieval") else "pair_classification",
+        "dataset_name": str(dataset.metadata.get("name") or dataset.root.name),
+        "files": files,
+        "similarity_options": similarity_options,
+    }
+    _write_json(manifest_path, manifest)
+    files["manifest"] = manifest_path.name
+
+    snapshot = collect_reproducibility_snapshot(
+        dataset.root,
+        run_configs=[manifest],
+        result_attrs={"metrics": metrics},
+    )
+    write_reproducibility_snapshot(snapshot, reproducibility_path)
+
+    zip_path = root / "leaderboard_artifacts.zip"
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for file_name in sorted(files.values()):
+            archive.write(root / file_name, arcname=file_name)
+    return zip_path
+
+
+def _resample_pair_scores(scored, folds, seed, threshold):
+    if not folds:
+        return pd.DataFrame(), pd.DataFrame()
+    splits = kfold_splits(
+        len(scored),
+        n_splits=int(folds),
+        shuffle=True,
+        seed=int(seed),
+        labels=scored["label"].tolist() if "label" in scored else None,
+    )
+    return evaluate_pair_resamples(scored, splits, threshold=threshold)
+
+
+def _resample_retrieval_scores(scored, dataset, folds, seed, k):
+    if not folds:
+        return pd.DataFrame(), pd.DataFrame()
+    query_ids = tuple(sorted(scored["query_id"].astype(str).unique().tolist()))
+    splits = kfold_splits(query_ids, n_splits=int(folds), shuffle=True, seed=int(seed))
+    return evaluate_retrieval_resamples(scored, splits, qrels=dataset.qrels, k=k)
+
+
+def evaluate_dataset_gradio(
+    dataset_file,
+    task_label,
+    metric_preset,
+    model_name,
+    vector_backend,
+    runtime_device,
+    preprocess_mode,
+    code_language,
+    threshold,
+    retrieval_k,
+    resampling_folds,
+    resampling_seed,
+    progress=gr.Progress(track_tqdm=True),
+):
+    if dataset_file is None:
+        empty_metrics = pd.DataFrame(columns=["Metric", "Value"])
+        empty_scores = pd.DataFrame(columns=["Similarity Score", "Interpretation"])
+        return (
+            summary_panel_html(
+                "Dataset Evaluation",
+                [("Status", "No dataset uploaded"), ("Artifacts", "None")],
+                variant="empty",
+            ),
+            empty_metrics,
+            empty_scores,
+            pd.DataFrame(),
+            pd.DataFrame(),
+            None,
+        )
+
+    dataset_root = _dataset_root_from_upload(dataset_file, task_label)
+    similarity_options = dataset_similarity_options(
+        metric_preset,
+        model_name,
+        vector_backend,
+        runtime_device,
+        preprocess_mode,
+        code_language,
+    )
+    start_time = perf_counter()
+    if str(task_label).startswith("Retrieval"):
+        dataset = load_retrieval_dataset(dataset_root)
+        scored, metrics = evaluate_retrieval_dataset(
+            dataset,
+            k=int(retrieval_k),
+            similarity_options=similarity_options,
+        )
+        resample_metrics, resample_summary = _resample_retrieval_scores(
+            scored,
+            dataset,
+            int(resampling_folds or 0),
+            int(resampling_seed),
+            int(retrieval_k),
+        )
+    else:
+        dataset = load_pair_dataset(dataset_root)
+        scored, metrics = evaluate_pair_dataset(
+            dataset,
+            threshold=float(threshold),
+            similarity_options=similarity_options,
+        )
+        resample_metrics, resample_summary = _resample_pair_scores(
+            scored,
+            int(resampling_folds or 0),
+            int(resampling_seed),
+            float(threshold),
+        )
+    elapsed_seconds = elapsed_seconds_between(start_time, perf_counter())
+    if progress is not None:
+        progress(1.0, desc="Dataset evaluation complete")
+
+    export_root = tempfile.mkdtemp(prefix="matheel-leaderboard-")
+    artifacts_zip = _write_leaderboard_artifacts(
+        export_root,
+        task_label,
+        dataset,
+        scored,
+        metrics,
+        similarity_options,
+        resample_metrics=resample_metrics,
+        resample_summary=resample_summary,
+    )
+    return (
+        dataset_evaluation_summary_html(task_label, dataset, scored, metrics, elapsed_seconds, metric_preset),
+        metrics_dict_frame(metrics),
+        dataset_scores_display_frame(scored, task_label),
+        resample_metrics,
+        resample_summary,
+        str(artifacts_zip),
+    )
+
+
 def score_card_html(
     score,
     vector_backend="sentence_transformers",
     runtime_device="auto",
     code_metric="none",
     elapsed_seconds=None,
+    threshold=None,
 ):
     numeric_score = float(score)
     items = [("Similarity Score", f"{numeric_score:.4f}")]
+    label, guidance = score_interpretation(numeric_score, threshold=threshold)
+    items.append(("Interpretation", label))
+    items.append(("Review Hint", guidance))
     if elapsed_seconds is not None:
         items.append(("Elapsed", format_elapsed_seconds(elapsed_seconds)))
     if code_metric and code_metric != "none":
@@ -1312,11 +1815,14 @@ def results_summary_html(results, vector_backend, code_metric, chunking_method, 
     top_row = results.iloc[0]
     elapsed_seconds = float(results.attrs.get("elapsed_seconds", 0.0))
     feature_set = results.attrs.get("feature_set", "none")
+    high_priority = int((scores >= 0.65).sum())
     return summary_panel_html(
         "Collection Results",
         [
             ("Top Pair", f"{top_row['file_name_1']} vs {top_row['file_name_2']}"),
+            ("Top Interpretation", score_band_label(top_row["similarity_score"])),
             ("Pairs", str(len(results))),
+            ("High Priority", str(high_priority)),
             ("Average", f"{scores.mean():.3f}"),
             ("Top Score", f"{scores.max():.3f}"),
             ("Elapsed", format_elapsed_seconds(elapsed_seconds)),
@@ -1627,7 +2133,8 @@ def get_sim_list_gradio(
     ), results
 
 
-with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id="matheel-app") as demo:
+with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app") as demo:
+    gr.HTML(value="<style>" + APP_CSS + "</style>", container=False, padding=False)
     gr.Markdown(
         "# Matheel Framework\n"
         "Configurable code similarity for pair, collection, and suite workflows."
@@ -1648,10 +2155,15 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                             placeholder="Second snippet",
                         )
                     pair_run = gr.Button("Run Pair", variant="primary")
-                    pair_output = gr.HTML(value=empty_pair_summary_html())
+                    pair_output = gr.HTML(value=empty_pair_summary_html(), padding=False)
 
                 with gr.Column(scale=5):
                     with gr.Accordion("Metrics", open=True):
+                        pair_metric_preset = gr.Dropdown(
+                            choices=list(metric_preset_names()),
+                            value="Balanced",
+                            label="Metric Preset",
+                        )
                         pair_features = gr.CheckboxGroup(
                             choices=FEATURE_UI_CHOICES,
                             value=DEFAULT_FEATURE_SELECTION,
@@ -1664,7 +2176,7 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                                 placeholder="Search Hugging Face models",
                                 search_type="model",
                             )
-                            pair_model_status = gr.HTML(value=model_status_html())
+                            pair_model_status = gr.HTML(value=model_status_html(), padding=False)
                             pair_vector_backend = gr.Dropdown(
                                 choices=list(available_vector_backends()),
                                 value="auto",
@@ -1856,6 +2368,26 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                     pair_code_group,
                 ],
             )
+            pair_metric_preset.change(
+                apply_metric_preset_gradio,
+                inputs=pair_metric_preset,
+                outputs=[
+                    pair_features,
+                    pair_semantic_weight,
+                    pair_levenshtein_weight,
+                    pair_jaro_winkler_weight,
+                    pair_winnowing_weight,
+                    pair_gst_weight,
+                    pair_code_metric,
+                    pair_code_metric_weight,
+                    pair_embedding_group,
+                    pair_levenshtein_group,
+                    pair_jaro_group,
+                    pair_winnowing_group,
+                    pair_gst_group,
+                    pair_code_group,
+                ],
+            )
             pair_code_preparation.change(
                 update_code_preparation_sections,
                 inputs=pair_code_preparation,
@@ -1953,12 +2485,13 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                 with gr.Column(scale=8):
                     collection_file = gr.File(label="Code ZIP", file_types=[".zip"])
                     collection_run = gr.Button("Run Collection", variant="primary")
-                    collection_summary = gr.HTML(value=empty_summary_html())
+                    collection_summary = gr.HTML(value=empty_summary_html(), padding=False)
                     collection_output = gr.Dataframe(
                         label="Ranked Pairs",
                         wrap=False,
                         interactive=False,
                         max_height=460,
+                        row_count=1,
                         show_search="filter",
                         column_widths=["34%", "34%", "18%"],
                         elem_classes=["matheel-table"],
@@ -1966,6 +2499,11 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
 
                 with gr.Column(scale=5):
                     with gr.Accordion("Metrics", open=True):
+                        collection_metric_preset = gr.Dropdown(
+                            choices=list(metric_preset_names()),
+                            value="Balanced",
+                            label="Metric Preset",
+                        )
                         collection_features = gr.CheckboxGroup(
                             choices=FEATURE_UI_CHOICES,
                             value=DEFAULT_FEATURE_SELECTION,
@@ -1978,7 +2516,7 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                                 placeholder="Search Hugging Face models",
                                 search_type="model",
                             )
-                            collection_model_status = gr.HTML(value=model_status_html())
+                            collection_model_status = gr.HTML(value=model_status_html(), padding=False)
                             collection_vector_backend = gr.Dropdown(
                                 choices=list(available_vector_backends()),
                                 value="auto",
@@ -2182,6 +2720,26 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                     collection_code_group,
                 ],
             )
+            collection_metric_preset.change(
+                apply_metric_preset_gradio,
+                inputs=collection_metric_preset,
+                outputs=[
+                    collection_features,
+                    collection_semantic_weight,
+                    collection_levenshtein_weight,
+                    collection_jaro_winkler_weight,
+                    collection_winnowing_weight,
+                    collection_gst_weight,
+                    collection_code_metric,
+                    collection_code_metric_weight,
+                    collection_embedding_group,
+                    collection_levenshtein_group,
+                    collection_jaro_group,
+                    collection_winnowing_group,
+                    collection_gst_group,
+                    collection_code_group,
+                ],
+            )
             collection_code_preparation.change(
                 update_code_preparation_sections,
                 inputs=collection_code_preparation,
@@ -2282,12 +2840,13 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
             with gr.Row():
                 with gr.Column(scale=8):
                     suite_file = gr.File(label="Code ZIP", file_types=[".zip"])
-                    suite_summary = gr.HTML(value=empty_suite_summary_html())
+                    suite_summary = gr.HTML(value=empty_suite_summary_html(), padding=False)
                     suite_output = gr.Dataframe(
                         label="Suite Summary",
                         wrap=False,
                         interactive=False,
                         max_height=360,
+                        row_count=1,
                         show_search="filter",
                         elem_classes=["matheel-table"],
                     )
@@ -2301,13 +2860,22 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                         wrap=False,
                         interactive=False,
                         max_height=420,
+                        row_count=1,
                         show_search="filter",
                         elem_classes=["matheel-table"],
                     )
-                    suite_runs_overview = gr.HTML(value=suite_runs_overview_html(empty_suite_rows()))
+                    suite_runs_overview = gr.HTML(
+                        value=suite_runs_overview_html(empty_suite_rows()),
+                        padding=False,
+                    )
 
                 with gr.Column(scale=5):
                     with gr.Accordion("Metrics", open=True):
+                        suite_metric_preset = gr.Dropdown(
+                            choices=list(metric_preset_names()),
+                            value="Balanced",
+                            label="Metric Preset",
+                        )
                         suite_features = gr.CheckboxGroup(
                             choices=FEATURE_UI_CHOICES,
                             value=DEFAULT_FEATURE_SELECTION,
@@ -2320,7 +2888,7 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                                 placeholder="Search Hugging Face models",
                                 search_type="model",
                             )
-                            suite_model_status = gr.HTML(value=model_status_html())
+                            suite_model_status = gr.HTML(value=model_status_html(), padding=False)
                             suite_vector_backend = gr.Dropdown(
                                 choices=list(available_vector_backends()),
                                 value="auto",
@@ -2537,13 +3105,34 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                     suite_details_download = gr.File(label="Details ZIP")
                     suite_runs_download = gr.File(label="Run JSON")
                     suite_status = gr.HTML(
-                        value=profile_status_html("No saved runs yet. Save a configuration or run the current one.")
+                        value=profile_status_html("No saved runs yet. Save a configuration or run the current one."),
+                        padding=False,
                     )
 
             suite_features.change(
                 update_feature_sections,
                 inputs=suite_features,
                 outputs=[
+                    suite_embedding_group,
+                    suite_levenshtein_group,
+                    suite_jaro_group,
+                    suite_winnowing_group,
+                    suite_gst_group,
+                    suite_code_group,
+                ],
+            )
+            suite_metric_preset.change(
+                apply_metric_preset_gradio,
+                inputs=suite_metric_preset,
+                outputs=[
+                    suite_features,
+                    suite_semantic_weight,
+                    suite_levenshtein_weight,
+                    suite_jaro_winkler_weight,
+                    suite_winnowing_weight,
+                    suite_gst_weight,
+                    suite_code_metric,
+                    suite_code_metric_weight,
                     suite_embedding_group,
                     suite_levenshtein_group,
                     suite_jaro_group,
@@ -2739,6 +3328,157 @@ with gr.Blocks(title="Matheel Framework", css=APP_CSS, fill_width=True, elem_id=
                         suite_pooling_group,
                     ],
                 )
+
+        with gr.Tab("Datasets"):
+            with gr.Row():
+                with gr.Column(scale=8):
+                    dataset_file = gr.File(label="Normalized Dataset ZIP", file_types=[".zip"])
+                    dataset_run = gr.Button("Run Dataset Evaluation", variant="primary")
+                    dataset_summary = gr.HTML(
+                        value=summary_panel_html(
+                            "Dataset Evaluation",
+                            [("Status", "No dataset uploaded"), ("Artifacts", "None")],
+                            variant="empty",
+                        ),
+                        padding=False,
+                    )
+                    dataset_metrics = gr.Dataframe(
+                        label="Metrics",
+                        wrap=False,
+                        interactive=False,
+                        max_height=280,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    dataset_scores = gr.Dataframe(
+                        label="Scored Rows",
+                        wrap=False,
+                        interactive=False,
+                        max_height=420,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    dataset_resampling_metrics = gr.Dataframe(
+                        label="Resampling Metrics",
+                        wrap=False,
+                        interactive=False,
+                        max_height=260,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    dataset_resampling_summary = gr.Dataframe(
+                        label="Resampling Summary",
+                        wrap=False,
+                        interactive=False,
+                        max_height=260,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    dataset_artifacts = gr.File(label="Leaderboard Artifacts")
+
+                with gr.Column(scale=5):
+                    with gr.Accordion("Dataset", open=True):
+                        dataset_task = gr.Radio(
+                            choices=list(DATASET_TASK_CHOICES),
+                            value=DEFAULT_DATASET_TASK,
+                            label="Task",
+                        )
+                        dataset_metric_preset = gr.Dropdown(
+                            choices=list(metric_preset_names()),
+                            value="Lexical Only",
+                            label="Metric Preset",
+                        )
+                        dataset_model = HuggingfaceHubSearch(
+                            value=DEFAULT_MODEL,
+                            label="Embedding Model",
+                            placeholder="Search Hugging Face models",
+                            search_type="model",
+                        )
+                        dataset_vector_backend = gr.Dropdown(
+                            choices=list(available_vector_backends()),
+                            value="auto",
+                            label="Vector Backend",
+                        )
+                        dataset_runtime_device = gr.Dropdown(
+                            choices=list(DEVICE_CHOICES),
+                            value="auto",
+                            label="Runtime Device",
+                        )
+                        dataset_preprocess_mode = gr.Dropdown(
+                            choices=list(available_preprocess_modes()),
+                            value="none",
+                            label="Preprocessing Mode",
+                        )
+                        dataset_code_language = gr.Dropdown(
+                            choices=list(available_code_metric_languages()),
+                            value="python",
+                            label="Code Language",
+                        )
+
+                    with gr.Accordion("Evaluation", open=True):
+                        with gr.Group(visible=True) as dataset_pair_group:
+                            dataset_threshold = gr.Slider(
+                                0,
+                                1,
+                                value=0.5,
+                                label="Pair Threshold",
+                                step=0.01,
+                            )
+                        with gr.Group(visible=False) as dataset_retrieval_group:
+                            dataset_k = gr.Slider(
+                                1,
+                                100,
+                                value=10,
+                                label="Retrieval k",
+                                step=1,
+                            )
+                        dataset_resampling_folds = gr.Slider(
+                            0,
+                            10,
+                            value=0,
+                            label="K-fold Resampling Folds (0 = off)",
+                            step=1,
+                        )
+                        dataset_resampling_seed = gr.Number(
+                            value=7,
+                            precision=0,
+                            label="Resampling Seed",
+                        )
+
+            dataset_task.change(
+                update_dataset_task_sections,
+                inputs=dataset_task,
+                outputs=[dataset_pair_group, dataset_retrieval_group],
+            )
+            dataset_run.click(
+                evaluate_dataset_gradio,
+                inputs=[
+                    dataset_file,
+                    dataset_task,
+                    dataset_metric_preset,
+                    dataset_model,
+                    dataset_vector_backend,
+                    dataset_runtime_device,
+                    dataset_preprocess_mode,
+                    dataset_code_language,
+                    dataset_threshold,
+                    dataset_k,
+                    dataset_resampling_folds,
+                    dataset_resampling_seed,
+                ],
+                outputs=[
+                    dataset_summary,
+                    dataset_metrics,
+                    dataset_scores,
+                    dataset_resampling_metrics,
+                    dataset_resampling_summary,
+                    dataset_artifacts,
+                ],
+            )
 
 if __name__ == "__main__":
     demo.launch(show_error=True, debug=True)

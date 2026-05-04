@@ -1,9 +1,12 @@
 import importlib.util
+import json
 import zipfile
 from pathlib import Path
 
 import pandas as pd
 import pytest
+
+from matheel.datasets import write_pair_dataset, write_retrieval_dataset
 
 
 pytest.importorskip("gradio")
@@ -223,8 +226,21 @@ def test_score_card_html_displays_elapsed_time():
     score_html = gradio_app.score_card_html(0.75, elapsed_seconds=2.3456)
 
     assert "0.7500" in score_html
+    assert "Interpretation" in score_html
+    assert "High" in score_html
     assert "2.346s" in score_html
     assert "Pairwise Result" in score_html
+
+
+def test_metric_presets_resolve_common_workflows():
+    lexical = gradio_app.metric_preset_options("Lexical Only")
+    code_aware = gradio_app.metric_preset_options("Code-Aware")
+
+    assert lexical["features"] == ["Levenshtein", "Winnowing", "GST"]
+    assert lexical["semantic_weight"] == 0.0
+    assert code_aware["features"] == ["Embedding", "Levenshtein", "Code Metric"]
+    assert code_aware["code_metric"] == "codebleu"
+    assert code_aware["code_metric_weight"] == 0.25
 
 
 def test_empty_result_panels_use_readable_states():
@@ -378,3 +394,138 @@ def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
     details_zip_path = outputs[6]
     with zipfile.ZipFile(details_zip_path) as archive:
         assert archive.namelist() == ["baseline_strong.csv"]
+
+
+def _zip_directory(source_root, zip_path):
+    source_root = Path(source_root)
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted(source_root.rglob("*")):
+            if path.is_file():
+                archive.write(path, arcname=Path(source_root.name) / path.relative_to(source_root))
+    return zip_path
+
+
+def test_dataset_pair_evaluation_exports_leaderboard_artifacts(tmp_path):
+    dataset_root = tmp_path / "pair_dataset"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "c", "text": "print(2)", "suffix": ".py"},
+                {"file_id": "d", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "c", "right_id": "d", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+                {"left_id": "b", "right_id": "d", "label": 0},
+            ]
+        ),
+        metadata={"name": "tiny_pairs"},
+    )
+    archive_path = _zip_directory(dataset_root, tmp_path / "pair_dataset.zip")
+
+    outputs = gradio_app.evaluate_dataset_gradio(
+        archive_path,
+        "Pair Classification",
+        "Lexical Only",
+        gradio_app.DEFAULT_MODEL,
+        "auto",
+        "auto",
+        "none",
+        "python",
+        0.5,
+        10,
+        2,
+        7,
+        progress=None,
+    )
+
+    summary_html, metrics_frame, scored_frame, resample_metrics, resample_summary, artifacts_path = outputs
+    assert "Dataset Evaluation" in summary_html
+    assert "tiny_pairs" in summary_html
+    assert "F1" in metrics_frame["Metric"].tolist()
+    assert "Interpretation" in scored_frame.columns
+    assert not resample_metrics.empty
+    assert not resample_summary.empty
+
+    with zipfile.ZipFile(artifacts_path) as archive:
+        names = archive.namelist()
+        assert names == sorted(names)
+        assert "leaderboard_manifest.json" in names
+        assert "pair_scored_rows.csv" in names
+        assert "pair_metrics.json" in names
+        assert "pair_resampling_summary.csv" in names
+        manifest = json.loads(archive.read("leaderboard_manifest.json").decode("utf-8"))
+    assert manifest["workflow"] == "gradio_dataset_evaluation"
+    assert manifest["dataset_kind"] == "pair_classification"
+
+
+def test_dataset_retrieval_evaluation_exports_leaderboard_artifacts(tmp_path):
+    dataset_root = tmp_path / "retrieval_dataset"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "q1_file", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "q2_file", "text": "print(2)", "suffix": ".py"},
+                {"file_id": "d1_file", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "d2_file", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame(
+            [
+                {"query_id": "q1", "file_id": "q1_file"},
+                {"query_id": "q2", "file_id": "q2_file"},
+            ]
+        ),
+        corpus=pd.DataFrame(
+            [
+                {"document_id": "d1", "file_id": "d1_file"},
+                {"document_id": "d2", "file_id": "d2_file"},
+            ]
+        ),
+        qrels=pd.DataFrame(
+            [
+                {"query_id": "q1", "document_id": "d1", "relevance": 1},
+                {"query_id": "q2", "document_id": "d2", "relevance": 1},
+            ]
+        ),
+        metadata={"name": "tiny_retrieval"},
+    )
+    archive_path = _zip_directory(dataset_root, tmp_path / "retrieval_dataset.zip")
+
+    outputs = gradio_app.evaluate_dataset_gradio(
+        archive_path,
+        "Retrieval",
+        "Lexical Only",
+        gradio_app.DEFAULT_MODEL,
+        "auto",
+        "auto",
+        "none",
+        "python",
+        0.5,
+        1,
+        2,
+        7,
+        progress=None,
+    )
+
+    summary_html, metrics_frame, scored_frame, resample_metrics, resample_summary, artifacts_path = outputs
+    assert "tiny_retrieval" in summary_html
+    assert "Mean Average Precision" in metrics_frame["Metric"].tolist()
+    assert "Interpretation" in scored_frame.columns
+    assert not resample_metrics.empty
+    assert not resample_summary.empty
+
+    with zipfile.ZipFile(artifacts_path) as archive:
+        names = archive.namelist()
+        assert "retrieval_scored_rows.csv" in names
+        assert "retrieval_metrics.json" in names
+        assert "retrieval_resampling_summary.csv" in names
+        manifest = json.loads(archive.read("leaderboard_manifest.json").decode("utf-8"))
+    assert manifest["dataset_kind"] == "retrieval"
