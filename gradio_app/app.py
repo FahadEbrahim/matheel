@@ -28,8 +28,10 @@ from matheel.evaluation import (
     evaluate_retrieval_dataset,
     evaluate_retrieval_resamples,
 )
+from matheel.leaderboard import write_leaderboard_artifacts
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
+from matheel.reports import benchmark_report_html
 from matheel.reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
 from matheel.resampling import kfold_splits
 from matheel._run_metadata import elapsed_seconds_between, perf_counter
@@ -45,6 +47,15 @@ from matheel.vectors import (
     available_pooling_methods,
     available_similarity_functions,
     detect_model_max_token_length,
+)
+from matheel.visualization import (
+    available_pair_explanation_segment_modes,
+    available_projection_methods,
+    build_dataset_embedding_map,
+    build_pair_explanation,
+    pair_explanation_html,
+    write_dataset_map_artifacts,
+    write_pair_explanation_artifacts,
 )
 
 
@@ -1446,6 +1457,335 @@ def _safe_extract_uploaded_zip(archive_path, output_dir):
                 raise gr.Error(f"Dataset archive contains an unsafe path: {member.filename}")
         archive_file.extractall(destination)
     return destination
+
+
+def _zip_artifact_paths(paths, zip_path):
+    destination = Path(zip_path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    resolved_paths = sorted({Path(path) for path in paths if path}, key=lambda path: path.name)
+    with zipfile.ZipFile(destination, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in resolved_paths:
+            archive.write(path, arcname=path.name)
+    return str(destination)
+
+
+def _dataset_kind_from_task_label(task_label):
+    return "retrieval" if str(task_label or "").startswith("Retrieval") else "pair"
+
+
+def empty_dataset_map_summary_html():
+    return summary_panel_html(
+        "Dataset Map",
+        [("Status", "No map generated"), ("Artifacts", "None")],
+        variant="empty",
+    )
+
+
+def empty_pair_explanation_summary_html():
+    return summary_panel_html(
+        "Pair Explanation",
+        [("Status", "No explanation generated"), ("Artifacts", "None")],
+        variant="empty",
+    )
+
+
+def empty_leaderboard_inspection_summary_html():
+    return summary_panel_html(
+        "Leaderboard Inspection",
+        [("Status", "No artifact loaded"), ("Artifacts", "None")],
+        variant="empty",
+    )
+
+
+def dataset_map_display_frame(projection):
+    frame = projection.copy() if isinstance(projection, pd.DataFrame) else pd.DataFrame(projection)
+    for column in ("x", "y"):
+        if column in frame.columns:
+            frame[column] = frame[column].astype(float).round(4)
+    preferred = [
+        column
+        for column in ("document_id", "role", "pair_count", "file_path", "x", "y")
+        if column in frame.columns
+    ]
+    remaining = [column for column in frame.columns if column not in preferred]
+    return frame[preferred + remaining]
+
+
+def dataset_map_summary_html(projection, color_column):
+    attrs = getattr(projection, "attrs", {})
+    actual_method = attrs.get("projection_method", "unknown")
+    requested_method = attrs.get("requested_projection_method", "unknown")
+    dataset_kind = str(attrs.get("dataset_kind") or "dataset").replace("_", " ")
+    return summary_panel_html(
+        "Dataset Map",
+        [
+            ("Dataset", attrs.get("dataset_name", "dataset")),
+            ("Kind", dataset_kind),
+            ("Documents", str(len(projection))),
+            ("Projection", f"{actual_method} (requested {requested_method})"),
+            ("Seed", str(attrs.get("seed", ""))),
+            ("Vector Dim", str(attrs.get("static_vector_dim", ""))),
+            ("Color", color_column or "documents"),
+        ],
+    )
+
+
+def generate_dataset_map_gradio(
+    dataset_file,
+    task_label,
+    projection_method,
+    seed,
+    static_vector_dim,
+    color_column,
+    progress=gr.Progress(track_tqdm=True),
+):
+    if dataset_file is None:
+        return empty_dataset_map_summary_html(), pd.DataFrame(), "", None
+
+    dataset_root = _dataset_root_from_upload(dataset_file, task_label)
+    resolved_dim = validate_positive_int_value(static_vector_dim, "Static vector dimension", minimum=8)
+    resolved_seed = int(float(seed or 7))
+    if progress is not None:
+        progress(0.2, desc="Loading dataset texts")
+    try:
+        projection = build_dataset_embedding_map(
+            dataset_root,
+            kind=_dataset_kind_from_task_label(task_label),
+            method=projection_method,
+            seed=resolved_seed,
+            static_vector_dim=resolved_dim,
+        )
+    except (ImportError, ValueError) as exc:
+        raise gr.Error(str(exc)) from exc
+
+    requested_color = str(color_column or "").strip()
+    resolved_color = requested_color or ("role" if "role" in projection.columns else None)
+    if resolved_color and resolved_color not in projection.columns:
+        raise gr.Error(f"Color column does not exist in the map: {resolved_color}")
+
+    if progress is not None:
+        progress(0.7, desc="Writing visualization artifacts")
+    export_root = Path(tempfile.mkdtemp(prefix="matheel-dataset-map-"))
+    artifacts = write_dataset_map_artifacts(
+        projection,
+        export_root,
+        title=str(projection.attrs.get("dataset_name") or "Matheel Dataset Map"),
+        color_column=resolved_color,
+    )
+    artifacts_zip = _zip_artifact_paths(artifacts.values(), export_root / "dataset_map_artifacts.zip")
+    if progress is not None:
+        progress(1.0, desc="Dataset map complete")
+    return (
+        dataset_map_summary_html(projection, resolved_color),
+        dataset_map_display_frame(projection),
+        artifacts["html"].read_text(encoding="utf-8"),
+        artifacts_zip,
+    )
+
+
+def pair_explanation_matches_frame(explanation):
+    matches = list(explanation.get("matches") or [])
+    frame = pd.DataFrame(matches)
+    if frame.empty:
+        return pd.DataFrame(columns=["Match", "Level", "Score", "Left Segment", "Right Segment"])
+    display = frame.copy()
+    display["left_index"] = display["left_index"].astype(int) + 1
+    display["right_index"] = display["right_index"].astype(int) + 1
+    display["score"] = display["score"].astype(float).round(4)
+    return display.rename(
+        columns={
+            "match_id": "Match",
+            "level": "Level",
+            "score": "Score",
+            "left_index": "Left Segment",
+            "right_index": "Right Segment",
+        }
+    )[["Match", "Level", "Score", "Left Segment", "Right Segment"]]
+
+
+def pair_explanation_summary_html(explanation):
+    metadata = explanation.get("metadata", {})
+    matches = list(explanation.get("matches") or [])
+    level_counts = pd.Series([match.get("level", "none") for match in matches]).value_counts()
+    return summary_panel_html(
+        "Pair Explanation",
+        [
+            ("Left", metadata.get("left_id", "left")),
+            ("Right", metadata.get("right_id", "right")),
+            ("Mode", metadata.get("segment_mode", "line")),
+            ("Matches", str(len(matches))),
+            ("High", str(int(level_counts.get("high", 0)))),
+            ("Medium", str(int(level_counts.get("medium", 0)))),
+            ("Low", str(int(level_counts.get("low", 0)))),
+        ],
+    )
+
+
+def generate_pair_explanation_gradio(
+    left_code,
+    right_code,
+    segment_mode,
+    high_threshold,
+    medium_threshold,
+    low_threshold,
+    chunk_size,
+):
+    if not str(left_code or "").strip() or not str(right_code or "").strip():
+        raise gr.Error("Paste both snippets before generating a pair explanation.")
+    try:
+        explanation = build_pair_explanation(
+            left_code,
+            right_code,
+            left_id="Code A",
+            right_id="Code B",
+            segment_mode=segment_mode,
+            high_threshold=float(high_threshold),
+            medium_threshold=float(medium_threshold),
+            low_threshold=float(low_threshold),
+            chunk_size=int(float(chunk_size or 1)),
+        )
+    except ValueError as exc:
+        raise gr.Error(str(exc)) from exc
+
+    export_root = Path(tempfile.mkdtemp(prefix="matheel-pair-explanation-"))
+    artifacts = write_pair_explanation_artifacts(
+        explanation,
+        export_root,
+        basename="pair_explanation",
+        title="Code A vs Code B",
+    )
+    artifacts_zip = _zip_artifact_paths(
+        artifacts.values(),
+        export_root / "pair_explanation_artifacts.zip",
+    )
+    return (
+        pair_explanation_summary_html(explanation),
+        pair_explanation_matches_frame(explanation),
+        pair_explanation_html(explanation, title="Code A vs Code B"),
+        artifacts_zip,
+    )
+
+
+def _looks_like_leaderboard_payload(payload):
+    return (
+        isinstance(payload, dict)
+        and isinstance(payload.get("aggregate"), list)
+        and isinstance(payload.get("per_dataset"), list)
+        and isinstance(payload.get("metadata"), dict)
+    )
+
+
+def _load_leaderboard_payload_from_upload(uploaded_file):
+    uploaded_path = _uploaded_file_path(uploaded_file)
+    if uploaded_path is None:
+        raise gr.Error("Upload a leaderboard JSON file or artifact ZIP first.")
+    if uploaded_path.is_dir():
+        candidates = sorted(path for path in uploaded_path.rglob("*.json") if path.is_file())
+        for candidate in candidates:
+            try:
+                payload = json.loads(candidate.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            if _looks_like_leaderboard_payload(payload):
+                return payload, candidate.name
+        raise gr.Error("Could not find a leaderboard JSON artifact in the uploaded directory.")
+    if zipfile.is_zipfile(uploaded_path):
+        with zipfile.ZipFile(uploaded_path) as archive:
+            for name in sorted(archive.namelist()):
+                if name.endswith("/") or not name.lower().endswith(".json"):
+                    continue
+                try:
+                    payload = json.loads(archive.read(name).decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    continue
+                if _looks_like_leaderboard_payload(payload):
+                    return payload, Path(name).name
+        raise gr.Error("Could not find a leaderboard JSON artifact in the uploaded ZIP.")
+    if uploaded_path.suffix.lower() != ".json":
+        raise gr.Error("Leaderboard inspection accepts JSON artifacts or ZIP archives.")
+    try:
+        payload = json.loads(uploaded_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise gr.Error("Leaderboard artifact must be valid JSON.") from exc
+    if not _looks_like_leaderboard_payload(payload):
+        raise gr.Error("Uploaded JSON is not a Matheel leaderboard artifact.")
+    return payload, uploaded_path.name
+
+
+def _leaderboard_report_from_payload(payload):
+    metadata = dict(payload.get("metadata") or {})
+    manifest = payload.get("manifest") if isinstance(payload.get("manifest"), dict) else {}
+    cards = payload.get("cards") if isinstance(payload.get("cards"), dict) else {}
+    return {
+        "metadata": metadata,
+        "manifest": manifest,
+        "cards": {
+            "datasets": list(cards.get("datasets") or []),
+            "algorithms": list(cards.get("algorithms") or []),
+        },
+        "per_dataset": pd.DataFrame(payload.get("per_dataset") or []),
+        "aggregate": pd.DataFrame(payload.get("aggregate") or []),
+    }
+
+
+def leaderboard_display_frame(frame):
+    display = frame.copy() if isinstance(frame, pd.DataFrame) else pd.DataFrame(frame)
+    for column in ("score", "mean_score", "median_score"):
+        if column in display.columns:
+            display[column] = pd.to_numeric(display[column], errors="coerce").round(4)
+    return display
+
+
+def leaderboard_inspection_summary_html(report, source_name):
+    aggregate = report["aggregate"]
+    per_dataset = report["per_dataset"]
+    cards = report.get("cards") or {}
+    dataset_count = len(cards.get("datasets") or []) or (
+        per_dataset["dataset_name"].nunique() if "dataset_name" in per_dataset else 0
+    )
+    algorithm_count = len(cards.get("algorithms") or []) or (
+        aggregate["algorithm_name"].nunique() if "algorithm_name" in aggregate else 0
+    )
+    metric_count = aggregate["metric"].nunique() if "metric" in aggregate else 0
+    return summary_panel_html(
+        "Leaderboard Inspection",
+        [
+            ("Report", report["metadata"].get("name", "leaderboard")),
+            ("Source", source_name),
+            ("Datasets", str(dataset_count)),
+            ("Algorithms", str(algorithm_count)),
+            ("Metrics", str(metric_count)),
+            ("Aggregate Rows", str(len(aggregate))),
+            ("Per-Dataset Rows", str(len(per_dataset))),
+        ],
+    )
+
+
+def inspect_leaderboard_artifacts_gradio(leaderboard_file):
+    if leaderboard_file is None:
+        return empty_leaderboard_inspection_summary_html(), pd.DataFrame(), pd.DataFrame(), "", None
+
+    payload, source_name = _load_leaderboard_payload_from_upload(leaderboard_file)
+    report = _leaderboard_report_from_payload(payload)
+    title = str(report["metadata"].get("name") or "Matheel Leaderboard")
+    html_report = benchmark_report_html(report, title=title)
+    export_root = Path(tempfile.mkdtemp(prefix="matheel-leaderboard-inspect-"))
+    artifacts = write_leaderboard_artifacts(
+        report,
+        export_root,
+        basename="leaderboard_report",
+    )
+    artifacts_zip = _zip_artifact_paths(
+        artifacts.values(),
+        export_root / "leaderboard_report_artifacts.zip",
+    )
+    return (
+        leaderboard_inspection_summary_html(report, source_name),
+        leaderboard_display_frame(report["aggregate"]),
+        leaderboard_display_frame(report["per_dataset"]),
+        html_report,
+        artifacts_zip,
+    )
 
 
 def _looks_like_pair_dataset_root(root):
@@ -3542,6 +3882,193 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     dataset_resampling_metrics,
                     dataset_resampling_summary,
                     dataset_artifacts,
+                ],
+            )
+
+        with gr.Tab("Visualization"):
+            with gr.Tabs():
+                with gr.Tab("Dataset Map"):
+                    with gr.Row():
+                        with gr.Column(scale=8):
+                            map_dataset_file = gr.File(
+                                label="Normalized Dataset ZIP",
+                                file_types=[".zip"],
+                            )
+                            map_run = gr.Button("Generate Map", variant="primary")
+                            map_summary = gr.HTML(value=empty_dataset_map_summary_html(), padding=False)
+                            map_points = gr.Dataframe(
+                                label="Projected Documents",
+                                wrap=False,
+                                interactive=False,
+                                max_height=320,
+                                row_count=1,
+                                show_search="filter",
+                                elem_classes=["matheel-table"],
+                            )
+                            map_html = gr.HTML(value="", padding=False)
+                            map_artifacts = gr.File(label="Dataset Map Artifacts")
+
+                        with gr.Column(scale=5):
+                            with gr.Accordion("Dataset", open=True):
+                                map_task = gr.Radio(
+                                    choices=list(DATASET_TASK_CHOICES),
+                                    value=DEFAULT_DATASET_TASK,
+                                    label="Task",
+                                )
+                                map_projection_method = gr.Dropdown(
+                                    choices=list(available_projection_methods()),
+                                    value="pca",
+                                    label="Projection Method",
+                                )
+                                map_seed = gr.Number(value=7, precision=0, label="Projection Seed")
+                                map_static_vector_dim = gr.Slider(
+                                    8,
+                                    1024,
+                                    value=256,
+                                    step=8,
+                                    label="Static Vector Dimension",
+                                )
+                                map_color_column = gr.Textbox(
+                                    value="role",
+                                    label="Color Column",
+                                )
+
+                    map_run.click(
+                        generate_dataset_map_gradio,
+                        inputs=[
+                            map_dataset_file,
+                            map_task,
+                            map_projection_method,
+                            map_seed,
+                            map_static_vector_dim,
+                            map_color_column,
+                        ],
+                        outputs=[map_summary, map_points, map_html, map_artifacts],
+                    )
+
+                with gr.Tab("Pair Explanation"):
+                    with gr.Row():
+                        with gr.Column(scale=8):
+                            with gr.Row():
+                                explain_left_code = gr.Textbox(
+                                    label="Code A",
+                                    lines=14,
+                                    placeholder="First snippet",
+                                )
+                                explain_right_code = gr.Textbox(
+                                    label="Code B",
+                                    lines=14,
+                                    placeholder="Second snippet",
+                                )
+                            explain_run = gr.Button("Generate Explanation", variant="primary")
+                            explain_summary = gr.HTML(
+                                value=empty_pair_explanation_summary_html(),
+                                padding=False,
+                            )
+                            explain_matches = gr.Dataframe(
+                                label="Matched Regions",
+                                wrap=False,
+                                interactive=False,
+                                max_height=260,
+                                row_count=1,
+                                show_search="filter",
+                                elem_classes=["matheel-table"],
+                            )
+                            explain_html = gr.HTML(value="", padding=False)
+                            explain_artifacts = gr.File(label="Pair Explanation Artifacts")
+
+                        with gr.Column(scale=5):
+                            with gr.Accordion("Explanation", open=True):
+                                explain_segment_mode = gr.Dropdown(
+                                    choices=list(available_pair_explanation_segment_modes()),
+                                    value="line",
+                                    label="Segment Mode",
+                                )
+                                explain_high_threshold = gr.Slider(
+                                    0,
+                                    1,
+                                    value=0.85,
+                                    step=0.01,
+                                    label="High Similarity Threshold",
+                                )
+                                explain_medium_threshold = gr.Slider(
+                                    0,
+                                    1,
+                                    value=0.6,
+                                    step=0.01,
+                                    label="Medium Similarity Threshold",
+                                )
+                                explain_low_threshold = gr.Slider(
+                                    0,
+                                    1,
+                                    value=0.3,
+                                    step=0.01,
+                                    label="Low Similarity Threshold",
+                                )
+                                explain_chunk_size = gr.Slider(
+                                    1,
+                                    50,
+                                    value=5,
+                                    step=1,
+                                    label="Chunk Lines",
+                                )
+
+                    explain_run.click(
+                        generate_pair_explanation_gradio,
+                        inputs=[
+                            explain_left_code,
+                            explain_right_code,
+                            explain_segment_mode,
+                            explain_high_threshold,
+                            explain_medium_threshold,
+                            explain_low_threshold,
+                            explain_chunk_size,
+                        ],
+                        outputs=[explain_summary, explain_matches, explain_html, explain_artifacts],
+                    )
+
+        with gr.Tab("Leaderboard"):
+            with gr.Row():
+                with gr.Column(scale=8):
+                    leaderboard_file = gr.File(
+                        label="Leaderboard JSON or ZIP",
+                        file_types=[".json", ".zip"],
+                    )
+                    leaderboard_inspect = gr.Button("Inspect Leaderboard", variant="primary")
+                    leaderboard_summary = gr.HTML(
+                        value=empty_leaderboard_inspection_summary_html(),
+                        padding=False,
+                    )
+                    leaderboard_aggregate = gr.Dataframe(
+                        label="Aggregate Ranking",
+                        wrap=False,
+                        interactive=False,
+                        max_height=320,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    leaderboard_per_dataset = gr.Dataframe(
+                        label="Per-Dataset Ranking",
+                        wrap=False,
+                        interactive=False,
+                        max_height=360,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    leaderboard_report = gr.HTML(value="", padding=False)
+                    leaderboard_artifacts = gr.File(label="Leaderboard Report Artifacts")
+
+            leaderboard_inspect.click(
+                inspect_leaderboard_artifacts_gradio,
+                inputs=leaderboard_file,
+                outputs=[
+                    leaderboard_summary,
+                    leaderboard_aggregate,
+                    leaderboard_per_dataset,
+                    leaderboard_report,
+                    leaderboard_artifacts,
                 ],
             )
 
