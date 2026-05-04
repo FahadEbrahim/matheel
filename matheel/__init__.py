@@ -20,8 +20,14 @@ from .chunking import chunk_text, chunker_parameter_names
 from .calibration import (
     calibrate_threshold,
     calibration_curve,
+    calibration_report,
+    calibration_report_payload,
     evaluate_threshold,
     feature_score_range,
+    precision_recall_curve,
+    roc_curve,
+    threshold_sweep,
+    write_calibration_report_artifacts,
 )
 from .comparison_suite import load_run_configs, parse_run_configs, run_comparison_suite
 from .code_metrics import (
@@ -148,6 +154,8 @@ __all__ = [
     "attach_algorithm_metadata",
     "calibrate_threshold",
     "calibration_curve",
+    "calibration_report",
+    "calibration_report_payload",
     "calculate_similarity",
     "chunk_text",
     "chunker_parameter_names",
@@ -228,10 +236,14 @@ __all__ = [
     "dataset_map_payload",
     "pair_explanation_html",
     "pair_explanation_payload",
+    "precision_recall_curve",
     "tokenize_for_lexical_matching",
     "project_embeddings",
+    "roc_curve",
+    "threshold_sweep",
     "write_dataset_embedding_map",
     "write_dataset_map_artifacts",
+    "write_calibration_report_artifacts",
     "write_pair_dataset_explanation",
     "write_pair_explanation",
     "write_pair_explanation_artifacts",

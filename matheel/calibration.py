@@ -1,4 +1,8 @@
+import json
 import math
+from pathlib import Path
+
+import pandas as pd
 
 from .feature_weights import available_default_features
 from .vectors import similarity_function_score_range
@@ -39,6 +43,10 @@ def _coerce_score_label_pairs(
         if len(score_values) != len(label_values):
             raise ValueError("scores and labels must have the same length.")
         pairs = zip(score_values, label_values)
+    elif isinstance(scores, pd.DataFrame):
+        if score_key not in scores.columns or label_key not in scores.columns:
+            raise ValueError(f"scored rows must contain {score_key!r} and {label_key!r}.")
+        pairs = ((row[score_key], row[label_key]) for row in scores.to_dict(orient="records"))
     else:
         pairs = []
         for item in scores:
@@ -57,6 +65,19 @@ def _coerce_score_label_pairs(
     return parsed
 
 
+def _class_counts(pairs):
+    positive_count = sum(1 for _, label in pairs if label)
+    negative_count = len(pairs) - positive_count
+    return positive_count, negative_count
+
+
+def _require_two_classes(pairs):
+    positive_count, negative_count = _class_counts(pairs)
+    if positive_count == 0 or negative_count == 0:
+        raise ValueError("ROC and precision-recall reports require at least one positive and one negative label.")
+    return positive_count, negative_count
+
+
 def _threshold_candidates(scores):
     unique_scores = sorted(set(float(score) for score in scores))
     if len(unique_scores) == 1:
@@ -71,6 +92,39 @@ def _threshold_candidates(scores):
         (left + right) / 2.0 for left, right in zip(unique_scores, unique_scores[1:])
     )
     return tuple(sorted(set(candidates)))
+
+
+def _ordered_curve_thresholds(scores, greater_is_match=True):
+    unique_scores = sorted(set(float(score) for score in scores))
+    if len(unique_scores) == 1:
+        margin = max(abs(unique_scores[0]) * 1e-12, 1e-12)
+    else:
+        margin = max((unique_scores[-1] - unique_scores[0]) * 1e-12, 1e-12)
+    lower = unique_scores[0] - margin
+    upper = unique_scores[-1] + margin
+    if greater_is_match:
+        return tuple([upper, *reversed(unique_scores), lower])
+    return tuple([lower, *unique_scores, upper])
+
+
+def _trapezoid_auc(x_values, y_values):
+    points = sorted((float(x), float(y)) for x, y in zip(x_values, y_values))
+    area = 0.0
+    for (x1, y1), (x2, y2) in zip(points, points[1:]):
+        area += (x2 - x1) * (y1 + y2) / 2.0
+    return area
+
+
+def _average_precision_from_rows(rows):
+    previous_recall = 0.0
+    average_precision = 0.0
+    for row in rows:
+        recall = float(row["recall"])
+        precision = float(row["precision"])
+        delta = max(0.0, recall - previous_recall)
+        average_precision += delta * precision
+        previous_recall = max(previous_recall, recall)
+    return average_precision
 
 
 def feature_score_range(
@@ -173,6 +227,125 @@ def calibration_curve(
     ]
 
 
+def threshold_sweep(
+    scores,
+    labels=None,
+    thresholds=None,
+    score_key="score",
+    label_key="label",
+    positive_label=True,
+    greater_is_match=True,
+):
+    rows = calibration_curve(
+        scores,
+        labels=labels,
+        thresholds=thresholds,
+        score_key=score_key,
+        label_key=label_key,
+        positive_label=positive_label,
+        greater_is_match=greater_is_match,
+    )
+    frame = pd.DataFrame(rows)
+    frame.attrs["curve_type"] = "threshold_sweep"
+    frame.attrs["score_key"] = score_key
+    frame.attrs["label_key"] = label_key
+    frame.attrs["greater_is_match"] = bool(greater_is_match)
+    return frame
+
+
+def roc_curve(
+    scores,
+    labels=None,
+    thresholds=None,
+    score_key="score",
+    label_key="label",
+    positive_label=True,
+    greater_is_match=True,
+):
+    pairs = _coerce_score_label_pairs(
+        scores,
+        labels=labels,
+        score_key=score_key,
+        label_key=label_key,
+        positive_label=positive_label,
+    )
+    positive_count, negative_count = _require_two_classes(pairs)
+    selected_thresholds = thresholds
+    if selected_thresholds is None:
+        selected_thresholds = _ordered_curve_thresholds(
+            [score for score, _ in pairs],
+            greater_is_match=greater_is_match,
+        )
+
+    rows = []
+    for threshold in selected_thresholds:
+        row = evaluate_threshold(
+            pairs,
+            threshold=threshold,
+            positive_label=True,
+            greater_is_match=greater_is_match,
+        )
+        row["true_positive_rate"] = row["recall"]
+        row["false_positive_rate"] = row["false_positive"] / float(negative_count)
+        row["positive_count"] = positive_count
+        row["negative_count"] = negative_count
+        rows.append(row)
+
+    frame = pd.DataFrame(rows)
+    frame.attrs["curve_type"] = "roc"
+    frame.attrs["auroc"] = _trapezoid_auc(frame["false_positive_rate"], frame["true_positive_rate"])
+    frame.attrs["score_key"] = score_key
+    frame.attrs["label_key"] = label_key
+    frame.attrs["greater_is_match"] = bool(greater_is_match)
+    return frame
+
+
+def precision_recall_curve(
+    scores,
+    labels=None,
+    thresholds=None,
+    score_key="score",
+    label_key="label",
+    positive_label=True,
+    greater_is_match=True,
+):
+    pairs = _coerce_score_label_pairs(
+        scores,
+        labels=labels,
+        score_key=score_key,
+        label_key=label_key,
+        positive_label=positive_label,
+    )
+    positive_count, negative_count = _require_two_classes(pairs)
+    selected_thresholds = thresholds
+    if selected_thresholds is None:
+        selected_thresholds = _ordered_curve_thresholds(
+            [score for score, _ in pairs],
+            greater_is_match=greater_is_match,
+        )
+
+    rows = []
+    for threshold in selected_thresholds:
+        row = evaluate_threshold(
+            pairs,
+            threshold=threshold,
+            positive_label=True,
+            greater_is_match=greater_is_match,
+        )
+        row["predicted_positive"] = row["true_positive"] + row["false_positive"]
+        row["positive_count"] = positive_count
+        row["negative_count"] = negative_count
+        rows.append(row)
+
+    frame = pd.DataFrame(rows)
+    frame.attrs["curve_type"] = "precision_recall"
+    frame.attrs["average_precision"] = _average_precision_from_rows(rows)
+    frame.attrs["score_key"] = score_key
+    frame.attrs["label_key"] = label_key
+    frame.attrs["greater_is_match"] = bool(greater_is_match)
+    return frame
+
+
 def calibrate_threshold(
     scores,
     labels=None,
@@ -211,3 +384,143 @@ def calibrate_threshold(
     result["optimized_metric"] = metric_name
     result["candidate_count"] = len(curve)
     return result
+
+
+def calibration_report(
+    scores,
+    labels=None,
+    thresholds=None,
+    score_key="score",
+    label_key="label",
+    positive_label=True,
+    greater_is_match=True,
+    optimize="f1",
+):
+    pairs = _coerce_score_label_pairs(
+        scores,
+        labels=labels,
+        score_key=score_key,
+        label_key=label_key,
+        positive_label=positive_label,
+    )
+    positive_count, negative_count = _require_two_classes(pairs)
+    sweep = threshold_sweep(
+        pairs,
+        thresholds=thresholds,
+        positive_label=True,
+        greater_is_match=greater_is_match,
+    )
+    roc = roc_curve(
+        pairs,
+        positive_label=True,
+        greater_is_match=greater_is_match,
+    )
+    pr = precision_recall_curve(
+        pairs,
+        positive_label=True,
+        greater_is_match=greater_is_match,
+    )
+    best = calibrate_threshold(
+        pairs,
+        thresholds=thresholds,
+        positive_label=True,
+        greater_is_match=greater_is_match,
+        optimize=optimize,
+    )
+    summary = {
+        "pair_count": int(len(pairs)),
+        "positive_count": int(positive_count),
+        "negative_count": int(negative_count),
+        "score_key": score_key,
+        "label_key": label_key,
+        "greater_is_match": bool(greater_is_match),
+        "auroc": float(roc.attrs["auroc"]),
+        "average_precision": float(pr.attrs["average_precision"]),
+        "optimized_threshold": best,
+    }
+    return {
+        "summary": summary,
+        "threshold_sweep": sweep,
+        "roc": roc,
+        "precision_recall": pr,
+    }
+
+
+def calibration_report_payload(report):
+    return {
+        "schema_version": 1,
+        "summary": _json_safe_mapping(report["summary"]),
+        "threshold_sweep": _frame_records(report["threshold_sweep"]),
+        "roc": _frame_records(report["roc"]),
+        "precision_recall": _frame_records(report["precision_recall"]),
+    }
+
+
+def write_calibration_report_artifacts(
+    scores,
+    output_dir,
+    labels=None,
+    thresholds=None,
+    score_key="score",
+    label_key="label",
+    positive_label=True,
+    greater_is_match=True,
+    optimize="f1",
+    basename="calibration",
+):
+    report = calibration_report(
+        scores,
+        labels=labels,
+        thresholds=thresholds,
+        score_key=score_key,
+        label_key=label_key,
+        positive_label=positive_label,
+        greater_is_match=greater_is_match,
+        optimize=optimize,
+    )
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    stem = _safe_artifact_basename(basename or "calibration")
+    artifacts = {
+        "threshold_sweep_csv": target / f"{stem}_threshold_sweep.csv",
+        "roc_csv": target / f"{stem}_roc.csv",
+        "precision_recall_csv": target / f"{stem}_precision_recall.csv",
+        "summary_json": target / f"{stem}_summary.json",
+        "report_json": target / f"{stem}_report.json",
+    }
+    report["threshold_sweep"].to_csv(artifacts["threshold_sweep_csv"], index=False)
+    report["roc"].to_csv(artifacts["roc_csv"], index=False)
+    report["precision_recall"].to_csv(artifacts["precision_recall_csv"], index=False)
+    artifacts["summary_json"].write_text(
+        json.dumps(_json_safe_mapping(report["summary"]), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    artifacts["report_json"].write_text(
+        json.dumps(calibration_report_payload(report), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return report, artifacts
+
+
+def _frame_records(frame):
+    return [_json_safe_mapping(row) for row in frame.to_dict(orient="records")]
+
+
+def _json_safe_mapping(values):
+    payload = {}
+    for key, value in dict(values).items():
+        if isinstance(value, dict):
+            payload[str(key)] = _json_safe_mapping(value)
+        elif pd.isna(value):
+            payload[str(key)] = None
+        elif isinstance(value, (int, float, str, bool)) or value is None:
+            payload[str(key)] = value
+        else:
+            payload[str(key)] = value.item() if hasattr(value, "item") else value
+    return payload
+
+
+def _safe_artifact_basename(value):
+    text = str(value or "").strip()
+    safe = "".join(character if character.isalnum() or character in "._-" else "_" for character in text)
+    return safe.strip("._") or "calibration"
