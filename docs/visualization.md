@@ -49,3 +49,52 @@ print(artifacts["html"])
 ```
 
 Projection metadata is stored in `projection.attrs`, including the requested method, actual method, seed, dataset kind, dataset name, and embedding source.
+
+## Pair Explanations
+
+Pair explanations export side-by-side HTML and machine-readable JSON for a selected code pair. Matheel segments each submission by line, token, or fixed-size line chunks, then marks non-overlapping local matches as high, medium, low, or no match.
+
+```bash
+matheel explain-pair left.py right.py \
+  --segment-mode line \
+  --output-dir pair_explanations
+```
+
+For normalized pair datasets, select a row or pair ids:
+
+```bash
+matheel explain-pair \
+  --dataset ./normalized_pairs \
+  --left-id a \
+  --right-id b \
+  --output-dir pair_explanations
+```
+
+For compare results from a directory or ZIP archive, select the relative file names:
+
+```bash
+matheel explain-pair \
+  --source ./submissions.zip \
+  --left-name a.py \
+  --right-name b.py \
+  --output-dir pair_explanations
+```
+
+The JSON artifact stores segment offsets, line numbers, match ids, scores, thresholds, and segmentation metadata. The HTML artifact uses the same data for local inspection.
+
+```python
+from matheel.visualization import build_pair_explanation, write_pair_explanation_artifacts
+
+explanation = build_pair_explanation(
+    "def add(a, b):\n    return a + b",
+    "def add(x, y):\n    return x + y",
+    segment_mode="line",
+)
+
+artifacts = write_pair_explanation_artifacts(
+    explanation,
+    "pair_explanations",
+)
+
+print(artifacts["html"])
+```

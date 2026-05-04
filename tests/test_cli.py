@@ -60,6 +60,109 @@ def test_visualize_dataset_command_writes_artifacts(tmp_path):
     assert (output_dir / "dataset_map.html").exists()
 
 
+def test_explain_pair_command_writes_file_pair_artifacts(tmp_path):
+    left_path = tmp_path / "left.py"
+    right_path = tmp_path / "right.py"
+    left_path.write_text("same line\nx=1\nabcdef", encoding="utf-8")
+    right_path.write_text("same line\ny=2\nUVWXYZ", encoding="utf-8")
+    output_dir = tmp_path / "pair_viz"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "explain-pair",
+            str(left_path),
+            str(right_path),
+            "--output-dir",
+            str(output_dir),
+            "--high-threshold",
+            "0.95",
+            "--medium-threshold",
+            "0.7",
+            "--low-threshold",
+            "0.3",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    summary = json.loads(result.output)
+    assert summary["left_id"] == "left.py"
+    assert summary["levels"]["high"] == 2
+    assert (output_dir / "left.py_vs_right.py.json").exists()
+    assert (output_dir / "left.py_vs_right.py.html").exists()
+
+
+def test_explain_pair_command_accepts_dataset_pair_ids(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "same\nleft", "suffix": ".py"},
+                {"file_id": "b", "text": "same\nright", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+        metadata={"name": "tiny_pairs"},
+    )
+    output_dir = tmp_path / "pair_viz"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "explain-pair",
+            "--dataset",
+            str(dataset_root),
+            "--left-id",
+            "a",
+            "--right-id",
+            "b",
+            "--output-dir",
+            str(output_dir),
+            "--basename",
+            "selected_pair",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "left_id=a" in result.output
+    assert (output_dir / "selected_pair.json").exists()
+    payload = json.loads((output_dir / "selected_pair.json").read_text(encoding="utf-8"))
+    assert payload["metadata"]["dataset_name"] == "tiny_pairs"
+    assert payload["metadata"]["label"] == 1
+
+
+def test_explain_pair_command_accepts_source_archive_names(tmp_path):
+    archive_path = tmp_path / "codes.zip"
+    with ZipFile(archive_path, "w") as archive:
+        archive.writestr("a.py", "same\nx=1")
+        archive.writestr("b.py", "same\ny=2")
+    output_dir = tmp_path / "pair_viz"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "explain-pair",
+            "--source",
+            str(archive_path),
+            "--left-name",
+            "a.py",
+            "--right-name",
+            "b.py",
+            "--output-dir",
+            str(output_dir),
+            "--segment-mode",
+            "line",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "matches=" in result.output
+    assert (output_dir / "a.py_vs_b.py.json").exists()
+
+
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     archive_path = tmp_path / "codes.zip"
     archive_path.write_bytes(b"placeholder")
