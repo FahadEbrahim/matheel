@@ -50,6 +50,26 @@ print(artifacts["html"])
 
 Projection metadata is stored in `projection.attrs`, including the requested method, actual method, seed, dataset kind, dataset name, and embedding source.
 
+Dataset maps preserve normalized `files.csv` metadata except raw code text, and Python callers can merge extra per-document metadata keyed by `document_id`. Use this for color columns such as split, cluster, label, metric score, or algorithm family:
+
+```python
+projection = build_dataset_embedding_map(
+    "./normalized_pairs",
+    kind="pair",
+    method="pca",
+    document_metadata=[
+        {"document_id": "a", "metric_score": 0.91, "algorithm": "baseline"},
+        {"document_id": "b", "metric_score": 0.88, "algorithm": "baseline"},
+    ],
+)
+
+artifacts = write_dataset_map_artifacts(
+    projection,
+    "visualization_artifacts",
+    color_column="metric_score",
+)
+```
+
 ## Pair Explanations
 
 Pair explanations export side-by-side HTML and machine-readable JSON for a selected code pair. Matheel segments each submission by line, token, or fixed-size line chunks, then marks non-overlapping local matches as high, medium, low, or no match.

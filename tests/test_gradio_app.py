@@ -596,9 +596,9 @@ def test_gradio_dataset_map_exports_visualization_artifacts(tmp_path):
         dataset_root,
         files=pd.DataFrame(
             [
-                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
-                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
-                {"file_id": "c", "text": "print(2)", "suffix": ".py"},
+                {"file_id": "a", "text": "print(1)", "suffix": ".py", "split": "train"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py", "split": "train"},
+                {"file_id": "c", "text": "print(2)", "suffix": ".py", "split": "test"},
             ]
         ),
         pairs=pd.DataFrame(
@@ -617,14 +617,17 @@ def test_gradio_dataset_map_exports_visualization_artifacts(tmp_path):
         "pca",
         7,
         32,
-        "role",
+        "split",
         progress=None,
     )
 
     assert "Dataset Map" in summary_html
     assert "tiny_map_pairs" in summary_html
     assert "document_id" in points_frame.columns
+    assert "split" in points_frame.columns
     assert len(points_frame) == 3
+    assert "train" in map_html
+    assert "test" in map_html
     assert "<svg" in map_html
 
     with zipfile.ZipFile(artifacts_path) as archive:

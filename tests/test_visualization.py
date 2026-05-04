@@ -108,6 +108,71 @@ def test_dataset_embedding_map_writes_pair_artifacts(tmp_path):
     assert "tiny_pairs" in artifacts["html"].read_text(encoding="utf-8")
 
 
+def test_dataset_embedding_map_preserves_file_and_extra_metadata(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {
+                    "file_id": "a",
+                    "text": "print(1)",
+                    "suffix": ".py",
+                    "split": "train",
+                    "cluster": "alpha",
+                },
+                {
+                    "file_id": "b",
+                    "text": "print(1)",
+                    "suffix": ".py",
+                    "split": "train",
+                    "cluster": "alpha",
+                },
+                {
+                    "file_id": "c",
+                    "text": "print(2)",
+                    "suffix": ".py",
+                    "split": "test",
+                    "cluster": "beta",
+                },
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+            ]
+        ),
+        metadata={"name": "metadata_pairs"},
+    )
+
+    projection = build_dataset_embedding_map(
+        dataset_root,
+        kind="pair",
+        method="pca",
+        document_metadata=pd.DataFrame(
+            [
+                {"document_id": "a", "metric_score": 0.95, "algorithm": "exact"},
+                {"document_id": "b", "metric_score": 0.9, "algorithm": "exact"},
+                {"document_id": "c", "metric_score": 0.2, "algorithm": "baseline"},
+            ]
+        ),
+    )
+
+    by_id = projection.set_index("document_id")
+    assert by_id.loc["a", "split"] == "train"
+    assert by_id.loc["c", "cluster"] == "beta"
+    assert by_id.loc["a", "metric_score"] == 0.95
+    assert by_id.loc["c", "algorithm"] == "baseline"
+
+    split_html = dataset_map_html(projection, color_column="split")
+    score_payload = dataset_map_payload(projection)
+
+    assert "train" in split_html
+    assert "test" in split_html
+    assert score_payload["points"][0]["metric_score"] == 0.95
+
+
 def test_dataset_embedding_map_marks_retrieval_roles(tmp_path):
     dataset_root = tmp_path / "retrieval"
     write_retrieval_dataset(
