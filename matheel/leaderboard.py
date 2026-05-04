@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from .algorithms import normalize_algorithm_options
+from .benchmark_cards import leaderboard_cards
 from .calibration import calibration_report
 from .datasets import load_pair_datasets, load_retrieval_datasets
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
@@ -101,6 +102,7 @@ def run_leaderboard(manifest, output_dir=None, basename="leaderboard"):
             "retrieval_metrics": list(config["retrieval_metrics"]),
         },
         "manifest": config,
+        "cards": leaderboard_cards(config),
         "per_dataset": per_dataset,
         "aggregate": aggregate,
     }
@@ -115,6 +117,7 @@ def leaderboard_payload(report):
         "schema_version": 1,
         "metadata": _json_safe(report.get("metadata", {})),
         "manifest": _json_safe(report.get("manifest", {})),
+        "cards": _json_safe(report.get("cards", {})),
         "per_dataset": _frame_records(report["per_dataset"]),
         "aggregate": _frame_records(report["aggregate"]),
     }
@@ -125,6 +128,8 @@ def leaderboard_html(report, title="Matheel Leaderboard"):
     escaped_title = html.escape(str(title))
     aggregate = pd.DataFrame(payload["aggregate"])
     per_dataset = pd.DataFrame(payload["per_dataset"])
+    dataset_count = len(payload.get("cards", {}).get("datasets", []))
+    algorithm_count = len(payload.get("cards", {}).get("algorithms", []))
     aggregate_html = aggregate.to_html(index=False, escape=True) if not aggregate.empty else "<p>No aggregate rows.</p>"
     per_dataset_html = per_dataset.to_html(index=False, escape=True) if not per_dataset.empty else "<p>No dataset rows.</p>"
     return f"""<!doctype html>
@@ -143,6 +148,7 @@ def leaderboard_html(report, title="Matheel Leaderboard"):
 </head>
 <body>
   <h1>{escaped_title}</h1>
+  <p>{dataset_count} dataset card(s), {algorithm_count} algorithm card(s)</p>
   <h2>Aggregate</h2>
   {aggregate_html}
   <h2>Per Dataset</h2>

@@ -54,6 +54,9 @@ def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
     assert artifacts["json"].exists()
     assert artifacts["html"].exists()
     assert artifacts["reproducibility_json"].exists()
+    payload = json.loads(artifacts["json"].read_text(encoding="utf-8"))
+    assert payload["cards"]["datasets"][0]["name"] == "pairs"
+    assert payload["cards"]["algorithms"][0]["name"] == "exact"
     per_dataset = report["per_dataset"]
     aggregate = report["aggregate"]
     pair_f1 = per_dataset[

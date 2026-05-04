@@ -25,6 +25,12 @@ from .benchmark_cache import (
     load_benchmark_cache_result,
     write_benchmark_cache_result,
 )
+from .benchmark_cards import (
+    algorithm_card,
+    card_markdown,
+    dataset_card,
+    leaderboard_cards,
+)
 from .chunking import chunk_text, chunker_parameter_names
 from .calibration import (
     calibrate_threshold,
@@ -170,6 +176,7 @@ __all__ = [
     "available_runtime_devices",
     "available_similarity_functions",
     "available_vector_backends",
+    "algorithm_card",
     "attach_algorithm_metadata",
     "benchmark_cache_key",
     "benchmark_cache_key_for_run",
@@ -179,6 +186,7 @@ __all__ = [
     "calibration_curve",
     "calibration_report",
     "calibration_report_payload",
+    "card_markdown",
     "calculate_similarity",
     "chunk_text",
     "chunker_parameter_names",
@@ -189,6 +197,7 @@ __all__ = [
     "DataSplit",
     "adapt_pair_dataset",
     "adapt_retrieval_dataset",
+    "dataset_card",
     "dataset_preset_task_families",
     "default_feature_weights",
     "evaluate_threshold",
@@ -204,6 +213,7 @@ __all__ = [
     "infer_model_backend",
     "infer_model_capabilities",
     "inspect_model_settings",
+    "leaderboard_cards",
     "leaderboard_html",
     "leaderboard_payload",
     "load_code_texts",
