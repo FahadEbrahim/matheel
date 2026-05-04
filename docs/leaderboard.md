@@ -57,6 +57,8 @@ Artifacts:
 - `run_001.html`: static aggregate and per-dataset tables.
 - `run_001_reproducibility.json`: package versions and normalized manifest metadata.
 
+The JSON artifact also includes dataset cards and algorithm cards. Cards keep concise metadata such as task family, counts, source type, license when present, sanitized source identifiers, algorithm options, package versions, and content fingerprints. Local absolute paths and credential-like fields are not included in card fields.
+
 ## Python
 
 ```python
