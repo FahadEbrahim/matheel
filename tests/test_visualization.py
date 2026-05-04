@@ -12,6 +12,7 @@ from matheel.visualization import (
     build_dataset_embedding_map,
     build_embedding_projection,
     build_pair_explanation,
+    build_scored_pair_explanation,
     dataset_map_html,
     dataset_map_payload,
     pair_explanation_html,
@@ -20,6 +21,7 @@ from matheel.visualization import (
     write_dataset_embedding_map,
     write_dataset_map_artifacts,
     write_pair_explanation_artifacts,
+    write_scored_pair_explanation,
 )
 
 
@@ -30,6 +32,7 @@ def test_visualization_helpers_are_exported_from_package_root():
     assert matheel.build_dataset_embedding_map is build_dataset_embedding_map
     assert matheel.write_dataset_embedding_map is write_dataset_embedding_map
     assert matheel.build_pair_explanation is build_pair_explanation
+    assert matheel.build_scored_pair_explanation is build_scored_pair_explanation
 
 
 def test_project_embeddings_pca_is_deterministic():
@@ -335,3 +338,47 @@ def test_build_pair_dataset_explanation_selects_pair_by_index_and_ids(tmp_path):
     assert by_index["metadata"]["label"] == 1
     assert by_id["metadata"]["left_id"] == "a"
     assert artifacts["json"].exists()
+
+
+def test_scored_pair_explanation_selects_scored_row(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "same\nleft", "suffix": ".py"},
+                {"file_id": "b", "text": "same\nright", "suffix": ".py"},
+                {"file_id": "c", "text": "different", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "c", "label": 0},
+                {"left_id": "a", "right_id": "b", "label": 1},
+            ]
+        ),
+        metadata={"name": "tiny_pairs"},
+    )
+    scored = pd.DataFrame(
+        [
+            {"left_id": "a", "right_id": "c", "similarity_score": 0.1, "label": 0},
+            {"left_id": "a", "right_id": "b", "similarity_score": 0.95, "label": 1},
+        ]
+    )
+
+    explanation = build_scored_pair_explanation(scored, dataset_root, row_index=1)
+    written, artifacts = write_scored_pair_explanation(
+        scored,
+        dataset_root,
+        tmp_path / "scored_pair_viz",
+        left_id="a",
+        right_id="b",
+    )
+
+    assert explanation["metadata"]["left_id"] == "a"
+    assert explanation["metadata"]["right_id"] == "b"
+    assert explanation["metadata"]["scored_row_index"] == 1
+    assert explanation["metadata"]["similarity_score"] == 0.95
+    assert explanation["metadata"]["scored_pair"]["label"] == 1
+    assert written["metadata"]["dataset_name"] == "tiny_pairs"
+    assert artifacts["json"].name == "a_vs_b_scored.json"

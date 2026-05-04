@@ -63,6 +63,7 @@ from matheel.visualization import (
     pair_explanation_html,
     write_dataset_map_artifacts,
     write_pair_explanation_artifacts,
+    write_scored_pair_explanation,
 )
 
 
@@ -2503,6 +2504,58 @@ def threshold_tuning_gradio(scored_state, optimize, progress=gr.Progress(track_t
     )
 
 
+def explain_scored_pair_gradio(
+    scored_state,
+    row_index,
+    segment_mode,
+    high_threshold,
+    medium_threshold,
+    low_threshold,
+    chunk_size,
+    progress=gr.Progress(track_tqdm=True),
+):
+    if not scored_state:
+        return empty_pair_explanation_summary_html(), pd.DataFrame(), "", None
+    if scored_state.get("task") != "pair":
+        raise gr.Error("Scored pair explanations are only available for pair-classification scores.")
+    dataset_root = scored_state.get("dataset_root")
+    if not dataset_root:
+        raise gr.Error("Run pair dataset evaluation before explaining a scored pair.")
+    scored = pd.DataFrame(scored_state.get("scored") or [])
+    if scored.empty:
+        return empty_pair_explanation_summary_html(), pd.DataFrame(), "", None
+    if progress is not None:
+        progress(0.35, desc="Building pair explanation")
+    export_root = Path(tempfile.mkdtemp(prefix="matheel-scored-pair-explanation-"))
+    try:
+        explanation, artifacts = write_scored_pair_explanation(
+            scored,
+            dataset_root,
+            export_root,
+            row_index=int(float(row_index or 0)),
+            segment_mode=segment_mode,
+            high_threshold=float(high_threshold),
+            medium_threshold=float(medium_threshold),
+            low_threshold=float(low_threshold),
+            chunk_size=int(float(chunk_size or 1)),
+            basename="scored_pair_explanation",
+        )
+    except ValueError as exc:
+        raise gr.Error(str(exc)) from exc
+    artifacts_zip = _zip_artifact_paths(
+        artifacts.values(),
+        export_root / "scored_pair_explanation_artifacts.zip",
+    )
+    if progress is not None:
+        progress(1.0, desc="Pair explanation complete")
+    return (
+        pair_explanation_summary_html(explanation),
+        pair_explanation_matches_frame(explanation),
+        artifacts["html"].read_text(encoding="utf-8"),
+        artifacts_zip,
+    )
+
+
 def evaluate_dataset_gradio(
     dataset_file,
     task_label,
@@ -2602,8 +2655,16 @@ def evaluate_dataset_gradio_with_state(*args, **kwargs):
     outputs = evaluate_dataset_gradio(*args, **kwargs)
     scored = outputs[2]
     task_label = args[1] if len(args) > 1 else kwargs.get("task_label", DEFAULT_DATASET_TASK)
+    dataset_file = args[0] if args else kwargs.get("dataset_file")
+    dataset_root = None
+    if dataset_file is not None:
+        try:
+            dataset_root = os.fspath(_dataset_root_from_upload(dataset_file, task_label))
+        except gr.Error:
+            dataset_root = None
     state = {
         "task": "retrieval" if str(task_label).startswith("Retrieval") else "pair",
+        "dataset_root": dataset_root,
         "scored": _state_scored_records(scored),
     }
     return (*outputs, state)
@@ -4296,6 +4357,21 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     )
                     dataset_threshold_report = gr.HTML(value="", padding=False)
                     dataset_threshold_artifacts = gr.File(label="Threshold Tuning Artifacts")
+                    dataset_pair_explain_summary = gr.HTML(
+                        value=empty_pair_explanation_summary_html(),
+                        padding=False,
+                    )
+                    dataset_pair_explain_matches = gr.Dataframe(
+                        label="Scored Pair Matches",
+                        wrap=False,
+                        interactive=False,
+                        max_height=260,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    dataset_pair_explain_report = gr.HTML(value="", padding=False)
+                    dataset_pair_explain_artifacts = gr.File(label="Scored Pair Explanation Artifacts")
 
                 with gr.Column(scale=5):
                     with gr.Accordion("Dataset", open=True):
@@ -4376,6 +4452,46 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             label="Threshold Tuning Metric",
                         )
                         dataset_threshold_tune = gr.Button("Tune Pair Threshold", variant="secondary")
+                    with gr.Accordion("Scored Pair Explanation", open=False):
+                        dataset_pair_explain_row = gr.Number(
+                            value=0,
+                            precision=0,
+                            label="Scored Row",
+                        )
+                        dataset_pair_explain_segment_mode = gr.Dropdown(
+                            choices=list(available_pair_explanation_segment_modes()),
+                            value="line",
+                            label="Segment Mode",
+                        )
+                        dataset_pair_explain_high_threshold = gr.Slider(
+                            0,
+                            1,
+                            value=0.85,
+                            step=0.01,
+                            label="High Similarity Threshold",
+                        )
+                        dataset_pair_explain_medium_threshold = gr.Slider(
+                            0,
+                            1,
+                            value=0.6,
+                            step=0.01,
+                            label="Medium Similarity Threshold",
+                        )
+                        dataset_pair_explain_low_threshold = gr.Slider(
+                            0,
+                            1,
+                            value=0.3,
+                            step=0.01,
+                            label="Low Similarity Threshold",
+                        )
+                        dataset_pair_explain_chunk_size = gr.Slider(
+                            1,
+                            50,
+                            value=5,
+                            step=1,
+                            label="Chunk Lines",
+                        )
+                        dataset_pair_explain_run = gr.Button("Explain Scored Pair", variant="secondary")
 
             dataset_task.change(
                 update_dataset_task_sections,
@@ -4427,6 +4543,24 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     dataset_threshold_sweep,
                     dataset_threshold_report,
                     dataset_threshold_artifacts,
+                ],
+            )
+            dataset_pair_explain_run.click(
+                explain_scored_pair_gradio,
+                inputs=[
+                    dataset_scored_state,
+                    dataset_pair_explain_row,
+                    dataset_pair_explain_segment_mode,
+                    dataset_pair_explain_high_threshold,
+                    dataset_pair_explain_medium_threshold,
+                    dataset_pair_explain_low_threshold,
+                    dataset_pair_explain_chunk_size,
+                ],
+                outputs=[
+                    dataset_pair_explain_summary,
+                    dataset_pair_explain_matches,
+                    dataset_pair_explain_report,
+                    dataset_pair_explain_artifacts,
                 ],
             )
 

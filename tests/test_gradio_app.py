@@ -536,6 +536,45 @@ def test_gradio_threshold_tuning_uses_scored_pair_state(tmp_path):
         assert "threshold_tuning_threshold_sweep.csv" in archive.namelist()
 
 
+def test_gradio_scored_pair_explanation_uses_dataset_state(tmp_path):
+    dataset_root = tmp_path / "pair_dataset"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "same\nleft", "suffix": ".py"},
+                {"file_id": "b", "text": "same\nright", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+        metadata={"name": "scored_pairs"},
+    )
+    state = {
+        "task": "pair",
+        "dataset_root": str(dataset_root),
+        "scored": [
+            {"left_id": "a", "right_id": "b", "similarity_score": 0.9, "label": 1},
+        ],
+    }
+
+    summary_html, matches_frame, report_html, artifacts_path = gradio_app.explain_scored_pair_gradio(
+        state,
+        0,
+        "line",
+        0.85,
+        0.6,
+        0.3,
+        5,
+        progress=None,
+    )
+
+    assert "Pair Explanation" in summary_html
+    assert not matches_frame.empty
+    assert "a vs b" in report_html
+    with zipfile.ZipFile(artifacts_path) as archive:
+        assert "scored_pair_explanation.html" in archive.namelist()
+
+
 def test_dataset_pair_resampling_reports_invalid_label_folds():
     scored = pd.DataFrame(
         {
@@ -769,6 +808,7 @@ def test_gradio_leaderboard_inspection_renders_uploaded_zip(tmp_path):
             "leaderboard_report.html",
             "leaderboard_report.json",
             "leaderboard_report_aggregate.csv",
+            "leaderboard_report_details.html",
             "leaderboard_report_per_dataset.csv",
             "leaderboard_report_reproducibility.json",
         ]
@@ -880,5 +920,6 @@ def test_gradio_ready_leaderboard_runs_pair_and_retrieval_uploads(tmp_path):
         names = archive.namelist()
         assert "ready_leaderboard.json" in names
         assert "ready_leaderboard_aggregate.csv" in names
+        assert "ready_leaderboard_details.html" in names
         assert "ready_leaderboard_per_dataset.csv" in names
         assert "ready_leaderboard_reproducibility.json" in names

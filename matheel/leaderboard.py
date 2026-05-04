@@ -169,13 +169,14 @@ def write_leaderboard_artifacts(report, output_dir, basename="leaderboard"):
         "aggregate_csv": target / f"{stem}_aggregate.csv",
         "json": target / f"{stem}.json",
         "html": target / f"{stem}.html",
+        "details_html": target / f"{stem}_details.html",
         "reproducibility_json": target / f"{stem}_reproducibility.json",
     }
     payload = leaderboard_payload(report)
     report["per_dataset"].to_csv(artifacts["per_dataset_csv"], index=False)
     report["aggregate"].to_csv(artifacts["aggregate_csv"], index=False)
     artifacts["json"].write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
-    from .reports import benchmark_report_html
+    from .reports import benchmark_detail_report_html, benchmark_report_html
 
     artifacts["html"].write_text(
         benchmark_report_html(
@@ -185,6 +186,18 @@ def write_leaderboard_artifacts(report, output_dir, basename="leaderboard"):
                 name: path
                 for name, path in artifacts.items()
                 if name != "html"
+            },
+        ),
+        encoding="utf-8",
+    )
+    artifacts["details_html"].write_text(
+        benchmark_detail_report_html(
+            report,
+            title=f"{report['metadata'].get('name') or 'Matheel Leaderboard'} Details",
+            artifact_links={
+                name: path
+                for name, path in artifacts.items()
+                if name != "details_html"
             },
         ),
         encoding="utf-8",

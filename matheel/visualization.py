@@ -448,6 +448,146 @@ def write_pair_dataset_explanation(
     return explanation, artifacts
 
 
+def build_scored_pair_explanation(
+    scored_pairs,
+    dataset,
+    row_index=0,
+    left_id=None,
+    right_id=None,
+    left_column="left_id",
+    right_column="right_id",
+    score_column="similarity_score",
+    label_column="label",
+    segment_mode="line",
+    high_threshold=0.85,
+    medium_threshold=0.6,
+    low_threshold=0.3,
+    chunk_size=5,
+):
+    frame = _coerce_scored_pairs(scored_pairs)
+    row = _select_scored_pair_row(
+        frame,
+        row_index=row_index,
+        left_id=left_id,
+        right_id=right_id,
+        left_column=left_column,
+        right_column=right_column,
+    )
+    explanation = build_pair_dataset_explanation(
+        dataset,
+        left_id=row[left_column],
+        right_id=row[right_column],
+        segment_mode=segment_mode,
+        high_threshold=high_threshold,
+        medium_threshold=medium_threshold,
+        low_threshold=low_threshold,
+        chunk_size=chunk_size,
+    )
+    explanation["metadata"]["scored_row_index"] = int(row.name) if getattr(row, "name", None) is not None else int(row_index)
+    if score_column in row.index and pd.notna(row[score_column]):
+        explanation["metadata"]["similarity_score"] = float(row[score_column])
+        explanation["metadata"]["score_column"] = str(score_column)
+    if label_column in row.index and pd.notna(row[label_column]):
+        explanation["metadata"]["scored_label"] = _json_safe_dict({"value": row[label_column]})["value"]
+        explanation["metadata"]["label_column"] = str(label_column)
+    explanation["metadata"]["scored_pair"] = _json_safe_dict(row.to_dict())
+    return explanation
+
+
+def write_scored_pair_explanation(
+    scored_pairs,
+    dataset,
+    output_dir,
+    row_index=0,
+    left_id=None,
+    right_id=None,
+    left_column="left_id",
+    right_column="right_id",
+    score_column="similarity_score",
+    label_column="label",
+    segment_mode="line",
+    high_threshold=0.85,
+    medium_threshold=0.6,
+    low_threshold=0.3,
+    chunk_size=5,
+    basename=None,
+    title=None,
+):
+    explanation = build_scored_pair_explanation(
+        scored_pairs,
+        dataset,
+        row_index=row_index,
+        left_id=left_id,
+        right_id=right_id,
+        left_column=left_column,
+        right_column=right_column,
+        score_column=score_column,
+        label_column=label_column,
+        segment_mode=segment_mode,
+        high_threshold=high_threshold,
+        medium_threshold=medium_threshold,
+        low_threshold=low_threshold,
+        chunk_size=chunk_size,
+    )
+    metadata = explanation["metadata"]
+    resolved_basename = basename or f"{metadata['left_id']}_vs_{metadata['right_id']}_scored"
+    artifacts = write_pair_explanation_artifacts(
+        explanation,
+        output_dir,
+        basename=resolved_basename,
+        title=title,
+    )
+    return explanation, artifacts
+
+
+def _coerce_scored_pairs(scored_pairs):
+    if isinstance(scored_pairs, pd.DataFrame):
+        frame = scored_pairs.copy()
+    elif isinstance(scored_pairs, (str, Path)):
+        path = Path(scored_pairs)
+        if path.suffix.lower() == ".json":
+            frame = pd.read_json(path)
+        else:
+            frame = pd.read_csv(path)
+    else:
+        frame = pd.DataFrame(scored_pairs)
+    if frame.empty:
+        raise ValueError("scored_pairs must contain at least one row.")
+    return frame
+
+
+def _select_scored_pair_row(
+    scored_pairs,
+    row_index=0,
+    left_id=None,
+    right_id=None,
+    left_column="left_id",
+    right_column="right_id",
+):
+    frame = scored_pairs.copy()
+    missing = [column for column in (left_column, right_column) if column not in frame.columns]
+    if missing:
+        raise ValueError(f"scored_pairs is missing required columns: {', '.join(missing)}")
+    if left_id is not None or right_id is not None:
+        if left_id is None or right_id is None:
+            raise ValueError("Both left_id and right_id are required when selecting a scored pair by id.")
+        mask = (frame[left_column].astype(str) == str(left_id)) & (frame[right_column].astype(str) == str(right_id))
+        if not mask.any():
+            reverse_mask = (frame[left_column].astype(str) == str(right_id)) & (
+                frame[right_column].astype(str) == str(left_id)
+            )
+            if reverse_mask.any():
+                mask = reverse_mask
+        matches = frame[mask]
+        if matches.empty:
+            raise ValueError(f"Scored pairs do not contain pair: {left_id} vs {right_id}")
+        return matches.iloc[0]
+    resolved_index = int(row_index or 0)
+    if resolved_index < 0 or resolved_index >= len(frame):
+        raise ValueError(f"row_index must be between 0 and {len(frame) - 1}. Got: {row_index}")
+    return frame.iloc[resolved_index]
+
+
 def _normalize_pair_segment_mode(segment_mode):
     selected = str(segment_mode or "line").strip().lower().replace("-", "_")
     if selected not in _PAIR_SEGMENT_MODES:

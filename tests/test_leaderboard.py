@@ -3,6 +3,12 @@ import json
 import pandas as pd
 
 import matheel
+from matheel.benchmark_registry import (
+    compare_benchmark_runs,
+    list_benchmark_runs,
+    load_benchmark_run,
+    register_benchmark_run,
+)
 from matheel.datasets import write_pair_dataset, write_retrieval_dataset
 from matheel.leaderboard import (
     available_leaderboard_metrics,
@@ -13,6 +19,7 @@ from matheel.leaderboard import (
     run_leaderboard,
     write_leaderboard_artifacts,
 )
+from matheel.reports import benchmark_detail_report_html
 
 
 def test_leaderboard_helpers_are_exported_from_package_root():
@@ -23,6 +30,8 @@ def test_leaderboard_helpers_are_exported_from_package_root():
     assert matheel.normalize_leaderboard_manifest is normalize_leaderboard_manifest
     assert matheel.run_leaderboard is run_leaderboard
     assert matheel.write_leaderboard_artifacts is write_leaderboard_artifacts
+    assert matheel.benchmark_detail_report_html is benchmark_detail_report_html
+    assert matheel.register_benchmark_run is register_benchmark_run
 
 
 def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
@@ -53,6 +62,7 @@ def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
     assert artifacts["aggregate_csv"].exists()
     assert artifacts["json"].exists()
     assert artifacts["html"].exists()
+    assert artifacts["details_html"].exists()
     assert artifacts["reproducibility_json"].exists()
     payload = json.loads(artifacts["json"].read_text(encoding="utf-8"))
     reproducibility = json.loads(artifacts["reproducibility_json"].read_text(encoding="utf-8"))
@@ -82,6 +92,10 @@ def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
     assert retrieval_map.loc["exact", "score"] == 1.0
     assert retrieval_map.loc["inverse", "score"] < 1.0
     assert set(aggregate["algorithm_name"]) == {"exact", "inverse"}
+    details_html = artifacts["details_html"].read_text(encoding="utf-8")
+    assert str(tmp_path) not in details_html
+    assert "Dataset Details" in details_html
+    assert "Algorithm Details" in details_html
 
 
 def test_leaderboard_manifest_resolves_relative_paths(tmp_path):
@@ -131,6 +145,63 @@ def test_leaderboard_payload_and_html_escape_values(tmp_path):
     assert "<unsafe>" not in output
     assert "&lt;unsafe&gt;" in output
     assert "<exact>" not in output
+
+
+def test_benchmark_detail_report_escapes_values(tmp_path):
+    pair_root = _write_pair_fixture(tmp_path)
+    exact_path, _ = _write_algorithm_fixtures(tmp_path)
+    report, _ = run_leaderboard(
+        {
+            "name": "<unsafe>",
+            "datasets": [{"name": "<pairs>", "task": "pair", "path": str(pair_root)}],
+            "algorithms": [{"name": "<exact>", "algorithm_path": str(exact_path)}],
+        }
+    )
+
+    output = benchmark_detail_report_html(report, title="<unsafe>")
+
+    assert str(tmp_path) not in output
+    assert "<unsafe>" not in output
+    assert "&lt;unsafe&gt;" in output
+    assert "<exact>" not in output
+    assert "&lt;exact&gt;" in output
+
+
+def test_benchmark_registry_tracks_and_compares_runs(tmp_path):
+    pair_root = _write_pair_fixture(tmp_path)
+    exact_path, inverse_path = _write_algorithm_fixtures(tmp_path)
+    first_report, first_artifacts = run_leaderboard(
+        {
+            "name": "first",
+            "datasets": [{"name": "pairs", "task": "pair", "path": str(pair_root)}],
+            "algorithms": [{"name": "exact", "algorithm_path": str(exact_path)}],
+        },
+        output_dir=tmp_path / "first",
+        basename="first",
+    )
+    second_report, _ = run_leaderboard(
+        {
+            "name": "second",
+            "datasets": [{"name": "pairs", "task": "pair", "path": str(pair_root)}],
+            "algorithms": [{"name": "inverse", "algorithm_path": str(inverse_path)}],
+        },
+        output_dir=tmp_path / "second",
+        basename="second",
+    )
+    registry_path = tmp_path / "registry.json"
+
+    first_entry = register_benchmark_run(registry_path, first_report, artifact_paths=first_artifacts)
+    second_entry = register_benchmark_run(registry_path, second_report)
+    runs = list_benchmark_runs(registry_path)
+    loaded = load_benchmark_run(registry_path, first_entry["run_id"])
+    comparison = compare_benchmark_runs(registry_path, run_ids=[first_entry["run_id"], second_entry["run_id"]])
+    registry_text = registry_path.read_text(encoding="utf-8")
+
+    assert list(runs["run_id"]) == [first_entry["run_id"], second_entry["run_id"]]
+    assert loaded["artifacts"]["html"] == "first.html"
+    assert str(tmp_path) not in registry_text
+    assert set(comparison["run_id"]) == {first_entry["run_id"], second_entry["run_id"]}
+    assert "delta_mean_score" in comparison
 
 
 def test_leaderboard_payload_keeps_remote_identifiers():

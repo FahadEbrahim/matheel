@@ -1,4 +1,5 @@
 import html
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -81,6 +82,80 @@ def write_benchmark_report(report, output_path, title=None, artifact_links=None)
     return target
 
 
+def benchmark_detail_report_html(report, title=None, artifact_links=None):
+    payload = leaderboard_payload(report)
+    report_title = str(title or payload["metadata"].get("name") or "Matheel Benchmark Details")
+    cards = payload.get("cards", {})
+    links = _sanitize_artifact_links(artifact_links or {})
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{html.escape(report_title)}</title>
+  <style>
+    :root {{ color-scheme: light; }}
+    body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; color: #111827; background: #ffffff; }}
+    header {{ padding: 24px 28px; border-bottom: 1px solid #d1d5db; background: #f9fafb; }}
+    main {{ padding: 20px 28px 32px; }}
+    h1 {{ font-size: 1.6rem; margin: 0 0 8px; }}
+    h2 {{ font-size: 1.15rem; margin: 28px 0 10px; }}
+    h3 {{ font-size: 1rem; margin: 0; }}
+    .meta {{ color: #4b5563; margin: 0; }}
+    details {{ border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 12px; background: #ffffff; }}
+    summary {{ cursor: pointer; padding: 12px 14px; background: #f3f4f6; }}
+    .detail-body {{ padding: 12px 14px; }}
+    dl {{ display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; margin: 0 0 12px; }}
+    dt {{ color: #4b5563; font-weight: 600; }}
+    dd {{ margin: 0; overflow-wrap: anywhere; }}
+    pre {{ white-space: pre-wrap; overflow-x: auto; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; }}
+    table {{ border-collapse: collapse; width: 100%; font-size: 0.9rem; margin-bottom: 12px; }}
+    th, td {{ border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }}
+    th {{ background: #f3f4f6; }}
+    code {{ background: #f3f4f6; padding: 1px 4px; border-radius: 4px; }}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{html.escape(report_title)}</h1>
+    <p class="meta">schema={payload.get("schema_version", 1)}; seed={html.escape(str(payload["metadata"].get("seed") or ""))}</p>
+  </header>
+  <main>
+    <section>
+      <h2>Dataset Details</h2>
+      {_detail_cards_html(cards.get("datasets", []))}
+    </section>
+    <section>
+      <h2>Algorithm Details</h2>
+      {_detail_cards_html(cards.get("algorithms", []))}
+    </section>
+    <section>
+      <h2>Aggregate Rows</h2>
+      {_table_html(pd.DataFrame(payload["aggregate"]))}
+    </section>
+    <section>
+      <h2>Per-Dataset Rows</h2>
+      {_table_html(pd.DataFrame(payload["per_dataset"]))}
+    </section>
+    <section>
+      <h2>Artifacts</h2>
+      {_artifact_links_html(links)}
+    </section>
+  </main>
+</body>
+</html>
+"""
+
+
+def write_benchmark_detail_report(report, output_path, title=None, artifact_links=None):
+    target = Path(output_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        benchmark_detail_report_html(report, title=title, artifact_links=artifact_links),
+        encoding="utf-8",
+    )
+    return target
+
+
 def _table_html(frame):
     if frame.empty:
         return "<p>No rows.</p>"
@@ -91,6 +166,12 @@ def _cards_html(cards):
     if not cards:
         return '<p class="card">No cards.</p>'
     return "\n".join(_card_html(card) for card in cards)
+
+
+def _detail_cards_html(cards):
+    if not cards:
+        return "<p>No cards.</p>"
+    return "\n".join(_detail_card_html(card) for card in cards)
 
 
 def _card_html(card):
@@ -119,6 +200,22 @@ def _card_html(card):
     if not rows:
         rows.append("<dt>card</dt><dd>empty</dd>")
     return f'<article class="card"><dl>{"".join(rows)}</dl></article>'
+
+
+def _detail_card_html(card):
+    title = str(card.get("name") or card.get("card_type") or "card")
+    summary = html.escape(title)
+    rows = []
+    for key, value in card.items():
+        if isinstance(value, (dict, list, tuple)):
+            continue
+        if value not in (None, ""):
+            rows.append(f"<dt>{html.escape(str(key))}</dt><dd>{html.escape(str(value))}</dd>")
+    json_payload = html.escape(json.dumps(card, indent=2, sort_keys=True))
+    return (
+        f"<details><summary><h3>{summary}</h3></summary>"
+        f'<div class="detail-body"><dl>{"".join(rows)}</dl><pre><code>{json_payload}</code></pre></div></details>'
+    )
 
 
 def _artifact_links_html(links):

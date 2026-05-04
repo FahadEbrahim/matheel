@@ -60,11 +60,28 @@ Artifacts:
 - `run_001_aggregate.csv`: mean and median metric scores per algorithm, task, and metric.
 - `run_001.json`: machine-readable metadata, manifest, and ranking rows.
 - `run_001.html`: static aggregate and per-dataset tables.
+- `run_001_details.html`: static dataset-card and algorithm-card detail page.
 - `run_001_reproducibility.json`: package versions and normalized manifest metadata.
 
 The JSON artifact also includes dataset cards and algorithm cards. Cards keep concise metadata such as task family, counts, source type, license when present, sanitized source identifiers, algorithm options, package versions, and content fingerprints. Local absolute paths and credential-like fields are not included in card fields.
 
-The HTML artifact is a static benchmark report. It bundles aggregate rankings, per-dataset rankings, dataset cards, algorithm cards, and sanitized links to the exported CSV/JSON metadata files.
+The HTML artifact is a static benchmark report. It bundles aggregate rankings, per-dataset rankings, dataset cards, algorithm cards, and sanitized links to the exported CSV/JSON metadata files. The detail HTML artifact expands each dataset and algorithm card with the sanitized card JSON used by the benchmark report.
+
+## Run Registry
+
+Use a local benchmark registry to track exported leaderboard JSON artifacts across repeated runs:
+
+```bash
+matheel benchmark-registry add benchmark_registry.json leaderboard_artifacts/run_001.json \
+  --run-name lexical_baseline
+
+matheel benchmark-registry list benchmark_registry.json
+
+matheel benchmark-registry compare benchmark_registry.json \
+  --output benchmark_comparison.csv
+```
+
+The registry stores sanitized leaderboard payloads and artifact filenames. It is intended for local experiment tracking and does not store absolute dataset paths or credentials.
 
 ## Runnable Example
 

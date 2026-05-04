@@ -114,6 +114,18 @@ matheel explain-pair \
 
 The JSON artifact stores segment offsets, line numbers, match ids, scores, thresholds, and segmentation metadata. The HTML artifact uses the same data for local inspection.
 
+To explain a pair selected from scored dataset rows:
+
+```bash
+matheel explain-pair \
+  --dataset normalized_pairs \
+  --scores pair_scored_rows.csv \
+  --score-row-index 0 \
+  --output-dir pair_explanations
+```
+
+The scored-row workflow records the selected row index, score column, label column, and selected scored-row fields in the explanation metadata.
+
 ```python
 from matheel.visualization import build_pair_explanation, write_pair_explanation_artifacts
 
@@ -128,6 +140,20 @@ artifacts = write_pair_explanation_artifacts(
     "pair_explanations",
 )
 
+print(artifacts["html"])
+```
+
+```python
+from matheel.visualization import write_scored_pair_explanation
+
+explanation, artifacts = write_scored_pair_explanation(
+    "pair_scored_rows.csv",
+    "normalized_pairs",
+    "pair_explanations",
+    row_index=0,
+)
+
+print(explanation["metadata"]["similarity_score"])
 print(artifacts["html"])
 ```
 

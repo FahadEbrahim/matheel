@@ -134,6 +134,53 @@ def test_explain_pair_command_accepts_dataset_pair_ids(tmp_path):
     assert payload["metadata"]["label"] == 1
 
 
+def test_explain_pair_command_accepts_scored_pair_rows(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "same\nleft", "suffix": ".py"},
+                {"file_id": "b", "text": "same\nright", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+        metadata={"name": "tiny_pairs"},
+    )
+    scores_path = tmp_path / "scores.csv"
+    pd.DataFrame([{"left_id": "a", "right_id": "b", "similarity_score": 0.91, "label": 1}]).to_csv(
+        scores_path,
+        index=False,
+    )
+    output_dir = tmp_path / "pair_viz"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "explain-pair",
+            "--dataset",
+            str(dataset_root),
+            "--scores",
+            str(scores_path),
+            "--score-row-index",
+            "0",
+            "--output-dir",
+            str(output_dir),
+            "--basename",
+            "scored_pair",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    summary = json.loads(result.output)
+    assert summary["left_id"] == "a"
+    payload = json.loads((output_dir / "scored_pair.json").read_text(encoding="utf-8"))
+    assert payload["metadata"]["similarity_score"] == 0.91
+    assert payload["metadata"]["scored_pair"]["label"] == 1
+
+
 def test_explain_pair_command_accepts_source_archive_names(tmp_path):
     archive_path = tmp_path / "codes.zip"
     with ZipFile(archive_path, "w") as archive:
@@ -280,6 +327,78 @@ def test_leaderboard_command_writes_artifacts(tmp_path, monkeypatch):
     assert summary["aggregate_rows"] == 1
     assert summary["per_dataset_rows"] == 1
     assert (output_dir / "tiny.json").exists()
+
+
+def test_benchmark_registry_commands_add_list_and_compare(tmp_path):
+    leaderboard_json = tmp_path / "leaderboard.json"
+    leaderboard_json.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "metadata": {"name": "tiny"},
+                "aggregate": [
+                    {
+                        "task_family": "pair",
+                        "algorithm_name": "exact",
+                        "metric": "f1",
+                        "mean_score": 1.0,
+                        "median_score": 1.0,
+                        "dataset_count": 1,
+                        "sample_count": 2,
+                        "rank": 1,
+                    }
+                ],
+                "per_dataset": [
+                    {
+                        "task_family": "pair",
+                        "dataset_name": "pairs",
+                        "algorithm_name": "exact",
+                        "metric": "f1",
+                        "score": 1.0,
+                        "sample_count": 2,
+                        "dataset_source": "local",
+                        "algorithm_kind": "custom",
+                        "rank": 1,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    registry_path = tmp_path / "registry.json"
+    runner = CliRunner()
+
+    add_result = runner.invoke(
+        main,
+        [
+            "benchmark-registry",
+            "add",
+            str(registry_path),
+            str(leaderboard_json),
+            "--format",
+            "json",
+        ],
+    )
+    run_id = json.loads(add_result.output)["run_id"]
+    list_result = runner.invoke(main, ["benchmark-registry", "list", str(registry_path), "--format", "json"])
+    compare_result = runner.invoke(
+        main,
+        [
+            "benchmark-registry",
+            "compare",
+            str(registry_path),
+            "--run-id",
+            run_id,
+            "--format",
+            "json",
+        ],
+    )
+
+    assert add_result.exit_code == 0
+    assert list_result.exit_code == 0
+    assert compare_result.exit_code == 0
+    assert json.loads(list_result.output)[0]["run_id"] == run_id
+    assert json.loads(compare_result.output)[0]["delta_mean_score"] == 0.0
 
 
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
