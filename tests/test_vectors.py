@@ -195,3 +195,17 @@ def test_configure_model_max_token_length_updates_pylate_style_lengths():
     assert model.document_length == 96
     assert model.query_length == 32
     assert model.max_seq_length == 96
+
+
+def test_load_vector_model_requires_pylate_package(monkeypatch):
+    real_import = __import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "pylate" or name.startswith("pylate."):
+            raise ImportError("blocked pylate import")
+        return real_import(name, *args, **kwargs)
+
+    monkeypatch.setattr("builtins.__import__", fake_import)
+
+    with pytest.raises(ImportError, match="pylate"):
+        vectors_module.load_vector_model("demo/model", vector_backend="pylate")

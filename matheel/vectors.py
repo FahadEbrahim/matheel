@@ -400,30 +400,26 @@ def _load_model2vec_model(model_name, max_token_length=None):
 def _load_pylate_model(model_name, device="auto", max_token_length=None):
     try:
         from pylate import models as pylate_models
-    except ImportError:
-        pylate_models = None
+    except ImportError as exc:
+        raise ImportError("PyLate backend requires the optional 'pylate' package.") from exc
 
-    if pylate_models is not None:
-        for attr_name in ("ColBERT", "SentenceTransformer", "LateInteractionModel"):
-            model_class = getattr(pylate_models, attr_name, None)
-            if model_class is None:
-                continue
-            if hasattr(model_class, "from_pretrained"):
-                try:
-                    model = model_class.from_pretrained(model_name, device=device)
-                except TypeError:
-                    model = model_class.from_pretrained(model_name)
-                return configure_model_max_token_length(model, max_token_length=max_token_length)
+    for attr_name in ("ColBERT", "SentenceTransformer", "LateInteractionModel"):
+        model_class = getattr(pylate_models, attr_name, None)
+        if model_class is None:
+            continue
+        if hasattr(model_class, "from_pretrained"):
             try:
-                model = model_class(model_name, device=device)
+                model = model_class.from_pretrained(model_name, device=device)
             except TypeError:
-                model = model_class(model_name)
+                model = model_class.from_pretrained(model_name)
             return configure_model_max_token_length(model, max_token_length=max_token_length)
+        try:
+            model = model_class(model_name, device=device)
+        except TypeError:
+            model = model_class(model_name)
+        return configure_model_max_token_length(model, max_token_length=max_token_length)
 
-    from sentence_transformers import SentenceTransformer
-
-    model = SentenceTransformer(model_name, device=device)
-    return configure_model_max_token_length(model, max_token_length=max_token_length)
+    raise ValueError("Installed PyLate package does not provide a supported model class.")
 
 
 def load_vector_model(
