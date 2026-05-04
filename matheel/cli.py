@@ -27,6 +27,7 @@ from .datasets import (
     load_retrieval_datasets_from_manifest,
 )
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
+from .leaderboard import load_leaderboard_manifest, run_leaderboard
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
 from .similarity import (
     DEFAULT_MODEL_NAME,
@@ -319,6 +320,23 @@ def _echo_calibration_report_summary(summary, output_format):
     click.echo(f"optimized_threshold={optimized['threshold']:.6g}")
     click.echo(f"optimized_metric={optimized['optimized_metric']}")
     click.echo(f"optimized_f1={optimized['f1']:.4f}")
+    for name, path in summary["artifacts"].items():
+        click.echo(f"{name}={path}")
+
+
+def _echo_leaderboard_summary(report, artifacts, output_format):
+    summary = {
+        "name": report["metadata"]["name"],
+        "aggregate_rows": int(len(report["aggregate"])),
+        "per_dataset_rows": int(len(report["per_dataset"])),
+        "artifacts": {name: str(path) for name, path in (artifacts or {}).items()},
+    }
+    if output_format == "json":
+        _echo_json(summary)
+        return
+    click.echo(f"name={summary['name']}")
+    click.echo(f"aggregate_rows={summary['aggregate_rows']}")
+    click.echo(f"per_dataset_rows={summary['per_dataset_rows']}")
     for name, path in summary["artifacts"].items():
         click.echo(f"{name}={path}")
 
@@ -732,6 +750,33 @@ def calibration_report_command(
         _calibration_cli_summary(report, artifacts),
         output_format,
     )
+
+
+@main.command(name="leaderboard")
+@click.argument("config_file", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=True,
+    help="Directory where leaderboard artifacts will be written.",
+)
+@click.option("--basename", default="leaderboard", show_default=True, help="Artifact filename stem.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def leaderboard_command(config_file, output_dir, basename, output_format):
+    """Run a pair/retrieval benchmark leaderboard manifest."""
+    manifest = load_leaderboard_manifest(config_file)
+    report, artifacts = run_leaderboard(
+        manifest,
+        output_dir=output_dir,
+        basename=basename,
+    )
+    _echo_leaderboard_summary(report, artifacts, output_format)
 
 
 @main.command()

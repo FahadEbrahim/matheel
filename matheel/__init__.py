@@ -89,6 +89,15 @@ from .evaluation import (
     score_retrieval_dataset,
 )
 from .feature_weights import available_default_features, default_feature_weights, normalize_feature_weights
+from .leaderboard import (
+    available_leaderboard_metrics,
+    leaderboard_html,
+    leaderboard_payload,
+    load_leaderboard_manifest,
+    normalize_leaderboard_manifest,
+    run_leaderboard,
+    write_leaderboard_artifacts,
+)
 from .model_routing import infer_model_backend, infer_model_capabilities, available_vector_backends
 from .preprocessing import preprocess_code
 from .resampling import (
@@ -152,6 +161,7 @@ __all__ = [
     "available_dataset_presets_by_task",
     "available_dataset_sources",
     "available_dataset_task_types",
+    "available_leaderboard_metrics",
     "available_lexical_tokenizers",
     "available_pooling_methods",
     "available_pair_explanation_segment_modes",
@@ -194,9 +204,12 @@ __all__ = [
     "infer_model_backend",
     "infer_model_capabilities",
     "inspect_model_settings",
+    "leaderboard_html",
+    "leaderboard_payload",
     "load_code_texts",
     "load_benchmark_cache_result",
     "load_dataset_manifest",
+    "load_leaderboard_manifest",
     "load_pair_dataset",
     "load_pair_datasets",
     "load_pair_datasets_from_manifest",
@@ -207,6 +220,7 @@ __all__ = [
     "metric_summary",
     "normalize_algorithm_options",
     "normalize_feature_weights",
+    "normalize_leaderboard_manifest",
     "normalize_lexical_tokenizer",
     "PairDataset",
     "PairAlgorithm",
@@ -225,6 +239,7 @@ __all__ = [
     "retrieval_ranking_metrics",
     "resolve_pair_algorithm",
     "run_comparison_suite",
+    "run_leaderboard",
     "score_pair_dataset",
     "score_pair_with_algorithm",
     "score_source_pairs_with_algorithm",
@@ -260,6 +275,7 @@ __all__ = [
     "write_dataset_map_artifacts",
     "write_calibration_report_artifacts",
     "write_benchmark_cache_result",
+    "write_leaderboard_artifacts",
     "write_pair_dataset_explanation",
     "write_pair_explanation",
     "write_pair_explanation_artifacts",

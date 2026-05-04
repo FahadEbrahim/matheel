@@ -1,0 +1,183 @@
+import json
+
+import pandas as pd
+
+import matheel
+from matheel.datasets import write_pair_dataset, write_retrieval_dataset
+from matheel.leaderboard import (
+    available_leaderboard_metrics,
+    leaderboard_html,
+    leaderboard_payload,
+    load_leaderboard_manifest,
+    normalize_leaderboard_manifest,
+    run_leaderboard,
+    write_leaderboard_artifacts,
+)
+
+
+def test_leaderboard_helpers_are_exported_from_package_root():
+    assert matheel.available_leaderboard_metrics is available_leaderboard_metrics
+    assert matheel.leaderboard_html is leaderboard_html
+    assert matheel.leaderboard_payload is leaderboard_payload
+    assert matheel.load_leaderboard_manifest is load_leaderboard_manifest
+    assert matheel.normalize_leaderboard_manifest is normalize_leaderboard_manifest
+    assert matheel.run_leaderboard is run_leaderboard
+    assert matheel.write_leaderboard_artifacts is write_leaderboard_artifacts
+
+
+def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
+    pair_root = _write_pair_fixture(tmp_path)
+    retrieval_root = _write_retrieval_fixture(tmp_path)
+    exact_path, inverse_path = _write_algorithm_fixtures(tmp_path)
+    manifest = {
+        "name": "tiny_leaderboard",
+        "pair_metrics": ["f1", "auroc"],
+        "retrieval_metrics": ["mean_average_precision", "ndcg_at_k"],
+        "datasets": [
+            {"name": "pairs", "task": "pair", "path": str(pair_root), "threshold": 0.5},
+            {"name": "retrieval", "task": "retrieval", "path": str(retrieval_root), "k": 2},
+        ],
+        "algorithms": [
+            {"name": "exact", "algorithm_path": str(exact_path)},
+            {"name": "inverse", "algorithm_path": str(inverse_path)},
+        ],
+    }
+
+    report, artifacts = run_leaderboard(
+        manifest,
+        output_dir=tmp_path / "leaderboard",
+        basename="tiny",
+    )
+
+    assert artifacts["per_dataset_csv"].exists()
+    assert artifacts["aggregate_csv"].exists()
+    assert artifacts["json"].exists()
+    assert artifacts["html"].exists()
+    assert artifacts["reproducibility_json"].exists()
+    per_dataset = report["per_dataset"]
+    aggregate = report["aggregate"]
+    pair_f1 = per_dataset[
+        (per_dataset["task_family"] == "pair")
+        & (per_dataset["dataset_name"] == "pairs")
+        & (per_dataset["metric"] == "f1")
+    ].set_index("algorithm_name")
+    retrieval_map = per_dataset[
+        (per_dataset["task_family"] == "retrieval")
+        & (per_dataset["dataset_name"] == "retrieval")
+        & (per_dataset["metric"] == "mean_average_precision")
+    ].set_index("algorithm_name")
+
+    assert pair_f1.loc["exact", "rank"] == 1
+    assert pair_f1.loc["exact", "score"] == 1.0
+    assert pair_f1.loc["inverse", "score"] == 0.0
+    assert retrieval_map.loc["exact", "rank"] == 1
+    assert retrieval_map.loc["exact", "score"] == 1.0
+    assert retrieval_map.loc["inverse", "score"] < 1.0
+    assert set(aggregate["algorithm_name"]) == {"exact", "inverse"}
+
+
+def test_leaderboard_manifest_resolves_relative_paths(tmp_path):
+    pair_root = _write_pair_fixture(tmp_path)
+    exact_path, _ = _write_algorithm_fixtures(tmp_path)
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    manifest_path = config_dir / "leaderboard.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "datasets": [
+                    {"name": "pairs", "task": "pair", "path": "../pairs"},
+                ],
+                "algorithms": [
+                    {"name": "exact", "algorithm_path": "../exact.py"},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    _ = pair_root
+    manifest = load_leaderboard_manifest(manifest_path)
+
+    assert manifest["datasets"][0]["spec"]["identifier"] == str(pair_root.resolve())
+    assert manifest["algorithms"][0]["algorithm_path"] == str(exact_path.resolve())
+
+
+def test_leaderboard_payload_and_html_escape_values(tmp_path):
+    pair_root = _write_pair_fixture(tmp_path)
+    exact_path, _ = _write_algorithm_fixtures(tmp_path)
+    report, _ = run_leaderboard(
+        {
+            "name": "<unsafe>",
+            "datasets": [{"name": "<pairs>", "task": "pair", "path": str(pair_root)}],
+            "algorithms": [{"name": "<exact>", "algorithm_path": str(exact_path)}],
+        }
+    )
+
+    payload = leaderboard_payload(report)
+    output = leaderboard_html(report, title="<unsafe>")
+
+    assert payload["metadata"]["name"] == "<unsafe>"
+    assert "<unsafe>" not in output
+    assert "&lt;unsafe&gt;" in output
+    assert "<exact>" not in output
+
+
+def _write_pair_fixture(tmp_path):
+    pair_root = tmp_path / "pairs"
+    write_pair_dataset(
+        pair_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "c", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+            ]
+        ),
+        metadata={"name": "pairs"},
+    )
+    return pair_root
+
+
+def _write_retrieval_fixture(tmp_path):
+    retrieval_root = tmp_path / "retrieval"
+    write_retrieval_dataset(
+        retrieval_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "q", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "d1", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "d2", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "q"}]),
+        corpus=pd.DataFrame(
+            [
+                {"document_id": "doc1", "file_id": "d1"},
+                {"document_id": "doc2", "file_id": "d2"},
+            ]
+        ),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "doc1", "relevance": 1}]),
+        metadata={"name": "retrieval"},
+    )
+    return retrieval_root
+
+
+def _write_algorithm_fixtures(tmp_path):
+    exact_path = tmp_path / "exact.py"
+    exact_path.write_text(
+        "def score_pair(code_a, code_b):\n    return 1.0 if code_a == code_b else 0.0\n",
+        encoding="utf-8",
+    )
+    inverse_path = tmp_path / "inverse.py"
+    inverse_path.write_text(
+        "def score_pair(code_a, code_b):\n    return 0.0 if code_a == code_b else 1.0\n",
+        encoding="utf-8",
+    )
+    return exact_path, inverse_path
