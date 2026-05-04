@@ -163,6 +163,42 @@ def test_explain_pair_command_accepts_source_archive_names(tmp_path):
     assert (output_dir / "a.py_vs_b.py.json").exists()
 
 
+def test_calibration_report_command_writes_artifacts(tmp_path):
+    scores_path = tmp_path / "scored_pairs.csv"
+    pd.DataFrame(
+        [
+            {"left_id": "a", "right_id": "b", "similarity_score": 0.9, "label": 1},
+            {"left_id": "a", "right_id": "c", "similarity_score": 0.8, "label": 1},
+            {"left_id": "d", "right_id": "e", "similarity_score": 0.3, "label": 0},
+            {"left_id": "d", "right_id": "f", "similarity_score": 0.1, "label": 0},
+        ]
+    ).to_csv(scores_path, index=False)
+    output_dir = tmp_path / "calibration"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "calibration-report",
+            str(scores_path),
+            "--output-dir",
+            str(output_dir),
+            "--basename",
+            "tiny",
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    summary = json.loads(result.output)
+    assert summary["auroc"] == 1.0
+    assert summary["average_precision"] == 1.0
+    assert (output_dir / "tiny_threshold_sweep.csv").exists()
+    assert (output_dir / "tiny_roc.csv").exists()
+    assert (output_dir / "tiny_precision_recall.csv").exists()
+    assert (output_dir / "tiny_report.json").exists()
+
+
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     archive_path = tmp_path / "codes.zip"
     archive_path.write_bytes(b"placeholder")

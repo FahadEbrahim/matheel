@@ -86,6 +86,45 @@ report = calibrate_threshold(
 
 Use `evaluate_threshold(...)` when you already have a threshold and want confusion counts, precision, recall, F1, and accuracy.
 
+## Calibration Reports
+
+For scored pair CSVs, export a threshold sweep, ROC curve, precision-recall curve, and summary JSON:
+
+```bash
+matheel calibration-report scored_pairs.csv \
+  --score-column similarity_score \
+  --label-column label \
+  --output-dir calibration_artifacts
+```
+
+The output includes:
+
+- `calibration_threshold_sweep.csv`: threshold, confusion counts, precision, recall, F1, and accuracy.
+- `calibration_roc.csv`: threshold rows with false-positive and true-positive rates.
+- `calibration_precision_recall.csv`: threshold rows with precision and recall.
+- `calibration_summary.json`: AUROC, average precision, and the optimized threshold.
+- `calibration_report.json`: all curve rows plus the summary in one JSON artifact.
+
+The ROC and precision-recall reports require at least one positive and one negative label. Single-class labeled samples fail clearly because AUROC and average precision are not meaningful there.
+
+```python
+from matheel.calibration import calibration_report
+
+report = calibration_report(
+    [
+        {"similarity_score": 0.95, "label": 1},
+        {"similarity_score": 0.82, "label": 1},
+        {"similarity_score": 0.30, "label": 0},
+        {"similarity_score": 0.10, "label": 0},
+    ],
+    score_key="similarity_score",
+    label_key="label",
+)
+
+print(report["summary"]["auroc"])
+print(report["summary"]["optimized_threshold"]["threshold"])
+```
+
 ## Comparing Runs
 
 When comparing algorithms or configurations:

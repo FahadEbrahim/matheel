@@ -3,9 +3,11 @@ import sys
 from pathlib import Path
 
 import click
+import pandas as pd
 
 from . import __version__
 from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
+from .calibration import write_calibration_report_artifacts
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
 from ._progress import should_show_progress
@@ -302,6 +304,35 @@ def _echo_pair_explanation_summary(summary, output_format):
         click.echo(f"{level}={count}")
     for name, path in summary["artifacts"].items():
         click.echo(f"{name}={path}")
+
+
+def _echo_calibration_report_summary(summary, output_format):
+    if output_format == "json":
+        _echo_json(summary)
+        return
+    click.echo(f"pair_count={summary['pair_count']}")
+    click.echo(f"positive_count={summary['positive_count']}")
+    click.echo(f"negative_count={summary['negative_count']}")
+    click.echo(f"auroc={summary['auroc']:.4f}")
+    click.echo(f"average_precision={summary['average_precision']:.4f}")
+    optimized = summary["optimized_threshold"]
+    click.echo(f"optimized_threshold={optimized['threshold']:.6g}")
+    click.echo(f"optimized_metric={optimized['optimized_metric']}")
+    click.echo(f"optimized_f1={optimized['f1']:.4f}")
+    for name, path in summary["artifacts"].items():
+        click.echo(f"{name}={path}")
+
+
+def _calibration_cli_summary(report, artifacts):
+    summary = dict(report["summary"])
+    summary["artifacts"] = {name: str(path) for name, path in artifacts.items()}
+    return summary
+
+
+def _parse_positive_label(value):
+    if value is None:
+        return True
+    return _coerce_cli_option_value(value)
 
 
 def _pair_explanation_summary(explanation, artifacts):
@@ -634,6 +665,71 @@ def explain_pair(
 
     _echo_pair_explanation_summary(
         _pair_explanation_summary(explanation, artifacts),
+        output_format,
+    )
+
+
+@main.command(name="calibration-report")
+@click.argument("scores_path", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.option("--score-column", default="similarity_score", show_default=True, help="Column containing pair scores.")
+@click.option("--label-column", default="label", show_default=True, help="Column containing pair labels.")
+@click.option(
+    "--positive-label",
+    default=None,
+    help="Positive label value. Defaults to boolean coercion, suitable for 0/1 labels.",
+)
+@click.option(
+    "--greater-is-match/--lower-is-match",
+    default=True,
+    show_default=True,
+    help="Whether larger scores mean stronger matches.",
+)
+@click.option(
+    "--optimize",
+    type=click.Choice(("f1", "accuracy", "precision", "recall")),
+    default="f1",
+    show_default=True,
+    help="Metric used for the recommended threshold.",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=True,
+    help="Directory where calibration artifacts will be written.",
+)
+@click.option("--basename", default="calibration", show_default=True, help="Artifact filename stem.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def calibration_report_command(
+    scores_path,
+    score_column,
+    label_column,
+    positive_label,
+    greater_is_match,
+    optimize,
+    output_dir,
+    basename,
+    output_format,
+):
+    """Write ROC, precision-recall, and threshold calibration artifacts."""
+    scored_pairs = pd.read_csv(scores_path)
+    report, artifacts = write_calibration_report_artifacts(
+        scored_pairs,
+        output_dir,
+        score_key=score_column,
+        label_key=label_column,
+        positive_label=_parse_positive_label(positive_label),
+        greater_is_match=greater_is_match,
+        optimize=optimize,
+        basename=basename,
+    )
+    _echo_calibration_report_summary(
+        _calibration_cli_summary(report, artifacts),
         output_format,
     )
 
