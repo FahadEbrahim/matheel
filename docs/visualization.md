@@ -28,6 +28,16 @@ The output directory contains:
 
 Use `--method pca` for dependency-free deterministic projections, or `--method umap` to require UMAP explicitly.
 
+## Runnable Example
+
+The repository includes a deterministic local example that creates a tiny normalized pair dataset, writes a dataset map, and writes a side-by-side pair explanation:
+
+```bash
+python examples/evaluation/visualization_demo.py
+```
+
+The example uses only synthetic code and temporary files. Use it as a quick smoke test before applying the workflow to a real normalized dataset.
+
 ## Python
 
 ```python
@@ -69,6 +79,8 @@ artifacts = write_dataset_map_artifacts(
     color_column="metric_score",
 )
 ```
+
+When `color_column` is provided, the HTML scatter plot groups points by that metadata field. Numeric values are preserved in the CSV and JSON artifacts so the same output can be reused by notebooks or report generators.
 
 ## Pair Explanations
 
@@ -118,3 +130,5 @@ artifacts = write_pair_explanation_artifacts(
 
 print(artifacts["html"])
 ```
+
+Pair explanations are local explanations for a selected pair. They are useful for inspection and debugging, but they are not a replacement for dataset-level metrics or leaderboard rankings.

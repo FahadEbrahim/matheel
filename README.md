@@ -47,7 +47,7 @@ score = calculate_similarity(
 print(round(score, 4))
 ```
 
-See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semantic models, archives, comparison suites, custom algorithms, chunking, preprocessing, and code metrics.
+See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semantic models, archives, comparison suites, custom algorithms, chunking, preprocessing, visualization, leaderboards, and code metrics.
 
 ## Links
 
@@ -57,6 +57,7 @@ See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semanti
 - Dataset workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)
 - Custom algorithms Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/03_custom_algorithms.ipynb)
 - Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb)
+- Visualization and leaderboard Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/05_visualization_and_leaderboard.ipynb)
 - Examples folder: [examples/](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 - Development: [development docs](https://fahadebrahim.github.io/matheel/development/)
 

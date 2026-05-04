@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from matheel.datasets import write_pair_dataset, write_retrieval_dataset
+from matheel.datasets import available_dataset_presets, write_pair_dataset, write_retrieval_dataset
 
 
 pytest.importorskip("gradio")
@@ -719,3 +719,113 @@ def test_gradio_leaderboard_inspection_renders_uploaded_zip(tmp_path):
             "leaderboard_report_per_dataset.csv",
             "leaderboard_report_reproducibility.json",
         ]
+
+
+def test_ready_leaderboard_registered_datasets_frame_lists_all_presets():
+    frame = gradio_app.ready_leaderboard_registered_datasets_frame()
+
+    assert set(frame["Preset"]) == set(available_dataset_presets())
+    assert "Evaluation Metrics" in frame.columns
+    assert "Sampling Default" in frame.columns
+
+
+def test_ready_leaderboard_rejects_empty_algorithm_selection():
+    with pytest.raises(gradio_app.gr.Error, match="Select at least one algorithm"):
+        gradio_app.ready_leaderboard_algorithm_configs(
+            [],
+            gradio_app.DEFAULT_MODEL,
+            "auto",
+            "auto",
+            "none",
+            "python",
+            "raw",
+        )
+
+
+def test_gradio_ready_leaderboard_runs_pair_and_retrieval_uploads(tmp_path):
+    pair_root = tmp_path / "ready_pairs"
+    write_pair_dataset(
+        pair_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "c", "text": "print(2)", "suffix": ".py"},
+                {"file_id": "d", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "c", "right_id": "d", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+                {"left_id": "b", "right_id": "d", "label": 0},
+            ]
+        ),
+        metadata={"name": "ready_pairs"},
+    )
+    pair_zip = _zip_directory(pair_root, tmp_path / "ready_pairs.zip")
+
+    retrieval_root = tmp_path / "ready_retrieval"
+    write_retrieval_dataset(
+        retrieval_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "q1_file", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "q2_file", "text": "print(2)", "suffix": ".py"},
+                {"file_id": "d1_file", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "d2_file", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame(
+            [
+                {"query_id": "q1", "file_id": "q1_file"},
+                {"query_id": "q2", "file_id": "q2_file"},
+            ]
+        ),
+        corpus=pd.DataFrame(
+            [
+                {"document_id": "d1", "file_id": "d1_file"},
+                {"document_id": "d2", "file_id": "d2_file"},
+            ]
+        ),
+        qrels=pd.DataFrame(
+            [
+                {"query_id": "q1", "document_id": "d1", "relevance": 1},
+                {"query_id": "q2", "document_id": "d2", "relevance": 1},
+            ]
+        ),
+        metadata={"name": "ready_retrieval"},
+    )
+    retrieval_zip = _zip_directory(retrieval_root, tmp_path / "ready_retrieval.zip")
+
+    summary_html, aggregate, per_dataset, report_html, artifacts_path = gradio_app.run_ready_leaderboard_gradio(
+        [pair_zip, retrieval_zip],
+        ["Lexical Only"],
+        gradio_app.DEFAULT_MODEL,
+        "auto",
+        "auto",
+        "none",
+        "python",
+        "raw",
+        0.5,
+        2,
+        7,
+        progress=None,
+    )
+
+    assert "Ready Leaderboard" in summary_html
+    assert "ready_pairs" in per_dataset["dataset_name"].tolist()
+    assert "ready_retrieval" in per_dataset["dataset_name"].tolist()
+    assert set(aggregate["task_family"]) == {"pair", "retrieval"}
+    assert "f1" in per_dataset["metric"].tolist()
+    assert "mean_average_precision" in per_dataset["metric"].tolist()
+    assert "Ranked Algorithms" not in report_html
+    assert "Aggregate Ranking" in report_html
+
+    with zipfile.ZipFile(artifacts_path) as archive:
+        names = archive.namelist()
+        assert "ready_leaderboard.json" in names
+        assert "ready_leaderboard_aggregate.csv" in names
+        assert "ready_leaderboard_per_dataset.csv" in names
+        assert "ready_leaderboard_reproducibility.json" in names
