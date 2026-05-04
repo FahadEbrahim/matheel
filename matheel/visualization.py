@@ -79,7 +79,14 @@ def build_embedding_projection(embeddings, ids=None, metadata=None, method="auto
     return projection
 
 
-def build_dataset_embedding_map(dataset, kind="auto", method="auto", seed=7, static_vector_dim=256):
+def build_dataset_embedding_map(
+    dataset,
+    kind="auto",
+    method="auto",
+    seed=7,
+    static_vector_dim=256,
+    document_metadata=None,
+):
     loaded, dataset_kind = _load_visualization_dataset(dataset, kind=kind)
     texts = load_code_texts(loaded)
     document_ids = tuple(sorted(texts))
@@ -88,7 +95,12 @@ def build_dataset_embedding_map(dataset, kind="auto", method="auto", seed=7, sta
         dim=int(static_vector_dim),
         lowercase=True,
     )
-    metadata = _dataset_document_metadata(loaded, dataset_kind, document_ids)
+    metadata = _dataset_document_metadata(
+        loaded,
+        dataset_kind,
+        document_ids,
+        document_metadata=document_metadata,
+    )
     projection = build_embedding_projection(
         vectors,
         ids=document_ids,
@@ -177,13 +189,22 @@ def write_dataset_map_artifacts(projection, output_dir, basename="dataset_map", 
     return {"csv": csv_path, "json": json_path, "html": html_path}
 
 
-def write_dataset_embedding_map(dataset, output_dir, kind="auto", method="auto", seed=7, static_vector_dim=256):
+def write_dataset_embedding_map(
+    dataset,
+    output_dir,
+    kind="auto",
+    method="auto",
+    seed=7,
+    static_vector_dim=256,
+    document_metadata=None,
+):
     projection = build_dataset_embedding_map(
         dataset,
         kind=kind,
         method=method,
         seed=seed,
         static_vector_dim=static_vector_dim,
+        document_metadata=document_metadata,
     )
     artifacts = write_dataset_map_artifacts(
         projection,
@@ -783,7 +804,7 @@ def _load_visualization_dataset(dataset, kind="auto"):
     raise ValueError("Could not detect dataset kind. Use kind='pair' or kind='retrieval'.")
 
 
-def _dataset_document_metadata(dataset, dataset_kind, document_ids):
+def _dataset_document_metadata(dataset, dataset_kind, document_ids, document_metadata=None):
     files = dataset.files.copy()
     files["document_id"] = files["file_id"].astype(str)
     selected = files[files["document_id"].isin(document_ids)].copy()
@@ -794,8 +815,58 @@ def _dataset_document_metadata(dataset, dataset_kind, document_ids):
         selected["role"] = "submission"
         pair_counts = _pair_file_counts(dataset)
         selected["pair_count"] = selected["document_id"].map(pair_counts).fillna(0).astype(int)
-    metadata_columns = [column for column in ("document_id", "file_path", "role", "pair_count") if column in selected.columns]
-    return selected[metadata_columns].to_dict(orient="records")
+    excluded_columns = {"file_id", "text"}
+    metadata_columns = [
+        "document_id",
+        *[
+            column
+            for column in selected.columns
+            if column != "document_id" and column not in excluded_columns
+        ],
+    ]
+    records = selected[metadata_columns].to_dict(orient="records")
+    return _merge_document_metadata(records, document_metadata)
+
+
+def _merge_document_metadata(records, document_metadata):
+    if document_metadata is None:
+        return records
+    base = pd.DataFrame(records)
+    extra = _coerce_document_metadata(document_metadata)
+    if "document_id" not in extra.columns:
+        raise ValueError("document_metadata must include a document_id column.")
+    extra = extra.copy()
+    extra["document_id"] = extra["document_id"].astype(str)
+    override_columns = [
+        column
+        for column in extra.columns
+        if column != "document_id" and column in base.columns
+    ]
+    if override_columns:
+        base = base.drop(columns=override_columns)
+    merged = base.merge(extra, on="document_id", how="left")
+    return merged.to_dict(orient="records")
+
+
+def _coerce_document_metadata(document_metadata):
+    if isinstance(document_metadata, pd.DataFrame):
+        return document_metadata.copy()
+    if isinstance(document_metadata, dict):
+        if "document_id" in document_metadata:
+            try:
+                return pd.DataFrame(document_metadata)
+            except ValueError:
+                return pd.DataFrame([document_metadata])
+        rows = []
+        for document_id, value in document_metadata.items():
+            row = {"document_id": document_id}
+            if isinstance(value, dict):
+                row.update(value)
+            else:
+                row["value"] = value
+            rows.append(row)
+        return pd.DataFrame(rows)
+    return pd.DataFrame(document_metadata)
 
 
 def _pair_file_counts(dataset):
