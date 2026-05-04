@@ -11,10 +11,10 @@ pinned: false
 
 Interactive code-similarity analysis with configurable embedding, lexical, chunking, preprocessing, and code-aware metrics.
 
-This Space is aligned with `matheel==0.5.4` and includes:
+This Space is aligned with `matheel==0.5.5` and includes:
 
 - Pair, collection, comparison-suite, normalized-dataset, dataset-validation, threshold-tuning, visualization, scored-pair explanation, ready-leaderboard, and leaderboard-inspection workflows
-- Metric presets for balanced, lexical, embedding-only, and code-aware runs
+- Metric presets for balanced, lexical, embedding-only, code-aware, and individual offline baselines
 - Downloadable artifacts for dataset evaluation, validation reports, threshold sweeps, dataset maps, pair explanations, ready leaderboards, leaderboard reports, and leaderboard detail reports
 - Raw and parser-derived lexical tokenization for Winnowing and GST
 - Lexical metrics and baseline algorithms: Levenshtein, Jaro-Winkler, Winnowing, GST
