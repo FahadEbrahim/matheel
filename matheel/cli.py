@@ -25,7 +25,12 @@ from .datasets import (
 )
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
-from .similarity import DEFAULT_MODEL_NAME, available_runtime_devices, get_sim_list
+from .similarity import (
+    DEFAULT_MODEL_NAME,
+    available_lexical_tokenizers,
+    available_runtime_devices,
+    get_sim_list,
+)
 from .chunking import available_chunk_aggregations, available_chunking_methods
 from .model_routing import available_vector_backends
 from .preprocessing import available_preprocess_modes
@@ -507,6 +512,13 @@ def datasets_adapt(
 @click.option('--winnowing-window', default=4, show_default=True, help='Window size used by Winnowing fingerprint selection.')
 @click.option('--gst-min-match-length', default=5, show_default=True, help='Minimum token tile length used by Greedy String Tiling.')
 @click.option(
+    '--lexical-tokenizer',
+    type=click.Choice(available_lexical_tokenizers()),
+    default='raw',
+    show_default=True,
+    help='Token stream for Winnowing and GST. Use parser for tree-sitter leaf token types.',
+)
+@click.option(
     '--vector-backend',
     type=click.Choice(available_vector_backends()),
     default='auto',
@@ -618,6 +630,7 @@ def compare(
     winnowing_kgram,
     winnowing_window,
     gst_min_match_length,
+    lexical_tokenizer,
     vector_backend,
     similarity_function,
     normalize_semantic_scores,
@@ -704,6 +717,7 @@ def compare(
             winnowing_kgram=winnowing_kgram,
             winnowing_window=winnowing_window,
             gst_min_match_length=gst_min_match_length,
+            lexical_tokenizer=lexical_tokenizer,
             vector_backend=vector_backend,
             similarity_function=similarity_function,
             normalize_semantic_scores=normalize_semantic_scores,
@@ -726,6 +740,7 @@ def compare(
             "feature_weights": feature_weights,
             "preprocess_mode": preprocess_mode,
             "code_language": code_language,
+            "lexical_tokenizer": lexical_tokenizer,
         },
         results,
     )
@@ -844,6 +859,13 @@ def compare_suite(source_path, config_file, summary_out, details_dir, output_for
         "Defaults to levenshtein=1.0 for offline-friendly evaluation."
     ),
 )
+@click.option(
+    "--lexical-tokenizer",
+    type=click.Choice(available_lexical_tokenizers()),
+    default="raw",
+    show_default=True,
+    help="Token stream for Winnowing and GST. Use parser for tree-sitter leaf token types.",
+)
 @click.option("--model", default=DEFAULT_MODEL_NAME, show_default=True, help="Embedding model name.")
 @click.option(
     "--preprocess-mode",
@@ -903,6 +925,7 @@ def evaluate_pairs(
     algorithm_options,
     reproducibility_out,
     feature_weights,
+    lexical_tokenizer,
     model,
     preprocess_mode,
     code_language,
@@ -973,6 +996,7 @@ def evaluate_pairs(
                 "model_name": model,
                 "preprocess_mode": preprocess_mode,
                 "code_language": code_language,
+                "lexical_tokenizer": lexical_tokenizer,
                 "vector_backend": vector_backend,
                 "similarity_function": similarity_function,
                 "normalize_semantic_scores": normalize_semantic_scores,
@@ -999,6 +1023,7 @@ def evaluate_pairs(
             "model_name": model,
             "preprocess_mode": preprocess_mode,
             "code_language": code_language,
+            "lexical_tokenizer": lexical_tokenizer,
         },
         scored_pairs,
     )
@@ -1069,6 +1094,13 @@ def evaluate_pairs(
         "Defaults to levenshtein=1.0 for offline-friendly evaluation."
     ),
 )
+@click.option(
+    "--lexical-tokenizer",
+    type=click.Choice(available_lexical_tokenizers()),
+    default="raw",
+    show_default=True,
+    help="Token stream for Winnowing and GST. Use parser for tree-sitter leaf token types.",
+)
 @click.option("--model", default=DEFAULT_MODEL_NAME, show_default=True, help="Embedding model name.")
 @click.option(
     "--preprocess-mode",
@@ -1128,6 +1160,7 @@ def evaluate_retrieval(
     algorithm_options,
     reproducibility_out,
     feature_weights,
+    lexical_tokenizer,
     model,
     preprocess_mode,
     code_language,
@@ -1198,6 +1231,7 @@ def evaluate_retrieval(
                 "model_name": model,
                 "preprocess_mode": preprocess_mode,
                 "code_language": code_language,
+                "lexical_tokenizer": lexical_tokenizer,
                 "vector_backend": vector_backend,
                 "similarity_function": similarity_function,
                 "normalize_semantic_scores": normalize_semantic_scores,
@@ -1224,6 +1258,7 @@ def evaluate_retrieval(
             "model_name": model,
             "preprocess_mode": preprocess_mode,
             "code_language": code_language,
+            "lexical_tokenizer": lexical_tokenizer,
         },
         scored_results,
     )

@@ -44,10 +44,13 @@ def attach_run_metadata(
     vector_backend,
     code_metric,
     chunking_method,
+    lexical_tokenizer=None,
 ):
     frame.attrs["elapsed_seconds"] = round(float(elapsed_seconds), _METADATA_DECIMALS)
     frame.attrs["feature_set"] = format_feature_set(feature_weights)
     frame.attrs["vector_backend"] = semantic_vector_backend_metadata(feature_weights, vector_backend)
     frame.attrs["code_metric"] = code_metric
     frame.attrs["chunking_method"] = chunking_method
+    if lexical_tokenizer is not None:
+        frame.attrs["lexical_tokenizer"] = lexical_tokenizer
     return frame

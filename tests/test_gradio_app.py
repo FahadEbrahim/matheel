@@ -40,6 +40,7 @@ def _build_suite_row(**overrides):
         "winnowing_kgram": 5,
         "winnowing_window": 4,
         "gst_min_match_length": 5,
+        "lexical_tokenizer": "raw",
         "code_metric": "codebleu",
         "code_metric_weight": 0.0,
         "code_language": "java",
@@ -75,6 +76,20 @@ def test_suite_threshold_preserves_zero():
     configs = gradio_app.suite_rows_to_configs([row])
 
     assert configs[0]["options"]["threshold"] == 0.0
+
+
+def test_suite_rows_preserve_lexical_tokenizer():
+    row = _build_suite_row(
+        selected_features=["Winnowing"],
+        levenshtein_weight=0.0,
+        winnowing_weight=1.0,
+        lexical_tokenizer="parser",
+    )
+
+    configs = gradio_app.suite_rows_to_configs([row])
+
+    assert row["lexical_tokenizer"] == "parser"
+    assert configs[0]["options"]["lexical_tokenizer"] == "parser"
 
 
 def test_default_suite_run_name_uses_algorithm_names():
@@ -278,6 +293,7 @@ def test_pair_comparison_requires_both_snippets():
             5,
             4,
             5,
+            "raw",
             "codebleu",
             0.0,
             "python",
@@ -367,6 +383,7 @@ def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
         5,
         4,
         5,
+        "raw",
         "codebleu",
         0.0,
         "java",
@@ -438,6 +455,7 @@ def test_dataset_pair_evaluation_exports_leaderboard_artifacts(tmp_path):
         "auto",
         "none",
         "python",
+        "raw",
         0.5,
         10,
         2,
@@ -508,6 +526,7 @@ def test_dataset_retrieval_evaluation_exports_leaderboard_artifacts(tmp_path):
         "auto",
         "none",
         "python",
+        "raw",
         0.5,
         1,
         2,

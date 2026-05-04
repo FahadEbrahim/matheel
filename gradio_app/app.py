@@ -35,6 +35,7 @@ from matheel.resampling import kfold_splits
 from matheel._run_metadata import elapsed_seconds_between, perf_counter
 from matheel.similarity import (
     DEFAULT_MODEL_NAME,
+    available_lexical_tokenizers,
     available_runtime_devices,
     calculate_similarity,
     get_sim_list,
@@ -63,6 +64,7 @@ CHUNK_LANGUAGE_CHOICES = [
 ]
 PREPROCESSING_UI_CHOICES = [mode for mode in available_preprocess_modes() if mode != "none"]
 CHONKIE_UI_METHODS = [method for method in available_chunking_methods() if method != "none"]
+LEXICAL_TOKENIZER_CHOICES = available_lexical_tokenizers()
 DEFAULT_RUBY_MODE = "auto"
 DEFAULT_RUBY_GRAPH_TIMEOUT = 1.0
 DEFAULT_TSED_COSTS = "1,1,1"
@@ -694,6 +696,7 @@ SUITE_COLUMNS = [
     "winnowing_window",
     "gst_weight",
     "gst_min_match_length",
+    "lexical_tokenizer",
     "threshold",
     "number_results",
 ]
@@ -815,6 +818,7 @@ def suite_rows_to_configs(rows):
             "winnowing_kgram": effective_winnowing_kgram,
             "winnowing_window": effective_winnowing_window,
             "gst_min_match_length": effective_gst_min_match_length,
+            "lexical_tokenizer": str(row.get("lexical_tokenizer") or "raw").strip() or "raw",
             "threshold": max(0.0, float(resolve_numeric_value(row.get("threshold"), 0.35))),
             "number_results": max(1, int(float(row.get("number_results") or 50))),
             "feature_weights": feature_weights,
@@ -921,6 +925,7 @@ def build_suite_run_row_data(
     winnowing_kgram,
     winnowing_window,
     gst_min_match_length,
+    lexical_tokenizer,
     code_metric,
     code_metric_weight,
     code_language,
@@ -1056,6 +1061,7 @@ def build_suite_run_row_data(
         "winnowing_window": normalized_winnowing_window,
         "gst_weight": feature_weights.get("gst", 0.0),
         "gst_min_match_length": normalized_gst_min_match_length,
+        "lexical_tokenizer": str(lexical_tokenizer or "raw").strip() or "raw",
         "threshold": max(0.0, float(resolve_numeric_value(threshold, 0.35))),
         "number_results": max(1, int(float(number_results or 50))),
     }
@@ -1081,6 +1087,7 @@ def append_suite_run_gradio(
     winnowing_kgram,
     winnowing_window,
     gst_min_match_length,
+    lexical_tokenizer,
     code_metric,
     code_metric_weight,
     code_language,
@@ -1123,6 +1130,7 @@ def append_suite_run_gradio(
         winnowing_kgram,
         winnowing_window,
         gst_min_match_length,
+        lexical_tokenizer,
         code_metric,
         code_metric_weight,
         code_language,
@@ -1265,6 +1273,7 @@ def run_suite_gradio(
     winnowing_kgram,
     winnowing_window,
     gst_min_match_length,
+    lexical_tokenizer,
     code_metric,
     code_metric_weight,
     code_language,
@@ -1326,6 +1335,7 @@ def run_suite_gradio(
             winnowing_kgram,
             winnowing_window,
             gst_min_match_length,
+            lexical_tokenizer,
             code_metric,
             code_metric_weight,
             code_language,
@@ -1490,6 +1500,7 @@ def dataset_similarity_options(
     runtime_device,
     preprocess_mode,
     code_language,
+    lexical_tokenizer="raw",
 ):
     preset = metric_preset_options(preset_name)
     feature_weights = {
@@ -1510,6 +1521,7 @@ def dataset_similarity_options(
         "device": str(runtime_device or "auto").strip() or "auto",
         "preprocess_mode": str(preprocess_mode or "none").strip() or "none",
         "code_language": str(code_language or "python").strip() or "python",
+        "lexical_tokenizer": str(lexical_tokenizer or "raw").strip() or "raw",
         "code_metric": code_metric,
         "code_metric_weight": preset["code_metric_weight"] if code_metric != "none" else 0.0,
     }
@@ -1681,6 +1693,7 @@ def evaluate_dataset_gradio(
     runtime_device,
     preprocess_mode,
     code_language,
+    lexical_tokenizer,
     threshold,
     retrieval_k,
     resampling_folds,
@@ -1711,6 +1724,7 @@ def evaluate_dataset_gradio(
         runtime_device,
         preprocess_mode,
         code_language,
+        lexical_tokenizer,
     )
     start_time = perf_counter()
     if str(task_label).startswith("Retrieval"):
@@ -1855,6 +1869,7 @@ def calculate_similarity_gradio(
     winnowing_kgram,
     winnowing_window,
     gst_min_match_length,
+    lexical_tokenizer,
     code_metric,
     code_metric_weight,
     code_language,
@@ -1966,6 +1981,7 @@ def calculate_similarity_gradio(
         winnowing_kgram=effective_winnowing_kgram,
         winnowing_window=effective_winnowing_window,
         gst_min_match_length=effective_gst_min_match_length,
+        lexical_tokenizer=lexical_tokenizer,
         vector_backend=vector_backend,
         similarity_function=similarity_function,
         pooling_method=pooling_method,
@@ -2003,6 +2019,7 @@ def get_sim_list_gradio(
     winnowing_kgram,
     winnowing_window,
     gst_min_match_length,
+    lexical_tokenizer,
     code_metric,
     code_metric_weight,
     code_language,
@@ -2116,6 +2133,7 @@ def get_sim_list_gradio(
         winnowing_kgram=effective_winnowing_kgram,
         winnowing_window=effective_winnowing_window,
         gst_min_match_length=effective_gst_min_match_length,
+        lexical_tokenizer=lexical_tokenizer,
         vector_backend=vector_backend,
         similarity_function=similarity_function,
         pooling_method=pooling_method,
@@ -2257,6 +2275,11 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             pair_gst_min_match_length = gr.Slider(
                                 1, 32, value=5, label="Min Match Length", step=1
                             )
+                        pair_lexical_tokenizer = gr.Dropdown(
+                            choices=list(LEXICAL_TOKENIZER_CHOICES),
+                            value="raw",
+                            label="Lexical Tokenizer",
+                        )
                         with gr.Group(visible=False) as pair_code_group:
                             pair_code_metric = gr.Dropdown(
                                 choices=list(CODE_METRIC_CHOICES),
@@ -2432,6 +2455,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     pair_winnowing_kgram,
                     pair_winnowing_window,
                     pair_gst_min_match_length,
+                    pair_lexical_tokenizer,
                     pair_code_metric,
                     pair_code_metric_weight,
                     pair_code_language,
@@ -2597,6 +2621,11 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             collection_gst_min_match_length = gr.Slider(
                                 1, 32, value=5, label="Min Match Length", step=1
                             )
+                        collection_lexical_tokenizer = gr.Dropdown(
+                            choices=list(LEXICAL_TOKENIZER_CHOICES),
+                            value="raw",
+                            label="Lexical Tokenizer",
+                        )
                         with gr.Group(visible=False) as collection_code_group:
                             collection_code_metric = gr.Dropdown(
                                 choices=list(CODE_METRIC_CHOICES),
@@ -2783,6 +2812,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     collection_winnowing_kgram,
                     collection_winnowing_window,
                     collection_gst_min_match_length,
+                    collection_lexical_tokenizer,
                     collection_code_metric,
                     collection_code_metric_weight,
                     collection_code_language,
@@ -2969,6 +2999,11 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             suite_gst_min_match_length = gr.Slider(
                                 1, 32, value=5, label="Min Match Length", step=1
                             )
+                        suite_lexical_tokenizer = gr.Dropdown(
+                            choices=list(LEXICAL_TOKENIZER_CHOICES),
+                            value="raw",
+                            label="Lexical Tokenizer",
+                        )
                         with gr.Group(visible=False) as suite_code_group:
                             suite_code_metric = gr.Dropdown(
                                 choices=list(CODE_METRIC_CHOICES),
@@ -3184,6 +3219,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     suite_winnowing_kgram,
                     suite_winnowing_window,
                     suite_gst_min_match_length,
+                    suite_lexical_tokenizer,
                     suite_code_metric,
                     suite_code_metric_weight,
                     suite_code_language,
@@ -3236,6 +3272,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     suite_winnowing_kgram,
                     suite_winnowing_window,
                     suite_gst_min_match_length,
+                    suite_lexical_tokenizer,
                     suite_code_metric,
                     suite_code_metric_weight,
                     suite_code_language,
@@ -3418,6 +3455,11 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             value="python",
                             label="Code Language",
                         )
+                        dataset_lexical_tokenizer = gr.Dropdown(
+                            choices=list(LEXICAL_TOKENIZER_CHOICES),
+                            value="raw",
+                            label="Lexical Tokenizer",
+                        )
 
                     with gr.Accordion("Evaluation", open=True):
                         with gr.Group(visible=True) as dataset_pair_group:
@@ -3465,6 +3507,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     dataset_runtime_device,
                     dataset_preprocess_mode,
                     dataset_code_language,
+                    dataset_lexical_tokenizer,
                     dataset_threshold,
                     dataset_k,
                     dataset_resampling_folds,

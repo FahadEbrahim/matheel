@@ -23,6 +23,11 @@ def _vectorize(text):
     ]
 
 
+def test_lexical_tokenizer_choices_are_exported():
+    assert similarity.available_lexical_tokenizers() == ("raw", "parser")
+    assert similarity.normalize_lexical_tokenizer("tree-sitter") == "parser"
+
+
 def test_get_sim_list_uses_preprocessed_code(tmp_path, monkeypatch):
     pytest.importorskip("chonkie")
     monkeypatch.setattr(
@@ -330,6 +335,89 @@ def test_winnowing_kgram_controls_order_sensitivity():
         kgram_size=2,
         window_size=1,
     ) == pytest.approx(0.0)
+
+
+def test_parser_derived_lexical_tokenizer_uses_syntax_token_types():
+    pytest.importorskip("tree_sitter_language_pack")
+
+    tokens = similarity.tokenize_for_lexical_matching(
+        "def add(a, b):\n    return a + b\n",
+        lexical_tokenizer="parser",
+        code_language="python",
+    )
+
+    assert tokens == [
+        "def",
+        "identifier",
+        "(",
+        "identifier",
+        ",",
+        "identifier",
+        ")",
+        ":",
+        "return",
+        "identifier",
+        "+",
+        "identifier",
+    ]
+
+
+def test_parser_derived_winnowing_is_less_sensitive_to_identifier_renaming():
+    pytest.importorskip("tree_sitter_language_pack")
+
+    left = "def add(a, b):\n    total = a + b\n    return total\n"
+    renamed = "def add(x, y):\n    answer = x + y\n    return answer\n"
+    raw_score = similarity.calculate_similarity(
+        left,
+        renamed,
+        feature_weights={"winnowing": 1.0},
+        winnowing_kgram=2,
+        winnowing_window=1,
+        lexical_tokenizer="raw",
+        code_language="python",
+        vector_backend="static_hash",
+    )
+    parser_score = similarity.calculate_similarity(
+        left,
+        renamed,
+        feature_weights={"winnowing": 1.0},
+        winnowing_kgram=2,
+        winnowing_window=1,
+        lexical_tokenizer="parser",
+        code_language="python",
+        vector_backend="static_hash",
+    )
+
+    assert raw_score < 1.0
+    assert parser_score == pytest.approx(1.0)
+
+
+def test_parser_derived_gst_is_less_sensitive_to_identifier_renaming():
+    pytest.importorskip("tree_sitter_language_pack")
+
+    left = "def add(a, b):\n    total = a + b\n    return total\n"
+    renamed = "def add(x, y):\n    answer = x + y\n    return answer\n"
+    raw_score = similarity.calculate_similarity(
+        left,
+        renamed,
+        feature_weights={"gst": 1.0},
+        gst_min_match_length=2,
+        lexical_tokenizer="raw",
+        code_language="python",
+        vector_backend="static_hash",
+    )
+    parser_score = similarity.calculate_similarity(
+        left,
+        renamed,
+        feature_weights={"gst": 1.0},
+        gst_min_match_length=2,
+        lexical_tokenizer="parser",
+        code_language="python",
+        vector_backend="static_hash",
+    )
+
+    assert raw_score < 1.0
+    assert parser_score == pytest.approx(1.0)
 
 
 def test_gst_similarity_has_reference_token_accounting():

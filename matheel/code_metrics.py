@@ -411,6 +411,41 @@ def tokenize_for_code_metrics(text):
     return _TOKEN_RE.findall(text or "")
 
 
+def parser_tokenize_for_code_metrics(text, language):
+    parser = _resolve_tsed_parser(language)
+    if parser is not None and not hasattr(parser, "parse"):
+        normalized_language = normalize_code_language(language)
+        with _TREE_SITTER_PARSER_CACHE_LOCK:
+            if _TREE_SITTER_PARSER_CACHE.get(normalized_language) is parser:
+                _TREE_SITTER_PARSER_CACHE.pop(normalized_language, None)
+        parser = _resolve_tsed_parser(normalized_language)
+    if parser is None:
+        raise ValueError(f"Parser-derived tokenization is unavailable for language: {language}")
+    if not hasattr(parser, "parse"):
+        raise ValueError(f"Parser-derived tokenization is unavailable for language: {language}")
+
+    try:
+        tree = parser.parse(bytes(text or "", encoding="utf-8"))
+    except Exception as exc:
+        raise ValueError(f"Could not parse code for language: {language}") from exc
+
+    tokens = []
+    stack = [tree.root_node]
+    while stack:
+        node = stack.pop()
+        if getattr(node, "is_missing", False):
+            continue
+        if getattr(node, "child_count", 0):
+            stack.extend(reversed(node.children))
+            continue
+        if node.type in {"comment", "line_comment", "block_comment"}:
+            continue
+        if int(node.start_byte) == int(node.end_byte):
+            continue
+        tokens.append(str(node.type))
+    return tokens
+
+
 def ngram_tuples(tokens, n):
     if n <= 0 or len(tokens) < n:
         return []

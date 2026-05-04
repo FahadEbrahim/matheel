@@ -91,11 +91,14 @@ from .vectors import (
     similarity_function_score_range,
 )
 from .similarity import (
+    available_lexical_tokenizers,
     available_runtime_devices,
     calculate_similarity,
     detect_default_device,
     get_sim_list,
     inspect_model_settings,
+    normalize_lexical_tokenizer,
+    tokenize_for_lexical_matching,
 )
 
 __all__ = [
@@ -108,6 +111,7 @@ __all__ = [
     "available_dataset_presets_by_task",
     "available_dataset_sources",
     "available_dataset_task_types",
+    "available_lexical_tokenizers",
     "available_pooling_methods",
     "available_resampling_methods",
     "available_runtime_devices",
@@ -152,6 +156,7 @@ __all__ = [
     "metric_summary",
     "normalize_algorithm_options",
     "normalize_feature_weights",
+    "normalize_lexical_tokenizer",
     "PairDataset",
     "PairAlgorithm",
     "pair_algorithm_metadata",
@@ -187,4 +192,5 @@ __all__ = [
     "kfold_splits",
     "bootstrap_resamples",
     "build_matheel_pair_algorithm",
+    "tokenize_for_lexical_matching",
 ]
