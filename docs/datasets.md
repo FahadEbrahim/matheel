@@ -482,6 +482,8 @@ folds = kfold_splits(100, n_splits=5, seed=7)
 bootstraps = bootstrap_resamples(100, n_rounds=100, seed=7)
 ```
 
+For stratified k-fold splits, `n_splits` must not exceed the smallest label count. For grouped k-fold splits, `n_splits` must not exceed the number of unique groups. This keeps every fold valid and prevents empty test folds.
+
 For pair-classification results, splits are applied to scored pair rows:
 
 ```python

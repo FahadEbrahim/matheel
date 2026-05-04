@@ -1666,6 +1666,7 @@ def _write_leaderboard_artifacts(
 def _resample_pair_scores(scored, folds, seed, threshold):
     if not folds:
         return pd.DataFrame(), pd.DataFrame()
+    _validate_pair_resampling_folds(scored, int(folds))
     splits = kfold_splits(
         len(scored),
         n_splits=int(folds),
@@ -1680,8 +1681,29 @@ def _resample_retrieval_scores(scored, dataset, folds, seed, k):
     if not folds:
         return pd.DataFrame(), pd.DataFrame()
     query_ids = tuple(sorted(scored["query_id"].astype(str).unique().tolist()))
+    _validate_retrieval_resampling_folds(query_ids, int(folds))
     splits = kfold_splits(query_ids, n_splits=int(folds), shuffle=True, seed=int(seed))
     return evaluate_retrieval_resamples(scored, splits, qrels=dataset.qrels, k=k)
+
+
+def _validate_resampling_fold_count(item_count, folds, item_label):
+    if folds < 2:
+        raise gr.Error("K-fold resampling needs at least 2 folds, or set folds to 0 to turn it off.")
+    if folds > item_count:
+        raise gr.Error(f"K-fold resampling folds must not exceed the number of {item_label}.")
+
+
+def _validate_pair_resampling_folds(scored, folds):
+    _validate_resampling_fold_count(len(scored), folds, "scored pair rows")
+    if "label" not in scored:
+        return
+    label_counts = scored["label"].value_counts()
+    if not label_counts.empty and folds > int(label_counts.min()):
+        raise gr.Error("K-fold resampling folds must not exceed the smallest label count.")
+
+
+def _validate_retrieval_resampling_folds(query_ids, folds):
+    _validate_resampling_fold_count(len(query_ids), folds, "queries")
 
 
 def evaluate_dataset_gradio(

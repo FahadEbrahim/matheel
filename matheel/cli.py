@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+from . import __version__
 from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
@@ -40,6 +41,7 @@ from .vectors import (
 )
 
 @click.group()
+@click.version_option(version=__version__, prog_name="matheel")
 def main():
     """Matheel CLI - Compute Code Similarity"""
     pass

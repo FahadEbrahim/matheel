@@ -1,3 +1,10 @@
+from importlib.metadata import PackageNotFoundError, version
+
+try:
+    __version__ = version("matheel")
+except PackageNotFoundError:  # pragma: no cover - source tree without install metadata
+    __version__ = "0+unknown"
+
 from .algorithms import (
     PairAlgorithm,
     attach_algorithm_metadata,
@@ -102,6 +109,7 @@ from .similarity import (
 )
 
 __all__ = [
+    "__version__",
     "available_code_metrics",
     "available_code_metric_languages",
     "available_default_features",

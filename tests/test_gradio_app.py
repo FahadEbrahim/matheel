@@ -483,6 +483,20 @@ def test_dataset_pair_evaluation_exports_leaderboard_artifacts(tmp_path):
     assert manifest["dataset_kind"] == "pair_classification"
 
 
+def test_dataset_pair_resampling_reports_invalid_label_folds():
+    scored = pd.DataFrame(
+        {
+            "left_id": ["a", "b"],
+            "right_id": ["c", "d"],
+            "label": [0, 1],
+            "similarity_score": [0.1, 0.9],
+        }
+    )
+
+    with pytest.raises(gradio_app.gr.Error, match="smallest label count"):
+        gradio_app._resample_pair_scores(scored, folds=2, seed=7, threshold=0.5)
+
+
 def test_dataset_retrieval_evaluation_exports_leaderboard_artifacts(tmp_path):
     dataset_root = tmp_path / "retrieval_dataset"
     write_retrieval_dataset(
@@ -548,3 +562,29 @@ def test_dataset_retrieval_evaluation_exports_leaderboard_artifacts(tmp_path):
         assert "retrieval_resampling_summary.csv" in names
         manifest = json.loads(archive.read("leaderboard_manifest.json").decode("utf-8"))
     assert manifest["dataset_kind"] == "retrieval"
+
+
+def test_dataset_retrieval_resampling_reports_invalid_query_folds(tmp_path):
+    dataset = write_retrieval_dataset(
+        tmp_path / "retrieval_dataset",
+        files=pd.DataFrame(
+            [
+                {"file_id": "q1_file", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "d1_file", "text": "print(1)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "q1_file"}]),
+        corpus=pd.DataFrame([{"document_id": "d1", "file_id": "d1_file"}]),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+    )
+    scored = pd.DataFrame(
+        {
+            "query_id": ["q1"],
+            "document_id": ["d1"],
+            "similarity_score": [1.0],
+            "relevance": [1.0],
+        }
+    )
+
+    with pytest.raises(gradio_app.gr.Error, match="number of queries"):
+        gradio_app._resample_retrieval_scores(scored, dataset, folds=2, seed=7, k=1)
