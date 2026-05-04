@@ -10,7 +10,7 @@ For `calculate_similarity(...)` and `get_sim_list(...)`, the main order is:
 2. Apply `preprocess_mode`.
 3. Build embeddings when the semantic feature is active.
 4. Tokenize for lexical baselines and token-based code metrics.
-5. Parse code for parser-backed code metrics when those metrics are active and their optional runtimes are available.
+5. Parse code for parser-derived lexical tokens or parser-backed code metrics when those modes are active and their runtimes are available.
 6. Blend active feature scores with normalized feature weights.
 
 Preprocessing happens before lexical, semantic, and code-aware scoring. If you enable `advanced`, identifiers and literals may already be canonicalized before token-based metrics run.
@@ -34,8 +34,8 @@ Preprocessing is intentionally text-first. It uses language-specific comment and
 | --- | --- |
 | `levenshtein` | Compares the prepared strings directly. |
 | `jaro_winkler` | Compares the prepared strings directly. |
-| `winnowing` | Uses Matheel's code-token regex over the prepared string. |
-| `gst` | Uses the same code-token regex as Winnowing. |
+| `winnowing` | Uses Matheel's code-token regex by default, or tree-sitter leaf node types with `lexical_tokenizer="parser"`. |
+| `gst` | Uses the same lexical tokenizer selection as Winnowing. |
 | `crystalbleu` | Uses the same code-token regex, then builds n-grams and discounts frequent n-grams. |
 | `ruby` with `ruby_mode=ngram` | Uses the same code-token regex. |
 | `ruby` with `ruby_mode=string` and `ruby_tokenizer=regex` | Uses the same code-token regex. |
@@ -47,16 +47,20 @@ Preprocessing is intentionally text-first. It uses language-specific comment and
 
 The shared code-token regex recognizes identifiers, numbers, and punctuation. It does not split snake_case or camelCase by default. For example, `totalCount` stays one token in regex mode; RUBY's `tranx` tokenizer splits it into `total` and `Count`.
 
-## Parser-Token Limitations
+## Parser-Derived Lexical Tokens
 
-Matheel does not currently expose a parser-derived token stream for `winnowing`, `gst`, `crystalbleu`, or RUBY n-gram mode. That means these metrics are deterministic and lightweight, but they are not equivalent to parser-heavy plagiarism tools that normalize code through AST or grammar tokens.
+Set `lexical_tokenizer="parser"` in Python or `--lexical-tokenizer parser` in the CLI to use parser-derived leaf node types for `winnowing` and `gst`. The default is `raw`, preserving the regex token stream used in earlier Matheel releases.
+
+Parser-derived lexical tokens make the lexical baselines less sensitive to identifier renaming. They still compare ordered token streams; they are not full AST or data-flow comparisons.
+
+## Limitations
 
 Important limitations:
 
 - lexical token baselines see surface token order and punctuation
-- parser-backed metrics depend on optional runtime availability
+- parser-derived lexical tokens and parser-backed metrics depend on parser runtime availability
 - unsupported languages fall back only where a metric explicitly supports fallback behavior
 - preprocessing language hints improve comment/import handling, but they do not guarantee full parsing
 - aggressive `advanced` preprocessing can hide identifier and literal differences that some workflows may care about
 
-For parser-heavy comparisons, report the active preprocessing mode, tokenization-sensitive parameters, selected code metric, language, and optional parser availability alongside the score.
+For parser-heavy comparisons, report the active preprocessing mode, `lexical_tokenizer`, tokenization-sensitive parameters, selected code metric, language, and parser availability alongside the score.

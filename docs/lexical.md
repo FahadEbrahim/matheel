@@ -13,7 +13,7 @@ Matheel can blend lexical similarity with semantic and code-aware scores.
 - `gst`
   Greedy String Tiling over token sequences.
 
-Winnowing and GST use Matheel's shared code-token regex after preprocessing. They are deterministic lexical baselines, not parser-derived token streams. See [Tokenization and preprocessing limits](tokenization.md) for details.
+Winnowing and GST use Matheel's shared code-token regex after preprocessing by default. Set `lexical_tokenizer="parser"` or CLI `--lexical-tokenizer parser` to use tree-sitter leaf node types for supported languages. Parser-derived token streams are more structural and less sensitive to identifier renaming.
 
 These are most useful when:
 
@@ -30,6 +30,7 @@ These are most useful when:
 - `winnowing_kgram`
 - `winnowing_window`
 - `gst_min_match_length`
+- `lexical_tokenizer`
 
 ## Canonical Weight Format
 
@@ -88,12 +89,15 @@ python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --feature-weight winnowing=1.0 \
   --winnowing-kgram 5 \
-  --winnowing-window 4
+  --winnowing-window 4 \
+  --lexical-tokenizer raw
 ```
 
 ```bash
 python examples/sample_data.py --output sample_pairs.zip --overwrite
 matheel compare sample_pairs.zip \
   --feature-weight gst=1.0 \
-  --gst-min-match-length 5
+  --gst-min-match-length 5 \
+  --code-language python \
+  --lexical-tokenizer parser
 ```

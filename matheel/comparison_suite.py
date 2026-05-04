@@ -339,6 +339,7 @@ def _summary_metadata(options, results, elapsed_seconds):
         "vector_backend": vector_backend,
         "code_metric": attrs.get("code_metric") or options.get("code_metric", "none"),
         "chunking_method": attrs.get("chunking_method") or options.get("chunking_method", "none"),
+        "lexical_tokenizer": attrs.get("lexical_tokenizer") or options.get("lexical_tokenizer", "raw"),
         "algorithm_name": algorithm.get("algorithm_name") or "matheel",
         "algorithm_function": algorithm.get("algorithm_function") or "calculate_similarity",
         "algorithm_package_version": algorithm.get("algorithm_package_version") or "",

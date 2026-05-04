@@ -9,6 +9,7 @@ from rapidfuzz.distance import JaroWinkler, Levenshtein
 
 from .code_metrics import (
     parse_component_weights,
+    parser_tokenize_for_code_metrics,
     prepare_codebertscore_context,
     prepare_crystalbleu_context,
     prepare_ruby_context,
@@ -44,6 +45,7 @@ from .vectors import (
 
 DEFAULT_MODEL_NAME = "huggingface/CodeBERTa-small-v1"
 RESULT_COLUMNS = ["file_name_1", "file_name_2", "similarity_score"]
+LEXICAL_TOKENIZERS = ("raw", "parser")
 
 
 def load_torch():
@@ -66,6 +68,28 @@ def available_runtime_devices():
         insert_at = 1 if devices and devices[0] == "cuda" else 0
         devices.insert(insert_at, "mps")
     return tuple(dict.fromkeys(devices))
+
+
+def available_lexical_tokenizers():
+    return LEXICAL_TOKENIZERS
+
+
+def normalize_lexical_tokenizer(lexical_tokenizer):
+    selected = (lexical_tokenizer or "raw").strip().lower().replace("_", "-")
+    aliases = {
+        "code": "raw",
+        "regex": "raw",
+        "code-metrics": "raw",
+        "tree-sitter": "parser",
+        "tree_sitter": "parser",
+        "parser-derived": "parser",
+        "parser_derived": "parser",
+    }
+    selected = aliases.get(selected, selected)
+    if selected not in LEXICAL_TOKENIZERS:
+        supported = ", ".join(LEXICAL_TOKENIZERS)
+        raise ValueError(f"lexical_tokenizer must be one of: {supported}. Got: {lexical_tokenizer}")
+    return selected
 
 
 def detect_default_device():
@@ -406,7 +430,10 @@ def _stable_token_hash(tokens):
     return int.from_bytes(hashlib.blake2b(payload, digest_size=8).digest(), "big")
 
 
-def _tokenize_for_lexical_matching(code):
+def tokenize_for_lexical_matching(code, lexical_tokenizer="raw", code_language=None):
+    selected = normalize_lexical_tokenizer(lexical_tokenizer)
+    if selected == "parser":
+        return parser_tokenize_for_code_metrics(code, code_language)
     return tokenize_for_code_metrics(code)
 
 
@@ -616,6 +643,8 @@ def build_feature_scores(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    lexical_tokenizer="raw",
+    code_language=None,
     active_features=None,
     normalize_semantic_scores=False,
 ):
@@ -628,8 +657,16 @@ def build_feature_scores(
     lexical_tokens1 = None
     lexical_tokens2 = None
     if needs_token_features:
-        lexical_tokens1 = _tokenize_for_lexical_matching(code1)
-        lexical_tokens2 = _tokenize_for_lexical_matching(code2)
+        lexical_tokens1 = tokenize_for_lexical_matching(
+            code1,
+            lexical_tokenizer=lexical_tokenizer,
+            code_language=code_language,
+        )
+        lexical_tokens2 = tokenize_for_lexical_matching(
+            code2,
+            lexical_tokenizer=lexical_tokenizer,
+            code_language=code_language,
+        )
 
     feature_scores = {
         "semantic": (
@@ -702,6 +739,8 @@ def combined_similarity_from_embeddings(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    lexical_tokenizer="raw",
+    code_language=None,
     normalize_semantic_scores=False,
 ):
     validate_semantic_score_scale_options(
@@ -728,6 +767,8 @@ def combined_similarity_from_embeddings(
         winnowing_kgram=winnowing_kgram,
         winnowing_window=winnowing_window,
         gst_min_match_length=gst_min_match_length,
+        lexical_tokenizer=lexical_tokenizer,
+        code_language=code_language,
         active_features=active_features,
         normalize_semantic_scores=normalize_semantic_scores,
     )
@@ -784,6 +825,7 @@ def rank_code_pairs(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    lexical_tokenizer="raw",
     normalize_semantic_scores=False,
     progress=False,
     progress_callback=None,
@@ -865,6 +907,8 @@ def rank_code_pairs(
             winnowing_kgram=winnowing_kgram,
             winnowing_window=winnowing_window,
             gst_min_match_length=gst_min_match_length,
+            lexical_tokenizer=lexical_tokenizer,
+            code_language=code_language,
             normalize_semantic_scores=normalize_semantic_scores,
         )
         results.append((score, i, j))
@@ -933,6 +977,7 @@ def get_sim_list(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    lexical_tokenizer="raw",
     normalize_semantic_scores=False,
     progress=False,
     progress_callback=None,
@@ -951,6 +996,7 @@ def get_sim_list(
         winnowing_window=winnowing_window,
         gst_min_match_length=gst_min_match_length,
     )
+    lexical_tokenizer = normalize_lexical_tokenizer(lexical_tokenizer)
     model_info = None
     resolved_feature_weights = resolve_feature_weights(
         feature_weights=feature_weights,
@@ -1100,6 +1146,7 @@ def get_sim_list(
         winnowing_kgram=winnowing_kgram,
         winnowing_window=winnowing_window,
         gst_min_match_length=gst_min_match_length,
+        lexical_tokenizer=lexical_tokenizer,
         normalize_semantic_scores=normalize_semantic_scores,
         progress=progress,
         progress_callback=progress_callback,
@@ -1124,6 +1171,7 @@ def get_sim_list(
         vector_backend=vector_backend,
         code_metric=(code_metric or "none").strip().lower() or "none",
         chunking_method=(chunking_method or "none").strip().lower() or "none",
+        lexical_tokenizer=lexical_tokenizer,
     )
 
 
@@ -1188,6 +1236,7 @@ def calculate_similarity(
     winnowing_kgram=5,
     winnowing_window=4,
     gst_min_match_length=5,
+    lexical_tokenizer="raw",
     normalize_semantic_scores=False,
     progress=False,
     progress_callback=None,
@@ -1205,6 +1254,7 @@ def calculate_similarity(
         winnowing_window=winnowing_window,
         gst_min_match_length=gst_min_match_length,
     )
+    lexical_tokenizer = normalize_lexical_tokenizer(lexical_tokenizer)
     model_info = None
     resolved_feature_weights = resolve_feature_weights(
         feature_weights=feature_weights,
@@ -1335,6 +1385,8 @@ def calculate_similarity(
             winnowing_kgram=winnowing_kgram,
             winnowing_window=winnowing_window,
             gst_min_match_length=gst_min_match_length,
+            lexical_tokenizer=lexical_tokenizer,
+            code_language=code_language,
             normalize_semantic_scores=normalize_semantic_scores,
         )
     return score
