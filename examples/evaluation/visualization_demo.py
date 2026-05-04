@@ -10,7 +10,11 @@ _MPLCONFIGDIR.mkdir(parents=True, exist_ok=True)
 os.environ.setdefault("MPLCONFIGDIR", os.fspath(_MPLCONFIGDIR))
 
 from matheel.datasets import write_pair_dataset  # noqa: E402
-from matheel.visualization import write_dataset_embedding_map, write_pair_dataset_explanation  # noqa: E402
+from matheel.visualization import (  # noqa: E402
+    write_dataset_embedding_map,
+    write_pair_dataset_explanation,
+    write_scored_pair_explanation,
+)
 
 
 def main():
@@ -55,6 +59,22 @@ def main():
 
         print("Pair matches:", len(explanation["matches"]))
         print("Pair HTML artifact:", pair_artifacts["html"])
+
+        scored_pairs = pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "similarity_score": 0.94, "label": 1},
+                {"left_id": "a", "right_id": "c", "similarity_score": 0.21, "label": 0},
+            ]
+        )
+        scored_explanation, scored_artifacts = write_scored_pair_explanation(
+            scored_pairs,
+            dataset_root,
+            workspace / "scored_pair_explanations",
+            row_index=0,
+        )
+
+        print("Scored pair score:", scored_explanation["metadata"]["similarity_score"])
+        print("Scored pair HTML artifact:", scored_artifacts["html"])
 
 
 if __name__ == "__main__":

@@ -31,6 +31,15 @@ from .benchmark_cards import (
     dataset_card,
     leaderboard_cards,
 )
+from .benchmark_registry import (
+    compare_benchmark_runs,
+    empty_benchmark_registry,
+    list_benchmark_runs,
+    load_benchmark_registry,
+    load_benchmark_run,
+    register_benchmark_run,
+    write_benchmark_registry,
+)
 from .chunking import chunk_text, chunker_parameter_names
 from .calibration import (
     calibrate_threshold,
@@ -132,7 +141,12 @@ from .reproducibility import (
     fingerprint_source,
     write_reproducibility_snapshot,
 )
-from .reports import benchmark_report_html, write_benchmark_report
+from .reports import (
+    benchmark_detail_report_html,
+    benchmark_report_html,
+    write_benchmark_detail_report,
+    write_benchmark_report,
+)
 from .vectors import (
     available_pooling_methods,
     available_similarity_functions,
@@ -142,6 +156,7 @@ from .visualization import (
     available_pair_explanation_segment_modes,
     available_projection_methods,
     build_pair_dataset_explanation,
+    build_scored_pair_explanation,
     build_dataset_embedding_map,
     build_embedding_projection,
     build_pair_explanation,
@@ -155,6 +170,7 @@ from .visualization import (
     write_dataset_map_artifacts,
     write_pair_explanation,
     write_pair_explanation_artifacts,
+    write_scored_pair_explanation,
 )
 from .similarity import (
     available_lexical_tokenizers,
@@ -193,6 +209,7 @@ __all__ = [
     "benchmark_cache_key_for_run",
     "benchmark_cache_paths",
     "benchmark_dependency_versions",
+    "benchmark_detail_report_html",
     "benchmark_report_html",
     "calibrate_threshold",
     "calibration_curve",
@@ -205,6 +222,7 @@ __all__ = [
     "clear_benchmark_cache",
     "codebleu_components",
     "collect_reproducibility_snapshot",
+    "compare_benchmark_runs",
     "compare_metric_samples",
     "DataSplit",
     "adapt_pair_dataset",
@@ -214,6 +232,7 @@ __all__ = [
     "dataset_validation_report_html",
     "dataset_validation_report_payload",
     "default_feature_weights",
+    "empty_benchmark_registry",
     "evaluate_threshold",
     "evaluate_pair_dataset",
     "evaluate_pair_resamples",
@@ -230,8 +249,11 @@ __all__ = [
     "leaderboard_cards",
     "leaderboard_html",
     "leaderboard_payload",
+    "list_benchmark_runs",
     "load_code_texts",
     "load_benchmark_cache_result",
+    "load_benchmark_registry",
+    "load_benchmark_run",
     "load_dataset_manifest",
     "load_leaderboard_manifest",
     "load_pair_dataset",
@@ -254,6 +276,7 @@ __all__ = [
     "preprocess_code",
     "prepare_algorithm_dataset",
     "registered_datasets",
+    "register_benchmark_run",
     "register_dataset_adapter",
     "register_dataset_entry",
     "register_dataset_preset",
@@ -287,6 +310,7 @@ __all__ = [
     "build_embedding_projection",
     "build_pair_dataset_explanation",
     "build_pair_explanation",
+    "build_scored_pair_explanation",
     "dataset_map_html",
     "dataset_map_payload",
     "pair_explanation_html",
@@ -305,9 +329,12 @@ __all__ = [
     "write_dataset_validation_report",
     "write_threshold_tuning_report_artifacts",
     "write_benchmark_cache_result",
+    "write_benchmark_detail_report",
     "write_benchmark_report",
+    "write_benchmark_registry",
     "write_leaderboard_artifacts",
     "write_pair_dataset_explanation",
     "write_pair_explanation",
     "write_pair_explanation_artifacts",
+    "write_scored_pair_explanation",
 ]

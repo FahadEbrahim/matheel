@@ -7,6 +7,7 @@ import pandas as pd
 
 from . import __version__
 from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
+from .benchmark_registry import compare_benchmark_runs, list_benchmark_runs, register_benchmark_run
 from .calibration import write_calibration_report_artifacts, write_threshold_tuning_report_artifacts
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
@@ -50,6 +51,7 @@ from .visualization import (
     write_dataset_embedding_map,
     write_pair_dataset_explanation,
     write_pair_explanation,
+    write_scored_pair_explanation,
 )
 
 @click.group()
@@ -636,8 +638,19 @@ def visualize_dataset(dataset_path, kind, method, seed, static_vector_dim, outpu
     help="Normalized pair dataset to read the selected pair from.",
 )
 @click.option("--pair-index", default=0, show_default=True, help="Zero-based pair row for --dataset.")
+@click.option(
+    "--scores",
+    "scores_path",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="Scored pair CSV/JSON rows to select a dataset pair from.",
+)
+@click.option("--score-row-index", default=0, show_default=True, help="Zero-based scored row for --scores.")
 @click.option("--left-id", help="Left file id for selecting a dataset pair.")
 @click.option("--right-id", help="Right file id for selecting a dataset pair.")
+@click.option("--left-column", default="left_id", show_default=True, help="Scored pair left-id column.")
+@click.option("--right-column", default="right_id", show_default=True, help="Scored pair right-id column.")
+@click.option("--score-column", default="similarity_score", show_default=True, help="Scored pair score column.")
+@click.option("--label-column", default="label", show_default=True, help="Scored pair label column.")
 @click.option(
     "--source",
     "source_path",
@@ -676,8 +689,14 @@ def explain_pair(
     right_path,
     dataset_path,
     pair_index,
+    scores_path,
+    score_row_index,
     left_id,
     right_id,
+    left_column,
+    right_column,
+    score_column,
+    label_column,
     source_path,
     left_name,
     right_name,
@@ -701,21 +720,43 @@ def explain_pair(
         raise click.UsageError("--dataset uses --left-id/--right-id, not --left-name/--right-name.")
     if source_path and (left_id or right_id):
         raise click.UsageError("--source uses --left-name/--right-name, not --left-id/--right-id.")
+    if scores_path and not dataset_path:
+        raise click.UsageError("--scores can only be used with --dataset.")
 
     if dataset_path:
-        explanation, artifacts = write_pair_dataset_explanation(
-            dataset_path,
-            output_dir,
-            pair_index=pair_index,
-            left_id=left_id,
-            right_id=right_id,
-            segment_mode=segment_mode,
-            high_threshold=high_threshold,
-            medium_threshold=medium_threshold,
-            low_threshold=low_threshold,
-            chunk_size=chunk_size,
-            basename=basename,
-        )
+        if scores_path:
+            explanation, artifacts = write_scored_pair_explanation(
+                scores_path,
+                dataset_path,
+                output_dir,
+                row_index=score_row_index,
+                left_id=left_id,
+                right_id=right_id,
+                left_column=left_column,
+                right_column=right_column,
+                score_column=score_column,
+                label_column=label_column,
+                segment_mode=segment_mode,
+                high_threshold=high_threshold,
+                medium_threshold=medium_threshold,
+                low_threshold=low_threshold,
+                chunk_size=chunk_size,
+                basename=basename,
+            )
+        else:
+            explanation, artifacts = write_pair_dataset_explanation(
+                dataset_path,
+                output_dir,
+                pair_index=pair_index,
+                left_id=left_id,
+                right_id=right_id,
+                segment_mode=segment_mode,
+                high_threshold=high_threshold,
+                medium_threshold=medium_threshold,
+                low_threshold=low_threshold,
+                chunk_size=chunk_size,
+                basename=basename,
+            )
     elif source_path:
         left_code, right_code = _source_pair_texts(source_path, left_name, right_name)
         explanation, artifacts = write_pair_explanation(
@@ -909,6 +950,103 @@ def leaderboard_command(config_file, output_dir, basename, output_format):
         basename=basename,
     )
     _echo_leaderboard_summary(report, artifacts, output_format)
+
+
+@main.group(name="benchmark-registry")
+def benchmark_registry_group():
+    """Track and compare exported leaderboard runs."""
+
+
+@benchmark_registry_group.command(name="add")
+@click.argument("registry_file", type=click.Path(dir_okay=False))
+@click.argument("leaderboard_json", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.option("--run-name", help="Human-readable run name. Defaults to the leaderboard metadata name.")
+@click.option(
+    "--artifact",
+    "artifact_paths",
+    multiple=True,
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    help="Optional exported artifact path to record by filename.",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def benchmark_registry_add_command(registry_file, leaderboard_json, run_name, artifact_paths, output_format):
+    """Add or replace a leaderboard JSON artifact in a benchmark registry."""
+    entry = register_benchmark_run(
+        registry_file,
+        leaderboard_json,
+        run_name=run_name,
+        artifact_paths=artifact_paths,
+    )
+    summary = {
+        "registry": str(registry_file),
+        "run_id": entry["run_id"],
+        "name": entry["name"],
+        "aggregate_rows": len(entry.get("aggregate") or []),
+        "per_dataset_rows": len(entry.get("per_dataset") or []),
+    }
+    if output_format == "json":
+        _echo_json(summary)
+        return
+    click.echo(f"run_id={summary['run_id']}")
+    click.echo(f"name={summary['name']}")
+    click.echo(f"aggregate_rows={summary['aggregate_rows']}")
+    click.echo(f"per_dataset_rows={summary['per_dataset_rows']}")
+
+
+@benchmark_registry_group.command(name="list")
+@click.argument("registry_file", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def benchmark_registry_list_command(registry_file, output_format):
+    """List runs tracked in a benchmark registry."""
+    runs = list_benchmark_runs(registry_file)
+    if output_format == "json":
+        _echo_json(runs.to_dict(orient="records"))
+        return
+    click.echo(runs.to_string(index=False) if not runs.empty else "No benchmark runs.")
+
+
+@benchmark_registry_group.command(name="compare")
+@click.argument("registry_file", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.option("--run-id", "run_ids", multiple=True, help="Run id to include. Repeat to choose order.")
+@click.option("--output", "output_path", type=click.Path(dir_okay=False), help="Optional CSV or JSON output path.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json", "csv")),
+    default="text",
+    show_default=True,
+)
+def benchmark_registry_compare_command(registry_file, run_ids, output_path, output_format):
+    """Compare aggregate leaderboard metrics across registry runs."""
+    comparison = compare_benchmark_runs(registry_file, run_ids=run_ids or None)
+    if output_path:
+        target = Path(output_path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if target.suffix.lower() == ".json" or output_format == "json":
+            target.write_text(json.dumps(comparison.to_dict(orient="records"), indent=2, sort_keys=True), encoding="utf-8")
+        else:
+            comparison.to_csv(target, index=False)
+        click.echo(f"output={target}")
+        return
+    if output_format == "json":
+        _echo_json(comparison.to_dict(orient="records"))
+        return
+    if output_format == "csv":
+        click.echo(comparison.to_csv(index=False))
+        return
+    click.echo(comparison.to_string(index=False) if not comparison.empty else "No benchmark comparison rows.")
 
 
 @main.command()
