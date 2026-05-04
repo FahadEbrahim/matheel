@@ -6,6 +6,12 @@ from types import ModuleType
 import pandas as pd
 import pytest
 
+import matheel
+from matheel.dataset_validation import (
+    dataset_validation_report_payload,
+    validate_dataset_report,
+    write_dataset_validation_report,
+)
 from matheel.datasets import (
     adapt_pair_dataset,
     adapt_retrieval_dataset,
@@ -71,6 +77,94 @@ def test_dataset_source_registry_resolves_local_sources(tmp_path):
 
     assert "local" in available_dataset_sources()
     assert resolve_dataset_source("local", dataset_root) == dataset_root.resolve()
+
+
+def test_dataset_validation_report_exports_clean_pair_dataset(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]),
+        metadata={"name": "validation_pairs"},
+    )
+
+    report, artifacts = write_dataset_validation_report(
+        dataset_root,
+        tmp_path / "validation",
+        kind="pair",
+        basename="tiny",
+    )
+    payload = dataset_validation_report_payload(report)
+
+    assert report["status"] == "warning"
+    assert report["warning_count"] == 1
+    assert report["counts"]["pairs"] == 1
+    assert any(issue["code"] == "single_class_labels" for issue in report["issues"])
+    assert payload["schema_version"] == 1
+    assert artifacts["issues_csv"].exists()
+    assert artifacts["report_html"].exists()
+    assert matheel.validate_dataset_report is validate_dataset_report
+    assert matheel.write_dataset_validation_report is write_dataset_validation_report
+
+
+def test_dataset_validation_report_finds_pair_reference_errors(tmp_path):
+    dataset_root = tmp_path / "broken_pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "", "suffix": ".py"},
+                {"file_id": "b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+        metadata={"name": "broken_pairs"},
+    )
+    pairs_path = dataset_root / "pairs.csv"
+    pairs = pd.read_csv(pairs_path)
+    pairs.loc[0, "right_id"] = "missing"
+    pairs.to_csv(pairs_path, index=False)
+
+    report = validate_dataset_report(dataset_root, kind="pair")
+    codes = {issue["code"] for issue in report["issues"]}
+
+    assert report["status"] == "error"
+    assert "unknown_pair_file_ids" in codes
+    assert "empty_files" in codes
+
+
+def test_dataset_validation_report_finds_retrieval_reference_errors(tmp_path):
+    dataset_root = tmp_path / "broken_retrieval"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "query_a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "doc_a", "text": "print(1)", "suffix": ".py"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "query_a"}]),
+        corpus=pd.DataFrame([{"document_id": "d1", "file_id": "doc_a"}]),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+        metadata={"name": "broken_retrieval"},
+    )
+    qrels_path = dataset_root / "qrels.csv"
+    qrels = pd.read_csv(qrels_path)
+    qrels.loc[0, "document_id"] = "missing"
+    qrels.loc[0, "relevance"] = -1
+    qrels.to_csv(qrels_path, index=False)
+
+    report = validate_dataset_report(dataset_root, kind="retrieval")
+    codes = {issue["code"] for issue in report["issues"]}
+
+    assert report["status"] == "error"
+    assert "unknown_qrel_document_ids" in codes
+    assert "invalid_qrel_relevance" in codes
 
 
 def test_default_dataset_sources_include_generic_resolvers():

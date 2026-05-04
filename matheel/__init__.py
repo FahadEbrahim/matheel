@@ -42,7 +42,11 @@ from .calibration import (
     precision_recall_curve,
     roc_curve,
     threshold_sweep,
+    threshold_tuning_report,
+    threshold_tuning_report_html,
+    threshold_tuning_report_payload,
     write_calibration_report_artifacts,
+    write_threshold_tuning_report_artifacts,
 )
 from .comparison_suite import load_run_configs, parse_run_configs, run_comparison_suite
 from .code_metrics import (
@@ -83,6 +87,12 @@ from .datasets import (
     validate_retrieval_dataset,
     write_pair_dataset,
     write_retrieval_dataset,
+)
+from .dataset_validation import (
+    dataset_validation_report_html,
+    dataset_validation_report_payload,
+    validate_dataset_report,
+    write_dataset_validation_report,
 )
 from .evaluation import (
     evaluate_pair_dataset,
@@ -201,6 +211,8 @@ __all__ = [
     "adapt_retrieval_dataset",
     "dataset_card",
     "dataset_preset_task_families",
+    "dataset_validation_report_html",
+    "dataset_validation_report_payload",
     "default_feature_weights",
     "evaluate_threshold",
     "evaluate_pair_dataset",
@@ -262,6 +274,7 @@ __all__ = [
     "similarity_function_score_range",
     "single_split",
     "summarize_metric_samples",
+    "validate_dataset_report",
     "validate_pair_dataset",
     "validate_retrieval_dataset",
     "write_pair_dataset",
@@ -283,9 +296,14 @@ __all__ = [
     "project_embeddings",
     "roc_curve",
     "threshold_sweep",
+    "threshold_tuning_report",
+    "threshold_tuning_report_html",
+    "threshold_tuning_report_payload",
     "write_dataset_embedding_map",
     "write_dataset_map_artifacts",
     "write_calibration_report_artifacts",
+    "write_dataset_validation_report",
+    "write_threshold_tuning_report_artifacts",
     "write_benchmark_cache_result",
     "write_benchmark_report",
     "write_leaderboard_artifacts",

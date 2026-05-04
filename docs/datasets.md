@@ -220,6 +220,32 @@ matheel datasets validate tiny_pairs --format json
 matheel datasets validate tiny_retrieval --kind retrieval
 ```
 
+Add `--output-dir` when you want a structured validation report with JSON, CSV, and HTML artifacts:
+
+```bash
+matheel datasets validate tiny_pairs \
+  --kind pair \
+  --output-dir dataset_validation \
+  --format json
+```
+
+The validation report separates blocking errors from warnings and checks manifests, duplicate ids, missing references, empty files, label coverage, qrel coverage, and basic metadata completeness.
+
+Python usage:
+
+```python
+from matheel.dataset_validation import write_dataset_validation_report
+
+report, artifacts = write_dataset_validation_report(
+    "tiny_pairs",
+    "dataset_validation",
+    kind="pair",
+)
+
+print(report["status"], report["error_count"], report["warning_count"])
+print(artifacts["report_html"])
+```
+
 Use `matheel datasets adapt` to convert a raw local tabular dataset into normalized Matheel manifests. Always provide an explicit output directory so repeated runs write to the same location:
 
 ```bash

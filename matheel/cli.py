@@ -7,7 +7,7 @@ import pandas as pd
 
 from . import __version__
 from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
-from .calibration import write_calibration_report_artifacts
+from .calibration import write_calibration_report_artifacts, write_threshold_tuning_report_artifacts
 from .comparison_suite import load_run_configs, run_comparison_suite
 from .code_metrics import available_code_metrics
 from ._progress import should_show_progress
@@ -26,6 +26,7 @@ from .datasets import (
     load_retrieval_datasets,
     load_retrieval_datasets_from_manifest,
 )
+from .dataset_validation import write_dataset_validation_report
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .leaderboard import load_leaderboard_manifest, run_leaderboard
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
@@ -324,6 +325,36 @@ def _echo_calibration_report_summary(summary, output_format):
         click.echo(f"{name}={path}")
 
 
+def _echo_threshold_tuning_summary(summary, output_format):
+    if output_format == "json":
+        _echo_json(summary)
+        return
+    click.echo(f"pair_count={summary['pair_count']}")
+    click.echo(f"positive_count={summary['positive_count']}")
+    click.echo(f"negative_count={summary['negative_count']}")
+    optimized = summary["optimized_threshold"]
+    click.echo(f"optimized_threshold={optimized['threshold']:.6g}")
+    click.echo(f"optimized_metric={summary['optimized_metric']}")
+    click.echo(f"optimized_f1={optimized['f1']:.4f}")
+    for warning in summary.get("warnings", []):
+        click.echo(f"warning={warning}")
+    for name, path in summary["artifacts"].items():
+        click.echo(f"{name}={path}")
+
+
+def _echo_dataset_validation_report_summary(summary, output_format):
+    if output_format == "json":
+        _echo_json(summary)
+        return
+    click.echo(f"dataset_name={summary['dataset_name']}")
+    click.echo(f"dataset_kind={summary['dataset_kind']}")
+    click.echo(f"status={summary['status']}")
+    click.echo(f"errors={summary['error_count']}")
+    click.echo(f"warnings={summary['warning_count']}")
+    for name, path in summary["artifacts"].items():
+        click.echo(f"{name}={path}")
+
+
 def _echo_leaderboard_summary(report, artifacts, output_format):
     summary = {
         "name": report["metadata"]["name"],
@@ -345,6 +376,24 @@ def _calibration_cli_summary(report, artifacts):
     summary = dict(report["summary"])
     summary["artifacts"] = {name: str(path) for name, path in artifacts.items()}
     return summary
+
+
+def _threshold_tuning_cli_summary(report, artifacts):
+    summary = dict(report["summary"])
+    summary["artifacts"] = {name: str(path) for name, path in artifacts.items()}
+    return summary
+
+
+def _dataset_validation_cli_summary(report, artifacts):
+    return {
+        "dataset_name": report["dataset_name"],
+        "dataset_kind": report["dataset_kind"],
+        "status": report["status"],
+        "error_count": report["error_count"],
+        "warning_count": report["warning_count"],
+        "counts": report["counts"],
+        "artifacts": {name: str(path) for name, path in artifacts.items()},
+    }
 
 
 def _parse_positive_label(value):
@@ -431,9 +480,27 @@ def datasets_list(task, output_format):
     default="text",
     show_default=True,
 )
-def datasets_validate(dataset_path, kind, output_format):
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    help="Directory where validation report artifacts will be written.",
+)
+@click.option("--basename", default="dataset_validation", show_default=True, help="Report artifact filename stem.")
+def datasets_validate(dataset_path, kind, output_format, output_dir, basename):
     """Validate a normalized pair or retrieval dataset."""
     dataset_kind = _dataset_kind_from_path(dataset_path, kind)
+    if output_dir is not None:
+        report, artifacts = write_dataset_validation_report(
+            dataset_path,
+            output_dir,
+            kind=dataset_kind,
+            basename=basename,
+        )
+        _echo_dataset_validation_report_summary(
+            _dataset_validation_cli_summary(report, artifacts),
+            output_format,
+        )
+        return
     if dataset_kind == "pair":
         summary = _pair_dataset_summary(load_pair_dataset(dataset_path))
     else:
@@ -748,6 +815,71 @@ def calibration_report_command(
     )
     _echo_calibration_report_summary(
         _calibration_cli_summary(report, artifacts),
+        output_format,
+    )
+
+
+@main.command(name="tune-threshold")
+@click.argument("scores_path", type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.option("--score-column", default="similarity_score", show_default=True, help="Column containing pair scores.")
+@click.option("--label-column", default="label", show_default=True, help="Column containing pair labels.")
+@click.option(
+    "--positive-label",
+    default=None,
+    help="Positive label value. Defaults to boolean coercion, suitable for 0/1 labels.",
+)
+@click.option(
+    "--greater-is-match/--lower-is-match",
+    default=True,
+    show_default=True,
+    help="Whether larger scores mean stronger matches.",
+)
+@click.option(
+    "--optimize",
+    type=click.Choice(("f1", "accuracy", "precision", "recall")),
+    default="f1",
+    show_default=True,
+    help="Metric used for the recommended threshold.",
+)
+@click.option(
+    "--output-dir",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=True,
+    help="Directory where threshold tuning artifacts will be written.",
+)
+@click.option("--basename", default="threshold_tuning", show_default=True, help="Artifact filename stem.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(("text", "json")),
+    default="text",
+    show_default=True,
+)
+def tune_threshold_command(
+    scores_path,
+    score_column,
+    label_column,
+    positive_label,
+    greater_is_match,
+    optimize,
+    output_dir,
+    basename,
+    output_format,
+):
+    """Write a threshold sweep and selected best threshold for scored pair rows."""
+    scored_pairs = pd.read_csv(scores_path)
+    report, artifacts = write_threshold_tuning_report_artifacts(
+        scored_pairs,
+        output_dir,
+        score_key=score_column,
+        label_key=label_column,
+        positive_label=_parse_positive_label(positive_label),
+        greater_is_match=greater_is_match,
+        optimize=optimize,
+        basename=basename,
+    )
+    _echo_threshold_tuning_summary(
+        _threshold_tuning_cli_summary(report, artifacts),
         output_format,
     )
 

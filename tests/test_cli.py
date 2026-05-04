@@ -199,6 +199,36 @@ def test_calibration_report_command_writes_artifacts(tmp_path):
     assert (output_dir / "tiny_report.json").exists()
 
 
+def test_tune_threshold_command_handles_single_class_scores(tmp_path):
+    scores_path = tmp_path / "scored_pairs.csv"
+    pd.DataFrame(
+        [
+            {"left_id": "a", "right_id": "b", "similarity_score": 0.9, "label": 1},
+            {"left_id": "c", "right_id": "d", "similarity_score": 0.8, "label": 1},
+        ]
+    ).to_csv(scores_path, index=False)
+    output_dir = tmp_path / "thresholds"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "tune-threshold",
+            str(scores_path),
+            "--output-dir",
+            str(output_dir),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    summary = json.loads(result.output)
+    assert summary["negative_count"] == 0
+    assert summary["warnings"]
+    assert (output_dir / "threshold_tuning_threshold_sweep.csv").exists()
+    assert (output_dir / "threshold_tuning_report.html").exists()
+
+
 def test_leaderboard_command_writes_artifacts(tmp_path, monkeypatch):
     config_path = tmp_path / "leaderboard.json"
     config_path.write_text('{"datasets": [], "algorithms": []}', encoding="utf-8")
@@ -640,6 +670,42 @@ def test_datasets_validate_command_reports_pair_summary(tmp_path):
         "pairs": 2,
         "positive_pairs": 1,
     }
+
+
+def test_datasets_validate_command_writes_report_artifacts(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]),
+        metadata={"name": "unit_pairs"},
+    )
+    output_dir = tmp_path / "dataset_report"
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "datasets",
+            "validate",
+            str(dataset_root),
+            "--output-dir",
+            str(output_dir),
+            "--format",
+            "json",
+        ],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.output)
+    assert payload["dataset_name"] == "unit_pairs"
+    assert payload["warning_count"] == 1
+    assert (output_dir / "dataset_validation_issues.csv").exists()
+    assert (output_dir / "dataset_validation_report.html").exists()
 
 
 def test_datasets_adapt_command_writes_pair_dataset(tmp_path):

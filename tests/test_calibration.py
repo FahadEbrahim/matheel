@@ -14,7 +14,10 @@ from matheel.calibration import (
     precision_recall_curve,
     roc_curve,
     threshold_sweep,
+    threshold_tuning_report,
+    threshold_tuning_report_payload,
     write_calibration_report_artifacts,
+    write_threshold_tuning_report_artifacts,
 )
 
 
@@ -46,7 +49,10 @@ def test_calibration_helpers_are_exported_from_package_root():
     assert matheel.precision_recall_curve is precision_recall_curve
     assert matheel.roc_curve is roc_curve
     assert matheel.threshold_sweep is threshold_sweep
+    assert matheel.threshold_tuning_report is threshold_tuning_report
+    assert matheel.threshold_tuning_report_payload is threshold_tuning_report_payload
     assert matheel.write_calibration_report_artifacts is write_calibration_report_artifacts
+    assert matheel.write_threshold_tuning_report_artifacts is write_threshold_tuning_report_artifacts
 
 
 def test_calibrate_threshold_finds_best_cutoff_for_tiny_labeled_dataset():
@@ -173,6 +179,32 @@ def test_roc_and_precision_recall_require_both_classes():
 
     with pytest.raises(ValueError, match="positive and one negative"):
         calibration_report([0.9], [True])
+
+
+def test_threshold_tuning_report_handles_single_class_labels(tmp_path):
+    scored_pairs = pd.DataFrame(
+        [
+            {"left_id": "a", "right_id": "b", "similarity_score": 0.9, "label": 1},
+            {"left_id": "c", "right_id": "d", "similarity_score": 0.8, "label": 1},
+        ]
+    )
+
+    report, artifacts = write_threshold_tuning_report_artifacts(
+        scored_pairs,
+        tmp_path / "thresholds",
+        score_key="similarity_score",
+        label_key="label",
+        basename="single_class",
+    )
+    payload = threshold_tuning_report_payload(report)
+
+    assert report["summary"]["positive_count"] == 2
+    assert report["summary"]["negative_count"] == 0
+    assert report["summary"]["auroc"] is None
+    assert report["summary"]["warnings"]
+    assert "roc" not in payload
+    assert artifacts["threshold_sweep_csv"].exists()
+    assert artifacts["report_html"].exists()
 
 
 def test_calibrate_threshold_supports_lower_scores_as_matches():

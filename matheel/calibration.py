@@ -1,5 +1,6 @@
 import json
 import math
+from html import escape
 from pathlib import Path
 
 import pandas as pd
@@ -456,6 +457,186 @@ def calibration_report_payload(report):
     }
 
 
+def threshold_tuning_report(
+    scores,
+    labels=None,
+    thresholds=None,
+    score_key="score",
+    label_key="label",
+    positive_label=True,
+    greater_is_match=True,
+    optimize="f1",
+):
+    pairs = _coerce_score_label_pairs(
+        scores,
+        labels=labels,
+        score_key=score_key,
+        label_key=label_key,
+        positive_label=positive_label,
+    )
+    positive_count, negative_count = _class_counts(pairs)
+    sweep = threshold_sweep(
+        pairs,
+        thresholds=thresholds,
+        positive_label=True,
+        greater_is_match=greater_is_match,
+    )
+    best = calibrate_threshold(
+        pairs,
+        thresholds=thresholds,
+        positive_label=True,
+        greater_is_match=greater_is_match,
+        optimize=optimize,
+    )
+    warnings = []
+    roc = pd.DataFrame()
+    pr = pd.DataFrame()
+    auroc = None
+    average_precision = None
+    if positive_count and negative_count:
+        roc = roc_curve(pairs, positive_label=True, greater_is_match=greater_is_match)
+        pr = precision_recall_curve(pairs, positive_label=True, greater_is_match=greater_is_match)
+        auroc = float(roc.attrs["auroc"])
+        average_precision = float(pr.attrs["average_precision"])
+    else:
+        warnings.append(
+            "ROC and precision-recall summaries require at least one positive and one negative label."
+        )
+
+    summary = {
+        "pair_count": int(len(pairs)),
+        "positive_count": int(positive_count),
+        "negative_count": int(negative_count),
+        "score_key": score_key,
+        "label_key": label_key,
+        "greater_is_match": bool(greater_is_match),
+        "optimized_metric": str(optimize or "f1").strip().lower(),
+        "optimized_threshold": best,
+        "candidate_count": int(len(sweep)),
+        "auroc": auroc,
+        "average_precision": average_precision,
+        "warnings": warnings,
+    }
+    return {
+        "summary": summary,
+        "threshold_sweep": sweep,
+        "roc": roc,
+        "precision_recall": pr,
+    }
+
+
+def threshold_tuning_report_payload(report):
+    payload = {
+        "schema_version": 1,
+        "summary": _json_safe_mapping(report["summary"]),
+        "threshold_sweep": _frame_records(report["threshold_sweep"]),
+    }
+    if report["roc"] is not None and not report["roc"].empty:
+        payload["roc"] = _frame_records(report["roc"])
+    if report["precision_recall"] is not None and not report["precision_recall"].empty:
+        payload["precision_recall"] = _frame_records(report["precision_recall"])
+    return payload
+
+
+def threshold_tuning_report_html(report):
+    payload = threshold_tuning_report_payload(report)
+    summary = payload["summary"]
+    optimized = summary["optimized_threshold"]
+    warning_rows = "".join(
+        f"<li>{escape(str(warning))}</li>" for warning in summary.get("warnings", [])
+    )
+    if not warning_rows:
+        warning_rows = "<li>None</li>"
+    preview_rows = []
+    for row in payload.get("threshold_sweep", [])[:50]:
+        preview_rows.append(
+            "<tr><td>{threshold:.6g}</td><td>{precision:.4f}</td><td>{recall:.4f}</td>"
+            "<td>{f1:.4f}</td><td>{accuracy:.4f}</td></tr>".format(**row)
+        )
+    if not preview_rows:
+        preview_rows.append('<tr><td colspan="5">No threshold rows</td></tr>')
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Matheel Threshold Tuning</title>
+  <style>
+    body {{ font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 24px; color: #1f2328; }}
+    h1 {{ font-size: 1.4rem; margin-bottom: 0.4rem; }}
+    h2 {{ font-size: 1.05rem; margin-top: 1.4rem; }}
+    table {{ border-collapse: collapse; width: 100%; margin-top: 0.6rem; }}
+    th, td {{ border: 1px solid #d6d9df; padding: 6px 8px; text-align: left; }}
+    th {{ background: #f6f8fa; }}
+  </style>
+</head>
+<body>
+  <h1>Threshold Tuning</h1>
+  <p>Pairs: {summary['pair_count']}. Positives: {summary['positive_count']}. Negatives: {summary['negative_count']}.</p>
+  <p>Best threshold by {escape(str(summary['optimized_metric']))}: {float(optimized['threshold']):.6g}
+     with F1 {float(optimized['f1']):.4f}, precision {float(optimized['precision']):.4f},
+     recall {float(optimized['recall']):.4f}, and accuracy {float(optimized['accuracy']):.4f}.</p>
+  <h2>Warnings</h2>
+  <ul>{warning_rows}</ul>
+  <h2>Threshold Preview</h2>
+  <table>
+    <thead><tr><th>Threshold</th><th>Precision</th><th>Recall</th><th>F1</th><th>Accuracy</th></tr></thead>
+    <tbody>{''.join(preview_rows)}</tbody>
+  </table>
+</body>
+</html>
+"""
+
+
+def write_threshold_tuning_report_artifacts(
+    scores,
+    output_dir,
+    labels=None,
+    thresholds=None,
+    score_key="score",
+    label_key="label",
+    positive_label=True,
+    greater_is_match=True,
+    optimize="f1",
+    basename="threshold_tuning",
+):
+    report = threshold_tuning_report(
+        scores,
+        labels=labels,
+        thresholds=thresholds,
+        score_key=score_key,
+        label_key=label_key,
+        positive_label=positive_label,
+        greater_is_match=greater_is_match,
+        optimize=optimize,
+    )
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    stem = _safe_artifact_basename(basename or "threshold_tuning")
+    artifacts = {
+        "threshold_sweep_csv": target / f"{stem}_threshold_sweep.csv",
+        "summary_json": target / f"{stem}_summary.json",
+        "report_json": target / f"{stem}_report.json",
+        "report_html": target / f"{stem}_report.html",
+    }
+    report["threshold_sweep"].to_csv(artifacts["threshold_sweep_csv"], index=False)
+    if report["roc"] is not None and not report["roc"].empty:
+        artifacts["roc_csv"] = target / f"{stem}_roc.csv"
+        report["roc"].to_csv(artifacts["roc_csv"], index=False)
+    if report["precision_recall"] is not None and not report["precision_recall"].empty:
+        artifacts["precision_recall_csv"] = target / f"{stem}_precision_recall.csv"
+        report["precision_recall"].to_csv(artifacts["precision_recall_csv"], index=False)
+    artifacts["summary_json"].write_text(
+        json.dumps(_json_safe_mapping(report["summary"]), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    artifacts["report_json"].write_text(
+        json.dumps(threshold_tuning_report_payload(report), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    artifacts["report_html"].write_text(threshold_tuning_report_html(report), encoding="utf-8")
+    return report, artifacts
+
+
 def write_calibration_report_artifacts(
     scores,
     output_dir,
@@ -511,6 +692,10 @@ def _json_safe_mapping(values):
     for key, value in dict(values).items():
         if isinstance(value, dict):
             payload[str(key)] = _json_safe_mapping(value)
+        elif isinstance(value, (list, tuple)):
+            payload[str(key)] = [
+                _json_safe_mapping(item) if isinstance(item, dict) else item for item in value
+            ]
         elif pd.isna(value):
             payload[str(key)] = None
         elif isinstance(value, (int, float, str, bool)) or value is None:
