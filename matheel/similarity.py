@@ -21,6 +21,7 @@ from .feature_weights import combine_weighted_scores, resolve_feature_weights
 from .model_routing import (
     backend_is_multivector,
     load_hf_model_info,
+    normalize_vector_backend_name,
     resolve_vector_backend,
 )
 from ._progress import emit_progress, progress_iter
@@ -46,6 +47,23 @@ from .vectors import (
 DEFAULT_MODEL_NAME = "huggingface/CodeBERTa-small-v1"
 RESULT_COLUMNS = ["file_name_1", "file_name_2", "similarity_score"]
 LEXICAL_TOKENIZERS = ("raw", "parser")
+
+
+def _semantic_backend_dependency_error(vector_backend, exc):
+    backend = normalize_vector_backend_name(vector_backend)
+    if backend == "auto":
+        backend = "sentence_transformers"
+    package_by_backend = {
+        "sentence_transformers": "sentence-transformers",
+        "model2vec": "model2vec",
+        "pylate": "pylate",
+    }
+    package_name = package_by_backend.get(backend, backend)
+    return ImportError(
+        f"Semantic scoring with vector_backend='{backend}' requires the optional "
+        f"'{package_name}' dependency. Install `matheel[semantic]` or `matheel[all]`, "
+        "or disable semantic scoring with lexical-only feature weights."
+    )
 
 
 def load_torch():
@@ -152,18 +170,8 @@ def load_backend_model(
             pooling_method=selected_pooling,
             max_token_length=max_token_length,
         )
-    except ImportError:
-        if vector_backend == "model2vec":
-            return None
-        if vector_backend == "pylate":
-            return load_model(
-                model_name or DEFAULT_MODEL_NAME,
-                device=normalized_device,
-                similarity_function=selected_similarity,
-                pooling_method=selected_pooling,
-                max_token_length=max_token_length,
-            )
-        raise
+    except ImportError as exc:
+        raise _semantic_backend_dependency_error(vector_backend, exc) from exc
 
 
 def inspect_model_settings(
@@ -583,12 +591,16 @@ def build_document_embeddings(
     if not codes:
         return []
 
-    if vector_backend == "static_hash":
+    backend = normalize_vector_backend_name(vector_backend)
+    if backend == "static_hash":
         return build_static_hash_vectors(codes, dim=static_vector_dim, lowercase=static_vector_lowercase)
-    if vector_backend == "model2vec" and model is None:
-        return build_static_hash_vectors(codes, dim=static_vector_dim, lowercase=static_vector_lowercase)
+    if backend == "model2vec" and model is None:
+        raise ValueError(
+            "vector_backend='model2vec' requires a loaded Model2Vec model. "
+            "Use vector_backend='static_hash' for dependency-free static hashing."
+        )
 
-    if backend_is_multivector(vector_backend):
+    if backend_is_multivector(backend):
         return build_multivector_embeddings(
             model,
             codes,
@@ -600,14 +612,14 @@ def build_document_embeddings(
             chunker_options=chunker_options,
         )
 
-    if vector_backend == "sentence_transformers" and model is not None:
+    if backend == "sentence_transformers" and model is not None:
         model = configure_sentence_transformer_pooling(model, pooling_method=pooling_method)
 
     if not _should_use_chunking(chunking_method):
         return encode_single_vectors(
             model,
             codes,
-            vector_backend=vector_backend,
+            vector_backend=backend,
             static_vector_dim=static_vector_dim,
             static_vector_lowercase=static_vector_lowercase,
         )

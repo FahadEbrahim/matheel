@@ -691,23 +691,43 @@ def test_calculate_similarity_guards_raw_distance_scores_in_weighted_blends():
     assert score == pytest.approx(1.0)
 
 
-def test_calculate_similarity_falls_back_when_model2vec_is_unavailable(monkeypatch):
-    monkeypatch.setattr(
-        similarity,
-        "load_backend_model",
-        lambda model_name, vector_backend="auto", device="auto", similarity_function="cosine", pooling_method="mean", max_token_length=None: None,
-    )
+def test_calculate_similarity_reports_missing_semantic_dependency(monkeypatch):
+    def missing_model(*args, **kwargs):
+        _ = (args, kwargs)
+        raise ImportError("No module named 'sentence_transformers'")
 
-    score = similarity.calculate_similarity(
-        "def add(a, b):\n    return a + b\n",
-        "def add(b, a):\n    return b + a\n",
-        model_name="Jarbas/m2v-256-paraphrase-multilingual-MiniLM-L12-v2",
-        feature_weights={"semantic": 1.0},
-        vector_backend="model2vec",
-        static_vector_dim=64,
-    )
+    monkeypatch.setattr(similarity, "load_vector_model", missing_model)
 
-    assert score == pytest.approx(1.0)
+    with pytest.raises(ImportError, match=r"matheel\[semantic\]"):
+        similarity.calculate_similarity(
+            "def add(a, b):\n    return a + b\n",
+            "def add(b, a):\n    return b + a\n",
+            feature_weights={"semantic": 1.0},
+            vector_backend="sentence_transformers",
+        )
+
+
+def test_model2vec_backend_does_not_fall_back_to_static_hash(monkeypatch):
+    def missing_model(*args, **kwargs):
+        _ = (args, kwargs)
+        raise ImportError("No module named 'model2vec'")
+
+    monkeypatch.setattr(similarity, "load_vector_model", missing_model)
+
+    with pytest.raises(ImportError, match="model2vec"):
+        similarity.calculate_similarity(
+            "def add(a, b):\n    return a + b\n",
+            "def add(b, a):\n    return b + a\n",
+            model_name="Jarbas/m2v-256-paraphrase-multilingual-MiniLM-L12-v2",
+            feature_weights={"semantic": 1.0},
+            vector_backend="model2vec",
+            static_vector_dim=64,
+        )
+
+
+def test_model2vec_embeddings_require_loaded_model():
+    with pytest.raises(ValueError, match="static_hash"):
+        similarity.build_document_embeddings(None, ["print(1)"], vector_backend="model2vec")
 
 
 def test_calculate_similarity_supports_multivector_backend(monkeypatch):

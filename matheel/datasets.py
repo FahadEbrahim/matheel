@@ -2537,6 +2537,16 @@ def _safe_extract_archive(archive_path, output_dir):
     raise ValueError(f"Unsupported archive format: {archive.name}")
 
 
+def _extract_downloaded_archives(destination):
+    root = _coerce_path(destination)
+    for archive_path in sorted(path for path in root.iterdir() if path.is_file()):
+        if not (zipfile.is_zipfile(archive_path) or tarfile.is_tarfile(archive_path)):
+            continue
+        _safe_extract_archive(archive_path, root)
+        archive_path.unlink(missing_ok=True)
+    return root
+
+
 def _single_child_directory_or_self(path):
     root = _coerce_path(path)
     children = [child for child in root.iterdir() if child.is_dir()]
@@ -2666,16 +2676,15 @@ def _resolve_kaggle_dataset_source(identifier, destination, revision="main", tok
                 str(identifier),
                 "-p",
                 os.fspath(destination),
-                "--unzip",
             ],
             check=True,
         )
-        return destination
+        return _extract_downloaded_archives(destination)
 
     api = KaggleApi()
     api.authenticate()
-    api.dataset_download_files(str(identifier), path=os.fspath(destination), unzip=True)
-    return destination
+    api.dataset_download_files(str(identifier), path=os.fspath(destination), unzip=False)
+    return _extract_downloaded_archives(destination)
 
 
 def register_default_dataset_sources(overwrite=False):

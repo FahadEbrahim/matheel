@@ -403,6 +403,8 @@ def _folds_from_labels_or_groups(count, groups=None, labels=None, n_splits=5, sh
     generator = _rng(seed)
     if groups is not None:
         unique_groups = np.unique(groups)
+        if n_splits > len(unique_groups):
+            raise ValueError("n_splits must not exceed the number of unique groups.")
         if shuffle:
             generator.shuffle(unique_groups)
         group_sizes = {group: int(np.sum(groups == group)) for group in unique_groups}
@@ -415,8 +417,12 @@ def _folds_from_labels_or_groups(count, groups=None, labels=None, n_splits=5, sh
         return [np.where(np.isin(groups, fold_groups[index]))[0] for index in range(n_splits)]
 
     if labels is not None:
+        unique_labels, label_counts = np.unique(labels, return_counts=True)
+        smallest_label_count = int(np.min(label_counts)) if label_counts.size else 0
+        if n_splits > smallest_label_count:
+            raise ValueError("n_splits must not exceed the smallest label count.")
         folds = [[] for _ in range(n_splits)]
-        for label in np.unique(labels):
+        for label in unique_labels:
             label_indices = np.where(labels == label)[0]
             if shuffle:
                 generator.shuffle(label_indices)

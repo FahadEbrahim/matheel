@@ -1,5 +1,7 @@
 import json
+import sys
 import zipfile
+from types import ModuleType
 
 import pandas as pd
 import pytest
@@ -31,6 +33,7 @@ from matheel.datasets import (
     resolve_dataset_source,
     write_retrieval_dataset,
     write_pair_dataset,
+    _resolve_kaggle_dataset_source,
     _safe_extract_archive,
 )
 
@@ -119,6 +122,74 @@ def test_safe_archive_extraction_rejects_path_traversal(tmp_path):
         _safe_extract_archive(archive_path, tmp_path / "out")
 
     assert not (tmp_path / "escape.txt").exists()
+
+
+def test_kaggle_api_resolver_downloads_then_safe_extracts(tmp_path, monkeypatch):
+    captured = {}
+
+    class FakeKaggleApi:
+        def authenticate(self):
+            captured["authenticated"] = True
+
+        def dataset_download_files(self, identifier, path, unzip=False):
+            captured["identifier"] = identifier
+            captured["path"] = path
+            captured["unzip"] = unzip
+            with zipfile.ZipFile(tmp_path / "kaggle" / "download.zip", "w") as archive:
+                archive.writestr("rows.csv", "value\n1\n")
+
+    kaggle_module = ModuleType("kaggle")
+    kaggle_api_module = ModuleType("kaggle.api")
+    kaggle_extended_module = ModuleType("kaggle.api.kaggle_api_extended")
+    kaggle_extended_module.KaggleApi = FakeKaggleApi
+    monkeypatch.setitem(sys.modules, "kaggle", kaggle_module)
+    monkeypatch.setitem(sys.modules, "kaggle.api", kaggle_api_module)
+    monkeypatch.setitem(sys.modules, "kaggle.api.kaggle_api_extended", kaggle_extended_module)
+
+    destination = tmp_path / "kaggle"
+    resolved = _resolve_kaggle_dataset_source("owner/dataset", destination)
+
+    assert resolved == destination.resolve()
+    assert captured == {
+        "authenticated": True,
+        "identifier": "owner/dataset",
+        "path": str(destination.resolve()),
+        "unzip": False,
+    }
+    assert (destination / "rows.csv").read_text(encoding="utf-8") == "value\n1\n"
+    assert not (destination / "download.zip").exists()
+
+
+def test_kaggle_cli_resolver_downloads_then_safe_extracts(tmp_path, monkeypatch):
+    captured = {}
+
+    real_import = __import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "kaggle.api.kaggle_api_extended":
+            raise ImportError("blocked kaggle api")
+        return real_import(name, *args, **kwargs)
+
+    def fake_run(command, check):
+        captured["command"] = command
+        captured["check"] = check
+        output_path = command[command.index("-p") + 1]
+        with zipfile.ZipFile(tmp_path / "kaggle_cli" / "download.zip", "w") as archive:
+            archive.writestr("rows.csv", "value\n1\n")
+        assert output_path == str((tmp_path / "kaggle_cli").resolve())
+
+    monkeypatch.setattr("builtins.__import__", fake_import)
+    monkeypatch.setattr("matheel.datasets.shutil.which", lambda name: "kaggle" if name == "kaggle" else None)
+    monkeypatch.setattr("matheel.datasets.subprocess.run", fake_run)
+
+    destination = tmp_path / "kaggle_cli"
+    resolved = _resolve_kaggle_dataset_source("owner/dataset", destination)
+
+    assert resolved == destination.resolve()
+    assert "--unzip" not in captured["command"]
+    assert captured["check"] is True
+    assert (destination / "rows.csv").read_text(encoding="utf-8") == "value\n1\n"
+    assert not (destination / "download.zip").exists()
 
 
 def test_custom_source_and_preset_load_pair_dataset(tmp_path):

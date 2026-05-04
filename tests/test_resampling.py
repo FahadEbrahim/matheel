@@ -55,6 +55,16 @@ def test_kfold_splits_can_stratify_labels():
         assert sorted(split_labels) == [0, 1]
 
 
+def test_kfold_splits_rejects_label_folds_that_would_be_empty():
+    with pytest.raises(ValueError, match="smallest label count"):
+        kfold_splits(2, n_splits=2, labels=[1, 0])
+
+
+def test_kfold_splits_rejects_group_folds_that_would_be_empty():
+    with pytest.raises(ValueError, match="unique groups"):
+        kfold_splits(4, n_splits=3, groups=["a", "a", "b", "b"])
+
+
 def test_repeated_kfold_splits_marks_method_and_count():
     splits = repeated_kfold_splits(20, n_splits=4, n_repeats=2, seed=42)
 
