@@ -94,7 +94,7 @@ print(results.head())
 - Use `matheel compare-suite` with a JSON config for repeatable multi-run comparisons.
 - Use `--algorithm-path` when you need a custom `score_pair` implementation.
 - Run the reproducible benchmark demo when you need a small auditable evaluation workflow.
-- Run the Gradio app or notebooks when you want an interactive workflow, including normalized dataset evaluation, visualization artifacts, and leaderboard inspection.
+- Run the Gradio app or notebooks when you want an interactive workflow, including normalized dataset evaluation, visualization artifacts, ready leaderboards, and leaderboard inspection.
 
 ## Demos and Examples
 
@@ -103,6 +103,7 @@ print(results.head())
 - Dataset workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)
 - Custom algorithms Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/03_custom_algorithms.ipynb)
 - Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb)
+- Visualization and leaderboard Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/05_visualization_and_leaderboard.ipynb)
 - Examples folder: [github.com/FahadEbrahim/matheel/tree/main/examples](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 
 ## Documentation Map
@@ -124,7 +125,7 @@ print(results.head())
 ## Interface Notes
 
 - CLI and Python API accept either a directory or a ZIP archive.
-- Gradio remains ZIP-first for dataset uploads and supports JSON or ZIP leaderboard artifacts.
+- Gradio remains ZIP-first for dataset uploads, supports ready leaderboards from normalized dataset ZIPs, and supports JSON or ZIP leaderboard artifact inspection.
 - `feature_weights` is the canonical scoring input.
 - `vector_backend=auto` uses Hugging Face metadata and tag heuristics when available.
 - CLI progress bars write to stderr and default to interactive terminals only. Use `--progress` or `--no-progress` to override.

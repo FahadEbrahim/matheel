@@ -2,6 +2,11 @@
 
 Matheel leaderboards rank algorithms across normalized pair-classification and retrieval datasets. The workflow is local and offline: users provide normalized datasets or source specs, Matheel scores them, then exports per-dataset and aggregate ranking tables.
 
+The Gradio app includes two leaderboard workflows:
+
+- **Ready Leaderboard** runs selected algorithm presets over uploaded normalized dataset ZIPs, shows all registered dataset presets, applies task-specific metric defaults, and exports standard leaderboard artifacts.
+- **Inspect Artifacts** loads a leaderboard JSON or ZIP artifact and renders the aggregate table, per-dataset table, static report, and downloadable report bundle.
+
 ## Manifest
 
 Create a JSON manifest with datasets, algorithms, and metrics:
@@ -61,6 +66,28 @@ The JSON artifact also includes dataset cards and algorithm cards. Cards keep co
 
 The HTML artifact is a static benchmark report. It bundles aggregate rankings, per-dataset rankings, dataset cards, algorithm cards, and sanitized links to the exported CSV/JSON metadata files.
 
+## Runnable Example
+
+Run the synthetic local example to create one pair dataset, one retrieval dataset, a manifest, ranked tables, and HTML/JSON reproducibility artifacts:
+
+```bash
+python examples/evaluation/leaderboard_demo.py --overwrite
+```
+
+The example is deterministic and offline. It uses synthetic normalized datasets plus two algorithm entries: a lexical baseline and a tiny local custom scorer.
+
+## Gradio Ready Leaderboard
+
+The Gradio Ready Leaderboard tab expects normalized dataset ZIP uploads. It does not bundle real datasets or credentials. The registered dataset table lists the current dataset presets, their task families, their source resolver, and the default evaluation plan:
+
+- Pair-classification datasets use pair metrics such as `f1`, `accuracy`, `auroc`, and `average_precision`.
+- Retrieval datasets use ranking metrics such as `mean_average_precision`, `mean_reciprocal_rank`, `ndcg_at_k`, `precision_at_k`, and `recall_at_k`.
+- Pair datasets use the selected pair threshold.
+- Retrieval datasets use the selected `k`.
+- The seed is stored in the leaderboard manifest for reproducibility.
+
+The ranked algorithm table is sorted by task, metric, rank, and algorithm name. The exported ZIP contains the same CSV, JSON, HTML, and reproducibility files as the Python API.
+
 ## Python
 
 ```python
@@ -75,8 +102,6 @@ report, artifacts = run_leaderboard(
 
 write_benchmark_report(report, "leaderboard_artifacts/leaderboard_report.html")
 
-print(report["aggregate"])
+print(report["aggregate"].sort_values(["task_family", "metric", "rank", "algorithm_name"]))
 print(artifacts["json"])
 ```
-
-The first implementation focuses on deterministic local tables. Richer static report pages and Gradio inspection views are tracked separately.

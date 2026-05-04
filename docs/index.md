@@ -36,6 +36,7 @@ Start with the [usage guide](usage.md) for installation, optional extras, quick 
 - [Dataset workflows Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)
 - [Custom algorithms Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/03_custom_algorithms.ipynb)
 - [Gradio Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb)
+- [Visualization and leaderboard Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/05_visualization_and_leaderboard.ipynb)
 - [Examples folder](https://github.com/FahadEbrahim/matheel/tree/main/examples)
 
 ## Suggested Reading Order

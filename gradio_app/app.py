@@ -21,14 +21,19 @@ except ModuleNotFoundError:
 from matheel.chunking import available_chunk_aggregations, available_chunking_methods
 from matheel.comparison_suite import run_comparison_suite, slugify_run_name
 from matheel.code_metrics import available_code_metric_languages, available_code_metrics
-from matheel.datasets import load_pair_dataset, load_retrieval_dataset
+from matheel.datasets import (
+    available_dataset_presets,
+    get_dataset_preset,
+    load_pair_dataset,
+    load_retrieval_dataset,
+)
 from matheel.evaluation import (
     evaluate_pair_dataset,
     evaluate_pair_resamples,
     evaluate_retrieval_dataset,
     evaluate_retrieval_resamples,
 )
-from matheel.leaderboard import write_leaderboard_artifacts
+from matheel.leaderboard import run_leaderboard, write_leaderboard_artifacts
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
 from matheel.reports import benchmark_report_html
@@ -119,6 +124,15 @@ METRIC_PRESETS = {
 }
 DATASET_TASK_CHOICES = ("Pair Classification", "Retrieval")
 DEFAULT_DATASET_TASK = DATASET_TASK_CHOICES[0]
+READY_LEADERBOARD_ALGORITHM_CHOICES = tuple(METRIC_PRESETS)
+READY_LEADERBOARD_PAIR_METRICS = ("f1", "accuracy", "auroc", "average_precision")
+READY_LEADERBOARD_RETRIEVAL_METRICS = (
+    "mean_average_precision",
+    "mean_reciprocal_rank",
+    "ndcg_at_k",
+    "precision_at_k",
+    "recall_at_k",
+)
 PAIR_DATASET_SCORE_COLUMNS = [
     "left_id",
     "right_id",
@@ -1497,6 +1511,52 @@ def empty_leaderboard_inspection_summary_html():
     )
 
 
+def empty_ready_leaderboard_summary_html():
+    return summary_panel_html(
+        "Ready Leaderboard",
+        [("Status", "No leaderboard run"), ("Artifacts", "None")],
+        variant="empty",
+    )
+
+
+def ready_leaderboard_registered_datasets_frame():
+    rows = []
+    for preset_name in available_dataset_presets():
+        preset = get_dataset_preset(preset_name)
+        tasks = tuple(preset.get("task_families") or ())
+        metric_default = []
+        sampling_default = []
+        if "pair" in tasks:
+            metric_default.append("f1, accuracy, auroc, average_precision")
+            sampling_default.append("full labeled pairs, threshold=0.5")
+        if "retrieval" in tasks:
+            metric_default.append(
+                "mean_average_precision, mean_reciprocal_rank, ndcg_at_k, precision_at_k, recall_at_k"
+            )
+            sampling_default.append("full query ranking, k=10")
+        rows.append(
+            {
+                "Preset": preset_name,
+                "Tasks": ", ".join(tasks),
+                "Source": preset.get("source", ""),
+                "Identifier": preset.get("identifier", ""),
+                "Evaluation Metrics": "; ".join(metric_default),
+                "Sampling Default": "; ".join(sampling_default),
+            }
+        )
+    return pd.DataFrame(
+        rows,
+        columns=[
+            "Preset",
+            "Tasks",
+            "Source",
+            "Identifier",
+            "Evaluation Metrics",
+            "Sampling Default",
+        ],
+    )
+
+
 def dataset_map_display_frame(projection):
     frame = projection.copy() if isinstance(projection, pd.DataFrame) else pd.DataFrame(projection)
     for column in ("x", "y"):
@@ -1788,6 +1848,226 @@ def inspect_leaderboard_artifacts_gradio(leaderboard_file):
     )
 
 
+def ready_leaderboard_algorithm_configs(
+    selected_algorithms,
+    model_name,
+    vector_backend,
+    runtime_device,
+    preprocess_mode,
+    code_language,
+    lexical_tokenizer,
+):
+    if selected_algorithms is None:
+        selected = list(READY_LEADERBOARD_ALGORITHM_CHOICES)
+    else:
+        selected = list(selected_algorithms)
+    if not selected:
+        raise gr.Error("Select at least one algorithm preset.")
+    configs = []
+    for name in selected:
+        options = dataset_similarity_options(
+            name,
+            model_name,
+            vector_backend,
+            runtime_device,
+            preprocess_mode,
+            code_language,
+            lexical_tokenizer,
+        )
+        configs.append({"name": str(name), **options})
+    return configs
+
+
+def _uploaded_file_paths(uploaded_files):
+    if uploaded_files is None:
+        return []
+    if isinstance(uploaded_files, (list, tuple)):
+        return [
+            path
+            for path in (_uploaded_file_path(item) for item in uploaded_files)
+            if path is not None
+        ]
+    path = _uploaded_file_path(uploaded_files)
+    return [] if path is None else [path]
+
+
+def _detect_normalized_dataset_task(root):
+    is_pair = _looks_like_pair_dataset_root(root)
+    is_retrieval = _looks_like_retrieval_dataset_root(root)
+    if is_pair and is_retrieval:
+        raise gr.Error("Dataset archive contains an ambiguous normalized dataset.")
+    if is_pair:
+        return "pair"
+    if is_retrieval:
+        return "retrieval"
+    return None
+
+
+def _find_normalized_dataset_roots(root):
+    path = Path(root)
+    task = _detect_normalized_dataset_task(path)
+    if task is not None:
+        return [(path, task)]
+
+    candidates = []
+    seen = set()
+    for metadata_path in sorted(path.rglob("metadata.json")):
+        candidate = metadata_path.parent
+        task = _detect_normalized_dataset_task(candidate)
+        if task is None:
+            continue
+        resolved = candidate.resolve()
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        candidates.append((candidate, task))
+    if not candidates:
+        raise gr.Error("Could not find a normalized Matheel dataset in the uploaded archive.")
+    return candidates
+
+
+def _normalized_dataset_roots_from_upload(uploaded_path):
+    path = Path(uploaded_path)
+    if path.is_dir():
+        return _find_normalized_dataset_roots(path)
+    if not zipfile.is_zipfile(path):
+        raise gr.Error("Ready leaderboard inputs must be normalized dataset ZIP archives or directories.")
+    extract_root = Path(tempfile.mkdtemp(prefix="matheel-ready-leaderboard-upload-"))
+    _safe_extract_uploaded_zip(path, extract_root)
+    return _find_normalized_dataset_roots(extract_root)
+
+
+def _normalized_dataset_metadata_name(root):
+    metadata_path = Path(root) / "metadata.json"
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        metadata = {}
+    return str(metadata.get("name") or Path(root).name)
+
+
+def _unique_dataset_name(name, used_names):
+    base = str(name or "dataset").strip() or "dataset"
+    candidate = base
+    index = 2
+    while candidate in used_names:
+        candidate = f"{base}_{index}"
+        index += 1
+    used_names.add(candidate)
+    return candidate
+
+
+def ready_leaderboard_dataset_configs(uploaded_files, pair_threshold, retrieval_k):
+    paths = _uploaded_file_paths(uploaded_files)
+    if not paths:
+        raise gr.Error("Upload at least one normalized dataset ZIP.")
+
+    datasets = []
+    used_roots = set()
+    used_names = set()
+    for path in paths:
+        for dataset_root, task_family in _normalized_dataset_roots_from_upload(path):
+            resolved = Path(dataset_root).resolve()
+            if resolved in used_roots:
+                continue
+            used_roots.add(resolved)
+            name = _unique_dataset_name(_normalized_dataset_metadata_name(dataset_root), used_names)
+            config = {"name": name, "task": task_family, "path": os.fspath(dataset_root)}
+            if task_family == "retrieval":
+                config["k"] = int(float(retrieval_k or 10))
+            else:
+                config["threshold"] = float(pair_threshold)
+            datasets.append(config)
+
+    if not datasets:
+        raise gr.Error("Could not find a normalized Matheel dataset in the uploaded files.")
+    return datasets
+
+
+def ready_leaderboard_summary_html(report, uploaded_count, algorithm_count):
+    aggregate = report["aggregate"]
+    per_dataset = report["per_dataset"]
+    dataset_count = per_dataset["dataset_name"].nunique() if "dataset_name" in per_dataset else 0
+    metric_count = aggregate["metric"].nunique() if "metric" in aggregate else 0
+    return summary_panel_html(
+        "Ready Leaderboard",
+        [
+            ("Datasets", str(dataset_count)),
+            ("Uploads", str(uploaded_count)),
+            ("Algorithms", str(algorithm_count)),
+            ("Metrics", str(metric_count)),
+            ("Aggregate Rows", str(len(aggregate))),
+            ("Per-Dataset Rows", str(len(per_dataset))),
+        ],
+    )
+
+
+def run_ready_leaderboard_gradio(
+    dataset_files,
+    selected_algorithms,
+    model_name,
+    vector_backend,
+    runtime_device,
+    preprocess_mode,
+    code_language,
+    lexical_tokenizer,
+    pair_threshold,
+    retrieval_k,
+    seed,
+    progress=gr.Progress(track_tqdm=True),
+):
+    if not dataset_files:
+        return empty_ready_leaderboard_summary_html(), pd.DataFrame(), pd.DataFrame(), "", None
+
+    if progress is not None:
+        progress(0.1, desc="Preparing datasets")
+    datasets = ready_leaderboard_dataset_configs(dataset_files, pair_threshold, retrieval_k)
+    algorithms = ready_leaderboard_algorithm_configs(
+        selected_algorithms,
+        model_name,
+        vector_backend,
+        runtime_device,
+        preprocess_mode,
+        code_language,
+        lexical_tokenizer,
+    )
+    manifest = {
+        "name": "gradio_ready_leaderboard",
+        "seed": int(float(seed or 7)),
+        "pair_metrics": list(READY_LEADERBOARD_PAIR_METRICS),
+        "retrieval_metrics": list(READY_LEADERBOARD_RETRIEVAL_METRICS),
+        "datasets": datasets,
+        "algorithms": algorithms,
+    }
+    if progress is not None:
+        progress(0.35, desc="Running leaderboard")
+    export_root = Path(tempfile.mkdtemp(prefix="matheel-ready-leaderboard-"))
+    try:
+        report, artifacts = run_leaderboard(
+            manifest,
+            output_dir=export_root,
+            basename="ready_leaderboard",
+        )
+    except (ImportError, ValueError) as exc:
+        raise gr.Error(str(exc)) from exc
+
+    if progress is not None:
+        progress(0.9, desc="Packaging artifacts")
+    artifacts_zip = _zip_artifact_paths(
+        artifacts.values(),
+        export_root / "ready_leaderboard_artifacts.zip",
+    )
+    if progress is not None:
+        progress(1.0, desc="Ready leaderboard complete")
+    return (
+        ready_leaderboard_summary_html(report, len(_uploaded_file_paths(dataset_files)), len(algorithms)),
+        leaderboard_display_frame(report["aggregate"]),
+        leaderboard_display_frame(report["per_dataset"]),
+        artifacts["html"].read_text(encoding="utf-8"),
+        artifacts_zip,
+    )
+
+
 def _looks_like_pair_dataset_root(root):
     path = Path(root)
     return all((path / name).exists() for name in ("metadata.json", "files.csv", "pairs.csv"))
@@ -1802,18 +2082,14 @@ def _looks_like_retrieval_dataset_root(root):
 
 
 def _find_normalized_dataset_root(root, task_label):
-    path = Path(root)
-    matcher = (
-        _looks_like_retrieval_dataset_root
-        if str(task_label or "").lower().startswith("retrieval")
-        else _looks_like_pair_dataset_root
-    )
-    if matcher(path):
-        return path
-
-    candidates = [candidate for candidate in path.rglob("metadata.json") if matcher(candidate.parent)]
+    expected_task = _dataset_kind_from_task_label(task_label)
+    candidates = [
+        candidate
+        for candidate, task_family in _find_normalized_dataset_roots(root)
+        if task_family == expected_task
+    ]
     if len(candidates) == 1:
-        return candidates[0].parent
+        return candidates[0]
     if len(candidates) > 1:
         raise gr.Error("Dataset archive contains multiple normalized datasets. Upload one dataset at a time.")
     raise gr.Error("Could not find a normalized Matheel dataset in the uploaded archive.")
@@ -4028,49 +4304,175 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     )
 
         with gr.Tab("Leaderboard"):
-            with gr.Row():
-                with gr.Column(scale=8):
-                    leaderboard_file = gr.File(
-                        label="Leaderboard JSON or ZIP",
-                        file_types=[".json", ".zip"],
-                    )
-                    leaderboard_inspect = gr.Button("Inspect Leaderboard", variant="primary")
-                    leaderboard_summary = gr.HTML(
-                        value=empty_leaderboard_inspection_summary_html(),
-                        padding=False,
-                    )
-                    leaderboard_aggregate = gr.Dataframe(
-                        label="Aggregate Ranking",
-                        wrap=False,
-                        interactive=False,
-                        max_height=320,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    leaderboard_per_dataset = gr.Dataframe(
-                        label="Per-Dataset Ranking",
-                        wrap=False,
-                        interactive=False,
-                        max_height=360,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    leaderboard_report = gr.HTML(value="", padding=False)
-                    leaderboard_artifacts = gr.File(label="Leaderboard Report Artifacts")
+            with gr.Tabs():
+                with gr.Tab("Ready Leaderboard"):
+                    with gr.Row():
+                        with gr.Column(scale=8):
+                            ready_dataset_files = gr.File(
+                                label="Normalized Dataset ZIPs",
+                                file_types=[".zip"],
+                                file_count="multiple",
+                            )
+                            ready_run = gr.Button("Run Ready Leaderboard", variant="primary")
+                            ready_summary = gr.HTML(
+                                value=empty_ready_leaderboard_summary_html(),
+                                padding=False,
+                            )
+                            ready_aggregate = gr.Dataframe(
+                                label="Ranked Algorithms",
+                                wrap=False,
+                                interactive=False,
+                                max_height=320,
+                                row_count=1,
+                                show_search="filter",
+                                elem_classes=["matheel-table"],
+                            )
+                            ready_per_dataset = gr.Dataframe(
+                                label="Per-Dataset Ranking",
+                                wrap=False,
+                                interactive=False,
+                                max_height=360,
+                                row_count=1,
+                                show_search="filter",
+                                elem_classes=["matheel-table"],
+                            )
+                            ready_report = gr.HTML(value="", padding=False)
+                            ready_artifacts = gr.File(label="Ready Leaderboard Artifacts")
+                            ready_registered_datasets = gr.Dataframe(
+                                value=ready_leaderboard_registered_datasets_frame(),
+                                label="Registered Datasets",
+                                wrap=False,
+                                interactive=False,
+                                max_height=280,
+                                row_count=1,
+                                show_search="filter",
+                                elem_classes=["matheel-table"],
+                            )
 
-            leaderboard_inspect.click(
-                inspect_leaderboard_artifacts_gradio,
-                inputs=leaderboard_file,
-                outputs=[
-                    leaderboard_summary,
-                    leaderboard_aggregate,
-                    leaderboard_per_dataset,
-                    leaderboard_report,
-                    leaderboard_artifacts,
-                ],
-            )
+                        with gr.Column(scale=5):
+                            with gr.Accordion("Algorithms", open=True):
+                                ready_algorithms = gr.CheckboxGroup(
+                                    choices=list(READY_LEADERBOARD_ALGORITHM_CHOICES),
+                                    value=list(READY_LEADERBOARD_ALGORITHM_CHOICES),
+                                    label="Algorithm Presets",
+                                )
+                                ready_model = HuggingfaceHubSearch(
+                                    value=DEFAULT_MODEL,
+                                    label="Embedding Model",
+                                    placeholder="Search Hugging Face models",
+                                    search_type="model",
+                                )
+                                ready_vector_backend = gr.Dropdown(
+                                    choices=list(available_vector_backends()),
+                                    value="auto",
+                                    label="Vector Backend",
+                                )
+                                ready_runtime_device = gr.Dropdown(
+                                    choices=list(DEVICE_CHOICES),
+                                    value="auto",
+                                    label="Runtime Device",
+                                )
+                                ready_preprocess_mode = gr.Dropdown(
+                                    choices=list(available_preprocess_modes()),
+                                    value="none",
+                                    label="Preprocessing Mode",
+                                )
+                                ready_code_language = gr.Dropdown(
+                                    choices=list(available_code_metric_languages()),
+                                    value="python",
+                                    label="Code Language",
+                                )
+                                ready_lexical_tokenizer = gr.Dropdown(
+                                    choices=list(LEXICAL_TOKENIZER_CHOICES),
+                                    value="raw",
+                                    label="Lexical Tokenizer",
+                                )
+
+                            with gr.Accordion("Task Defaults", open=True):
+                                ready_pair_threshold = gr.Slider(
+                                    0,
+                                    1,
+                                    value=0.5,
+                                    label="Pair Threshold",
+                                    step=0.01,
+                                )
+                                ready_retrieval_k = gr.Slider(
+                                    1,
+                                    100,
+                                    value=10,
+                                    label="Retrieval k",
+                                    step=1,
+                                )
+                                ready_seed = gr.Number(value=7, precision=0, label="Seed")
+
+                    ready_run.click(
+                        run_ready_leaderboard_gradio,
+                        inputs=[
+                            ready_dataset_files,
+                            ready_algorithms,
+                            ready_model,
+                            ready_vector_backend,
+                            ready_runtime_device,
+                            ready_preprocess_mode,
+                            ready_code_language,
+                            ready_lexical_tokenizer,
+                            ready_pair_threshold,
+                            ready_retrieval_k,
+                            ready_seed,
+                        ],
+                        outputs=[
+                            ready_summary,
+                            ready_aggregate,
+                            ready_per_dataset,
+                            ready_report,
+                            ready_artifacts,
+                        ],
+                    )
+
+                with gr.Tab("Inspect Artifacts"):
+                    with gr.Row():
+                        with gr.Column(scale=8):
+                            leaderboard_file = gr.File(
+                                label="Leaderboard JSON or ZIP",
+                                file_types=[".json", ".zip"],
+                            )
+                            leaderboard_inspect = gr.Button("Inspect Leaderboard", variant="primary")
+                            leaderboard_summary = gr.HTML(
+                                value=empty_leaderboard_inspection_summary_html(),
+                                padding=False,
+                            )
+                            leaderboard_aggregate = gr.Dataframe(
+                                label="Aggregate Ranking",
+                                wrap=False,
+                                interactive=False,
+                                max_height=320,
+                                row_count=1,
+                                show_search="filter",
+                                elem_classes=["matheel-table"],
+                            )
+                            leaderboard_per_dataset = gr.Dataframe(
+                                label="Per-Dataset Ranking",
+                                wrap=False,
+                                interactive=False,
+                                max_height=360,
+                                row_count=1,
+                                show_search="filter",
+                                elem_classes=["matheel-table"],
+                            )
+                            leaderboard_report = gr.HTML(value="", padding=False)
+                            leaderboard_artifacts = gr.File(label="Leaderboard Report Artifacts")
+
+                    leaderboard_inspect.click(
+                        inspect_leaderboard_artifacts_gradio,
+                        inputs=leaderboard_file,
+                        outputs=[
+                            leaderboard_summary,
+                            leaderboard_aggregate,
+                            leaderboard_per_dataset,
+                            leaderboard_report,
+                            leaderboard_artifacts,
+                        ],
+                    )
 
 if __name__ == "__main__":
     demo.launch(show_error=True, debug=True)
