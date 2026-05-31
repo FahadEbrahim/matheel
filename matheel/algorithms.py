@@ -376,7 +376,10 @@ def score_source_pairs_with_algorithm(
             kind="mergesort",
             ignore_index=True,
         )
-    result = similarity_df.head(max(1, int(number_results)))
+    result_count = int(number_results)
+    if result_count < 1:
+        raise ValueError("number_results must be at least 1.")
+    result = similarity_df.head(result_count)
     attach_run_metadata(
         result,
         elapsed_seconds=elapsed_seconds_since(start_time),

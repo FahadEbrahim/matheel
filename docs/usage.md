@@ -29,7 +29,7 @@ pip install "matheel[all]"
 | `matheel[chunking]` | Chonkie chunkers for splitting code before embedding. |
 | `matheel[metrics]` | Optional code metric runtimes such as TSED and CodeBERTScore. |
 | `matheel[visualization]` | UMAP projection for dataset visualization. |
-| `matheel[gradio]` | Dependencies for running the Gradio web app. |
+| `matheel[gradio]` | Dependencies for running the Gradio web app from a repository checkout or the hosted Space. |
 | `matheel[all]` | All supported optional backends in one install. |
 
 Compatibility extras remain available for narrower installs: `sentence_transformers`, `model2vec`, `pylate`, and `chunking_code`.
@@ -38,12 +38,20 @@ Examples that use semantic weights assume `matheel[semantic]` or `matheel[all]` 
 
 ## Quick Checks
 
-Generate the tiny Java sample archive from source strings:
+Generate a tiny sample archive from source strings:
 
 Base CLI check:
 
 ```bash
-python examples/sample_data.py --output sample_pairs.zip --overwrite
+python - <<'PY'
+from zipfile import ZipFile
+
+with ZipFile("sample_pairs.zip", "w") as archive:
+    archive.writestr("a.py", "def add(a, b):\n    return a + b\n")
+    archive.writestr("b.py", "def add(x, y):\n    return x + y\n")
+    archive.writestr("c.py", "def sub(a, b):\n    return a - b\n")
+PY
+
 matheel compare sample_pairs.zip \
   --feature-weight levenshtein=1.0 \
   --num 10

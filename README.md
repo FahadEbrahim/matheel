@@ -29,12 +29,24 @@ Installation options are covered in the [usage guide](https://fahadebrahim.githu
 
 ## Quick Start
 
+Create a tiny archive and compare it with the CLI:
+
 ```bash
-python examples/sample_data.py --output sample_pairs.zip --overwrite
+python - <<'PY'
+from zipfile import ZipFile
+
+with ZipFile("sample_pairs.zip", "w") as archive:
+    archive.writestr("a.py", "def add(a, b):\n    return a + b\n")
+    archive.writestr("b.py", "def add(x, y):\n    return x + y\n")
+    archive.writestr("c.py", "def sub(a, b):\n    return a - b\n")
+PY
+
 matheel compare sample_pairs.zip \
   --feature-weight levenshtein=1.0 \
   --num 10
 ```
+
+Or score a pair directly from Python:
 
 ```python
 from matheel.similarity import calculate_similarity

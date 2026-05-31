@@ -1,8 +1,15 @@
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from .algorithms import normalize_algorithm_options, resolve_pair_algorithm
-from .datasets import PairDataset, RetrievalDataset, load_pair_dataset, load_retrieval_dataset
+from .datasets import (
+    PairDataset,
+    RetrievalDataset,
+    load_pair_dataset,
+    load_pair_datasets,
+    load_retrieval_dataset,
+    load_retrieval_datasets,
+)
 from .reproducibility import fingerprint_source
 
 
@@ -52,7 +59,7 @@ def algorithm_card(config, name=None):
         "card_type": "algorithm",
         "name": str(name or payload.get("name") or _algorithm_name_from_path(algorithm_path) or "matheel"),
         "algorithm_kind": "custom" if algorithm_path else "builtin",
-        "algorithm_path_name": Path(str(algorithm_path)).name if algorithm_path else "",
+        "algorithm_path_name": _path_name(algorithm_path) if algorithm_path else "",
         "algorithm_options": _sanitize_mapping(algorithm_options),
         "similarity_options": _sanitize_mapping(options),
         "fingerprint": {},
@@ -100,7 +107,11 @@ def _load_card_dataset(dataset, task_family=None):
         task_families = dataset.get("task_families") or ()
         task = next(iter(task_families), None)
     if task == "retrieval":
+        if isinstance(dataset, dict):
+            return load_retrieval_datasets(dataset)
         return load_retrieval_dataset(_dataset_identifier(dataset))
+    if isinstance(dataset, dict):
+        return load_pair_datasets(dataset)
     return load_pair_dataset(_dataset_identifier(dataset))
 
 
@@ -132,7 +143,7 @@ def _dataset_kind_from_task(task_family):
 def _algorithm_name_from_path(algorithm_path):
     if not algorithm_path:
         return None
-    return Path(str(algorithm_path)).stem
+    return Path(_path_name(algorithm_path)).stem
 
 
 def _custom_algorithm_card_fields(algorithm_path):
@@ -140,7 +151,7 @@ def _custom_algorithm_card_fields(algorithm_path):
         resolved = resolve_pair_algorithm(algorithm_path)
     except Exception:
         return {
-            "fingerprint": {"source_type": "unresolved", "file_name": Path(str(algorithm_path)).name},
+            "fingerprint": {"source_type": "unresolved", "file_name": _path_name(algorithm_path)},
         }
     return {
         "resolved_algorithm_name": resolved.name,
@@ -158,7 +169,7 @@ def _sanitize_mapping(values):
         if lowered in _CREDENTIAL_KEYS:
             sanitized[name] = "<redacted>"
         elif lowered in _PATH_KEYS and isinstance(value, (str, Path)):
-            sanitized[name] = Path(value).name
+            sanitized[name] = _path_name(value)
         elif isinstance(value, dict):
             sanitized[name] = _sanitize_mapping(value)
         elif isinstance(value, (list, tuple)):
@@ -169,3 +180,11 @@ def _sanitize_mapping(values):
         else:
             sanitized[name] = value
     return sanitized
+
+
+def _path_name(value):
+    text = str(value or "")
+    windows_path = PureWindowsPath(text)
+    if windows_path.drive or "\\" in text:
+        return windows_path.name or text
+    return Path(text).name or text

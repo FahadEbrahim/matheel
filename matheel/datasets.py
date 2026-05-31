@@ -155,7 +155,12 @@ def resolve_dataset_source(
 
     resolved_destination = destination
     if resolved_destination is None and source_key != "local":
-        resolved_destination = _default_dataset_destination(source_key, identifier)
+        resolved_destination = _default_dataset_destination(
+            source_key,
+            identifier,
+            revision=revision,
+            split=split,
+        )
     if resolved_destination is not None:
         resolved_destination = _coerce_path(resolved_destination)
 
@@ -789,10 +794,21 @@ def _invoke_with_supported_kwargs(func, **kwargs):
     return func(**accepted)
 
 
-def _default_dataset_destination(source, identifier):
-    digest = sha1(str(identifier).encode("utf-8")).hexdigest()[:12]
+def _default_dataset_destination(source, identifier, revision="main", split=None):
+    fingerprint = {
+        "identifier": str(identifier),
+        "revision": str(revision or "main"),
+        "source": str(source),
+        "split": None if split is None else str(split),
+    }
+    digest = sha1(json.dumps(fingerprint, sort_keys=True).encode("utf-8")).hexdigest()[:12]
     safe_identifier = _safe_name_component(identifier)[:48]
-    return Path(tempfile.gettempdir()) / "matheel_datasets" / f"{source}_{safe_identifier}_{digest}"
+    safe_revision = _safe_name_component(revision or "main")[:24]
+    return (
+        Path(tempfile.gettempdir())
+        / "matheel_datasets"
+        / f"{source}_{safe_identifier}_{safe_revision}_{digest}"
+    )
 
 
 def _safe_name_component(value):
@@ -1520,11 +1536,18 @@ def _table_value(row, column):
 
 
 def _resolve_tabular_source_path(source_root, value):
-    path = Path(os.fspath(value))
-    if not path.is_absolute():
-        path = _coerce_path(source_root) / path
+    root = _coerce_path(source_root)
+    raw_path = Path(os.fspath(value)).expanduser()
+    candidate = raw_path if raw_path.is_absolute() else root / raw_path
+    path = candidate.resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"Tabular adapter source file must stay within dataset root: {value}") from exc
     if not path.exists():
         raise ValueError(f"Tabular adapter source file does not exist: {value}")
+    if not path.is_file():
+        raise ValueError(f"Tabular adapter source path is not a file: {value}")
     return path
 
 

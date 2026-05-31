@@ -337,6 +337,15 @@ def _read_csv_manifest(root, filename, required_columns, issues):
         return None
     try:
         frame = pd.read_csv(path)
+    except pd.errors.EmptyDataError:
+        expected = ", ".join(required_columns)
+        _add_issue(
+            issues,
+            "error",
+            "empty_csv",
+            f"{filename} is empty; expected columns: {expected}.",
+        )
+        return None
     except (pd.errors.ParserError, UnicodeDecodeError, OSError) as exc:
         _add_issue(issues, "error", "invalid_csv", f"{filename} could not be read as CSV: {exc}.")
         return None

@@ -156,6 +156,20 @@ def test_score_source_pairs_with_algorithm_attaches_reproducibility_metadata(tmp
     assert len(results.attrs["algorithm"]["algorithm_source_fingerprint"]["sha256"]) == 64
 
 
+def test_score_source_pairs_with_algorithm_rejects_non_positive_number_results(tmp_path):
+    source_root = tmp_path / "codes"
+    source_root.mkdir()
+    (source_root / "a.py").write_text("print(1)\n", encoding="utf-8")
+    (source_root / "b.py").write_text("print(2)\n", encoding="utf-8")
+
+    def score_pair(code_a, code_b):
+        _ = (code_a, code_b)
+        return 1.0
+
+    with pytest.raises(ValueError, match="number_results"):
+        score_source_pairs_with_algorithm(source_root, algorithm=score_pair, number_results=0)
+
+
 def test_score_source_pairs_with_algorithm_reports_progress(tmp_path):
     source_root = tmp_path / "codes"
     source_root.mkdir()

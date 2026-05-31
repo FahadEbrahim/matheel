@@ -43,14 +43,22 @@ def project_embeddings(embeddings, method="auto", seed=7):
 
     actual_method = selected
     if selected == "auto":
-        try:
-            coordinates = _project_umap(array, seed=seed)
-            actual_method = "umap"
-        except ImportError:
+        if array.shape[0] < 3:
             coordinates = _project_pca(array)
             actual_method = "pca"
+        else:
+            try:
+                coordinates = _project_umap(array, seed=seed)
+                actual_method = "umap"
+            except ImportError:
+                coordinates = _project_pca(array)
+                actual_method = "pca"
     elif selected == "umap":
-        coordinates = _project_umap(array, seed=seed)
+        if array.shape[0] < 3:
+            coordinates = _project_pca(array)
+            actual_method = "pca"
+        else:
+            coordinates = _project_umap(array, seed=seed)
     else:
         coordinates = _project_pca(array)
 
@@ -179,9 +187,10 @@ def write_dataset_map_artifacts(projection, output_dir, basename="dataset_map", 
     target = Path(output_dir)
     target.mkdir(parents=True, exist_ok=True)
     frame = projection.copy() if isinstance(projection, pd.DataFrame) else pd.DataFrame(projection)
-    csv_path = target / f"{basename}.csv"
-    json_path = target / f"{basename}.json"
-    html_path = target / f"{basename}.html"
+    safe_basename = _safe_artifact_basename(basename or "dataset_map")
+    csv_path = target / f"{safe_basename}.csv"
+    json_path = target / f"{safe_basename}.json"
+    html_path = target / f"{safe_basename}.html"
     frame.to_csv(csv_path, index=False)
     json_path.write_text(json.dumps(dataset_map_payload(frame), indent=2, sort_keys=True), encoding="utf-8")
     html_title = title or str(frame.attrs.get("dataset_name") or "Matheel Dataset Map")

@@ -1,6 +1,7 @@
 import json
 import sys
 import zipfile
+from pathlib import Path
 from types import ModuleType
 
 import pandas as pd
@@ -138,6 +139,22 @@ def test_dataset_validation_report_finds_pair_reference_errors(tmp_path):
     assert "empty_files" in codes
 
 
+def test_dataset_validation_report_handles_empty_csv_manifest(tmp_path):
+    dataset_root = tmp_path / "empty_manifest"
+    dataset_root.mkdir()
+    (dataset_root / "metadata.json").write_text(
+        json.dumps({"dataset_kind": "pair_classification", "name": "empty"}),
+        encoding="utf-8",
+    )
+    (dataset_root / "files.csv").write_text("", encoding="utf-8")
+    (dataset_root / "pairs.csv").write_text("left_id,right_id,label\n", encoding="utf-8")
+
+    report = validate_dataset_report(dataset_root, kind="pair")
+
+    assert report["status"] == "error"
+    assert any(issue["code"] == "empty_csv" for issue in report["issues"])
+
+
 def test_dataset_validation_report_finds_retrieval_reference_errors(tmp_path):
     dataset_root = tmp_path / "broken_retrieval"
     write_retrieval_dataset(
@@ -171,6 +188,28 @@ def test_default_dataset_sources_include_generic_resolvers():
     sources = set(available_dataset_sources())
 
     assert {"local", "github", "zenodo", "huggingface", "kaggle"}.issubset(sources)
+
+
+def test_default_remote_dataset_cache_includes_revision_and_split():
+    destinations = []
+
+    def resolver(identifier, destination=None, revision="main", token=None, split=None):
+        _ = (identifier, token, split)
+        target = Path(destination)
+        target.mkdir(parents=True, exist_ok=True)
+        (target / "revision.txt").write_text(str(revision), encoding="utf-8")
+        destinations.append(target)
+        return target
+
+    register_dataset_source("unit_cache", resolver, overwrite=True)
+
+    first = resolve_dataset_source("unit_cache", "owner/repo", revision="main", split="train")
+    second = resolve_dataset_source("unit_cache", "owner/repo", revision="dev", split="train")
+    third = resolve_dataset_source("unit_cache", "owner/repo", revision="main", split="test")
+
+    assert first != second
+    assert first != third
+    assert len(set(destinations)) == 3
 
 
 def test_default_dataset_presets_include_only_approved_plagiarism_presets():
@@ -216,6 +255,29 @@ def test_safe_archive_extraction_rejects_path_traversal(tmp_path):
         _safe_extract_archive(archive_path, tmp_path / "out")
 
     assert not (tmp_path / "escape.txt").exists()
+
+
+def test_tabular_adapter_rejects_paths_outside_source_root(tmp_path):
+    source_root = tmp_path / "raw"
+    source_root.mkdir()
+    outside = tmp_path / "outside.py"
+    outside.write_text("print('secret')\n", encoding="utf-8")
+    pd.DataFrame(
+        [
+            {
+                "left_path": "../outside.py",
+                "right_text": "print(1)",
+                "label": 1,
+            }
+        ]
+    ).to_csv(source_root / "pairs.csv", index=False)
+
+    with pytest.raises(ValueError, match="within dataset root"):
+        adapt_pair_dataset(
+            source_root,
+            adapter="auto_pair_tabular",
+            destination=tmp_path / "adapted",
+        )
 
 
 def test_kaggle_api_resolver_downloads_then_safe_extracts(tmp_path, monkeypatch):

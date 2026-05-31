@@ -122,6 +122,19 @@ def test_threshold_sweep_returns_dataframe_with_confusion_counts():
     assert frame.loc[0, "f1"] == pytest.approx(1.0)
 
 
+def test_evaluate_threshold_coerces_string_binary_labels():
+    report = evaluate_threshold(
+        [(0.1, "0"), (0.2, "false"), (0.8, "true"), (0.9, "1")],
+        threshold=0.5,
+    )
+
+    assert report["positive_count"] == 2
+    assert report["negative_count"] == 2
+    assert report["true_positive"] == 2
+    assert report["true_negative"] == 2
+    assert report["accuracy"] == pytest.approx(1.0)
+
+
 def test_roc_and_precision_recall_curves_report_perfect_ranking_metrics():
     scores = [0.95, 0.82, 0.3, 0.1]
     labels = [True, True, False, False]
