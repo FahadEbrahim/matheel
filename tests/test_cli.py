@@ -818,6 +818,50 @@ def test_datasets_validate_command_reports_pair_summary(tmp_path):
     }
 
 
+def test_datasets_validate_auto_rejects_ambiguous_dataset_kind(tmp_path):
+    dataset_root = tmp_path / "ambiguous"
+    dataset_root.mkdir()
+    (dataset_root / "a.py").write_text("print(1)", encoding="utf-8")
+    (dataset_root / "b.py").write_text("print(2)", encoding="utf-8")
+    pd.DataFrame(
+        [
+            {"file_id": "a", "file_path": "a.py"},
+            {"file_id": "b", "file_path": "b.py"},
+        ]
+    ).to_csv(dataset_root / "files.csv", index=False)
+    pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]).to_csv(
+        dataset_root / "pairs.csv",
+        index=False,
+    )
+    pd.DataFrame([{"query_id": "q1", "file_id": "a"}]).to_csv(dataset_root / "queries.csv", index=False)
+    pd.DataFrame([{"document_id": "d1", "file_id": "b"}]).to_csv(dataset_root / "corpus.csv", index=False)
+    pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]).to_csv(
+        dataset_root / "qrels.csv",
+        index=False,
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(main, ["datasets", "validate", str(dataset_root)])
+
+    assert result.exit_code != 0
+    assert "Dataset contains both pair and retrieval manifests" in result.output
+    assert "Use --kind pair or --kind retrieval" in result.output
+
+    pair_result = runner.invoke(
+        main,
+        ["datasets", "validate", str(dataset_root), "--kind", "pair", "--format", "json"],
+    )
+    retrieval_result = runner.invoke(
+        main,
+        ["datasets", "validate", str(dataset_root), "--kind", "retrieval", "--format", "json"],
+    )
+
+    assert pair_result.exit_code == 0
+    assert json.loads(pair_result.output)["dataset_kind"] == "pair_classification"
+    assert retrieval_result.exit_code == 0
+    assert json.loads(retrieval_result.output)["dataset_kind"] == "retrieval"
+
+
 def test_datasets_validate_command_writes_report_artifacts(tmp_path):
     dataset_root = tmp_path / "pairs"
     write_pair_dataset(
