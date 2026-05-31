@@ -257,9 +257,13 @@ def _dataset_kind_from_path(dataset_path, requested_kind):
         return requested_kind
 
     root = Path(dataset_path)
-    if all((root / name).exists() for name in ("files.csv", "queries.csv", "corpus.csv", "qrels.csv")):
+    has_pair_files = (root / "files.csv").exists() and (root / "pairs.csv").exists()
+    has_retrieval_files = all((root / name).exists() for name in ("files.csv", "queries.csv", "corpus.csv", "qrels.csv"))
+    if has_pair_files and has_retrieval_files:
+        raise click.UsageError("Dataset contains both pair and retrieval manifests. Use --kind pair or --kind retrieval.")
+    if has_retrieval_files:
         return "retrieval"
-    if (root / "files.csv").exists() and (root / "pairs.csv").exists():
+    if has_pair_files:
         return "pair"
     raise click.UsageError("Could not detect dataset kind. Use --kind pair or --kind retrieval.")
 

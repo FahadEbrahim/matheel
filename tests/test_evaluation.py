@@ -12,7 +12,7 @@ from matheel.evaluation import (
     score_pair_dataset,
     score_retrieval_dataset,
 )
-from matheel.resampling import kfold_splits
+from matheel.resampling import kfold_splits, single_split
 
 
 def _write_tiny_pair_dataset(path):
@@ -346,6 +346,18 @@ def test_retrieval_ranking_metrics_handles_queries_without_relevant_documents():
     assert metrics["ndcg_at_k"] == 0.0
 
 
+def test_retrieval_ranking_metrics_rejects_duplicate_result_rows():
+    scored_results = pd.DataFrame(
+        [
+            {"query_id": "q1", "document_id": "d1", "similarity_score": 0.9, "relevance": 1},
+            {"query_id": "q1", "document_id": "d1", "similarity_score": 0.8, "relevance": 1},
+        ]
+    )
+
+    with pytest.raises(ValueError, match="duplicate query/document result rows"):
+        retrieval_ranking_metrics(scored_results, k=2)
+
+
 def test_retrieval_ranking_metrics_requires_score_column():
     with pytest.raises(ValueError, match="similarity_score"):
         retrieval_ranking_metrics([{"query_id": "q1", "document_id": "d1", "relevance": 1}])
@@ -369,6 +381,22 @@ def test_evaluate_pair_resamples_returns_fold_metrics_and_summary():
     assert summary.loc[summary["metric"] == "accuracy", "mean"].item() == pytest.approx(1.0)
 
 
+def test_evaluate_pair_resamples_accepts_single_split_object():
+    scored_pairs = pd.DataFrame(
+        [
+            {"similarity_score": 0.9, "label": 1},
+            {"similarity_score": 0.1, "label": 0},
+        ]
+    )
+    split = single_split(len(scored_pairs), train_size=0.5, test_size=0.5, shuffle=False)
+
+    metrics, summary = evaluate_pair_resamples(scored_pairs, split, threshold=0.5)
+
+    assert metrics["split"].tolist() == ["split_1"]
+    assert metrics["test_count"].tolist() == [1]
+    assert summary.loc[summary["metric"] == "accuracy", "count"].item() == 1
+
+
 def test_evaluate_retrieval_resamples_uses_query_level_splits():
     scored_results = pd.DataFrame(
         [
@@ -385,3 +413,21 @@ def test_evaluate_retrieval_resamples_uses_query_level_splits():
     assert metrics["query_count"].tolist() == [1, 1]
     assert metrics["mean_average_precision"].tolist() == [1.0, 1.0]
     assert summary.loc[summary["metric"] == "ndcg_at_k", "mean"].item() == pytest.approx(1.0)
+
+
+def test_evaluate_retrieval_resamples_accepts_single_split_object():
+    scored_results = pd.DataFrame(
+        [
+            {"query_id": "q1", "document_id": "d1", "similarity_score": 1.0, "relevance": 1},
+            {"query_id": "q1", "document_id": "d2", "similarity_score": 0.1, "relevance": 0},
+            {"query_id": "q2", "document_id": "d1", "similarity_score": 0.2, "relevance": 0},
+            {"query_id": "q2", "document_id": "d2", "similarity_score": 0.9, "relevance": 1},
+        ]
+    )
+    split = single_split(2, train_size=0.5, test_size=0.5, shuffle=False)
+
+    metrics, summary = evaluate_retrieval_resamples(scored_results, split, k=1)
+
+    assert metrics["split"].tolist() == ["split_1"]
+    assert metrics["query_count"].tolist() == [1]
+    assert summary.loc[summary["metric"] == "ndcg_at_k", "count"].item() == 1

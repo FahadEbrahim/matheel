@@ -16,20 +16,12 @@ except ImportError:  # pragma: no cover - optional dependency
     codebleu_package_dir = None
     codebleu_get_tree_sitter_language = None
 
-try:
-    from bert_score import BERTScorer
-except ImportError:  # pragma: no cover - optional dependency
-    BERTScorer = None
-
-try:
-    from transformers import AutoConfig
-except ImportError:  # pragma: no cover - optional dependency
-    AutoConfig = None
-
-try:
-    import torch
-except ImportError:  # pragma: no cover - optional dependency
-    torch = None
+BERTScorer = None
+AutoConfig = None
+torch = None
+_BERTSCORER_IMPORT_ATTEMPTED = False
+_AUTOCONFIG_IMPORT_ATTEMPTED = False
+_TORCH_IMPORT_ATTEMPTED = False
 
 try:
     from apted import APTED
@@ -148,6 +140,7 @@ _TREE_SITTER_PARSE_LOCK = RLock()
 _CODEBERTSCORE_SCORER_CACHE_LOCK = RLock()
 _CODEBERTSCORE_SCORER_USAGE_LOCK = RLock()
 _CODEBERTSCORE_LAYER_CACHE_LOCK = RLock()
+_CODEBERTSCORE_DEPENDENCY_LOCK = RLock()
 _KEYWORDS = {
     "c": {
         "auto", "break", "case", "char", "const", "continue", "default", "do", "double", "else",
@@ -1036,29 +1029,81 @@ def _tsed_pair_score(reference_tree, prediction_tree, delete_cost=1.0, insert_co
     return float(max(0.0, min(1.0, (max_len - edit_distance) / float(max_len))))
 
 
+def _load_bert_scorer():
+    global BERTScorer, _BERTSCORER_IMPORT_ATTEMPTED
+    if BERTScorer is not None:
+        return BERTScorer
+    with _CODEBERTSCORE_DEPENDENCY_LOCK:
+        if BERTScorer is not None:
+            return BERTScorer
+        if not _BERTSCORER_IMPORT_ATTEMPTED:
+            try:
+                from bert_score import BERTScorer as loaded_bert_scorer
+            except ImportError:  # pragma: no cover - optional dependency
+                loaded_bert_scorer = None
+            BERTScorer = loaded_bert_scorer
+            _BERTSCORER_IMPORT_ATTEMPTED = True
+    return BERTScorer
+
+
+def _load_auto_config():
+    global AutoConfig, _AUTOCONFIG_IMPORT_ATTEMPTED
+    if AutoConfig is not None:
+        return AutoConfig
+    with _CODEBERTSCORE_DEPENDENCY_LOCK:
+        if AutoConfig is not None:
+            return AutoConfig
+        if not _AUTOCONFIG_IMPORT_ATTEMPTED:
+            try:
+                from transformers import AutoConfig as loaded_auto_config
+            except ImportError:  # pragma: no cover - optional dependency
+                loaded_auto_config = None
+            AutoConfig = loaded_auto_config
+            _AUTOCONFIG_IMPORT_ATTEMPTED = True
+    return AutoConfig
+
+
+def _load_torch():
+    global torch, _TORCH_IMPORT_ATTEMPTED
+    if torch is not None:
+        return torch
+    with _CODEBERTSCORE_DEPENDENCY_LOCK:
+        if torch is not None:
+            return torch
+        if not _TORCH_IMPORT_ATTEMPTED:
+            try:
+                import torch as loaded_torch
+            except ImportError:  # pragma: no cover - optional dependency
+                loaded_torch = None
+            torch = loaded_torch
+            _TORCH_IMPORT_ATTEMPTED = True
+    return torch
+
+
 def _resolve_codebertscore_device(requested):
     token = (requested or "auto").strip().lower()
+    torch_module = _load_torch()
     if token in {"cpu", "cuda", "mps"}:
         if token == "cuda":
-            if torch is not None and torch.cuda.is_available():
+            if torch_module is not None and torch_module.cuda.is_available():
                 return "cuda"
             return "cpu"
         if token == "mps":
             if (
-                torch is not None
-                and hasattr(torch.backends, "mps")
-                and torch.backends.mps.is_available()
+                torch_module is not None
+                and hasattr(torch_module.backends, "mps")
+                and torch_module.backends.mps.is_available()
             ):
                 return "mps"
             return "cpu"
         return token
 
-    if torch is not None and torch.cuda.is_available():
+    if torch_module is not None and torch_module.cuda.is_available():
         return "cuda"
     if (
-        torch is not None
-        and hasattr(torch.backends, "mps")
-        and torch.backends.mps.is_available()
+        torch_module is not None
+        and hasattr(torch_module.backends, "mps")
+        and torch_module.backends.mps.is_available()
     ):
         return "mps"
     return "cpu"
@@ -1068,11 +1113,12 @@ def _infer_codebertscore_num_layers(model_type):
     with _CODEBERTSCORE_LAYER_CACHE_LOCK:
         if model_type in _CODEBERTSCORE_LAYER_CACHE:
             return _CODEBERTSCORE_LAYER_CACHE[model_type]
-        if AutoConfig is None:
+        auto_config = _load_auto_config()
+        if auto_config is None:
             _CODEBERTSCORE_LAYER_CACHE[model_type] = None
             return None
         try:
-            config = AutoConfig.from_pretrained(model_type)
+            config = auto_config.from_pretrained(model_type)
         except Exception:
             _CODEBERTSCORE_LAYER_CACHE[model_type] = None
             return None
@@ -1149,7 +1195,8 @@ def _resolve_codebertscore_scorer(
     use_fast_tokenizer=False,
     nthreads=4,
 ):
-    if BERTScorer is None:
+    bert_scorer = _load_bert_scorer()
+    if bert_scorer is None:
         raise ImportError("CodeBERTScore requires bert-score. Install with: pip install bert-score")
 
     resolved_device = _resolve_codebertscore_device(device)
@@ -1179,7 +1226,7 @@ def _resolve_codebertscore_scorer(
         if cache_key in _CODEBERTSCORE_SCORER_CACHE:
             return _CODEBERTSCORE_SCORER_CACHE[cache_key]
 
-        scorer = BERTScorer(
+        scorer = bert_scorer(
             model_type=str(model_type),
             num_layers=parsed_layers,
             lang=normalized_lang,

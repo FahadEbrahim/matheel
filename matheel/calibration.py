@@ -32,6 +32,12 @@ def _coerce_label(value, positive_label=True):
 
 
 def _coerce_default_binary_label(value):
+    try:
+        is_missing = bool(pd.isna(value))
+    except (TypeError, ValueError):
+        is_missing = False
+    if is_missing:
+        raise ValueError(f"Binary labels must be 0 or 1. Got: {value}")
     if isinstance(value, bool):
         return bool(value)
     if isinstance(value, str):
@@ -42,7 +48,10 @@ def _coerce_default_binary_label(value):
             "true",
             "yes",
             "y",
+            "p",
             "positive",
+            "cheating",
+            "clone",
             "plagiarized",
             "plagiarised",
             "plagiarism",
@@ -56,10 +65,22 @@ def _coerce_default_binary_label(value):
             "false",
             "no",
             "n",
+            "np",
             "negative",
             "original",
+            "not cheating",
+            "not_cheating",
+            "non-cheating",
+            "non cheating",
+            "non-clone",
+            "nonplagiarized",
+            "nonplagiarised",
             "non_plagiarized",
             "non_plagiarised",
+            "not plagiarized",
+            "not plagiarised",
+            "not_plagiarized",
+            "not_plagiarised",
             "non_plagiarism",
             "non-plagiarism",
             "nonmatch",
@@ -69,11 +90,11 @@ def _coerce_default_binary_label(value):
             return False
     try:
         numeric = float(value)
-    except (TypeError, ValueError):
-        return bool(value)
-    if math.isfinite(numeric):
-        return numeric != 0.0
-    return bool(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Binary labels must be 0 or 1. Got: {value}") from exc
+    if not math.isfinite(numeric) or numeric not in (0.0, 1.0):
+        raise ValueError(f"Binary labels must be 0 or 1. Got: {value}")
+    return bool(numeric)
 
 
 def _coerce_score_label_pairs(

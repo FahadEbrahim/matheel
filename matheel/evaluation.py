@@ -11,7 +11,7 @@ from .algorithms import (
 from .calibration import evaluate_threshold
 from .datasets import PairDataset, RetrievalDataset, load_code_texts, load_pair_dataset, load_retrieval_dataset
 from .preprocessing import preprocess_code
-from .resampling import summarize_metric_samples
+from .resampling import DataSplit, summarize_metric_samples
 from .similarity import calculate_similarity
 
 
@@ -222,6 +222,11 @@ def retrieval_ranking_metrics(
 
     frame = frame.copy()
     frame[score_column] = frame[score_column].map(_normalize_finite_score)
+    _reject_duplicate_results(
+        frame,
+        query_column=query_column,
+        document_column=document_column,
+    )
     qrels_lookup = _qrels_lookup(
         qrels_frame,
         query_column=query_column,
@@ -430,6 +435,23 @@ def _rank_query_results(frame, document_column, score_column):
     )
 
 
+def _reject_duplicate_results(frame, query_column, document_column):
+    pairs = frame[[query_column, document_column]].astype(str)
+    duplicate_mask = pairs.duplicated(subset=[query_column, document_column], keep=False)
+    if not bool(duplicate_mask.any()):
+        return
+    duplicate_pairs = sorted(
+        {
+            f"{row[query_column]}->{row[document_column]}"
+            for row in pairs.loc[duplicate_mask, [query_column, document_column]].to_dict(orient="records")
+        }
+    )
+    preview = ", ".join(duplicate_pairs[:5])
+    if len(duplicate_pairs) > 5:
+        preview = f"{preview}, ..."
+    raise ValueError(f"scored_results contains duplicate query/document result rows: {preview}")
+
+
 def _average_precision(ranked_documents, relevant_by_document):
     if not relevant_by_document:
         return 0.0
@@ -497,7 +519,10 @@ def _normalize_nonnegative_relevance(value):
 
 
 def _normalize_splits(splits):
-    selected = tuple(splits)
+    if isinstance(splits, DataSplit):
+        selected = (splits,)
+    else:
+        selected = tuple(splits)
     if not selected:
         raise ValueError("At least one split is required.")
     return selected

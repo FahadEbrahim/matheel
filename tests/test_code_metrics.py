@@ -1,3 +1,4 @@
+import builtins
 import time
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
@@ -171,6 +172,22 @@ def test_available_code_metrics_includes_new_metrics():
     assert "ruby" in metrics
     assert "tsed" in metrics
     assert "codebertscore" in metrics
+
+
+def test_available_code_metrics_does_not_load_codebertscore_dependencies(monkeypatch):
+    imported = []
+    original_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name.split(".", 1)[0] in {"bert_score", "transformers", "torch"}:
+            imported.append(name)
+            raise AssertionError(f"unexpected optional dependency import: {name}")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+
+    assert "codebertscore" in available_code_metrics()
+    assert imported == []
 
 
 def test_available_code_metric_languages_expose_expanded_scope():

@@ -124,15 +124,20 @@ def test_threshold_sweep_returns_dataframe_with_confusion_counts():
 
 def test_evaluate_threshold_coerces_string_binary_labels():
     report = evaluate_threshold(
-        [(0.1, "0"), (0.2, "false"), (0.8, "true"), (0.9, "1")],
+        [(0.1, "0"), (0.2, "false"), (0.3, "np"), (0.8, "true"), (0.9, "1"), (0.7, "p")],
         threshold=0.5,
     )
 
-    assert report["positive_count"] == 2
-    assert report["negative_count"] == 2
-    assert report["true_positive"] == 2
-    assert report["true_negative"] == 2
+    assert report["positive_count"] == 3
+    assert report["negative_count"] == 3
+    assert report["true_positive"] == 3
+    assert report["true_negative"] == 3
     assert report["accuracy"] == pytest.approx(1.0)
+
+
+def test_evaluate_threshold_rejects_unknown_default_binary_labels():
+    with pytest.raises(ValueError, match="Binary labels must be 0 or 1"):
+        evaluate_threshold([(0.9, "maybe"), (0.1, "0")], threshold=0.5)
 
 
 def test_roc_and_precision_recall_curves_report_perfect_ranking_metrics():
