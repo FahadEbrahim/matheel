@@ -1,7 +1,9 @@
 import json
 import math
 import os
+import shutil
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
@@ -91,6 +93,20 @@ DEFAULT_TSED_COSTS = "1,1,1"
 DEFAULT_CODEBERTSCORE_MODEL = "microsoft/codebert-base"
 DEFAULT_CODEBERTSCORE_MAX_LENGTH = 0
 DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE = 512
+TEMP_WORKSPACE_TTL_SECONDS = int(os.environ.get("MATHEEL_GRADIO_TEMP_TTL_SECONDS", "86400"))
+TEMP_WORKSPACE_PREFIXES = (
+    "matheel-suite-",
+    "matheel-dataset-map-",
+    "matheel-pair-explanation-",
+    "matheel-leaderboard-inspect-",
+    "matheel-ready-leaderboard-upload-",
+    "matheel-ready-leaderboard-",
+    "matheel-dataset-upload-",
+    "matheel-dataset-validation-",
+    "matheel-threshold-tuning-",
+    "matheel-scored-pair-explanation-",
+    "matheel-leaderboard-",
+)
 FEATURE_UI_CHOICES = [
     "Embedding",
     "Levenshtein",
@@ -100,6 +116,41 @@ FEATURE_UI_CHOICES = [
     "Code Metric",
 ]
 DEFAULT_FEATURE_SELECTION = ["Embedding", "Levenshtein"]
+
+
+def cleanup_stale_temp_workspaces(
+    temp_root=None,
+    ttl_seconds=TEMP_WORKSPACE_TTL_SECONDS,
+    prefixes=TEMP_WORKSPACE_PREFIXES,
+):
+    root = Path(temp_root or tempfile.gettempdir())
+    try:
+        entries = list(root.iterdir())
+    except OSError:
+        return 0
+
+    now = time.time()
+    cleaned = 0
+    for entry in entries:
+        if not entry.is_dir() or not any(entry.name.startswith(prefix) for prefix in prefixes):
+            continue
+        try:
+            age = now - entry.stat().st_mtime
+        except OSError:
+            continue
+        if age < max(0, int(ttl_seconds)):
+            continue
+        try:
+            shutil.rmtree(entry)
+        except OSError:
+            continue
+        cleaned += 1
+    return cleaned
+
+
+def make_temp_workspace(prefix, temp_root=None):
+    cleanup_stale_temp_workspaces(temp_root=temp_root)
+    return Path(tempfile.mkdtemp(prefix=prefix, dir=temp_root))
 
 
 def _metric_preset_from_leaderboard_preset(name):
@@ -1403,7 +1454,7 @@ def run_suite_gradio(
 
     run_configs = suite_rows_to_configs(execution_frame)
 
-    export_root = tempfile.mkdtemp(prefix="matheel-suite-")
+    export_root = os.fspath(make_temp_workspace("matheel-suite-"))
     summary_name = f"comparison_suite_summary.{output_format}"
     summary_export_path = os.path.join(export_root, summary_name)
     details_dir = os.path.join(export_root, "comparison_suite_details")
@@ -1651,7 +1702,7 @@ def generate_dataset_map_gradio(
 
     if progress is not None:
         progress(0.7, desc="Writing visualization artifacts")
-    export_root = Path(tempfile.mkdtemp(prefix="matheel-dataset-map-"))
+    export_root = make_temp_workspace("matheel-dataset-map-")
     artifacts = write_dataset_map_artifacts(
         projection,
         export_root,
@@ -1733,7 +1784,7 @@ def generate_pair_explanation_gradio(
     except ValueError as exc:
         raise gr.Error(str(exc)) from exc
 
-    export_root = Path(tempfile.mkdtemp(prefix="matheel-pair-explanation-"))
+    export_root = make_temp_workspace("matheel-pair-explanation-")
     artifacts = write_pair_explanation_artifacts(
         explanation,
         export_root,
@@ -1855,7 +1906,7 @@ def inspect_leaderboard_artifacts_gradio(leaderboard_file):
     report = _leaderboard_report_from_payload(payload)
     title = str(report["metadata"].get("name") or "Matheel Leaderboard")
     html_report = benchmark_report_html(report, title=title)
-    export_root = Path(tempfile.mkdtemp(prefix="matheel-leaderboard-inspect-"))
+    export_root = make_temp_workspace("matheel-leaderboard-inspect-")
     artifacts = write_leaderboard_artifacts(
         report,
         export_root,
@@ -1958,7 +2009,7 @@ def _normalized_dataset_roots_from_upload(uploaded_path):
         return _find_normalized_dataset_roots(path)
     if not zipfile.is_zipfile(path):
         raise gr.Error("Ready leaderboard inputs must be normalized dataset ZIP archives or directories.")
-    extract_root = Path(tempfile.mkdtemp(prefix="matheel-ready-leaderboard-upload-"))
+    extract_root = make_temp_workspace("matheel-ready-leaderboard-upload-")
     _safe_extract_uploaded_zip(path, extract_root)
     return _find_normalized_dataset_roots(extract_root)
 
@@ -2067,7 +2118,7 @@ def run_ready_leaderboard_gradio(
     }
     if progress is not None:
         progress(0.35, desc="Running leaderboard")
-    export_root = Path(tempfile.mkdtemp(prefix="matheel-ready-leaderboard-"))
+    export_root = make_temp_workspace("matheel-ready-leaderboard-")
     try:
         report, artifacts = run_leaderboard(
             manifest,
@@ -2130,7 +2181,7 @@ def _dataset_root_from_upload(uploaded_file, task_label):
     if not zipfile.is_zipfile(uploaded_path):
         raise gr.Error("Dataset upload must be a ZIP archive or a normalized dataset directory.")
 
-    extract_root = Path(tempfile.mkdtemp(prefix="matheel-dataset-upload-"))
+    extract_root = make_temp_workspace("matheel-dataset-upload-")
     _safe_extract_uploaded_zip(uploaded_path, extract_root)
     return _find_normalized_dataset_root(extract_root, task_label)
 
@@ -2393,7 +2444,7 @@ def validate_dataset_gradio(dataset_file, task_label, progress=gr.Progress(track
     dataset_root = _dataset_root_from_upload(dataset_file, task_label)
     if progress is not None:
         progress(0.3, desc="Inspecting dataset")
-    export_root = Path(tempfile.mkdtemp(prefix="matheel-dataset-validation-"))
+    export_root = make_temp_workspace("matheel-dataset-validation-")
     report, artifacts = write_dataset_validation_report(
         dataset_root,
         export_root,
@@ -2484,7 +2535,7 @@ def threshold_tuning_gradio(scored_state, optimize, progress=gr.Progress(track_t
         return empty_threshold_tuning_summary_html(), pd.DataFrame(), "", None
     if progress is not None:
         progress(0.35, desc="Sweeping thresholds")
-    export_root = Path(tempfile.mkdtemp(prefix="matheel-threshold-tuning-"))
+    export_root = make_temp_workspace("matheel-threshold-tuning-")
     try:
         report, artifacts = write_threshold_tuning_report_artifacts(
             scored,
@@ -2532,7 +2583,7 @@ def explain_scored_pair_gradio(
         return empty_pair_explanation_summary_html(), pd.DataFrame(), "", None
     if progress is not None:
         progress(0.35, desc="Building pair explanation")
-    export_root = Path(tempfile.mkdtemp(prefix="matheel-scored-pair-explanation-"))
+    export_root = make_temp_workspace("matheel-scored-pair-explanation-")
     try:
         explanation, artifacts = write_scored_pair_explanation(
             scored,
@@ -2636,7 +2687,7 @@ def evaluate_dataset_gradio(
     if progress is not None:
         progress(1.0, desc="Dataset evaluation complete")
 
-    export_root = tempfile.mkdtemp(prefix="matheel-leaderboard-")
+    export_root = os.fspath(make_temp_workspace("matheel-leaderboard-"))
     artifacts_zip = _write_leaderboard_artifacts(
         export_root,
         task_label,

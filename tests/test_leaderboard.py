@@ -142,6 +142,38 @@ def test_leaderboard_runs_pair_and_retrieval_datasets(tmp_path):
     assert "Algorithm Details" in details_html
 
 
+def test_leaderboard_runs_adapter_backed_pair_dataset(tmp_path):
+    source_root = tmp_path / "raw_pairs"
+    source_root.mkdir()
+    pd.DataFrame(
+        [
+            {"left_text": "print(1)", "right_text": "print(1)", "label": 1},
+            {"left_text": "print(1)", "right_text": "print(2)", "label": 0},
+        ]
+    ).to_csv(source_root / "pairs.csv", index=False)
+
+    report, artifacts = run_leaderboard(
+        {
+            "name": "adapter_backed",
+            "datasets": [
+                {
+                    "name": "raw_pairs",
+                    "task": "pair",
+                    "path": str(source_root),
+                    "adapter": "auto_pair_tabular",
+                    "adapted_destination": str(tmp_path / "adapted_pairs"),
+                }
+            ],
+            "algorithms": [{"name": "levenshtein", "feature_weights": {"levenshtein": 1.0}}],
+        },
+        output_dir=tmp_path / "leaderboard",
+    )
+
+    assert artifacts["json"].exists()
+    assert report["cards"]["datasets"][0]["counts"]["pairs"] == 2
+    assert not report["per_dataset"].empty
+
+
 def test_leaderboard_manifest_accepts_algorithm_presets(tmp_path):
     pair_root = _write_pair_fixture(tmp_path)
     manifest = {

@@ -111,6 +111,44 @@ def test_get_sim_list_rejects_regular_file_source(tmp_path):
         )
 
 
+def test_get_sim_list_rejects_non_positive_number_results(tmp_path):
+    archive_path = tmp_path / "codes.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("a.py", "print(1)")
+        archive.writestr("b.py", "print(2)")
+
+    with pytest.raises(ValueError, match="number_results"):
+        similarity.get_sim_list(
+            archive_path,
+            number_results=0,
+            feature_weights={"levenshtein": 1.0},
+        )
+
+
+def test_load_model_keeps_sentence_transformer_compatibility_wrapper(monkeypatch):
+    calls = []
+
+    def fake_load_vector_model(model_name, **kwargs):
+        calls.append((model_name, kwargs))
+        return "model"
+
+    monkeypatch.setattr(similarity, "load_vector_model", fake_load_vector_model)
+
+    assert similarity.load_model("demo-model", device="cpu") == "model"
+    assert calls == [
+        (
+            "demo-model",
+            {
+                "device": "cpu",
+                "vector_backend": "sentence_transformers",
+                "similarity_function": "cosine",
+                "pooling_method": "mean",
+                "max_token_length": None,
+            },
+        )
+    ]
+
+
 def test_get_sim_list_validates_source_before_model_metadata_lookup(tmp_path, monkeypatch):
     source_file = tmp_path / "single.py"
     source_file.write_text("print(1)", encoding="utf-8")

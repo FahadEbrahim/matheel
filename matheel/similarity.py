@@ -140,6 +140,7 @@ def load_model(
     pooling_method="mean",
     max_token_length=None,
 ):
+    """Compatibility wrapper that loads a sentence-transformers backend model."""
     return load_vector_model(
         model_name or DEFAULT_MODEL_NAME,
         device=normalize_device(device),
@@ -1175,7 +1176,10 @@ def get_sim_list(
     ]
 
     similarity_df = pd.DataFrame(pairs_results, columns=RESULT_COLUMNS)
-    result = similarity_df.head(max(1, int(number_results)))
+    result_count = int(number_results)
+    if result_count < 1:
+        raise ValueError("number_results must be at least 1.")
+    result = similarity_df.head(result_count)
     return attach_run_metadata(
         result,
         elapsed_seconds=elapsed_seconds_since(start_time),

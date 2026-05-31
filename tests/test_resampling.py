@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -46,6 +47,13 @@ def test_kfold_splits_cover_all_items_once_in_test_sets():
     assert sorted(test_indices) == list(range(12))
 
 
+def test_kfold_splits_accepts_numpy_integer_count():
+    splits = kfold_splits(np.int64(10), n_splits=5, shuffle=False)
+
+    assert len(splits) == 5
+    assert sum(len(split.test_indices) for split in splits) == 10
+
+
 def test_kfold_splits_can_stratify_labels():
     splits = kfold_splits(6, n_splits=3, shuffle=False, labels=[1, 1, 1, 0, 0, 0])
 
@@ -79,6 +87,17 @@ def test_bootstrap_resamples_returns_requested_rounds():
     assert all(split.method == "bootstrap" for split in splits)
     assert all(len(split.train_indices) == 10 for split in splits)
     assert all(set(split.test_indices).isdisjoint(split.train_indices) for split in splits)
+    assert all(split.test_indices for split in splits)
+
+
+def test_bootstrap_resamples_rejects_inputs_without_oob_tests():
+    with pytest.raises(ValueError, match="out-of-bag"):
+        bootstrap_resamples(1, n_rounds=1)
+
+
+def test_stratified_single_split_rejects_class_missing_from_requested_partition():
+    with pytest.raises(ValueError, match="Stratified single split"):
+        single_split(4, train_size=0.5, test_size=0.5, labels=[0, 0, 0, 1], seed=1)
 
 
 def test_metric_summary_reports_uncertainty_fields():

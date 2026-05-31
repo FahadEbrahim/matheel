@@ -57,6 +57,17 @@ def test_algorithm_card_sanitizes_paths_and_fingerprints_custom_algorithm(tmp_pa
     assert str(tmp_path) not in json.dumps(card)
 
 
+def test_algorithm_card_sanitizes_windows_style_paths():
+    card = algorithm_card({"algorithm_path": r"C:\Users\alice\secret\algo.py"})
+    text = json.dumps(card)
+
+    assert card["name"] == "algo"
+    assert card["algorithm_path_name"] == "algo.py"
+    assert card["fingerprint"]["file_name"] == "algo.py"
+    assert "alice" not in text
+    assert "secret" not in text
+
+
 def test_algorithm_card_defaults_for_builtin_config():
     card = algorithm_card({"name": "levenshtein", "feature_weights": {"levenshtein": 1.0}})
 
@@ -88,6 +99,37 @@ def test_leaderboard_cards_and_markdown(tmp_path):
     assert cards["datasets"][0]["name"] == "pairs"
     assert cards["algorithms"][0]["name"] == "custom"
     assert "# Dataset: pairs" in card_markdown(cards["datasets"][0])
+
+
+def test_leaderboard_cards_support_adapter_backed_dataset_specs(tmp_path):
+    source_root = tmp_path / "raw"
+    source_root.mkdir()
+    pd.DataFrame(
+        [
+            {"left_text": "print(1)", "right_text": "print(1)", "label": 1},
+            {"left_text": "print(1)", "right_text": "print(2)", "label": 0},
+        ]
+    ).to_csv(source_root / "pairs.csv", index=False)
+
+    cards = leaderboard_cards(
+        {
+            "datasets": [
+                {
+                    "name": "raw_pairs",
+                    "task_family": "pair",
+                    "spec": {
+                        "identifier": str(source_root),
+                        "adapter": "auto_pair_tabular",
+                        "adapted_destination": str(tmp_path / "adapted"),
+                        "task_families": ("pair",),
+                    },
+                }
+            ],
+            "algorithms": [{"name": "levenshtein", "similarity_options": {}}],
+        }
+    )
+
+    assert cards["datasets"][0]["counts"]["pairs"] == 2
 
 
 def _write_pair_fixture(tmp_path):

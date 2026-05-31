@@ -73,7 +73,6 @@ except ImportError:  # pragma: no cover - optional dependency
 
 
 _TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d+|[^\w\s]")
-_IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _RUBY_TRANX_SPLIT_RE = re.compile(r"([^A-Za-z0-9_])")
 _RUBY_TRANX_CAMEL_RE = re.compile(r"([a-z])([A-Z])")
 _SUPPORTED_CODE_LANGUAGES = (
@@ -488,76 +487,6 @@ def _weighted_match_score(reference_tokens, hypothesis_tokens, weights, ignored_
     return float(
         brevity_penalty * math.exp(sum(weight * math.log(precision) for weight, precision in zip(weights, precisions)))
     )
-
-
-def _keyword_weighted_match_score(reference_tokens, hypothesis_tokens, keywords, weights, epsilon=1e-12):
-    if not hypothesis_tokens:
-        return 0.0
-
-    precisions = []
-    max_order = len(weights)
-    for n in range(1, max_order + 1):
-        hyp_counts = Counter(ngram_tuples(hypothesis_tokens, n))
-        ref_counts = Counter(ngram_tuples(reference_tokens, n))
-        if not hyp_counts:
-            precisions.append(epsilon)
-            continue
-
-        def ngram_weight(ngram):
-            token_weights = [1.0 if token in keywords else 0.2 for token in ngram]
-            return sum(token_weights) / float(len(token_weights))
-
-        denom = sum(count * ngram_weight(ngram) for ngram, count in hyp_counts.items())
-        if denom <= 0:
-            precisions.append(epsilon)
-            continue
-
-        numer = 0.0
-        for ngram, count in hyp_counts.items():
-            numer += min(count, ref_counts.get(ngram, 0)) * ngram_weight(ngram)
-        if numer <= 0:
-            return 0.0
-        precisions.append(max(epsilon, numer / float(denom)))
-
-    brevity_penalty = _brevity_penalty(len(reference_tokens), len(hypothesis_tokens))
-    return float(
-        brevity_penalty * math.exp(sum(weight * math.log(precision) for weight, precision in zip(weights, precisions)))
-    )
-
-
-def _syntax_shape_tokens(tokens, keywords):
-    shapes = []
-    for token in tokens:
-        if token in keywords:
-            shapes.append(f"kw:{token}")
-        elif token.isdigit():
-            shapes.append("num")
-        elif _IDENTIFIER_RE.match(token):
-            shapes.append("id")
-        else:
-            shapes.append(f"sym:{token}")
-    return shapes
-
-
-def _identifier_overlap_score(reference_tokens, hypothesis_tokens, keywords):
-    ref_ids = [token for token in reference_tokens if _IDENTIFIER_RE.match(token) and token not in keywords]
-    hyp_ids = [token for token in hypothesis_tokens if _IDENTIFIER_RE.match(token) and token not in keywords]
-    if not ref_ids and not hyp_ids:
-        return 1.0
-    if not ref_ids or not hyp_ids:
-        return 0.0
-
-    ref_counts = Counter(ref_ids)
-    hyp_counts = Counter(hyp_ids)
-    overlap = sum(min(count, hyp_counts.get(token, 0)) for token, count in ref_counts.items())
-    if overlap <= 0:
-        return 0.0
-
-    precision = overlap / float(sum(hyp_counts.values()))
-    recall = overlap / float(sum(ref_counts.values()))
-    if precision + recall <= 0:
-        return 0.0
-    return float((2.0 * precision * recall) / (precision + recall))
 
 
 def parse_component_weights(raw_weights=None):

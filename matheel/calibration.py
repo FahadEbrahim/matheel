@@ -27,8 +27,53 @@ def _finite_score(value):
 
 def _coerce_label(value, positive_label=True):
     if positive_label is True:
-        return bool(value)
+        return _coerce_default_binary_label(value)
     return value == positive_label
+
+
+def _coerce_default_binary_label(value):
+    if isinstance(value, bool):
+        return bool(value)
+    if isinstance(value, str):
+        key = value.strip().lower()
+        if key in {
+            "1",
+            "1.0",
+            "true",
+            "yes",
+            "y",
+            "positive",
+            "plagiarized",
+            "plagiarised",
+            "plagiarism",
+            "match",
+            "same",
+        }:
+            return True
+        if key in {
+            "0",
+            "0.0",
+            "false",
+            "no",
+            "n",
+            "negative",
+            "original",
+            "non_plagiarized",
+            "non_plagiarised",
+            "non_plagiarism",
+            "non-plagiarism",
+            "nonmatch",
+            "non-match",
+            "different",
+        }:
+            return False
+    try:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return bool(value)
+    if math.isfinite(numeric):
+        return numeric != 0.0
+    return bool(value)
 
 
 def _coerce_score_label_pairs(

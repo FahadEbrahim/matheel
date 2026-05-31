@@ -1,4 +1,5 @@
 import math
+from numbers import Integral
 from dataclasses import dataclass
 
 import numpy as np
@@ -154,6 +155,8 @@ def repeated_kfold_splits(
 
 def bootstrap_resamples(items_or_count, n_rounds=100, sample_size=None, seed=None, prefix="bootstrap"):
     count = _normalize_count(items_or_count)
+    if count < 2:
+        raise ValueError("bootstrap_resamples requires at least two items for out-of-bag test indices.")
     rounds = int(n_rounds)
     if rounds < 1:
         raise ValueError("n_rounds must be at least 1.")
@@ -166,12 +169,22 @@ def bootstrap_resamples(items_or_count, n_rounds=100, sample_size=None, seed=Non
     all_indices = np.arange(count, dtype=int)
     splits = []
     for round_index in range(1, rounds + 1):
-        train_indices = generator.choice(all_indices, size=sample_count, replace=True)
-        unique_train = set(int(value) for value in train_indices.tolist())
-        test_indices = np.asarray(
-            [index for index in all_indices.tolist() if index not in unique_train],
-            dtype=int,
-        )
+        train_indices = None
+        test_indices = None
+        for _attempt in range(100):
+            train_indices = generator.choice(all_indices, size=sample_count, replace=True)
+            unique_train = set(int(value) for value in train_indices.tolist())
+            test_indices = np.asarray(
+                [index for index in all_indices.tolist() if index not in unique_train],
+                dtype=int,
+            )
+            if test_indices.size:
+                break
+        if test_indices is None or not test_indices.size:
+            raise ValueError(
+                "Could not create a bootstrap resample with out-of-bag test indices. "
+                "Use fewer samples or more input items."
+            )
         splits.append(
             DataSplit(
                 name=f"{prefix}_{round_index}",
@@ -278,7 +291,7 @@ def compare_metric_samples(
 
 
 def _normalize_count(items_or_count):
-    count = int(items_or_count) if isinstance(items_or_count, int) else len(items_or_count)
+    count = int(items_or_count) if isinstance(items_or_count, Integral) else len(items_or_count)
     if count <= 0:
         raise ValueError("items_or_count must describe at least one item.")
     return count
@@ -343,6 +356,12 @@ def _stratified_single_split(count, labels, train_size, validation_size, test_si
             validation_size=validation_size,
             test_size=test_size,
         )
+        test_count = len(label_indices) - train_count - validation_count
+        _validate_stratified_partition_counts(
+            len(label_indices),
+            (train_count, validation_count, test_count),
+            (train_size, validation_size, test_size),
+        )
         train_end = train_count
         validation_end = train_end + validation_count
         train_parts.append(label_indices[:train_end])
@@ -354,6 +373,25 @@ def _stratified_single_split(count, labels, train_size, validation_size, test_si
         _concat_sorted(validation_parts),
         _concat_sorted(test_parts),
     )
+
+
+def _validate_stratified_partition_counts(label_count, counts, ratios):
+    train_size, validation_size, test_size = ratios
+    train_ratio = float(train_size)
+    validation_ratio = float(validation_size)
+    test_ratio = 1.0 - train_ratio - validation_ratio if test_size is None else float(test_size)
+    requested = (
+        ("train", train_ratio, counts[0]),
+        ("validation", validation_ratio, counts[1]),
+        ("test", test_ratio, counts[2]),
+    )
+    missing = [name for name, ratio, count in requested if ratio > 0 and count == 0]
+    if missing:
+        partitions = ", ".join(missing)
+        raise ValueError(
+            "Stratified single split cannot preserve every label in each requested "
+            f"partition for label count {label_count}. Empty partition(s): {partitions}."
+        )
 
 
 def _group_single_split(count, groups, train_size, validation_size, test_size, shuffle=True, seed=None):

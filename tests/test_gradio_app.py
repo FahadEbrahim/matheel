@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import zipfile
 from pathlib import Path
 
@@ -18,6 +19,44 @@ SPEC = importlib.util.spec_from_file_location("matheel_gradio_app", APP_PATH)
 gradio_app = importlib.util.module_from_spec(SPEC)
 assert SPEC is not None and SPEC.loader is not None
 SPEC.loader.exec_module(gradio_app)
+
+
+def test_gradio_temp_workspace_cleanup_removes_only_stale_known_prefixes(tmp_path):
+    old_workspace = tmp_path / "matheel-suite-old"
+    fresh_workspace = tmp_path / "matheel-suite-fresh"
+    unrelated = tmp_path / "other-old"
+    old_workspace.mkdir()
+    fresh_workspace.mkdir()
+    unrelated.mkdir()
+    os.utime(old_workspace, (1, 1))
+    os.utime(unrelated, (1, 1))
+
+    cleaned = gradio_app.cleanup_stale_temp_workspaces(
+        temp_root=tmp_path,
+        ttl_seconds=60,
+        prefixes=("matheel-suite-",),
+    )
+
+    assert cleaned == 1
+    assert not old_workspace.exists()
+    assert fresh_workspace.exists()
+    assert unrelated.exists()
+
+
+def test_gradio_temp_workspace_creation_runs_cleanup(tmp_path, monkeypatch):
+    calls = []
+
+    def fake_cleanup(temp_root=None):
+        calls.append(temp_root)
+        return 0
+
+    monkeypatch.setattr(gradio_app, "cleanup_stale_temp_workspaces", fake_cleanup)
+
+    workspace = gradio_app.make_temp_workspace("matheel-suite-", temp_root=tmp_path)
+
+    assert calls == [tmp_path]
+    assert workspace.exists()
+    assert workspace.parent == tmp_path
 
 
 def _build_suite_row(**overrides):

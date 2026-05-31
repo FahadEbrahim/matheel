@@ -48,6 +48,13 @@ def test_project_embeddings_pca_is_deterministic():
     assert first.shape == (3, 2)
 
 
+def test_project_embeddings_reports_pca_for_tiny_auto_projection():
+    projection = project_embeddings([[1.0, 0.0], [0.0, 1.0]], method="auto", seed=7)
+
+    assert projection.attrs["requested_projection_method"] == "auto"
+    assert projection.attrs["projection_method"] == "pca"
+
+
 def test_project_embeddings_rejects_invalid_values():
     with pytest.raises(ValueError, match="finite"):
         project_embeddings([[1.0], [float("nan")]], method="pca")
@@ -226,6 +233,15 @@ def test_write_dataset_map_artifacts_accepts_projection(tmp_path):
 
     assert artifacts["csv"].name == "dataset_map.csv"
     assert json.loads(artifacts["json"].read_text(encoding="utf-8"))["points"][0]["document_id"] == "a"
+
+
+def test_write_dataset_map_artifacts_sanitizes_basename(tmp_path):
+    projection = build_embedding_projection([[1.0, 0.0]], ids=["a"], method="pca")
+    output_dir = tmp_path / "artifacts"
+    artifacts = write_dataset_map_artifacts(projection, output_dir, basename="../unsafe/map")
+
+    assert all(output_dir in path.parents for path in artifacts.values())
+    assert all(".." not in path.name for path in artifacts.values())
 
 
 def test_build_pair_explanation_marks_high_medium_low_and_no_match_regions():
