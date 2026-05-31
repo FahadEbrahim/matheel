@@ -5,6 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 from .leaderboard import leaderboard_payload
+from ._path_utils import path_name
 
 
 def benchmark_report_html(report, title=None, artifact_links=None):
@@ -233,5 +234,5 @@ def _sanitize_artifact_links(links):
     for name, value in dict(links).items():
         if value in (None, ""):
             continue
-        sanitized[str(name)] = Path(str(value)).name
+        sanitized[str(name)] = path_name(value)
     return sanitized

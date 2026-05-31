@@ -7,6 +7,8 @@ from hashlib import sha256
 from importlib.metadata import PackageNotFoundError, version as package_version
 from pathlib import Path
 
+from ._path_utils import path_name
+
 
 _PACKAGE_NAMES = (
     "matheel",
@@ -107,14 +109,14 @@ def _json_safe(value):
         for key, item in sorted(value.items(), key=lambda item: str(item[0])):
             name = str(key)
             if name in _PATH_OPTION_NAMES and isinstance(item, (str, Path)):
-                payload[name] = Path(item).name if item else item
+                payload[name] = path_name(item) if item else item
             else:
                 payload[name] = _json_safe(item)
         return payload
     if isinstance(value, (list, tuple)):
         return [_json_safe(item) for item in value]
     if isinstance(value, Path):
-        return value.name
+        return path_name(value)
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
     try:

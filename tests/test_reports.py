@@ -29,6 +29,17 @@ def test_benchmark_report_html_escapes_content_and_sanitizes_links(tmp_path):
     assert "Algorithm Cards" in output
 
 
+def test_benchmark_report_html_sanitizes_windows_artifact_links():
+    output = benchmark_report_html(
+        _synthetic_report(),
+        artifact_links={"source": r"C:\Users\alice\secret\artifact.html"},
+    )
+
+    assert "artifact.html" in output
+    assert "alice" not in output
+    assert "C:" not in output
+
+
 def test_write_benchmark_report_writes_static_html(tmp_path):
     output_path = tmp_path / "reports" / "leaderboard.html"
 

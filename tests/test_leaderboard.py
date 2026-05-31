@@ -222,6 +222,35 @@ def test_leaderboard_manifest_resolves_relative_paths(tmp_path):
     assert manifest["algorithms"][0]["algorithm_path"] == str(exact_path.resolve())
 
 
+def test_leaderboard_manifest_preserves_remote_dataset_identifiers(tmp_path):
+    config_dir = tmp_path / "configs"
+    config_dir.mkdir()
+    manifest_path = config_dir / "leaderboard.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "datasets": [
+                    {
+                        "name": "remote",
+                        "task": "pair",
+                        "source": "github",
+                        "identifier": "owner/repository",
+                        "destination": "cache/remote",
+                    },
+                ],
+                "algorithms": [{"name": "lexical", "feature_weights": {"levenshtein": 1.0}}],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    manifest = load_leaderboard_manifest(manifest_path)
+
+    spec = manifest["datasets"][0]["spec"]
+    assert spec["identifier"] == "owner/repository"
+    assert spec["destination"] == str((config_dir / "cache" / "remote").resolve())
+
+
 def test_leaderboard_payload_and_html_escape_values(tmp_path):
     pair_root = _write_pair_fixture(tmp_path)
     exact_path, _ = _write_algorithm_fixtures(tmp_path)

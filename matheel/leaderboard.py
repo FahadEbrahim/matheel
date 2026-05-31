@@ -10,6 +10,7 @@ from .calibration import calibration_report
 from .datasets import load_pair_datasets, load_retrieval_datasets
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .leaderboard_presets import get_leaderboard_algorithm_preset
+from ._path_utils import path_name
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
 
 
@@ -35,8 +36,8 @@ _TASK_ALIASES = {
     "retrieval": "retrieval",
     "ranking": "retrieval",
 }
-_PATH_KEYS = {"identifier", "path", "algorithm_path"}
-_ALWAYS_LOCAL_PATH_KEYS = {"path", "algorithm_path"}
+_PATH_KEYS = {"identifier", "path", "algorithm_path", "destination", "adapted_destination"}
+_ALWAYS_LOCAL_PATH_KEYS = {"path", "algorithm_path", "destination", "adapted_destination"}
 _MAYBE_LOCAL_PATH_KEYS = {"identifier"}
 
 
@@ -405,17 +406,20 @@ def _resolve_relative_paths(payload, base_dir=None):
     if base_dir is None:
         return payload
     resolved = dict(payload)
-    for key in _PATH_KEYS:
+    source = str(resolved.get("source") or "local").strip().lower()
+    for key in ("path", "algorithm_path", "destination", "adapted_destination"):
         if key in resolved:
             resolved[key] = _resolve_relative_path(resolved[key], base_dir)
+    if "identifier" in resolved and source == "local":
+        resolved["identifier"] = _resolve_relative_path(resolved["identifier"], base_dir, force=True)
     return resolved
 
 
-def _resolve_relative_path(value, base_dir):
+def _resolve_relative_path(value, base_dir, force=False):
     if not isinstance(value, str):
         return value
     text = value.strip()
-    if not text or Path(text).expanduser().is_absolute() or not _looks_like_path(text):
+    if not text or Path(text).expanduser().is_absolute() or (not force and not _looks_like_path(text)):
         return value
     return str((Path(base_dir) / text).resolve())
 
@@ -479,11 +483,7 @@ def _should_sanitize_manifest_path(key_name, value):
 
 
 def _path_name(value):
-    text = str(value or "")
-    windows_path = PureWindowsPath(text)
-    if windows_path.drive or "\\" in text:
-        return windows_path.name or text
-    return Path(text).name or text
+    return path_name(value)
 
 
 def _safe_basename(value):

@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from ._path_utils import is_unsafe_relative_path, relative_path_to_posix
+
 
 PAIR_KIND = "pair_classification"
 RETRIEVAL_KIND = "retrieval"
@@ -374,25 +376,28 @@ def _inspect_files_manifest(root, files, counts, issues):
 
     missing_files = []
     unsafe_paths = []
+    non_file_paths = []
     empty_files = []
     for row in files.to_dict(orient="records"):
         raw_path = row.get("file_path")
         if pd.isna(raw_path):
             continue
-        relative_path = Path(str(raw_path))
-        if relative_path.is_absolute() or ".." in relative_path.parts:
+        if is_unsafe_relative_path(raw_path):
             unsafe_paths.append(str(raw_path))
             continue
+        relative_path = Path(relative_path_to_posix(raw_path))
         target = root / relative_path
         if not target.exists():
             missing_files.append(str(raw_path))
             continue
-        if target.is_file():
-            try:
-                if not target.read_text(encoding="utf-8", errors="ignore").strip():
-                    empty_files.append(str(raw_path))
-            except OSError:
-                missing_files.append(str(raw_path))
+        if not target.is_file():
+            non_file_paths.append(str(raw_path))
+            continue
+        try:
+            if not target.read_text(encoding="utf-8", errors="ignore").strip():
+                empty_files.append(str(raw_path))
+        except OSError:
+            missing_files.append(str(raw_path))
 
     if unsafe_paths:
         _add_issue(
@@ -409,6 +414,14 @@ def _inspect_files_manifest(root, files, counts, issues):
             "missing_files",
             f"files.csv references missing files: {', '.join(missing_files[:8])}.",
             len(missing_files),
+        )
+    if non_file_paths:
+        _add_issue(
+            issues,
+            "error",
+            "non_file_paths",
+            f"files.csv references paths that are not files: {', '.join(non_file_paths[:8])}.",
+            len(non_file_paths),
         )
     if empty_files:
         _add_issue(
@@ -459,9 +472,46 @@ def _coerce_binary_label(value):
     if isinstance(value, bool):
         return int(value)
     text = str(value).strip().lower()
-    if text in {"1", "1.0", "true", "yes", "y", "positive", "plagiarized", "plagiarised", "p"}:
+    if text in {
+        "1",
+        "1.0",
+        "true",
+        "yes",
+        "y",
+        "p",
+        "positive",
+        "cheating",
+        "clone",
+        "plagiarized",
+        "plagiarised",
+        "plagiarism",
+        "match",
+        "same",
+    }:
         return 1
-    if text in {"0", "0.0", "false", "no", "n", "negative", "non_plagiarized", "non_plagiarised", "np"}:
+    if text in {
+        "0",
+        "0.0",
+        "false",
+        "no",
+        "n",
+        "negative",
+        "original",
+        "nonplagiarized",
+        "nonplagiarised",
+        "non_plagiarized",
+        "non_plagiarised",
+        "not plagiarized",
+        "not plagiarised",
+        "not_plagiarized",
+        "not_plagiarised",
+        "non_plagiarism",
+        "non-plagiarism",
+        "nonmatch",
+        "non-match",
+        "different",
+        "np",
+    }:
         return 0
     return None
 

@@ -1,5 +1,5 @@
 import json
-from pathlib import Path, PureWindowsPath
+from pathlib import Path
 
 from .algorithms import normalize_algorithm_options, resolve_pair_algorithm
 from .datasets import (
@@ -10,6 +10,7 @@ from .datasets import (
     load_retrieval_dataset,
     load_retrieval_datasets,
 )
+from ._path_utils import path_name
 from .reproducibility import fingerprint_source
 
 
@@ -183,8 +184,4 @@ def _sanitize_mapping(values):
 
 
 def _path_name(value):
-    text = str(value or "")
-    windows_path = PureWindowsPath(text)
-    if windows_path.drive or "\\" in text:
-        return windows_path.name or text
-    return Path(text).name or text
+    return path_name(value)

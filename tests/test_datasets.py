@@ -280,6 +280,29 @@ def test_tabular_adapter_rejects_paths_outside_source_root(tmp_path):
         )
 
 
+def test_tabular_adapter_rejects_table_paths_outside_source_root(tmp_path):
+    source_root = tmp_path / "raw"
+    source_root.mkdir()
+    outside = tmp_path / "outside.csv"
+    pd.DataFrame(
+        [{"left_text": "print(1)", "right_text": "print(1)", "label": 1}]
+    ).to_csv(outside, index=False)
+
+    with pytest.raises(ValueError, match="within dataset root"):
+        adapt_pair_dataset(
+            source_root,
+            adapter="auto_pair_tabular",
+            adapter_options={"pair_table": "../outside.csv"},
+        )
+
+    with pytest.raises(ValueError, match="within dataset root"):
+        adapt_retrieval_dataset(
+            source_root,
+            adapter="auto_retrieval_tabular",
+            adapter_options={"retrieval_table": "../outside.csv"},
+        )
+
+
 def test_kaggle_api_resolver_downloads_then_safe_extracts(tmp_path, monkeypatch):
     captured = {}
 
@@ -982,6 +1005,34 @@ def test_pair_dataset_roundtrip_writes_manifest_files(tmp_path):
     assert (dataset_root / "files" / "a.py").exists()
 
 
+def test_pair_dataset_loader_matches_validation_binary_label_vocabulary(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)"},
+                {"file_id": "b", "text": "print(1)"},
+                {"file_id": "c", "text": "print(2)"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1}]),
+    )
+    pd.DataFrame(
+        [
+            {"left_id": "a", "right_id": "b", "label": "plagiarised"},
+            {"left_id": "a", "right_id": "c", "label": "non_plagiarized"},
+            {"left_id": "b", "right_id": "c", "label": "np"},
+        ]
+    ).to_csv(dataset_root / "pairs.csv", index=False)
+
+    loaded = load_pair_dataset(dataset_root)
+    report = validate_dataset_report(dataset_root, kind="pair")
+
+    assert loaded.pairs["label"].tolist() == [1, 0, 0]
+    assert "invalid_pair_labels" not in {issue["code"] for issue in report["issues"]}
+
+
 def test_pair_dataset_rejects_unknown_file_reference(tmp_path):
     dataset_root = tmp_path / "pairs"
     write_pair_dataset(
@@ -1003,6 +1054,52 @@ def test_pair_dataset_rejects_path_separator_file_ids(tmp_path):
             files=pd.DataFrame([{"file_id": "../a", "text": "print(1)"}]),
             pairs=pd.DataFrame([{"left_id": "../a", "right_id": "../a", "label": 1}]),
         )
+
+
+def test_pair_dataset_rejects_windows_style_unsafe_file_paths(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    dataset_root.mkdir()
+    (dataset_root / "metadata.json").write_text(
+        json.dumps({"dataset_kind": "pair_classification", "name": "unsafe"}),
+        encoding="utf-8",
+    )
+    (dataset_root / "files.csv").write_text(
+        "file_id,file_path\n"
+        "a,..\\escape.py\n"
+        "b,C:\\temp\\secret.py\n",
+        encoding="utf-8",
+    )
+    (dataset_root / "pairs.csv").write_text("left_id,right_id,label\na,b,1\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="relative to the dataset root"):
+        load_pair_dataset(dataset_root)
+
+    report = validate_dataset_report(dataset_root, kind="pair")
+
+    assert report["status"] == "error"
+    assert "unsafe_file_paths" in {issue["code"] for issue in report["issues"]}
+
+
+def test_pair_dataset_rejects_directory_file_references(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame([{"file_id": "a", "text": "print(1)"}]),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "a", "label": 1}]),
+    )
+    directory_path = dataset_root / "files" / "directory"
+    directory_path.mkdir()
+    files = pd.read_csv(dataset_root / "files.csv")
+    files.loc[0, "file_path"] = "files/directory"
+    files.to_csv(dataset_root / "files.csv", index=False)
+
+    with pytest.raises(ValueError, match="not a file"):
+        load_pair_dataset(dataset_root)
+
+    report = validate_dataset_report(dataset_root, kind="pair")
+
+    assert report["status"] == "error"
+    assert "non_file_paths" in {issue["code"] for issue in report["issues"]}
 
 
 def test_retrieval_dataset_roundtrip_writes_manifests(tmp_path):
@@ -1059,4 +1156,23 @@ def test_retrieval_dataset_rejects_unknown_qrels_reference(tmp_path):
     qrels_path.write_text("query_id,document_id,relevance\nq1,missing,1\n", encoding="utf-8")
 
     with pytest.raises(ValueError, match="unknown document ids: missing"):
+        load_retrieval_dataset(dataset_root)
+
+
+def test_retrieval_dataset_rejects_directory_file_references(tmp_path):
+    dataset_root = tmp_path / "retrieval"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame([{"file_id": "q", "text": "print(1)"}]),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "q"}]),
+        corpus=pd.DataFrame([{"document_id": "d1", "file_id": "q"}]),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+    )
+    directory_path = dataset_root / "files" / "directory"
+    directory_path.mkdir()
+    files = pd.read_csv(dataset_root / "files.csv")
+    files.loc[0, "file_path"] = "files/directory"
+    files.to_csv(dataset_root / "files.csv", index=False)
+
+    with pytest.raises(ValueError, match="not a file"):
         load_retrieval_dataset(dataset_root)

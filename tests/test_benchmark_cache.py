@@ -13,6 +13,7 @@ from matheel.benchmark_cache import (
     load_benchmark_cache_result,
     write_benchmark_cache_result,
 )
+from matheel.reproducibility import collect_reproducibility_snapshot
 
 
 def test_benchmark_cache_helpers_are_exported_from_package_root():
@@ -134,3 +135,21 @@ def test_benchmark_cache_metadata_does_not_store_absolute_paths(tmp_path):
     metadata = json.loads(paths["metadata"].read_text(encoding="utf-8"))
 
     assert str(tmp_path) not in json.dumps(metadata)
+
+
+def test_benchmark_cache_and_reproducibility_sanitize_windows_paths():
+    run_config = {
+        "run_name": "windows",
+        "options": {"algorithm_path": r"C:\Users\alice\secret\algo.py"},
+    }
+    payload = benchmark_cache_key(
+        {"source_type": "file", "sha256": "abc"},
+        run_config,
+        dependency_versions={"matheel": "test"},
+    )
+    snapshot = collect_reproducibility_snapshot(run_configs=[run_config])
+
+    assert payload["components"]["run_config"]["options"]["algorithm_path"] == "algo.py"
+    assert snapshot["run_configs"][0]["options"]["algorithm_path"] == "algo.py"
+    assert "alice" not in json.dumps(payload)
+    assert "alice" not in json.dumps(snapshot)

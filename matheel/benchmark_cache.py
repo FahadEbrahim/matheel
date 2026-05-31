@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from .algorithms import resolve_pair_algorithm
+from ._path_utils import path_name
 from .reproducibility import fingerprint_source
 
 
@@ -140,7 +141,7 @@ def _algorithm_fingerprint_from_options(options):
     try:
         resolved = resolve_pair_algorithm(algorithm)
     except Exception:
-        return {"source_type": "unresolved", "name": Path(str(algorithm)).name}
+        return {"source_type": "unresolved", "name": path_name(algorithm)}
     return {
         "algorithm_name": resolved.name,
         "algorithm_module": resolved.module_name,
@@ -166,9 +167,9 @@ def _json_safe(value, key_name=None):
     if isinstance(value, (list, tuple)):
         return [_json_safe(item) for item in value]
     if isinstance(value, Path):
-        return value.name
+        return path_name(value)
     if key_name in _PATH_KEYS and isinstance(value, str):
-        return Path(value).name
+        return path_name(value)
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
     try:
