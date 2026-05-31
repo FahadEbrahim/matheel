@@ -17,6 +17,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from ._path_utils import is_unsafe_relative_path, relative_path_to_posix
+
 
 DATASET_TASK_TYPES = ("plagiarism",)
 DATASET_KINDS = ("pair_classification", "retrieval")
@@ -422,6 +424,8 @@ def validate_pair_dataset(dataset):
         target = dataset.root / file_path
         if not target.exists():
             raise ValueError(f"files.csv references missing file: {file_path}")
+        if not target.is_file():
+            raise ValueError(f"files.csv references path that is not a file: {file_path}")
 
     return PairDataset(root=dataset.root, files=files, pairs=pairs, metadata=metadata)
 
@@ -577,6 +581,8 @@ def validate_retrieval_dataset(dataset):
         target = dataset.root / file_path
         if not target.exists():
             raise ValueError(f"files.csv references missing file: {file_path}")
+        if not target.is_file():
+            raise ValueError(f"files.csv references path that is not a file: {file_path}")
 
     return RetrievalDataset(
         root=dataset.root,
@@ -604,7 +610,10 @@ def load_code_texts(dataset):
     for row in dataset.files.to_dict(orient="records"):
         file_id = _normalize_id(row["file_id"], "file_id")
         file_path = _normalize_relative_file_path(row["file_path"])
-        texts[file_id] = (dataset.root / file_path).read_text(encoding="utf-8", errors="ignore")
+        target = dataset.root / file_path
+        if not target.is_file():
+            raise ValueError(f"files.csv references path that is not a file: {file_path}")
+        texts[file_id] = target.read_text(encoding="utf-8", errors="ignore")
     return texts
 
 
@@ -672,10 +681,12 @@ def _normalize_relative_file_path(value):
     text = str(value or "").strip()
     if not text:
         raise ValueError("file_path must be non-empty.")
-    path = Path(text)
-    if path.is_absolute() or ".." in path.parts:
+    if is_unsafe_relative_path(text):
         raise ValueError(f"file_path must be relative to the dataset root. Got: {value}")
-    return path.as_posix()
+    normalized = relative_path_to_posix(text)
+    if not normalized:
+        raise ValueError("file_path must be non-empty.")
+    return normalized
 
 
 def _normalize_binary_label(value):
@@ -683,9 +694,51 @@ def _normalize_binary_label(value):
         return int(value)
     if isinstance(value, str):
         key = value.strip().lower()
-        if key in {"1", "true", "yes", "y", "positive", "plagiarized", "plagiarism", "match"}:
+        if key in {
+            "1",
+            "1.0",
+            "true",
+            "yes",
+            "y",
+            "p",
+            "positive",
+            "cheating",
+            "clone",
+            "plagiarized",
+            "plagiarised",
+            "plagiarism",
+            "match",
+            "same",
+        }:
             return 1
-        if key in {"0", "false", "no", "n", "negative", "original", "non_plagiarism", "non-match"}:
+        if key in {
+            "0",
+            "0.0",
+            "false",
+            "no",
+            "n",
+            "np",
+            "negative",
+            "original",
+            "not cheating",
+            "not_cheating",
+            "non-cheating",
+            "non cheating",
+            "non-clone",
+            "nonplagiarized",
+            "nonplagiarised",
+            "non_plagiarized",
+            "non_plagiarised",
+            "not plagiarized",
+            "not plagiarised",
+            "not_plagiarized",
+            "not_plagiarised",
+            "non_plagiarism",
+            "non-plagiarism",
+            "nonmatch",
+            "non-match",
+            "different",
+        }:
             return 0
     try:
         numeric = float(value)
@@ -1262,10 +1315,7 @@ def _column_from_options(frame, options, option_name, aliases, label, required=F
 def _prioritized_tabular_files(root, requested_table=None, split=None):
     base = _coerce_path(root)
     if requested_table:
-        table_path = Path(os.fspath(requested_table))
-        if not table_path.is_absolute():
-            table_path = base / table_path
-        return [_coerce_path(table_path)]
+        return [_resolve_tabular_root_file(base, requested_table, "Tabular adapter table")]
 
     candidates = _find_tabular_files(base)
     if split is None:
@@ -1536,18 +1586,28 @@ def _table_value(row, column):
 
 
 def _resolve_tabular_source_path(source_root, value):
+    return _resolve_tabular_root_file(source_root, value, "Tabular adapter source file")
+
+
+def _resolve_tabular_root_file(source_root, value, label):
     root = _coerce_path(source_root)
-    raw_path = Path(os.fspath(value)).expanduser()
-    candidate = raw_path if raw_path.is_absolute() else root / raw_path
+    raw_value = os.fspath(value)
+    raw_path = Path(raw_value).expanduser()
+    if raw_path.is_absolute():
+        candidate = raw_path
+    else:
+        if is_unsafe_relative_path(raw_value):
+            raise ValueError(f"{label} must stay within dataset root: {value}")
+        candidate = root / relative_path_to_posix(raw_value)
     path = candidate.resolve()
     try:
         path.relative_to(root)
     except ValueError as exc:
-        raise ValueError(f"Tabular adapter source file must stay within dataset root: {value}") from exc
+        raise ValueError(f"{label} must stay within dataset root: {value}") from exc
     if not path.exists():
-        raise ValueError(f"Tabular adapter source file does not exist: {value}")
+        raise ValueError(f"{label} does not exist: {value}")
     if not path.is_file():
-        raise ValueError(f"Tabular adapter source path is not a file: {value}")
+        raise ValueError(f"{label} path is not a file: {value}")
     return path
 
 
@@ -1565,8 +1625,10 @@ def _coerce_binary_like(value):
             "clone",
             "positive",
             "plagiarized",
+            "plagiarised",
             "plagiarism",
             "match",
+            "same",
         }:
             return 1
         if key in {
@@ -1582,9 +1644,19 @@ def _coerce_binary_like(value):
             "negative",
             "original",
             "nonplagiarized",
+            "nonplagiarised",
+            "non_plagiarized",
+            "non_plagiarised",
             "not plagiarized",
+            "not plagiarised",
+            "not_plagiarized",
+            "not_plagiarised",
             "non_plagiarism",
+            "non-plagiarism",
+            "nonmatch",
             "non-match",
+            "different",
+            "np",
         }:
             return 0
     try:
@@ -1601,9 +1673,35 @@ def _coerce_relevance_like(value):
         return float(value)
     if isinstance(value, str):
         key = value.strip().lower()
-        if key in {"true", "yes", "y", "relevant", "positive", "plagiarized", "plagiarism", "match"}:
+        if key in {
+            "true",
+            "yes",
+            "y",
+            "relevant",
+            "positive",
+            "plagiarized",
+            "plagiarised",
+            "plagiarism",
+            "match",
+            "same",
+        }:
             return 1.0
-        if key in {"false", "no", "n", "irrelevant", "negative", "non-match"}:
+        if key in {
+            "false",
+            "no",
+            "n",
+            "irrelevant",
+            "negative",
+            "original",
+            "non_plagiarized",
+            "non_plagiarised",
+            "non_plagiarism",
+            "non-plagiarism",
+            "nonmatch",
+            "non-match",
+            "different",
+            "np",
+        }:
             return 0.0
     return _normalize_nonnegative_relevance(value)
 

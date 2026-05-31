@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from ._path_utils import path_name
 from .leaderboard import leaderboard_payload
 
 
@@ -195,7 +196,7 @@ def _sanitize_artifact_paths(artifact_paths):
     else:
         raw = ((Path(str(path)).stem, path) for path in artifact_paths)
     return {
-        str(name): Path(str(path)).name
+        str(name): path_name(path)
         for name, path in raw
         if path not in (None, "")
     }
@@ -207,7 +208,7 @@ def _clean_json_object(value):
 
 def _json_default(value):
     if isinstance(value, Path):
-        return value.name
+        return path_name(value)
     if hasattr(value, "item"):
         return value.item()
     if pd.isna(value):
