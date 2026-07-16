@@ -40,6 +40,17 @@ The `Real Model Integration Tests` GitHub Actions workflow runs weekly on Python
 
 Pull-request CI also runs selected compatibility checks against the external `codebleu` package and builds the wheel and source distribution. The package job validates metadata, installs the wheel into a clean environment, imports Matheel, and exercises the CLI help command.
 
+## Gradio Checks
+
+The default development install does not include Gradio, so Gradio-specific tests skip when its optional dependencies are unavailable. Install the Gradio and development extras to run the same focused checks as pull-request CI:
+
+```bash
+python -m pip install -e ".[dev,gradio]"
+python -m pytest tests/test_gradio_app.py tests/test_gradio_html_utils.py
+```
+
+These tests cover workflow helpers, the stable tab and primary-action structure, and a live server smoke check of the root page and `/config` endpoint. They intentionally avoid model downloads.
+
 ## Package Checks
 
 When preparing release or packaging changes, build the package and check the distribution metadata:
