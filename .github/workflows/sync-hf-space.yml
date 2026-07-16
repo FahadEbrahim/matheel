@@ -64,7 +64,7 @@ jobs:
             "${space_dir}"
           mkdir -p "${staging_dir}"
           git archive HEAD:gradio_app | tar -x -C "${staging_dir}"
-          rsync --archive --delete \
+          rsync --archive --checksum --delete \
             --exclude=".git/" \
             --exclude=".gitattributes" \
             "${staging_dir}/" \

@@ -117,6 +117,6 @@ def test_space_sync_updates_the_existing_repository_without_create_api():
     assert "hf upload" not in workflow
     assert "git clone --depth 1" in workflow
     assert "git archive HEAD:gradio_app" in workflow
-    assert "rsync --archive --delete" in workflow
+    assert "rsync --archive --checksum --delete" in workflow
     assert '--exclude=".gitattributes"' in workflow
     assert "HEAD:main" in workflow
