@@ -77,6 +77,31 @@ jobs:
           python -m pytest tests/test_code_metrics.py \
             -k native_codebleu_matches_pip_selected_exact_examples
 
+  gradio-smoke:
+    name: Gradio smoke
+    runs-on: ubuntu-latest
+    env:
+      GRADIO_ANALYTICS_ENABLED: "False"
+      HF_HUB_OFFLINE: "1"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package and Gradio test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,gradio]"
+
+      - name: Run Gradio structure and launch checks
+        run: python -m pytest tests/test_gradio_app.py tests/test_gradio_html_utils.py
+
   package-smoke:
     name: Package smoke
     runs-on: ubuntu-latest

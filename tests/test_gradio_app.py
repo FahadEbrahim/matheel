@@ -1,8 +1,10 @@
 import importlib.util
 import json
 import os
+import socket
 import zipfile
 from pathlib import Path
+from urllib.request import urlopen
 
 import pandas as pd
 import pytest
@@ -19,6 +21,88 @@ SPEC = importlib.util.spec_from_file_location("matheel_gradio_app", APP_PATH)
 gradio_app = importlib.util.module_from_spec(SPEC)
 assert SPEC is not None and SPEC.loader is not None
 SPEC.loader.exec_module(gradio_app)
+
+
+EXPECTED_GRADIO_TABS = (
+    "Pairwise",
+    "Collection",
+    "Suite",
+    "Datasets",
+    "Visualization",
+    "Dataset Map",
+    "Pair Explanation",
+    "Leaderboard",
+    "Ready Leaderboard",
+    "Inspect Artifacts",
+)
+EXPECTED_PRIMARY_ACTIONS = {
+    "Run Pair": "calculate_similarity_gradio",
+    "Run Collection": "get_sim_list_gradio",
+    "Run Suite": "run_suite_gradio",
+    "Validate Dataset": "validate_dataset_gradio",
+    "Run Dataset Evaluation": "evaluate_dataset_gradio_with_state",
+    "Generate Map": "generate_dataset_map_gradio",
+    "Generate Explanation": "generate_pair_explanation_gradio",
+    "Run Ready Leaderboard": "run_ready_leaderboard_gradio",
+    "Inspect Leaderboard": "inspect_leaderboard_artifacts_gradio",
+}
+
+
+def test_gradio_ui_keeps_core_workflow_tabs_and_primary_actions_wired():
+    config = gradio_app.demo.get_config_file()
+    components = {component["id"]: component for component in config["components"]}
+    tab_labels = tuple(
+        component["props"]["label"]
+        for component in components.values()
+        if component["type"] == "tabitem"
+    )
+
+    assert tab_labels == EXPECTED_GRADIO_TABS
+
+    buttons = {
+        component["props"].get("value"): component_id
+        for component_id, component in components.items()
+        if component["type"] == "button"
+    }
+    for button_text, api_name in EXPECTED_PRIMARY_ACTIONS.items():
+        button_id = buttons[button_text]
+        click_dependencies = [
+            dependency
+            for dependency in config["dependencies"]
+            if (button_id, "click") in dependency["targets"]
+        ]
+
+        assert len(click_dependencies) == 1
+        assert click_dependencies[0]["backend_fn"] is True
+        assert click_dependencies[0]["api_name"] == api_name
+
+
+def test_gradio_app_launches_and_serves_root_and_config():
+    with socket.socket() as port_socket:
+        port_socket.bind(("127.0.0.1", 0))
+        server_port = port_socket.getsockname()[1]
+
+    _, local_url, _ = gradio_app.demo.launch(
+        server_name="127.0.0.1",
+        server_port=server_port,
+        prevent_thread_lock=True,
+        quiet=True,
+        show_error=True,
+    )
+    try:
+        with urlopen(local_url, timeout=10) as response:
+            root_html = response.read().decode("utf-8")
+            assert response.status == 200
+        with urlopen(f"{local_url}config", timeout=10) as response:
+            live_config = json.load(response)
+            assert response.status == 200
+    finally:
+        gradio_app.demo.close()
+
+    assert "<gradio-app" in root_html
+    assert "Matheel Framework" in root_html
+    assert live_config["title"] == "Matheel Framework"
+    assert len(live_config["components"]) == len(gradio_app.demo.get_config_file()["components"])
 
 
 def test_gradio_temp_workspace_cleanup_removes_only_stale_known_prefixes(tmp_path):
