@@ -21,7 +21,11 @@ from matheel.datasets import (
     write_pair_dataset,
     write_retrieval_dataset,
 )
-from matheel.leaderboard import run_leaderboard, write_leaderboard_artifacts
+from matheel.leaderboard import (
+    available_leaderboard_metrics,
+    run_leaderboard,
+    write_leaderboard_artifacts,
+)
 from matheel.leaderboard_presets import available_leaderboard_algorithm_presets
 
 
@@ -42,14 +46,8 @@ DATASET_LICENSES = {
     "soco14": "unknown",
     "student_code_similarity": "unknown",
 }
-PAIR_METRICS = ("f1", "accuracy", "auroc", "average_precision")
-RETRIEVAL_METRICS = (
-    "mean_average_precision",
-    "mean_reciprocal_rank",
-    "ndcg_at_k",
-    "precision_at_k",
-    "recall_at_k",
-)
+PAIR_METRICS = available_leaderboard_metrics("pair")
+RETRIEVAL_METRICS = available_leaderboard_metrics("retrieval")
 
 
 def build_ready_leaderboard(

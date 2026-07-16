@@ -37,7 +37,11 @@ from matheel.evaluation import (
     evaluate_retrieval_dataset,
     evaluate_retrieval_resamples,
 )
-from matheel.leaderboard import run_leaderboard, write_leaderboard_artifacts
+from matheel.leaderboard import (
+    available_leaderboard_metrics,
+    run_leaderboard,
+    write_leaderboard_artifacts,
+)
 from matheel.leaderboard_presets import available_leaderboard_algorithm_presets, get_leaderboard_algorithm_preset
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
@@ -185,14 +189,33 @@ METRIC_PRESETS = {
 DATASET_TASK_CHOICES = ("Pair Classification", "Retrieval")
 DEFAULT_DATASET_TASK = DATASET_TASK_CHOICES[0]
 READY_LEADERBOARD_ALGORITHM_CHOICES = tuple(METRIC_PRESETS)
-READY_LEADERBOARD_PAIR_METRICS = ("f1", "accuracy", "auroc", "average_precision")
-READY_LEADERBOARD_RETRIEVAL_METRICS = (
-    "mean_average_precision",
-    "mean_reciprocal_rank",
-    "ndcg_at_k",
-    "precision_at_k",
-    "recall_at_k",
+READY_LEADERBOARD_PAIR_METRICS = available_leaderboard_metrics("pair")
+READY_LEADERBOARD_RETRIEVAL_METRICS = available_leaderboard_metrics("retrieval")
+READY_LEADERBOARD_DEFAULT_METRICS = {
+    "pair": "f1",
+    "retrieval": "mean_average_precision",
+}
+READY_LEADERBOARD_TASK_CHOICES = tuple(READY_LEADERBOARD_DEFAULT_METRICS)
+READY_LEADERBOARD_ALL_DATASETS = "All datasets"
+READY_LEADERBOARD_ALL_ALGORITHMS = "All algorithms"
+READY_LEADERBOARD_ALL_SOURCES = "All sources"
+READY_LEADERBOARD_AGGREGATE_SORT_COLUMNS = (
+    "mean_score",
+    "median_score",
+    "algorithm_name",
+    "dataset_count",
+    "sample_count",
+    "rank",
 )
+READY_LEADERBOARD_PER_DATASET_SORT_COLUMNS = (
+    "score",
+    "dataset_name",
+    "algorithm_name",
+    "dataset_source",
+    "sample_count",
+    "rank",
+)
+READY_LEADERBOARD_SORT_DIRECTIONS = ("Descending", "Ascending")
 READY_MADE_LEADERBOARD_PATH = Path(__file__).resolve().parent / "assets" / "ready_leaderboard.json"
 THRESHOLD_OPTIMIZE_CHOICES = ("f1", "accuracy", "precision", "recall")
 PAIR_DATASET_SCORE_COLUMNS = [
@@ -2210,6 +2233,262 @@ def ready_made_leaderboard_coverage_frame(report):
     )
 
 
+def _ready_made_task_family(task_family):
+    task = str(task_family or "").strip().lower()
+    if task not in READY_LEADERBOARD_DEFAULT_METRICS:
+        return READY_LEADERBOARD_TASK_CHOICES[0]
+    return task
+
+
+def _ready_made_unique_values(frame, column):
+    if not isinstance(frame, pd.DataFrame) or column not in frame:
+        return []
+    return sorted(
+        {
+            str(value)
+            for value in frame[column].dropna().tolist()
+            if str(value).strip()
+        }
+    )
+
+
+def _ready_made_filter_options_from_report(report, task_family):
+    task = _ready_made_task_family(task_family)
+    per_dataset = report["per_dataset"]
+    task_rows = per_dataset[per_dataset["task_family"] == task]
+    configured_metrics = (
+        READY_LEADERBOARD_PAIR_METRICS
+        if task == "pair"
+        else READY_LEADERBOARD_RETRIEVAL_METRICS
+    )
+    available_metrics = set(_ready_made_unique_values(task_rows, "metric"))
+    metrics = [metric for metric in configured_metrics if metric in available_metrics]
+    if not metrics:
+        metrics = list(configured_metrics)
+    default_metric = READY_LEADERBOARD_DEFAULT_METRICS[task]
+    if default_metric not in metrics:
+        default_metric = metrics[0]
+    return {
+        "task": task,
+        "metric": default_metric,
+        "metrics": metrics,
+        "datasets": [
+            READY_LEADERBOARD_ALL_DATASETS,
+            *_ready_made_unique_values(task_rows, "dataset_name"),
+        ],
+        "algorithms": [
+            READY_LEADERBOARD_ALL_ALGORITHMS,
+            *_ready_made_unique_values(task_rows, "algorithm_name"),
+        ],
+        "sources": [
+            READY_LEADERBOARD_ALL_SOURCES,
+            *_ready_made_unique_values(task_rows, "dataset_source"),
+        ],
+    }
+
+
+def ready_made_leaderboard_filter_options(
+    task_family=READY_LEADERBOARD_TASK_CHOICES[0],
+    artifact_path=READY_MADE_LEADERBOARD_PATH,
+):
+    task = _ready_made_task_family(task_family)
+    try:
+        report = _leaderboard_report_from_payload(
+            load_ready_made_leaderboard_payload(artifact_path)
+        )
+    except (FileNotFoundError, OSError, ValueError):
+        metrics = (
+            READY_LEADERBOARD_PAIR_METRICS
+            if task == "pair"
+            else READY_LEADERBOARD_RETRIEVAL_METRICS
+        )
+        return {
+            "task": task,
+            "metric": READY_LEADERBOARD_DEFAULT_METRICS[task],
+            "metrics": list(metrics),
+            "datasets": [READY_LEADERBOARD_ALL_DATASETS],
+            "algorithms": [
+                READY_LEADERBOARD_ALL_ALGORITHMS,
+                *READY_LEADERBOARD_ALGORITHM_CHOICES,
+            ],
+            "sources": [READY_LEADERBOARD_ALL_SOURCES],
+        }
+    return _ready_made_filter_options_from_report(report, task)
+
+
+def _filter_ready_made_leaderboard_report(
+    report,
+    task_family,
+    metric,
+    dataset_name,
+    algorithm_name,
+    dataset_source,
+    aggregate_sort="mean_score",
+    aggregate_direction=READY_LEADERBOARD_SORT_DIRECTIONS[0],
+    per_dataset_sort="score",
+    per_dataset_direction=READY_LEADERBOARD_SORT_DIRECTIONS[0],
+):
+    options = _ready_made_filter_options_from_report(report, task_family)
+    task = options["task"]
+    selected_metric = str(metric or "")
+    if selected_metric not in options["metrics"]:
+        selected_metric = options["metric"]
+
+    per_dataset = report["per_dataset"].copy()
+    per_dataset = per_dataset[
+        (per_dataset["task_family"] == task)
+        & (per_dataset["metric"] == selected_metric)
+    ]
+    if dataset_name and dataset_name != READY_LEADERBOARD_ALL_DATASETS:
+        per_dataset = per_dataset[per_dataset["dataset_name"] == dataset_name]
+    if dataset_source and dataset_source != READY_LEADERBOARD_ALL_SOURCES:
+        per_dataset = per_dataset[per_dataset["dataset_source"] == dataset_source]
+
+    if per_dataset.empty:
+        aggregate = report["aggregate"].iloc[0:0].copy()
+    else:
+        aggregate = (
+            per_dataset.groupby(
+                ["task_family", "algorithm_name", "metric"],
+                as_index=False,
+            )
+            .agg(
+                mean_score=("score", "mean"),
+                median_score=("score", "median"),
+                dataset_count=("dataset_name", "nunique"),
+                sample_count=("sample_count", "sum"),
+            )
+        )
+        aggregate["rank"] = (
+            aggregate.groupby(["task_family", "metric"])["mean_score"]
+            .rank(method="min", ascending=False, na_option="bottom")
+            .astype(int)
+        )
+
+    if algorithm_name and algorithm_name != READY_LEADERBOARD_ALL_ALGORITHMS:
+        per_dataset = per_dataset[per_dataset["algorithm_name"] == algorithm_name]
+        aggregate = aggregate[aggregate["algorithm_name"] == algorithm_name]
+
+    aggregate = _sort_ready_made_leaderboard_frame(
+        aggregate,
+        aggregate_sort,
+        aggregate_direction,
+        READY_LEADERBOARD_AGGREGATE_SORT_COLUMNS,
+        tie_breakers=("algorithm_name",),
+    )
+    per_dataset = _sort_ready_made_leaderboard_frame(
+        per_dataset,
+        per_dataset_sort,
+        per_dataset_direction,
+        READY_LEADERBOARD_PER_DATASET_SORT_COLUMNS,
+        tie_breakers=("dataset_name", "algorithm_name"),
+    )
+    return leaderboard_display_frame(aggregate), leaderboard_display_frame(per_dataset)
+
+
+def _sort_ready_made_leaderboard_frame(
+    frame,
+    sort_column,
+    direction,
+    allowed_columns,
+    *,
+    tie_breakers,
+):
+    selected_column = str(sort_column or "")
+    if selected_column not in allowed_columns:
+        selected_column = allowed_columns[0]
+    sort_columns = [selected_column]
+    sort_columns.extend(
+        column
+        for column in tie_breakers
+        if column != selected_column and column in frame.columns
+    )
+    primary_ascending = str(direction) == "Ascending"
+    return frame.sort_values(
+        sort_columns,
+        ascending=[primary_ascending, *([True] * (len(sort_columns) - 1))],
+        na_position="last",
+        ignore_index=True,
+    )
+
+
+def filter_ready_made_leaderboard(
+    task_family,
+    metric,
+    dataset_name=READY_LEADERBOARD_ALL_DATASETS,
+    algorithm_name=READY_LEADERBOARD_ALL_ALGORITHMS,
+    dataset_source=READY_LEADERBOARD_ALL_SOURCES,
+    aggregate_sort="mean_score",
+    aggregate_direction=READY_LEADERBOARD_SORT_DIRECTIONS[0],
+    per_dataset_sort="score",
+    per_dataset_direction=READY_LEADERBOARD_SORT_DIRECTIONS[0],
+    artifact_path=READY_MADE_LEADERBOARD_PATH,
+):
+    try:
+        report = _leaderboard_report_from_payload(
+            load_ready_made_leaderboard_payload(artifact_path)
+        )
+    except (FileNotFoundError, OSError, ValueError):
+        return pd.DataFrame(), pd.DataFrame()
+    return _filter_ready_made_leaderboard_report(
+        report,
+        task_family,
+        metric,
+        dataset_name,
+        algorithm_name,
+        dataset_source,
+        aggregate_sort,
+        aggregate_direction,
+        per_dataset_sort,
+        per_dataset_direction,
+    )
+
+
+def change_ready_made_leaderboard_task(
+    task_family,
+    aggregate_sort,
+    aggregate_direction,
+    per_dataset_sort,
+    per_dataset_direction,
+):
+    options = ready_made_leaderboard_filter_options(task_family)
+    aggregate, per_dataset = filter_ready_made_leaderboard(
+        options["task"],
+        options["metric"],
+        aggregate_sort=aggregate_sort,
+        aggregate_direction=aggregate_direction,
+        per_dataset_sort=per_dataset_sort,
+        per_dataset_direction=per_dataset_direction,
+    )
+    return (
+        gr.update(choices=options["metrics"], value=options["metric"]),
+        gr.update(choices=options["datasets"], value=READY_LEADERBOARD_ALL_DATASETS),
+        gr.update(choices=options["algorithms"], value=READY_LEADERBOARD_ALL_ALGORITHMS),
+        gr.update(choices=options["sources"], value=READY_LEADERBOARD_ALL_SOURCES),
+        aggregate,
+        per_dataset,
+    )
+
+
+def reset_ready_made_leaderboard_filters():
+    task = READY_LEADERBOARD_TASK_CHOICES[0]
+    options = ready_made_leaderboard_filter_options(task)
+    aggregate, per_dataset = filter_ready_made_leaderboard(task, options["metric"])
+    return (
+        gr.update(value=task),
+        gr.update(choices=options["metrics"], value=options["metric"]),
+        gr.update(choices=options["datasets"], value=READY_LEADERBOARD_ALL_DATASETS),
+        gr.update(choices=options["algorithms"], value=READY_LEADERBOARD_ALL_ALGORITHMS),
+        gr.update(choices=options["sources"], value=READY_LEADERBOARD_ALL_SOURCES),
+        gr.update(value="mean_score"),
+        gr.update(value=READY_LEADERBOARD_SORT_DIRECTIONS[0]),
+        gr.update(value="score"),
+        gr.update(value=READY_LEADERBOARD_SORT_DIRECTIONS[0]),
+        aggregate,
+        per_dataset,
+    )
+
+
 def ready_made_leaderboard_values(artifact_path=READY_MADE_LEADERBOARD_PATH):
     try:
         payload = load_ready_made_leaderboard_payload(artifact_path)
@@ -2228,10 +2507,19 @@ def ready_made_leaderboard_values(artifact_path=READY_MADE_LEADERBOARD_PATH):
         )
     report = _leaderboard_report_from_payload(payload)
     title = str(report["metadata"].get("name") or "Matheel Ready-made Leaderboard")
+    task = READY_LEADERBOARD_TASK_CHOICES[0]
+    aggregate, per_dataset = _filter_ready_made_leaderboard_report(
+        report,
+        task,
+        READY_LEADERBOARD_DEFAULT_METRICS[task],
+        READY_LEADERBOARD_ALL_DATASETS,
+        READY_LEADERBOARD_ALL_ALGORITHMS,
+        READY_LEADERBOARD_ALL_SOURCES,
+    )
     return (
         ready_made_leaderboard_summary_html(report),
-        leaderboard_display_frame(report["aggregate"]),
-        leaderboard_display_frame(report["per_dataset"]),
+        aggregate,
+        per_dataset,
         ready_made_leaderboard_coverage_frame(report),
         benchmark_report_html(report, title=title),
         os.fspath(Path(artifact_path)),
@@ -3490,6 +3778,7 @@ def get_sim_list_gradio(
 
 
 ready_made_initial = ready_made_leaderboard_values()
+ready_made_filter_initial = ready_made_leaderboard_filter_options()
 
 
 with gr.Blocks(
@@ -5209,9 +5498,80 @@ with gr.Blocks(
                         "full-corpus or custom run."
                     )
                     ready_made_summary = gr.HTML(value=ready_made_initial[0], padding=False)
+                    with gr.Accordion("Explore rankings", open=True):
+                        gr.Markdown(
+                            "Pair classification defaults to **F1**; retrieval defaults to "
+                            "**Mean Average Precision**. Both rankings start in descending score "
+                            "order. Use the controls below to filter the snapshot, the table filter "
+                            "to search any visible column, and the explicit sort controls to reorder "
+                            "either table."
+                        )
+                        with gr.Row():
+                            ready_made_task = gr.Dropdown(
+                                choices=list(READY_LEADERBOARD_TASK_CHOICES),
+                                value=ready_made_filter_initial["task"],
+                                label="Task",
+                            )
+                            ready_made_metric = gr.Dropdown(
+                                choices=ready_made_filter_initial["metrics"],
+                                value=ready_made_filter_initial["metric"],
+                                label="Metric (higher is better)",
+                            )
+                            ready_made_dataset = gr.Dropdown(
+                                choices=ready_made_filter_initial["datasets"],
+                                value=READY_LEADERBOARD_ALL_DATASETS,
+                                label="Dataset",
+                            )
+                        with gr.Row():
+                            ready_made_algorithm = gr.Dropdown(
+                                choices=ready_made_filter_initial["algorithms"],
+                                value=READY_LEADERBOARD_ALL_ALGORITHMS,
+                                label="Algorithm",
+                            )
+                            ready_made_source = gr.Dropdown(
+                                choices=ready_made_filter_initial["sources"],
+                                value=READY_LEADERBOARD_ALL_SOURCES,
+                                label="Dataset Source",
+                            )
+                            ready_made_reset = gr.Button("Reset Leaderboard Filters")
+                        with gr.Row():
+                            ready_made_aggregate_sort = gr.Dropdown(
+                                choices=[
+                                    ("Mean score", "mean_score"),
+                                    ("Median score", "median_score"),
+                                    ("Algorithm", "algorithm_name"),
+                                    ("Dataset count", "dataset_count"),
+                                    ("Sample count", "sample_count"),
+                                    ("Rank", "rank"),
+                                ],
+                                value="mean_score",
+                                label="Sort Aggregate By",
+                            )
+                            ready_made_aggregate_direction = gr.Dropdown(
+                                choices=list(READY_LEADERBOARD_SORT_DIRECTIONS),
+                                value=READY_LEADERBOARD_SORT_DIRECTIONS[0],
+                                label="Aggregate Direction",
+                            )
+                            ready_made_per_dataset_sort = gr.Dropdown(
+                                choices=[
+                                    ("Score", "score"),
+                                    ("Dataset", "dataset_name"),
+                                    ("Algorithm", "algorithm_name"),
+                                    ("Dataset source", "dataset_source"),
+                                    ("Sample count", "sample_count"),
+                                    ("Rank", "rank"),
+                                ],
+                                value="score",
+                                label="Sort Per-Dataset By",
+                            )
+                            ready_made_per_dataset_direction = gr.Dropdown(
+                                choices=list(READY_LEADERBOARD_SORT_DIRECTIONS),
+                                value=READY_LEADERBOARD_SORT_DIRECTIONS[0],
+                                label="Per-Dataset Direction",
+                            )
                     ready_made_aggregate = gr.Dataframe(
                         value=ready_made_initial[1],
-                        label="Ranked Algorithms",
+                        label="Interactive Aggregate Ranking",
                         wrap=False,
                         interactive=False,
                         max_height=360,
@@ -5221,7 +5581,7 @@ with gr.Blocks(
                     )
                     ready_made_per_dataset = gr.Dataframe(
                         value=ready_made_initial[2],
-                        label="Per-Dataset Ranking",
+                        label="Interactive Per-Dataset Ranking",
                         wrap=False,
                         interactive=False,
                         max_height=420,
@@ -5245,6 +5605,66 @@ with gr.Blocks(
                         value=ready_made_initial[5],
                         label="Ready-made Leaderboard JSON",
                         interactive=False,
+                    )
+
+                    ready_made_task.input(
+                        change_ready_made_leaderboard_task,
+                        inputs=[
+                            ready_made_task,
+                            ready_made_aggregate_sort,
+                            ready_made_aggregate_direction,
+                            ready_made_per_dataset_sort,
+                            ready_made_per_dataset_direction,
+                        ],
+                        outputs=[
+                            ready_made_metric,
+                            ready_made_dataset,
+                            ready_made_algorithm,
+                            ready_made_source,
+                            ready_made_aggregate,
+                            ready_made_per_dataset,
+                        ],
+                    )
+                    for ready_made_filter in (
+                        ready_made_metric,
+                        ready_made_dataset,
+                        ready_made_algorithm,
+                        ready_made_source,
+                        ready_made_aggregate_sort,
+                        ready_made_aggregate_direction,
+                        ready_made_per_dataset_sort,
+                        ready_made_per_dataset_direction,
+                    ):
+                        ready_made_filter.input(
+                            filter_ready_made_leaderboard,
+                            inputs=[
+                                ready_made_task,
+                                ready_made_metric,
+                                ready_made_dataset,
+                                ready_made_algorithm,
+                                ready_made_source,
+                                ready_made_aggregate_sort,
+                                ready_made_aggregate_direction,
+                                ready_made_per_dataset_sort,
+                                ready_made_per_dataset_direction,
+                            ],
+                            outputs=[ready_made_aggregate, ready_made_per_dataset],
+                        )
+                    ready_made_reset.click(
+                        reset_ready_made_leaderboard_filters,
+                        outputs=[
+                            ready_made_task,
+                            ready_made_metric,
+                            ready_made_dataset,
+                            ready_made_algorithm,
+                            ready_made_source,
+                            ready_made_aggregate_sort,
+                            ready_made_aggregate_direction,
+                            ready_made_per_dataset_sort,
+                            ready_made_per_dataset_direction,
+                            ready_made_aggregate,
+                            ready_made_per_dataset,
+                        ],
                     )
 
                 with gr.Tab("Build Leaderboard"):
