@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync Gradio app Matheel version references from pyproject.toml."""
+"""Sync release-facing Matheel version references from pyproject.toml."""
 
 from __future__ import annotations
 
@@ -14,7 +14,11 @@ except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
     tomllib = None
 
 
-README_VERSION_RE = re.compile(r"`matheel==[^`]+`")
+GRADIO_README_VERSION_RE = re.compile(r"`matheel==[^`]+`")
+PYPI_BADGE_RE = re.compile(
+    r"https://img\.shields\.io/pypi/v/matheel\.svg\?cacheSeconds=3600"
+    r"(?:&release=v?[^)\s]+)?"
+)
 REQUIREMENTS_VERSION_RE = re.compile(r"(?m)^matheel\[all\]==[^\s]+$")
 PROJECT_VERSION_RE = re.compile(r'(?m)^version\s*=\s*"([^"]+)"\s*$')
 
@@ -54,8 +58,14 @@ def planned_updates(root):
     version = project_version(root)
     targets = (
         (
+            root / "README.md",
+            PYPI_BADGE_RE,
+            "https://img.shields.io/pypi/v/matheel.svg"
+            f"?cacheSeconds=3600&release=v{version}",
+        ),
+        (
             root / "gradio_app" / "README.md",
-            README_VERSION_RE,
+            GRADIO_README_VERSION_RE,
             f"`matheel=={version}`",
         ),
         (
@@ -80,11 +90,11 @@ def sync_gradio_app_version(root, check=False):
             for path, _ in updates:
                 print(f"{path.relative_to(root)} is not synced with pyproject.toml.", file=sys.stderr)
             return 1
-        print("Gradio app version references are synced.")
+        print("Release version references are synced.")
         return 0
 
     if not updates:
-        print("Gradio app version references are already synced.")
+        print("Release version references are already synced.")
         return 0
 
     for path, updated in updates:
@@ -95,12 +105,12 @@ def sync_gradio_app_version(root, check=False):
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(
-        description="Sync Gradio app Matheel version references from pyproject.toml."
+        description="Sync release-facing Matheel version references from pyproject.toml."
     )
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Fail if Gradio app version references are stale.",
+        help="Fail if release-facing version references are stale.",
     )
     parser.add_argument(
         "--root",

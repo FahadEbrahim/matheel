@@ -32,6 +32,9 @@ python scripts/sync_gradio_app_version.py --check
 - Confirm the README PyPI badges are dynamic and use the standard Shields cache:
   - PyPI version: `https://img.shields.io/pypi/v/matheel.svg`
   - Python versions: `https://img.shields.io/pypi/pyversions/matheel.svg`
+- Confirm the PyPI version badge includes `cacheSeconds=3600&release=v<version>`.
+  The release key gives GitHub Camo a fresh image URL for each published version;
+  `scripts/sync_gradio_app_version.py` maintains it automatically.
 
 ## Tests
 
