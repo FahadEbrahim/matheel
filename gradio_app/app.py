@@ -193,6 +193,7 @@ READY_LEADERBOARD_RETRIEVAL_METRICS = (
     "precision_at_k",
     "recall_at_k",
 )
+READY_MADE_LEADERBOARD_PATH = Path(__file__).resolve().parent / "assets" / "ready_leaderboard.json"
 THRESHOLD_OPTIMIZE_CHOICES = ("f1", "accuracy", "precision", "recall")
 PAIR_DATASET_SCORE_COLUMNS = [
     "left_id",
@@ -2144,6 +2145,99 @@ def _leaderboard_report_from_payload(payload):
     }
 
 
+def load_ready_made_leaderboard_payload(artifact_path=READY_MADE_LEADERBOARD_PATH):
+    path = Path(artifact_path)
+    if not path.is_file():
+        raise FileNotFoundError(f"Ready-made leaderboard artifact does not exist: {path}")
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError("Ready-made leaderboard artifact must be valid JSON.") from exc
+    if not _looks_like_leaderboard_payload(payload):
+        raise ValueError("Ready-made leaderboard artifact is not a Matheel leaderboard payload.")
+    return payload
+
+
+def ready_made_leaderboard_summary_html(report):
+    profile = dict(report["metadata"].get("benchmark_profile") or {})
+    dataset_presets = list(profile.get("dataset_presets") or [])
+    algorithms = list(profile.get("algorithm_presets") or [])
+    generated_at = str(profile.get("generated_at") or "unknown")
+    if "T" in generated_at:
+        generated_at = generated_at.split("T", 1)[0]
+    sample_plan = (
+        f"≤{profile.get('pair_sample_limit', '?')} pairs; "
+        f"≤{profile.get('retrieval_query_limit', '?')} queries × "
+        f"{profile.get('retrieval_corpus_limit', '?')} documents"
+    )
+    return summary_panel_html(
+        "Ready-made Leaderboard",
+        [
+            ("Dataset Presets", str(len(dataset_presets))),
+            ("Task Views", str(profile.get("dataset_task_count") or len(report["cards"]["datasets"]))),
+            ("Algorithms", str(len(algorithms) or len(report["cards"]["algorithms"]))),
+            ("Backend", str(profile.get("vector_backend") or "unknown")),
+            ("Sampling", sample_plan),
+            ("Seed", str(profile.get("seed", ""))),
+            ("Generated", generated_at),
+        ],
+    )
+
+
+def ready_made_leaderboard_coverage_frame(report):
+    rows = []
+    for card in report.get("cards", {}).get("datasets", []):
+        metadata = dict(card.get("metadata") or {})
+        source = dict(card.get("source") or {})
+        counts = dict(card.get("counts") or {})
+        if card.get("task_family") == "retrieval":
+            sample = f"{counts.get('queries', 0)} queries × {counts.get('documents', 0)} documents"
+        else:
+            sample = f"{counts.get('pairs', 0)} pairs"
+        rows.append(
+            {
+                "Dataset": card.get("name", ""),
+                "Preset": source.get("preset") or metadata.get("source_preset", ""),
+                "Task": card.get("task_family", ""),
+                "Sample": sample,
+                "Source": source.get("source", ""),
+                "License": card.get("license", "unknown"),
+            }
+        )
+    return pd.DataFrame(
+        rows,
+        columns=["Dataset", "Preset", "Task", "Sample", "Source", "License"],
+    )
+
+
+def ready_made_leaderboard_values(artifact_path=READY_MADE_LEADERBOARD_PATH):
+    try:
+        payload = load_ready_made_leaderboard_payload(artifact_path)
+    except (FileNotFoundError, OSError, ValueError) as exc:
+        return (
+            summary_panel_html(
+                "Ready-made Leaderboard",
+                [("Status", "Snapshot unavailable"), ("Reason", str(exc))],
+                variant="empty",
+            ),
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pd.DataFrame(),
+            "",
+            None,
+        )
+    report = _leaderboard_report_from_payload(payload)
+    title = str(report["metadata"].get("name") or "Matheel Ready-made Leaderboard")
+    return (
+        ready_made_leaderboard_summary_html(report),
+        leaderboard_display_frame(report["aggregate"]),
+        leaderboard_display_frame(report["per_dataset"]),
+        ready_made_leaderboard_coverage_frame(report),
+        benchmark_report_html(report, title=title),
+        os.fspath(Path(artifact_path)),
+    )
+
+
 def leaderboard_display_frame(frame):
     display = frame.copy() if isinstance(frame, pd.DataFrame) else pd.DataFrame(frame)
     for column in ("score", "mean_score", "median_score"):
@@ -3393,6 +3487,9 @@ def get_sim_list_gradio(
         effective_chunking_method,
         runtime_device,
     ), results
+
+
+ready_made_initial = ready_made_leaderboard_values()
 
 
 with gr.Blocks(
@@ -5104,6 +5201,52 @@ with gr.Blocks(
                 padding=False,
             )
             with gr.Tabs(elem_classes=["matheel-subtabs"]):
+                with gr.Tab("Ready-made Leaderboard"):
+                    gr.Markdown(
+                        "Scores are precomputed across every registered public dataset preset and "
+                        "every built-in algorithm preset. The snapshot uses deterministic samples "
+                        "and the offline `static_hash` vector backend; use Build Leaderboard for a "
+                        "full-corpus or custom run."
+                    )
+                    ready_made_summary = gr.HTML(value=ready_made_initial[0], padding=False)
+                    ready_made_aggregate = gr.Dataframe(
+                        value=ready_made_initial[1],
+                        label="Ranked Algorithms",
+                        wrap=False,
+                        interactive=False,
+                        max_height=360,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    ready_made_per_dataset = gr.Dataframe(
+                        value=ready_made_initial[2],
+                        label="Per-Dataset Ranking",
+                        wrap=False,
+                        interactive=False,
+                        max_height=420,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    ready_made_coverage = gr.Dataframe(
+                        value=ready_made_initial[3],
+                        label="Dataset Coverage",
+                        wrap=False,
+                        interactive=False,
+                        max_height=280,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    with gr.Accordion("Static Report", open=False):
+                        ready_made_report = gr.HTML(value=ready_made_initial[4], padding=False)
+                    ready_made_artifact = gr.File(
+                        value=ready_made_initial[5],
+                        label="Ready-made Leaderboard JSON",
+                        interactive=False,
+                    )
+
                 with gr.Tab("Build Leaderboard"):
                     with gr.Row(elem_classes=["matheel-workflow-grid"]):
                         with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
@@ -5112,7 +5255,7 @@ with gr.Blocks(
                                 file_types=[".zip"],
                                 file_count="multiple",
                             )
-                            ready_run = gr.Button("Run Ready Leaderboard", variant="primary")
+                            ready_run = gr.Button("Run Custom Leaderboard", variant="primary")
                             ready_summary = gr.HTML(
                                 value=empty_ready_leaderboard_summary_html(),
                                 padding=False,

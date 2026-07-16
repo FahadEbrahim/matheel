@@ -49,11 +49,13 @@ Semantic presets can download model weights and may take longer on their first r
 | **Suites** | Run multiple saved comparison configurations over the same collection. |
 | **Datasets** | Validate normalized dataset ZIPs, evaluate scores, tune thresholds, and export reports. |
 | **Explain** | Generate dataset maps or explain matched regions in a code pair. |
-| **Reports** | Build a leaderboard from normalized data or inspect exported JSON/ZIP artifacts. |
+| **Reports** | Open the ready-made all-preset leaderboard, build a custom leaderboard, or inspect exported JSON/ZIP artifacts. |
 
 The top banner shows the recommended path from a quick comparison through evaluation and reporting. Each workflow states what it produces, while advanced preparation options remain collapsed until needed. On wider screens, the configuration panel stays available while results grow.
 
 Collection and dataset uploads are ZIP-first. Keep source paths relative inside the archive, and use normalized dataset ZIPs for evaluation, explanation, and leaderboard tasks. Download generated artifacts if you need to retain them after the session ends.
+
+The first **Reports** subtab is a ready-made sampled leaderboard covering every registered public dataset preset and every built-in algorithm preset. It loads from a committed JSON artifact, so viewing it does not download datasets or run models. Its summary shows the sampling limits, seed, backend, and generation date; use **Build Leaderboard** for full-corpus or custom settings.
 
 ## Troubleshooting
 
