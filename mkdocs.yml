@@ -18,6 +18,7 @@ nav:
   - Getting Started:
       - Home: index.md
       - Usage: usage.md
+      - Gradio app: gradio.md
   - Scoring:
       - Preprocessing: preprocessing.md
       - Tokenization and limits: tokenization.md

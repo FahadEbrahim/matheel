@@ -104,6 +104,8 @@ print(results.head())
 - Run the reproducible benchmark demo when you need a small auditable evaluation workflow.
 - Run the Gradio app or notebooks when you want an interactive workflow, including normalized dataset evaluation, visualization artifacts, ready leaderboards, and leaderboard inspection.
 
+For installation, a guided pairwise check, workflow descriptions, and troubleshooting, see the [Gradio app guide](gradio.md).
+
 ## Demos and Examples
 
 - Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
@@ -116,6 +118,7 @@ print(results.head())
 
 ## Documentation Map
 
+- [Gradio app](gradio.md)
 - [Preprocessing](preprocessing.md)
 - [Tokenization and preprocessing limits](tokenization.md)
 - [Chunking](chunking.md)

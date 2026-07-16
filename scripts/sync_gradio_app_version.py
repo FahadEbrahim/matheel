@@ -21,6 +21,14 @@ PYPI_BADGE_RE = re.compile(
 )
 REQUIREMENTS_VERSION_RE = re.compile(r"(?m)^matheel\[all\]==[^\s]+$")
 PROJECT_VERSION_RE = re.compile(r'(?m)^version\s*=\s*"([^"]+)"\s*$')
+NOTEBOOK_REF_RE = re.compile(r'(MATHEEL_REF\s*=\s*\\"v)([^\\"]+)(\\")')
+RELEASE_NOTEBOOKS = (
+    "01_core_workflows.ipynb",
+    "02_datasets_and_reproducibility.ipynb",
+    "03_custom_algorithms.ipynb",
+    "04_gradio_app.ipynb",
+    "05_visualization_and_leaderboard.ipynb",
+)
 
 
 def project_version(root):
@@ -56,7 +64,7 @@ def replace_single(path, pattern, replacement):
 
 def planned_updates(root):
     version = project_version(root)
-    targets = (
+    targets = [
         (
             root / "README.md",
             PYPI_BADGE_RE,
@@ -73,6 +81,14 @@ def planned_updates(root):
             REQUIREMENTS_VERSION_RE,
             f"matheel[all]=={version}",
         ),
+    ]
+    targets.extend(
+        (
+            root / "examples" / "notebooks" / notebook_name,
+            NOTEBOOK_REF_RE,
+            rf"\g<1>{version}\g<3>",
+        )
+        for notebook_name in RELEASE_NOTEBOOKS
     )
 
     updates = []
