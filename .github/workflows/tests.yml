@@ -45,3 +45,65 @@ jobs:
 
       - name: Run tests
         run: python -m pytest
+
+  codebleu-compatibility:
+    name: CodeBLEU compatibility
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package and external CodeBLEU
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          # CodeBLEU 0.7.0 pins an older Tree-sitter than Matheel's language pack.
+          # Install its Python code only so the compatibility tests use Matheel's runtime.
+          python -m pip install --no-deps "codebleu==0.7.0"
+          python -m pip install \
+            "tree-sitter-c==0.24.2" \
+            "tree-sitter-java==0.23.5" \
+            "tree-sitter-php==0.24.1"
+
+      - name: Run native-to-pip compatibility tests
+        run: |
+          python -m pytest tests/test_code_metrics.py \
+            -k native_codebleu_matches_pip_selected_exact_examples
+
+  package-smoke:
+    name: Package smoke
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install build tools
+        run: python -m pip install --upgrade build twine
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Check package metadata
+        run: python -m twine check dist/*
+
+      - name: Install and smoke-test the wheel
+        run: |
+          python -m venv "${RUNNER_TEMP}/matheel-smoke"
+          "${RUNNER_TEMP}/matheel-smoke/bin/python" -m pip install dist/*.whl
+          "${RUNNER_TEMP}/matheel-smoke/bin/matheel" --help
+          "${RUNNER_TEMP}/matheel-smoke/bin/python" -c \
+            "import matheel; print(matheel.__version__)"

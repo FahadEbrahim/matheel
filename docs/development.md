@@ -36,7 +36,9 @@ Install the full optional stack before running them locally:
 python -m pip install -e ".[all,dev]"
 ```
 
-The `Real Model Integration Tests` GitHub Actions workflow is manual-only. It installs `matheel[all,dev]`, caches Hugging Face model files under `~/.cache/huggingface`, and runs `python -m pytest -m integration` on the selected Python version. It is not part of default pull-request CI, so normal tests remain offline-friendly.
+The `Real Model Integration Tests` GitHub Actions workflow runs weekly on Python 3.12 and can also be started manually on any supported Python version. It installs `matheel[all,dev]`, caches Hugging Face model files under `~/.cache/huggingface`, and runs `python -m pytest -m integration`. It is not part of default pull-request CI, so normal tests remain offline-friendly.
+
+Pull-request CI also runs selected compatibility checks against the external `codebleu` package and builds the wheel and source distribution. The package job validates metadata, installs the wheel into a clean environment, imports Matheel, and exercises the CLI help command.
 
 ## Package Checks
 
