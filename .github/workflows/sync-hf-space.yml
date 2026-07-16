@@ -61,7 +61,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          uvx hf repo create "${HF_REPO_ID}" --repo-type space --space-sdk gradio --exist-ok
           uvx hf upload \
             "${HF_REPO_ID}" \
             gradio_app \
