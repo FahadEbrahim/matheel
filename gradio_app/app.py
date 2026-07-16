@@ -258,13 +258,189 @@ DEFAULT_UI_FEATURE_WEIGHTS = {
     "code_metric": 0.2,
 }
 APP_CSS = """
-#matheel-app {
-    max-width: 1440px;
+.gradio-container {
+    width: 100%;
+    min-width: 0;
+    max-width: 1480px;
     margin: 0 auto;
+    padding: 0 18px 48px;
+    box-sizing: border-box;
+    overflow-x: clip;
 }
 
-#matheel-app .matheel-summary,
-#matheel-app .matheel-status {
+.matheel-hero {
+    position: relative;
+    overflow: hidden;
+    margin: 6px 0 18px;
+    padding: clamp(24px, 4vw, 42px);
+    border: 1px solid rgba(148, 210, 196, 0.24);
+    border-radius: 22px;
+    background:
+        radial-gradient(circle at 92% 10%, rgba(45, 212, 191, 0.22), transparent 34%),
+        linear-gradient(135deg, #0f172a 0%, #123a42 58%, #0f4c4b 100%);
+    color: #f8fafc;
+    box-shadow: 0 22px 54px rgba(15, 23, 42, 0.18);
+}
+
+.matheel-hero-topline,
+.matheel-workflow-kicker {
+    margin: 0 0 10px;
+    color: #99f6e4;
+    font-size: 0.76rem;
+    font-weight: 750;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.matheel-hero h1 {
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(2rem, 5vw, 3.75rem);
+    line-height: 1;
+    letter-spacing: -0.045em;
+}
+
+.matheel-hero-copy {
+    max-width: 760px;
+    margin: 14px 0 22px;
+    color: #dbeafe;
+    font-size: clamp(1rem, 2vw, 1.16rem);
+    line-height: 1.65;
+}
+
+.matheel-journey {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.matheel-journey-step {
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid rgba(226, 232, 240, 0.14);
+    border-radius: 14px;
+    background: rgba(15, 23, 42, 0.28);
+    color: #e2e8f0;
+    line-height: 1.35;
+}
+
+.matheel-journey-step span {
+    display: block;
+    margin-bottom: 4px;
+    color: #5eead4;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+#matheel-workflows {
+    gap: 14px;
+    min-width: 0;
+}
+
+#matheel-workflows > .tab-wrapper {
+    position: sticky;
+    top: 8px;
+    z-index: 20;
+}
+
+#matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] {
+    max-width: 100%;
+    padding: 6px;
+    border: 1px solid var(--border-color-primary);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--background-fill-primary) 92%, transparent);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
+    backdrop-filter: blur(14px);
+}
+
+#matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] button {
+    min-height: 42px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.matheel-workflow-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 0.42fr);
+    gap: 18px;
+    align-items: center;
+    margin: 4px 0 16px;
+    padding: 18px 20px;
+    border: 1px solid var(--border-color-primary);
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--block-background-fill), var(--background-fill-secondary));
+}
+
+.matheel-workflow-intro h2 {
+    margin: 0 0 6px;
+    font-size: clamp(1.2rem, 2.5vw, 1.55rem);
+    letter-spacing: -0.02em;
+}
+
+.matheel-workflow-intro p {
+    margin: 0;
+    color: var(--body-text-color-subdued);
+    line-height: 1.55;
+}
+
+.matheel-workflow-kicker {
+    color: var(--color-accent, #0f766e);
+}
+
+.matheel-workflow-outcome {
+    padding: 12px 14px;
+    border-left: 3px solid var(--color-accent, #0f766e);
+    border-radius: 10px;
+    background: var(--background-fill-primary);
+    color: var(--body-text-color);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.matheel-workflow-outcome strong {
+    display: block;
+    margin-bottom: 2px;
+}
+
+.matheel-workflow-grid {
+    align-items: flex-start;
+    gap: 18px;
+}
+
+.matheel-results-panel,
+.matheel-control-panel {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.matheel-control-panel {
+    padding: 14px;
+    border: 1px solid var(--border-color-primary);
+    border-radius: 16px;
+    background: var(--block-background-fill);
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+}
+
+.matheel-control-panel > .form,
+.matheel-control-panel > .block {
+    margin-bottom: 10px;
+}
+
+.matheel-control-panel .wrap {
+    border-radius: 12px;
+}
+
+.matheel-subtabs > .tab-wrapper > .tab-container {
+    margin-bottom: 14px;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--background-fill-secondary);
+}
+
+.matheel-summary,
+.matheel-status {
     border: 1px solid #d6d9df;
     border-left: 4px solid #2a7f62;
     border-radius: 8px;
@@ -273,54 +449,157 @@ APP_CSS = """
     margin: 0 0 12px;
 }
 
-#matheel-app .matheel-status {
+.matheel-status {
     background: #f6faf7;
 }
 
-#matheel-app .matheel-empty {
+.matheel-empty {
     border-left-color: #8a6f24;
     background: #fffaf0;
 }
 
-#matheel-app .matheel-error {
+.matheel-error {
     border-left-color: #b42318;
     background: #fff5f5;
 }
 
-#matheel-app .matheel-summary-title {
+.matheel-summary-title {
     display: block;
     margin-bottom: 8px;
     color: #1f2328;
 }
 
-#matheel-app .matheel-summary-grid {
+.matheel-summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 8px 12px;
 }
 
-#matheel-app .matheel-summary-item {
+.matheel-summary-item {
     min-width: 0;
 }
 
-#matheel-app .matheel-summary-label {
+.matheel-summary-label {
     display: block;
     color: #5f6773;
     font-size: 0.78rem;
     line-height: 1.2;
 }
 
-#matheel-app .matheel-summary-value {
+.matheel-summary-value {
     display: block;
     color: #1f2328;
     font-weight: 600;
     overflow-wrap: anywhere;
 }
 
-#matheel-app .matheel-table {
+.matheel-table {
     font-size: 0.92rem;
 }
+
+button.primary {
+    box-shadow: 0 8px 20px rgba(13, 148, 136, 0.18);
+}
+
+@media (min-width: 980px) {
+    .matheel-control-panel {
+        position: sticky;
+        top: 76px;
+        max-height: calc(100vh - 92px);
+        overflow-y: auto;
+        overscroll-behavior: contain;
+    }
+}
+
+@media (max-width: 860px) {
+    .gradio-container {
+        padding: 0 8px 32px;
+    }
+
+    .matheel-journey {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .matheel-workflow-intro {
+        grid-template-columns: 1fr;
+    }
+
+    #matheel-workflows > .tab-wrapper {
+        position: static;
+        height: auto !important;
+        align-items: stretch !important;
+    }
+
+    #matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] {
+        position: static !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    #matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] button {
+        width: 100% !important;
+        min-width: 0;
+        justify-content: center;
+    }
+
+    .matheel-workflow-grid {
+        flex-direction: column;
+        flex-wrap: nowrap;
+    }
+
+    .matheel-workflow-grid > .column {
+        width: 100%;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+}
+
+@media (max-width: 520px) {
+    .matheel-hero {
+        padding: 22px 18px;
+        border-radius: 16px;
+    }
+
+    .matheel-journey {
+        grid-template-columns: 1fr;
+    }
+
+    #matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+}
 """
+
+
+def app_header_html():
+    return (
+        '<section class="matheel-hero">'
+        '<p class="matheel-hero-topline">Source-code similarity workspace</p>'
+        '<h1>Matheel</h1>'
+        '<p class="matheel-hero-copy">Move from a quick code comparison to reproducible '
+        'dataset evaluation, explanations, and shareable reports without changing tools.</p>'
+        '<div class="matheel-journey" aria-label="Recommended workflow">'
+        '<div class="matheel-journey-step"><span>01 · Compare</span>Start with two snippets</div>'
+        '<div class="matheel-journey-step"><span>02 · Scale</span>Rank a collection or suite</div>'
+        '<div class="matheel-journey-step"><span>03 · Evaluate</span>Validate on known datasets</div>'
+        '<div class="matheel-journey-step"><span>04 · Explain</span>Export evidence and reports</div>'
+        '</div></section>'
+    )
+
+
+def workflow_intro_html(kicker, title, description, outcome):
+    return (
+        '<section class="matheel-workflow-intro">'
+        '<div><p class="matheel-workflow-kicker">'
+        f'{escape_html(kicker)}</p><h2>{escape_html(title)}</h2>'
+        f'<p>{escape_html(description)}</p></div>'
+        '<div class="matheel-workflow-outcome"><strong>What you get</strong>'
+        f'{escape_html(outcome)}</div></section>'
+    )
 
 
 def summary_panel_html(title, items, variant="summary"):
@@ -3116,16 +3395,26 @@ def get_sim_list_gradio(
     ), results
 
 
-with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app") as demo:
-    gr.HTML(value="<style>" + APP_CSS + "</style>", container=False, padding=False)
-    gr.Markdown(
-        "# Matheel Framework\n"
-        "Configurable code similarity for pair, collection, and suite workflows."
-    )
-    with gr.Tabs():
-        with gr.Tab("Pairwise"):
-            with gr.Row():
-                with gr.Column(scale=8):
+with gr.Blocks(
+    title="Matheel Framework",
+    css=APP_CSS,
+    fill_width=True,
+) as demo:
+    gr.HTML(value=app_header_html(), container=False, padding=False)
+    with gr.Tabs(elem_id="matheel-workflows"):
+        with gr.Tab("Compare"):
+            gr.HTML(
+                value=workflow_intro_html(
+                    "Fast path",
+                    "Compare two snippets",
+                    "Paste code side by side, choose a scoring preset, and review the evidence.",
+                    "A similarity score, interpretation, and active metric breakdown.",
+                ),
+                container=False,
+                padding=False,
+            )
+            with gr.Row(elem_classes=["matheel-workflow-grid"]):
+                with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                     with gr.Row():
                         pair_code1 = gr.Textbox(
                             label="Code A",
@@ -3140,8 +3429,8 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     pair_run = gr.Button("Run Pair", variant="primary")
                     pair_output = gr.HTML(value=empty_pair_summary_html(), padding=False)
 
-                with gr.Column(scale=5):
-                    with gr.Accordion("Metrics", open=True):
+                with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
+                    with gr.Accordion("Scoring setup", open=True):
                         pair_metric_preset = gr.Dropdown(
                             choices=list(metric_preset_names()),
                             value="Balanced",
@@ -3307,7 +3596,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                                     label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
-                    with gr.Accordion("Preparation", open=False):
+                    with gr.Accordion("Advanced preparation", open=False):
                         pair_code_preparation = gr.CheckboxGroup(
                             choices=["Preprocessing", "Chunking"],
                             value=[],
@@ -3470,8 +3759,18 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                 )
 
         with gr.Tab("Collection"):
-            with gr.Row():
-                with gr.Column(scale=8):
+            gr.HTML(
+                value=workflow_intro_html(
+                    "Scale up",
+                    "Rank similar files in a collection",
+                    "Upload a source ZIP and apply one scoring configuration across its files.",
+                    "A ranked pair table with run metadata and reproducible settings.",
+                ),
+                container=False,
+                padding=False,
+            )
+            with gr.Row(elem_classes=["matheel-workflow-grid"]):
+                with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                     collection_file = gr.File(label="Code ZIP", file_types=[".zip"])
                     collection_run = gr.Button("Run Collection", variant="primary")
                     collection_summary = gr.HTML(value=empty_summary_html(), padding=False)
@@ -3486,8 +3785,8 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                         elem_classes=["matheel-table"],
                     )
 
-                with gr.Column(scale=5):
-                    with gr.Accordion("Metrics", open=True):
+                with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
+                    with gr.Accordion("Scoring setup", open=True):
                         collection_metric_preset = gr.Dropdown(
                             choices=list(metric_preset_names()),
                             value="Balanced",
@@ -3653,7 +3952,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                                     label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
-                    with gr.Accordion("Preparation", open=False):
+                    with gr.Accordion("Advanced preparation", open=False):
                         collection_code_preparation = gr.CheckboxGroup(
                             choices=["Preprocessing", "Chunking"],
                             value=[],
@@ -3696,7 +3995,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                                 placeholder="include_line_numbers=true",
                             )
 
-                    with gr.Accordion("Result Limits", open=False):
+                    with gr.Accordion("Result limits", open=False):
                         collection_threshold = gr.Slider(0, 1, value=0.35, label="Threshold", step=0.01)
                         collection_number_results = gr.Slider(
                             1, 1000, value=50, label="Max Pairs", step=1
@@ -3828,12 +4127,22 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     ],
                 )
 
-        with gr.Tab("Suite"):
+        with gr.Tab("Suites"):
             suite_details_store = gr.State({})
             suite_runs_state = gr.State(empty_suite_rows())
 
-            with gr.Row():
-                with gr.Column(scale=8):
+            gr.HTML(
+                value=workflow_intro_html(
+                    "Compare configurations",
+                    "Run a reproducible scoring suite",
+                    "Save multiple scoring profiles, run them on one collection, and compare results.",
+                    "A suite summary, per-run details, and downloadable run definitions.",
+                ),
+                container=False,
+                padding=False,
+            )
+            with gr.Row(elem_classes=["matheel-workflow-grid"]):
+                with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                     suite_file = gr.File(label="Code ZIP", file_types=[".zip"])
                     suite_summary = gr.HTML(value=empty_suite_summary_html(), padding=False)
                     suite_output = gr.Dataframe(
@@ -3864,8 +4173,8 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                         padding=False,
                     )
 
-                with gr.Column(scale=5):
-                    with gr.Accordion("Metrics", open=True):
+                with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
+                    with gr.Accordion("Scoring setup", open=True):
                         suite_metric_preset = gr.Dropdown(
                             choices=list(metric_preset_names()),
                             value="Balanced",
@@ -4031,7 +4340,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                                     label="CodeBERTScore Max Length (0 = model default)",
                                 )
 
-                    with gr.Accordion("Preparation", open=False):
+                    with gr.Accordion("Advanced preparation", open=False):
                         suite_code_preparation = gr.CheckboxGroup(
                             choices=["Preprocessing", "Chunking"],
                             value=[],
@@ -4089,7 +4398,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             suite_add_run = gr.Button("Save Run", variant="secondary")
                             suite_template = gr.Button("Clear Runs", variant="secondary")
 
-                    with gr.Accordion("Result Limits", open=False):
+                    with gr.Accordion("Result limits", open=False):
                         suite_threshold = gr.Slider(0, 1, value=0.35, label="Threshold", step=0.01)
                         suite_number_results = gr.Slider(
                             1, 1000, value=50, label="Max Pairs", step=1
@@ -4333,8 +4642,18 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
 
         with gr.Tab("Datasets"):
             dataset_scored_state = gr.State(None)
-            with gr.Row():
-                with gr.Column(scale=8):
+            gr.HTML(
+                value=workflow_intro_html(
+                    "Measure quality",
+                    "Validate and evaluate normalized datasets",
+                    "Check dataset structure before scoring, then tune thresholds or inspect scored pairs.",
+                    "Validation evidence, evaluation metrics, scored rows, and report artifacts.",
+                ),
+                container=False,
+                padding=False,
+            )
+            with gr.Row(elem_classes=["matheel-workflow-grid"]):
+                with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                     dataset_file = gr.File(label="Normalized Dataset ZIP", file_types=[".zip"])
                     with gr.Row():
                         dataset_validate = gr.Button("Validate Dataset", variant="secondary")
@@ -4430,8 +4749,8 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     dataset_pair_explain_report = gr.HTML(value="", padding=False)
                     dataset_pair_explain_artifacts = gr.File(label="Scored Pair Explanation Artifacts")
 
-                with gr.Column(scale=5):
-                    with gr.Accordion("Dataset", open=True):
+                with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
+                    with gr.Accordion("Dataset setup", open=True):
                         dataset_task = gr.Radio(
                             choices=list(DATASET_TASK_CHOICES),
                             value=DEFAULT_DATASET_TASK,
@@ -4474,7 +4793,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             label="Lexical Tokenizer",
                         )
 
-                    with gr.Accordion("Evaluation", open=True):
+                    with gr.Accordion("Evaluation options", open=True):
                         with gr.Group(visible=True) as dataset_pair_group:
                             dataset_threshold = gr.Slider(
                                 0,
@@ -4621,11 +4940,21 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                 ],
             )
 
-        with gr.Tab("Visualization"):
-            with gr.Tabs():
+        with gr.Tab("Explain"):
+            gr.HTML(
+                value=workflow_intro_html(
+                    "Inspect evidence",
+                    "Explain patterns and matched regions",
+                    "Map a dataset or inspect where two snippets share similar regions.",
+                    "Interactive visual evidence plus portable explanation artifacts.",
+                ),
+                container=False,
+                padding=False,
+            )
+            with gr.Tabs(elem_classes=["matheel-subtabs"]):
                 with gr.Tab("Dataset Map"):
-                    with gr.Row():
-                        with gr.Column(scale=8):
+                    with gr.Row(elem_classes=["matheel-workflow-grid"]):
+                        with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                             map_dataset_file = gr.File(
                                 label="Normalized Dataset ZIP",
                                 file_types=[".zip"],
@@ -4644,8 +4973,8 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             map_html = gr.HTML(value="", padding=False)
                             map_artifacts = gr.File(label="Dataset Map Artifacts")
 
-                        with gr.Column(scale=5):
-                            with gr.Accordion("Dataset", open=True):
+                        with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
+                            with gr.Accordion("Map setup", open=True):
                                 map_task = gr.Radio(
                                     choices=list(DATASET_TASK_CHOICES),
                                     value=DEFAULT_DATASET_TASK,
@@ -4683,8 +5012,8 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     )
 
                 with gr.Tab("Pair Explanation"):
-                    with gr.Row():
-                        with gr.Column(scale=8):
+                    with gr.Row(elem_classes=["matheel-workflow-grid"]):
+                        with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                             with gr.Row():
                                 explain_left_code = gr.Textbox(
                                     label="Code A",
@@ -4713,8 +5042,8 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                             explain_html = gr.HTML(value="", padding=False)
                             explain_artifacts = gr.File(label="Pair Explanation Artifacts")
 
-                        with gr.Column(scale=5):
-                            with gr.Accordion("Explanation", open=True):
+                        with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
+                            with gr.Accordion("Explanation setup", open=True):
                                 explain_segment_mode = gr.Dropdown(
                                     choices=list(available_pair_explanation_segment_modes()),
                                     value="line",
@@ -4763,11 +5092,21 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                         outputs=[explain_summary, explain_matches, explain_html, explain_artifacts],
                     )
 
-        with gr.Tab("Leaderboard"):
-            with gr.Tabs():
-                with gr.Tab("Ready Leaderboard"):
-                    with gr.Row():
-                        with gr.Column(scale=8):
+        with gr.Tab("Reports"):
+            gr.HTML(
+                value=workflow_intro_html(
+                    "Share results",
+                    "Build leaderboards and inspect report bundles",
+                    "Compare algorithm presets across datasets or reopen a generated report artifact.",
+                    "Ranked algorithms, per-dataset evidence, and downloadable report bundles.",
+                ),
+                container=False,
+                padding=False,
+            )
+            with gr.Tabs(elem_classes=["matheel-subtabs"]):
+                with gr.Tab("Build Leaderboard"):
+                    with gr.Row(elem_classes=["matheel-workflow-grid"]):
+                        with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                             ready_dataset_files = gr.File(
                                 label="Normalized Dataset ZIPs",
                                 file_types=[".zip"],
@@ -4809,7 +5148,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                                 elem_classes=["matheel-table"],
                             )
 
-                        with gr.Column(scale=5):
+                        with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
                             with gr.Accordion("Algorithms", open=True):
                                 ready_algorithms = gr.CheckboxGroup(
                                     choices=list(READY_LEADERBOARD_ALGORITHM_CHOICES),
@@ -4848,7 +5187,7 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                                     label="Lexical Tokenizer",
                                 )
 
-                            with gr.Accordion("Task Defaults", open=True):
+                            with gr.Accordion("Task defaults", open=True):
                                 ready_pair_threshold = gr.Slider(
                                     0,
                                     1,
@@ -4890,8 +5229,8 @@ with gr.Blocks(title="Matheel Framework", fill_width=True, elem_id="matheel-app"
                     )
 
                 with gr.Tab("Inspect Artifacts"):
-                    with gr.Row():
-                        with gr.Column(scale=8):
+                    with gr.Row(elem_classes=["matheel-workflow-grid"]):
+                        with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                             leaderboard_file = gr.File(
                                 label="Leaderboard JSON or ZIP",
                                 file_types=[".json", ".zip"],

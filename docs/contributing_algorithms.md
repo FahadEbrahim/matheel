@@ -46,7 +46,7 @@ When promoting a method into Matheel:
 
 ## Offline Leaderboard Presets
 
-Leaderboard presets make a method available in manifests, Python, and the Gradio Ready Leaderboard tab.
+Leaderboard presets make a method available in manifests, Python, and the Gradio **Reports → Build Leaderboard** workflow.
 
 ```python
 from matheel import register_leaderboard_algorithm_preset
