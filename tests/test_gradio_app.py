@@ -987,7 +987,94 @@ def test_ready_made_leaderboard_covers_all_presets_and_algorithms():
         gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES
     )
     assert set(report["aggregate"]["task_family"]) == {"pair", "retrieval"}
+    assert tuple(report["metadata"]["pair_metrics"]) == (
+        "f1",
+        "accuracy",
+        "precision",
+        "recall",
+        "auroc",
+        "average_precision",
+    )
+    assert tuple(report["metadata"]["retrieval_metrics"]) == (
+        "mean_average_precision",
+        "mean_reciprocal_rank",
+        "ndcg_at_k",
+        "precision_at_k",
+        "recall_at_k",
+    )
+    assert len(report["aggregate"]) == 88
+    assert len(report["per_dataset"]) == 320
     assert "static_hash" in gradio_app.ready_made_leaderboard_summary_html(report)
+
+
+def test_ready_made_leaderboard_uses_task_metrics_and_descending_defaults():
+    pair_options = gradio_app.ready_made_leaderboard_filter_options("pair")
+    retrieval_options = gradio_app.ready_made_leaderboard_filter_options("retrieval")
+
+    assert pair_options["metric"] == "f1"
+    assert pair_options["metrics"] == list(gradio_app.READY_LEADERBOARD_PAIR_METRICS)
+    assert retrieval_options["metric"] == "mean_average_precision"
+    assert retrieval_options["metrics"] == list(
+        gradio_app.READY_LEADERBOARD_RETRIEVAL_METRICS
+    )
+
+    aggregate, per_dataset = gradio_app.filter_ready_made_leaderboard(
+        "pair",
+        "f1",
+    )
+
+    assert set(aggregate["task_family"]) == {"pair"}
+    assert set(aggregate["metric"]) == {"f1"}
+    assert aggregate["mean_score"].is_monotonic_decreasing
+    assert per_dataset["score"].is_monotonic_decreasing
+
+
+def test_ready_made_leaderboard_supports_explicit_sort_controls():
+    aggregate, per_dataset = gradio_app.filter_ready_made_leaderboard(
+        "pair",
+        "f1",
+        aggregate_sort="algorithm_name",
+        aggregate_direction="Ascending",
+        per_dataset_sort="dataset_name",
+        per_dataset_direction="Descending",
+    )
+
+    assert aggregate["algorithm_name"].is_monotonic_increasing
+    assert per_dataset["dataset_name"].is_monotonic_decreasing
+
+    config = gradio_app.demo.get_config_file()
+    labels = {
+        component["props"].get("label")
+        for component in config["components"]
+        if component["type"] == "dropdown"
+    }
+    assert {
+        "Sort Aggregate By",
+        "Aggregate Direction",
+        "Sort Per-Dataset By",
+        "Per-Dataset Direction",
+    }.issubset(labels)
+
+
+def test_ready_made_leaderboard_filters_dataset_algorithm_and_source():
+    payload = gradio_app.load_ready_made_leaderboard_payload()
+    report = gradio_app._leaderboard_report_from_payload(payload)
+    row = report["per_dataset"].query("task_family == 'retrieval'").iloc[0]
+
+    aggregate, per_dataset = gradio_app.filter_ready_made_leaderboard(
+        "retrieval",
+        "mean_average_precision",
+        row["dataset_name"],
+        row["algorithm_name"],
+        row["dataset_source"],
+    )
+
+    assert set(per_dataset["dataset_name"]) == {row["dataset_name"]}
+    assert set(per_dataset["algorithm_name"]) == {row["algorithm_name"]}
+    assert set(per_dataset["dataset_source"]) == {row["dataset_source"]}
+    assert set(per_dataset["metric"]) == {"mean_average_precision"}
+    assert aggregate.iloc[0]["dataset_count"] == 1
+    assert aggregate.iloc[0]["algorithm_name"] == row["algorithm_name"]
 
 
 def test_ready_leaderboard_rejects_empty_algorithm_selection():

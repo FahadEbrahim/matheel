@@ -55,7 +55,7 @@ The top banner shows the recommended path from a quick comparison through evalua
 
 Collection and dataset uploads are ZIP-first. Keep source paths relative inside the archive, and use normalized dataset ZIPs for evaluation, explanation, and leaderboard tasks. Download generated artifacts if you need to retain them after the session ends.
 
-The first **Reports** subtab is a ready-made sampled leaderboard covering every registered public dataset preset and every built-in algorithm preset. It loads from a committed JSON artifact, so viewing it does not download datasets or run models. Its summary shows the sampling limits, seed, backend, and generation date; use **Build Leaderboard** for full-corpus or custom settings.
+The first **Reports** subtab is a ready-made sampled leaderboard covering every registered public dataset preset, every built-in algorithm preset, and all supported pair and retrieval metrics. It loads from a committed JSON artifact, so viewing it does not download datasets or run models. Pair rankings initially use F1 and retrieval rankings use Mean Average Precision, both sorted from highest to lowest. Filter by task, metric, dataset, algorithm, or source, and use the table filter for any visible column. Each table has explicit sort-column and direction controls for reliable ascending or descending sorting. Dataset and source filters recompute the aggregate ranking over the selected subset. The summary shows the sampling limits, seed, backend, and generation date; use **Build Leaderboard** for full-corpus or custom settings.
 
 ## Troubleshooting
 
