@@ -35,4 +35,13 @@ python examples/evaluation/dataset_validation_demo.py
 python examples/evaluation/threshold_tuning_demo.py
 ```
 
+Launch the Gradio app from a repository checkout:
+
+```bash
+python -m pip install -e ".[gradio]"
+python gradio_app/app.py
+```
+
+Use `.[all]` instead of `.[gradio]` when you want every semantic, chunking, metric, and visualization backend. The [Gradio notebook](notebooks/04_gradio_app.ipynb) includes a guided lexical pairwise check, while the [Gradio app guide](../docs/gradio.md) covers every tab and common troubleshooting.
+
 Generated archives and benchmark outputs are ignored by git.
