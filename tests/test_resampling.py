@@ -100,6 +100,38 @@ def test_stratified_single_split_rejects_class_missing_from_requested_partition(
         single_split(4, train_size=0.5, test_size=0.5, labels=[0, 0, 0, 1], seed=1)
 
 
+def test_group_single_split_rejects_impossible_requested_partitions():
+    with pytest.raises(ValueError, match="requested non-empty partition"):
+        single_split(
+            4,
+            train_size=0.5,
+            test_size=0.5,
+            groups=["only"] * 4,
+            shuffle=False,
+        )
+
+
+def test_group_single_split_reserves_groups_for_every_requested_partition():
+    groups = ["a"] * 3 + ["b"] * 3 + ["c"] * 2 + ["d"] * 2
+
+    split = single_split(
+        len(groups),
+        train_size=0.5,
+        validation_size=0.3,
+        test_size=0.2,
+        groups=groups,
+        shuffle=False,
+    )
+
+    partitions = (split.train_indices, split.validation_indices, split.test_indices)
+    partition_groups = [{groups[index] for index in indices} for indices in partitions]
+    assert all(partitions)
+    assert sum(len(indices) for indices in partitions) == len(groups)
+    assert partition_groups[0].isdisjoint(partition_groups[1])
+    assert partition_groups[0].isdisjoint(partition_groups[2])
+    assert partition_groups[1].isdisjoint(partition_groups[2])
+
+
 def test_metric_summary_reports_uncertainty_fields():
     summary = metric_summary([0.2, 0.4, 0.8], confidence=0.5)
 

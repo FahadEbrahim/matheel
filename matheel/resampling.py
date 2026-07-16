@@ -379,7 +379,11 @@ def _validate_stratified_partition_counts(label_count, counts, ratios):
     train_size, validation_size, test_size = ratios
     train_ratio = float(train_size)
     validation_ratio = float(validation_size)
-    test_ratio = 1.0 - train_ratio - validation_ratio if test_size is None else float(test_size)
+    test_ratio = (
+        1.0 - train_ratio - validation_ratio
+        if test_size is None
+        else float(test_size)
+    )
     requested = (
         ("train", train_ratio, counts[0]),
         ("validation", validation_ratio, counts[1]),
@@ -400,35 +404,66 @@ def _group_single_split(count, groups, train_size, validation_size, test_size, s
     if shuffle:
         generator.shuffle(unique_groups)
 
-    train_target, validation_target, _ = _partition_counts(
+    train_target, validation_target, test_target = _partition_counts(
         count,
         train_size=train_size,
         validation_size=validation_size,
         test_size=test_size,
     )
 
-    train_indices = []
-    validation_indices = []
-    test_indices = []
-    train_count = 0
-    validation_count = 0
+    train_ratio = float(train_size)
+    validation_ratio = float(validation_size)
+    test_ratio = 1.0 - train_ratio - validation_ratio if test_size is None else float(test_size)
+    requested_partitions = [
+        (name, target)
+        for name, ratio, target in (
+            ("train", train_ratio, train_target),
+            ("validation", validation_ratio, validation_target),
+            ("test", test_ratio, test_target),
+        )
+        if ratio > 0
+    ]
+    if len(unique_groups) < len(requested_partitions):
+        raise ValueError(
+            "Grouped single split requires at least one unique group for every "
+            "requested non-empty partition."
+        )
 
-    for group in unique_groups:
-        group_indices = np.where(groups == group)[0]
-        if train_count < train_target:
-            train_indices.extend(group_indices.tolist())
-            train_count += len(group_indices)
-            continue
-        if validation_count < validation_target:
-            validation_indices.extend(group_indices.tolist())
-            validation_count += len(group_indices)
-            continue
-        test_indices.extend(group_indices.tolist())
+    partition_indices = {"train": [], "validation": [], "test": []}
+    group_position = 0
+    for partition_index, (partition_name, target_count) in enumerate(requested_partitions):
+        remaining_partitions = len(requested_partitions) - partition_index - 1
+        if remaining_partitions == 0:
+            selected_groups = unique_groups[group_position:]
+            group_position = len(unique_groups)
+        else:
+            max_position = len(unique_groups) - remaining_partitions
+            selected_groups = []
+            selected_count = 0
+            while group_position < max_position:
+                group = unique_groups[group_position]
+                selected_groups.append(group)
+                selected_count += int(np.sum(groups == group))
+                group_position += 1
+                if selected_count >= target_count:
+                    break
+
+        for group in selected_groups:
+            partition_indices[partition_name].extend(np.where(groups == group)[0].tolist())
+
+    empty_partitions = [
+        name for name, _ in requested_partitions if not partition_indices[name]
+    ]
+    if empty_partitions:
+        raise ValueError(
+            "Grouped single split could not populate requested partition(s): "
+            f"{', '.join(empty_partitions)}."
+        )
 
     return (
-        np.asarray(sorted(train_indices), dtype=int),
-        np.asarray(sorted(validation_indices), dtype=int),
-        np.asarray(sorted(test_indices), dtype=int),
+        np.asarray(sorted(partition_indices["train"]), dtype=int),
+        np.asarray(sorted(partition_indices["validation"]), dtype=int),
+        np.asarray(sorted(partition_indices["test"]), dtype=int),
     )
 
 
