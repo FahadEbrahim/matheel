@@ -368,6 +368,38 @@ def test_kaggle_cli_resolver_downloads_then_safe_extracts(tmp_path, monkeypatch)
     assert "--unzip" not in captured["command"]
     assert captured["check"] is True
     assert (destination / "rows.csv").read_text(encoding="utf-8") == "value\n1\n"
+
+
+def test_kaggle_public_resolver_downloads_without_optional_client(tmp_path, monkeypatch):
+    captured = {}
+    real_import = __import__
+
+    def fake_import(name, *args, **kwargs):
+        if name == "kaggle.api.kaggle_api_extended":
+            raise ImportError("blocked kaggle api")
+        return real_import(name, *args, **kwargs)
+
+    def fake_download(url, output_file, headers=None):
+        captured["url"] = url
+        captured["headers"] = headers
+        with zipfile.ZipFile(output_file, "w") as archive:
+            archive.writestr("rows.csv", "value\n1\n")
+        return output_file
+
+    monkeypatch.setattr("builtins.__import__", fake_import)
+    monkeypatch.setattr("matheel.datasets.shutil.which", lambda name: None)
+    monkeypatch.setattr("matheel.datasets._download_url_to_file", fake_download)
+
+    destination = tmp_path / "kaggle_public"
+    resolved = _resolve_kaggle_dataset_source("owner/public-dataset", destination)
+
+    assert resolved == destination.resolve()
+    assert captured == {
+        "url": "https://www.kaggle.com/api/v1/datasets/download/owner/public-dataset",
+        "headers": None,
+    }
+    assert (destination / "rows.csv").read_text(encoding="utf-8") == "value\n1\n"
+    assert not (destination / "kaggle_dataset.zip").exists()
     assert not (destination / "download.zip").exists()
 
 

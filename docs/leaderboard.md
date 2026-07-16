@@ -2,10 +2,25 @@
 
 Matheel leaderboards rank algorithms across normalized pair-classification and retrieval datasets. The workflow is local and offline: users provide normalized datasets or source specs, Matheel scores them, then exports per-dataset and aggregate ranking tables.
 
-The Gradio app includes two leaderboard workflows:
+The Gradio app includes three leaderboard workflows:
 
+- **Ready-made Leaderboard** immediately displays a committed public snapshot covering every registered dataset preset and every built-in algorithm preset.
 - **Build Leaderboard** runs selected algorithm presets over uploaded normalized dataset ZIPs, shows all registered dataset presets, applies task-specific metric defaults, and exports standard leaderboard artifacts.
 - **Inspect Artifacts** loads a leaderboard JSON or ZIP artifact and renders the aggregate table, per-dataset table, static report, and downloadable report bundle.
+
+## Ready-made Public Snapshot
+
+Open **Reports → Ready-made Leaderboard** to see rankings without uploading data or starting a benchmark run. The snapshot covers all six registered public dataset presets as seven task views: five pair-classification datasets plus SOCO14 and IRPlag retrieval views. All eight built-in algorithm presets are included.
+
+This is a deterministic product demo, not a claim of full-corpus research performance. Each pair dataset uses a label-stratified sample capped at 128 pairs; each retrieval view is capped at 24 queries and 64 documents while retaining the selected queries' judged documents. It uses seed `7`, task-appropriate code languages, and the offline `static_hash` vector backend with 256 dimensions. The app displays these limits alongside the rankings.
+
+Maintainers can regenerate the committed JSON artifact from the public source presets:
+
+```bash
+python scripts/build_ready_leaderboard.py
+```
+
+The builder downloads and normalizes the registered sources, creates deterministic samples, scores every algorithm preset, and writes `gradio_app/assets/ready_leaderboard.json`. Use **Build Leaderboard** or the CLI with a custom manifest when full-corpus evaluation, another embedding backend, or different sampling is required.
 
 ## Manifest
 
@@ -98,7 +113,7 @@ The example is deterministic and offline. It uses synthetic normalized datasets 
 
 ## Gradio Build Leaderboard
 
-The Gradio **Reports → Build Leaderboard** workflow expects normalized dataset ZIP uploads. It does not bundle real datasets or credentials. The registered dataset table lists the current dataset presets, their task families, their source resolver, and the default evaluation plan:
+The Gradio **Reports → Build Leaderboard** workflow expects normalized dataset ZIP uploads. Unlike the ready-made sampled snapshot, custom runs do not fetch or bundle real datasets or credentials. The registered dataset table lists the current dataset presets, their task families, their source resolver, and the default evaluation plan:
 
 - Pair-classification datasets use pair metrics such as `f1`, `accuracy`, `auroc`, and `average_precision`.
 - Retrieval datasets use ranking metrics such as `mean_average_precision`, `mean_reciprocal_rank`, `ndcg_at_k`, `precision_at_k`, and `recall_at_k`.

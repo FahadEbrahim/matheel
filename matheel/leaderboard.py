@@ -220,7 +220,7 @@ def _evaluate_pair_leaderboard_run(manifest, dataset_config, algorithm_config):
     scored, metrics = evaluate_pair_dataset(
         dataset,
         threshold=float(_first_not_none(algorithm_config.get("threshold"), dataset_config.get("threshold"), 0.5)),
-        similarity_options=algorithm_config["similarity_options"],
+        similarity_options=_leaderboard_similarity_options(dataset_config, algorithm_config),
         algorithm=algorithm_config.get("algorithm_path"),
         algorithm_options=algorithm_config.get("algorithm_options"),
     )
@@ -250,7 +250,7 @@ def _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_conf
     scored, metrics = evaluate_retrieval_dataset(
         dataset,
         k=int(_first_not_none(algorithm_config.get("k"), dataset_config.get("k"), 10)),
-        similarity_options=algorithm_config["similarity_options"],
+        similarity_options=_leaderboard_similarity_options(dataset_config, algorithm_config),
         algorithm=algorithm_config.get("algorithm_path"),
         algorithm_options=algorithm_config.get("algorithm_options"),
     )
@@ -265,6 +265,13 @@ def _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_conf
         )
         for metric in manifest["retrieval_metrics"]
     ]
+
+
+def _leaderboard_similarity_options(dataset_config, algorithm_config):
+    return {
+        **algorithm_config["similarity_options"],
+        **dataset_config.get("similarity_options", {}),
+    }
 
 
 def _leaderboard_row(task_family, dataset_config, algorithm_config, metric, value, sample_count):
@@ -330,6 +337,7 @@ def _normalize_leaderboard_dataset(item, index=1, base_dir=None):
     payload.pop("task", None)
     payload.pop("task_family", None)
     payload.pop("kind", None)
+    similarity_options = dict(payload.pop("similarity_options", {}))
     name = str(payload.get("name") or f"{task_family}_dataset_{index}")
     payload["name"] = name
     payload["task_families"] = (task_family,)
@@ -340,6 +348,7 @@ def _normalize_leaderboard_dataset(item, index=1, base_dir=None):
         "spec": payload,
         "threshold": item.get("threshold"),
         "k": item.get("k"),
+        "similarity_options": similarity_options,
     }
 
 

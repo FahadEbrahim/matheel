@@ -1,0 +1,4212 @@
+{
+  "aggregate": [
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 5,
+      "mean_score": 0.7078125,
+      "median_score": 0.6875,
+      "metric": "accuracy",
+      "rank": 1,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 5,
+      "mean_score": 0.68125,
+      "median_score": 0.6875,
+      "metric": "accuracy",
+      "rank": 2,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 5,
+      "mean_score": 0.68125,
+      "median_score": 0.671875,
+      "metric": "accuracy",
+      "rank": 2,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 5,
+      "mean_score": 0.634375,
+      "median_score": 0.578125,
+      "metric": "accuracy",
+      "rank": 4,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 5,
+      "mean_score": 0.4984375,
+      "median_score": 0.5390625,
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 5,
+      "mean_score": 0.478125,
+      "median_score": 0.5,
+      "metric": "accuracy",
+      "rank": 6,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 5,
+      "mean_score": 0.4765625,
+      "median_score": 0.515625,
+      "metric": "accuracy",
+      "rank": 7,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 5,
+      "mean_score": 0.4546875,
+      "median_score": 0.5,
+      "metric": "accuracy",
+      "rank": 8,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 5,
+      "mean_score": 0.7466363572268625,
+      "median_score": 0.704833984375,
+      "metric": "auroc",
+      "rank": 1,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 5,
+      "mean_score": 0.7445820807531681,
+      "median_score": 0.7314453125,
+      "metric": "auroc",
+      "rank": 2,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 5,
+      "mean_score": 0.7423154206869239,
+      "median_score": 0.719482421875,
+      "metric": "auroc",
+      "rank": 3,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 5,
+      "mean_score": 0.736485605078725,
+      "median_score": 0.698974609375,
+      "metric": "auroc",
+      "rank": 4,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 5,
+      "mean_score": 0.7351649055539553,
+      "median_score": 0.7193603515625,
+      "metric": "auroc",
+      "rank": 5,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 5,
+      "mean_score": 0.7213825334821428,
+      "median_score": 0.710693359375,
+      "metric": "auroc",
+      "rank": 6,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 5,
+      "mean_score": 0.6788661074308755,
+      "median_score": 0.672607421875,
+      "metric": "auroc",
+      "rank": 7,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 5,
+      "mean_score": 0.6752092858942972,
+      "median_score": 0.6894009216589859,
+      "metric": "auroc",
+      "rank": 8,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 5,
+      "mean_score": 0.7758434116358421,
+      "median_score": 0.7501913247981334,
+      "metric": "average_precision",
+      "rank": 1,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 5,
+      "mean_score": 0.7751913428650271,
+      "median_score": 0.7326505640007483,
+      "metric": "average_precision",
+      "rank": 2,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 5,
+      "mean_score": 0.7730374155731103,
+      "median_score": 0.7490839658623487,
+      "metric": "average_precision",
+      "rank": 3,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 5,
+      "mean_score": 0.7719591787687496,
+      "median_score": 0.7568576748502717,
+      "metric": "average_precision",
+      "rank": 4,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 5,
+      "mean_score": 0.7633969213241152,
+      "median_score": 0.7094727169942896,
+      "metric": "average_precision",
+      "rank": 5,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 5,
+      "mean_score": 0.745278970827107,
+      "median_score": 0.716838188050789,
+      "metric": "average_precision",
+      "rank": 6,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 5,
+      "mean_score": 0.6954111123460163,
+      "median_score": 0.69745657628427,
+      "metric": "average_precision",
+      "rank": 7,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 5,
+      "mean_score": 0.68484791674822,
+      "median_score": 0.7044802802912479,
+      "metric": "average_precision",
+      "rank": 8,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 5,
+      "mean_score": 0.6570957853376644,
+      "median_score": 0.6262626262626262,
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 5,
+      "mean_score": 0.6552275825102655,
+      "median_score": 0.6407766990291262,
+      "metric": "f1",
+      "rank": 2,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 5,
+      "mean_score": 0.6279524199834177,
+      "median_score": 0.6666666666666667,
+      "metric": "f1",
+      "rank": 3,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 5,
+      "mean_score": 0.6260922092166901,
+      "median_score": 0.6595744680851063,
+      "metric": "f1",
+      "rank": 4,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 5,
+      "mean_score": 0.6222446418987392,
+      "median_score": 0.6666666666666666,
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 5,
+      "mean_score": 0.6178044641691685,
+      "median_score": 0.6666666666666666,
+      "metric": "f1",
+      "rank": 6,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 5,
+      "mean_score": 0.5707412937853459,
+      "median_score": 0.6021505376344085,
+      "metric": "f1",
+      "rank": 7,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 5,
+      "mean_score": 0.3455134718292613,
+      "median_score": 0.2702702702702703,
+      "metric": "f1",
+      "rank": 8,
+      "sample_count": 640,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 2,
+      "mean_score": 0.4861971639663393,
+      "median_score": 0.4861971639663393,
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 2,
+      "mean_score": 0.484009133828182,
+      "median_score": 0.484009133828182,
+      "metric": "mean_average_precision",
+      "rank": 2,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 2,
+      "mean_score": 0.46789295473157466,
+      "median_score": 0.46789295473157466,
+      "metric": "mean_average_precision",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 2,
+      "mean_score": 0.4678812607490513,
+      "median_score": 0.4678812607490513,
+      "metric": "mean_average_precision",
+      "rank": 4,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 2,
+      "mean_score": 0.4675716972816353,
+      "median_score": 0.4675716972816353,
+      "metric": "mean_average_precision",
+      "rank": 5,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 2,
+      "mean_score": 0.4663090541059761,
+      "median_score": 0.4663090541059761,
+      "metric": "mean_average_precision",
+      "rank": 6,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 2,
+      "mean_score": 0.46629849153388997,
+      "median_score": 0.46629849153388997,
+      "metric": "mean_average_precision",
+      "rank": 7,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 2,
+      "mean_score": 0.423693152955002,
+      "median_score": 0.423693152955002,
+      "metric": "mean_average_precision",
+      "rank": 8,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 2,
+      "mean_score": 0.4875399184340937,
+      "median_score": 0.4875399184340937,
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 2,
+      "mean_score": 0.48529709219334627,
+      "median_score": 0.48529709219334627,
+      "metric": "mean_reciprocal_rank",
+      "rank": 2,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 2,
+      "mean_score": 0.47108659642871853,
+      "median_score": 0.47108659642871853,
+      "metric": "mean_reciprocal_rank",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 2,
+      "mean_score": 0.46940774352553405,
+      "median_score": 0.46940774352553405,
+      "metric": "mean_reciprocal_rank",
+      "rank": 4,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 2,
+      "mean_score": 0.46916432428056115,
+      "median_score": 0.46916432428056115,
+      "metric": "mean_reciprocal_rank",
+      "rank": 5,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 2,
+      "mean_score": 0.467726812952353,
+      "median_score": 0.467726812952353,
+      "metric": "mean_reciprocal_rank",
+      "rank": 6,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 2,
+      "mean_score": 0.4676196888948147,
+      "median_score": 0.4676196888948147,
+      "metric": "mean_reciprocal_rank",
+      "rank": 7,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 2,
+      "mean_score": 0.4250831335221499,
+      "median_score": 0.4250831335221499,
+      "metric": "mean_reciprocal_rank",
+      "rank": 8,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 2,
+      "mean_score": 0.4881390949598624,
+      "median_score": 0.4881390949598624,
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 2,
+      "mean_score": 0.48697930624809116,
+      "median_score": 0.48697930624809116,
+      "metric": "ndcg_at_k",
+      "rank": 2,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 2,
+      "mean_score": 0.4786324953562618,
+      "median_score": 0.4786324953562618,
+      "metric": "ndcg_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 2,
+      "mean_score": 0.4729494056776412,
+      "median_score": 0.4729494056776412,
+      "metric": "ndcg_at_k",
+      "rank": 4,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 2,
+      "mean_score": 0.47268949508884917,
+      "median_score": 0.47268949508884917,
+      "metric": "ndcg_at_k",
+      "rank": 5,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 2,
+      "mean_score": 0.47246223082992017,
+      "median_score": 0.47246223082992017,
+      "metric": "ndcg_at_k",
+      "rank": 6,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 2,
+      "mean_score": 0.46730576162652904,
+      "median_score": 0.46730576162652904,
+      "metric": "ndcg_at_k",
+      "rank": 7,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 2,
+      "mean_score": 0.4453344632590881,
+      "median_score": 0.4453344632590881,
+      "metric": "ndcg_at_k",
+      "rank": 8,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 2,
+      "mean_score": 0.060416666666666674,
+      "median_score": 0.060416666666666674,
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 2,
+      "mean_score": 0.060416666666666674,
+      "median_score": 0.060416666666666674,
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 2,
+      "mean_score": 0.05833333333333334,
+      "median_score": 0.05833333333333334,
+      "metric": "precision_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 2,
+      "mean_score": 0.05833333333333334,
+      "median_score": 0.05833333333333334,
+      "metric": "precision_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 2,
+      "mean_score": 0.05833333333333334,
+      "median_score": 0.05833333333333334,
+      "metric": "precision_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 2,
+      "mean_score": 0.058333333333333334,
+      "median_score": 0.058333333333333334,
+      "metric": "precision_at_k",
+      "rank": 6,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 2,
+      "mean_score": 0.058333333333333334,
+      "median_score": 0.058333333333333334,
+      "metric": "precision_at_k",
+      "rank": 6,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 2,
+      "mean_score": 0.05625000000000001,
+      "median_score": 0.05625000000000001,
+      "metric": "precision_at_k",
+      "rank": 8,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Code-Aware",
+      "dataset_count": 2,
+      "mean_score": 0.5416666666666667,
+      "median_score": 0.5416666666666667,
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_count": 2,
+      "mean_score": 0.5416666666666667,
+      "median_score": 0.5416666666666667,
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "CodeBLEU",
+      "dataset_count": 2,
+      "mean_score": 0.5208333333333334,
+      "median_score": 0.5208333333333334,
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Embedding Only",
+      "dataset_count": 2,
+      "mean_score": 0.5208333333333334,
+      "median_score": 0.5208333333333334,
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "GST",
+      "dataset_count": 2,
+      "mean_score": 0.5208333333333334,
+      "median_score": 0.5208333333333334,
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Lexical Only",
+      "dataset_count": 2,
+      "mean_score": 0.5208333333333334,
+      "median_score": 0.5208333333333334,
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Winnowing",
+      "dataset_count": 2,
+      "mean_score": 0.5208333333333334,
+      "median_score": 0.5208333333333334,
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_name": "Balanced",
+      "dataset_count": 2,
+      "mean_score": 0.5,
+      "median_score": 0.5,
+      "metric": "recall_at_k",
+      "rank": 8,
+      "sample_count": 1704,
+      "task_family": "retrieval"
+    }
+  ],
+  "cards": {
+    "algorithms": [
+      {
+        "algorithm_kind": "builtin",
+        "algorithm_options": {},
+        "algorithm_path_name": "",
+        "card_type": "algorithm",
+        "fingerprint": {},
+        "name": "Balanced",
+        "package": "",
+        "package_version": "",
+        "schema_version": 1,
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "levenshtein": 0.3,
+            "semantic": 0.7
+          },
+          "k": null,
+          "static_vector_dim": 256,
+          "threshold": null,
+          "vector_backend": "static_hash"
+        }
+      },
+      {
+        "algorithm_kind": "builtin",
+        "algorithm_options": {},
+        "algorithm_path_name": "",
+        "card_type": "algorithm",
+        "fingerprint": {},
+        "name": "Lexical Only",
+        "package": "",
+        "package_version": "",
+        "schema_version": 1,
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "gst": 0.25,
+            "levenshtein": 0.5,
+            "winnowing": 0.25
+          },
+          "k": null,
+          "static_vector_dim": 256,
+          "threshold": null,
+          "vector_backend": "static_hash"
+        }
+      },
+      {
+        "algorithm_kind": "builtin",
+        "algorithm_options": {},
+        "algorithm_path_name": "",
+        "card_type": "algorithm",
+        "fingerprint": {},
+        "name": "Embedding Only",
+        "package": "",
+        "package_version": "",
+        "schema_version": 1,
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "semantic": 1.0
+          },
+          "k": null,
+          "static_vector_dim": 256,
+          "threshold": null,
+          "vector_backend": "static_hash"
+        }
+      },
+      {
+        "algorithm_kind": "builtin",
+        "algorithm_options": {},
+        "algorithm_path_name": "",
+        "card_type": "algorithm",
+        "fingerprint": {},
+        "name": "Code-Aware",
+        "package": "",
+        "package_version": "",
+        "schema_version": 1,
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.25,
+          "device": "cpu",
+          "feature_weights": {
+            "code_metric": 0.25,
+            "levenshtein": 0.25,
+            "semantic": 0.5
+          },
+          "k": null,
+          "static_vector_dim": 256,
+          "threshold": null,
+          "vector_backend": "static_hash"
+        }
+      },
+      {
+        "algorithm_kind": "builtin",
+        "algorithm_options": {},
+        "algorithm_path_name": "",
+        "card_type": "algorithm",
+        "fingerprint": {},
+        "name": "Jaro-Winkler",
+        "package": "",
+        "package_version": "",
+        "schema_version": 1,
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "jaro_winkler": 1.0
+          },
+          "k": null,
+          "static_vector_dim": 256,
+          "threshold": null,
+          "vector_backend": "static_hash"
+        }
+      },
+      {
+        "algorithm_kind": "builtin",
+        "algorithm_options": {},
+        "algorithm_path_name": "",
+        "card_type": "algorithm",
+        "fingerprint": {},
+        "name": "Winnowing",
+        "package": "",
+        "package_version": "",
+        "schema_version": 1,
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "winnowing": 1.0
+          },
+          "k": null,
+          "static_vector_dim": 256,
+          "threshold": null,
+          "vector_backend": "static_hash"
+        }
+      },
+      {
+        "algorithm_kind": "builtin",
+        "algorithm_options": {},
+        "algorithm_path_name": "",
+        "card_type": "algorithm",
+        "fingerprint": {},
+        "name": "GST",
+        "package": "",
+        "package_version": "",
+        "schema_version": 1,
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "gst": 1.0
+          },
+          "k": null,
+          "static_vector_dim": 256,
+          "threshold": null,
+          "vector_backend": "static_hash"
+        }
+      },
+      {
+        "algorithm_kind": "builtin",
+        "algorithm_options": {},
+        "algorithm_path_name": "",
+        "card_type": "algorithm",
+        "fingerprint": {},
+        "name": "CodeBLEU",
+        "package": "",
+        "package_version": "",
+        "schema_version": 1,
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 1.0,
+          "device": "cpu",
+          "feature_weights": {
+            "code_metric": 1.0
+          },
+          "k": null,
+          "static_vector_dim": 256,
+          "threshold": null,
+          "vector_backend": "static_hash"
+        }
+      }
+    ],
+    "datasets": [
+      {
+        "card_type": "dataset",
+        "counts": {
+          "files": 216,
+          "pairs": 128,
+          "positive_pairs": 64
+        },
+        "dataset_kind": "pair_classification",
+        "fingerprint": {
+          "file_count": 219,
+          "sha256": "9e8922008a5b6c4cdedbfc783964ab24e0046166c3a21683c217087c905f1b62",
+          "source_type": "directory",
+          "total_bytes": 806205
+        },
+        "license": "CC-BY-4.0",
+        "metadata": {
+          "benchmark_sample": {
+            "corpus_limit": 64,
+            "pair_limit": 128,
+            "query_limit": 24,
+            "sampled_pairs": 128,
+            "seed": 7,
+            "source_pairs": 911
+          },
+          "dataset_kind": "pair_classification",
+          "license": "CC-BY-4.0",
+          "name": "conplag",
+          "source_preset": "conplag",
+          "source_url": "https://zenodo.org/records/7332790",
+          "task_type": "plagiarism"
+        },
+        "name": "conplag",
+        "schema_version": 1,
+        "source": {
+          "identifier": "7332790",
+          "preset": "conplag",
+          "source": "zenodo",
+          "url": "https://zenodo.org/records/7332790"
+        },
+        "source_url": "https://zenodo.org/records/7332790",
+        "task_family": "pair",
+        "task_type": "plagiarism"
+      },
+      {
+        "card_type": "dataset",
+        "counts": {
+          "files": 45,
+          "pairs": 128,
+          "positive_pairs": 35
+        },
+        "dataset_kind": "pair_classification",
+        "fingerprint": {
+          "file_count": 48,
+          "sha256": "dfd20c00072ab89be6d2342103e2310df610ebe177beab39776a441733d9c190",
+          "source_type": "directory",
+          "total_bytes": 865364
+        },
+        "license": "CC-BY-4.0",
+        "metadata": {
+          "benchmark_sample": {
+            "corpus_limit": 64,
+            "pair_limit": 128,
+            "query_limit": 24,
+            "sampled_pairs": 128,
+            "seed": 7,
+            "source_pairs": 350
+          },
+          "dataset_kind": "pair_classification",
+          "license": "CC-BY-4.0",
+          "name": "criminal_minds",
+          "source_preset": "criminal_minds",
+          "source_url": "https://zenodo.org/records/19115559",
+          "task_type": "plagiarism"
+        },
+        "name": "criminal_minds",
+        "schema_version": 1,
+        "source": {
+          "identifier": "19115559",
+          "preset": "criminal_minds",
+          "source": "zenodo",
+          "url": "https://zenodo.org/records/19115559"
+        },
+        "source_url": "https://zenodo.org/records/19115559",
+        "task_family": "pair",
+        "task_type": "plagiarism"
+      },
+      {
+        "card_type": "dataset",
+        "counts": {
+          "files": 60,
+          "pairs": 128,
+          "positive_pairs": 64
+        },
+        "dataset_kind": "pair_classification",
+        "fingerprint": {
+          "file_count": 63,
+          "sha256": "b66270e2bf3ce4a26214afa713dc622d626a57ed173627d454087e6424fd242f",
+          "source_type": "directory",
+          "total_bytes": 38901
+        },
+        "license": "GPL-3.0",
+        "metadata": {
+          "benchmark_sample": {
+            "corpus_limit": 64,
+            "pair_limit": 128,
+            "query_limit": 24,
+            "sampled_pairs": 128,
+            "seed": 7,
+            "source_pairs": 470
+          },
+          "dataset_kind": "pair_classification",
+          "license": "GPL-3.0",
+          "name": "ipca",
+          "source_preset": "ipca",
+          "source_url": "https://github.com/humsha/IPCA",
+          "task_type": "plagiarism"
+        },
+        "name": "ipca",
+        "schema_version": 1,
+        "source": {
+          "identifier": "humsha/IPCA",
+          "preset": "ipca",
+          "source": "github",
+          "url": "https://github.com/humsha/IPCA"
+        },
+        "source_url": "https://github.com/humsha/IPCA",
+        "task_family": "pair",
+        "task_type": "plagiarism"
+      },
+      {
+        "card_type": "dataset",
+        "counts": {
+          "files": 135,
+          "pairs": 128,
+          "positive_pairs": 64
+        },
+        "dataset_kind": "pair_classification",
+        "fingerprint": {
+          "file_count": 138,
+          "sha256": "d2fb324801cc5eeaf31253b0813ef4bd906b2d7882338e2b6f41ae794515ee67",
+          "source_type": "directory",
+          "total_bytes": 112218
+        },
+        "license": "Apache-2.0",
+        "metadata": {
+          "benchmark_sample": {
+            "corpus_limit": 64,
+            "pair_limit": 128,
+            "query_limit": 24,
+            "sampled_pairs": 128,
+            "seed": 7,
+            "source_pairs": 460
+          },
+          "dataset_kind": "pair_classification",
+          "license": "Apache-2.0",
+          "name": "irplag_pair",
+          "source_preset": "irplag",
+          "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+          "task_type": "plagiarism"
+        },
+        "name": "irplag_pair",
+        "schema_version": 1,
+        "source": {
+          "identifier": "oscarkarnalim/sourcecodeplagiarismdataset",
+          "preset": "irplag",
+          "source": "github",
+          "url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset"
+        },
+        "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+        "task_family": "pair",
+        "task_type": "plagiarism"
+      },
+      {
+        "card_type": "dataset",
+        "counts": {
+          "documents": 7,
+          "files": 31,
+          "qrels": 24,
+          "queries": 24
+        },
+        "dataset_kind": "retrieval",
+        "fingerprint": {
+          "file_count": 36,
+          "sha256": "d28ec578ca90d25ef2c69ba9d34b6485c96c635f66a60a68ca2a77429919d2a0",
+          "source_type": "directory",
+          "total_bytes": 28670
+        },
+        "license": "Apache-2.0",
+        "metadata": {
+          "benchmark_sample": {
+            "corpus_limit": 64,
+            "pair_limit": 128,
+            "query_limit": 24,
+            "sampled_documents": 7,
+            "sampled_queries": 24,
+            "seed": 7,
+            "source_documents": 7,
+            "source_queries": 460
+          },
+          "dataset_kind": "retrieval",
+          "license": "Apache-2.0",
+          "name": "irplag_retrieval",
+          "source_preset": "irplag",
+          "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+          "task_type": "plagiarism"
+        },
+        "name": "irplag_retrieval",
+        "schema_version": 1,
+        "source": {
+          "identifier": "oscarkarnalim/sourcecodeplagiarismdataset",
+          "preset": "irplag",
+          "source": "github",
+          "url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset"
+        },
+        "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+        "task_family": "retrieval",
+        "task_type": "plagiarism"
+      },
+      {
+        "card_type": "dataset",
+        "counts": {
+          "documents": 64,
+          "files": 88,
+          "qrels": 29,
+          "queries": 24
+        },
+        "dataset_kind": "retrieval",
+        "fingerprint": {
+          "file_count": 93,
+          "sha256": "9eeb48e104af02df1dfafec0908e4724602b56bb59c66ba39ad4988e8d5a30c2",
+          "source_type": "directory",
+          "total_bytes": 194954
+        },
+        "license": "unknown",
+        "metadata": {
+          "benchmark_sample": {
+            "corpus_limit": 64,
+            "pair_limit": 128,
+            "query_limit": 24,
+            "sampled_documents": 64,
+            "sampled_queries": 24,
+            "seed": 7,
+            "source_documents": 469,
+            "source_queries": 464
+          },
+          "dataset_kind": "retrieval",
+          "license": "unknown",
+          "name": "soco14",
+          "source_preset": "soco14",
+          "source_url": "https://zenodo.org/records/7433031",
+          "task_type": "plagiarism"
+        },
+        "name": "soco14",
+        "schema_version": 1,
+        "source": {
+          "identifier": "7433031",
+          "preset": "soco14",
+          "source": "zenodo",
+          "url": "https://zenodo.org/records/7433031"
+        },
+        "source_url": "https://zenodo.org/records/7433031",
+        "task_family": "retrieval",
+        "task_type": "plagiarism"
+      },
+      {
+        "card_type": "dataset",
+        "counts": {
+          "files": 142,
+          "pairs": 128,
+          "positive_pairs": 64
+        },
+        "dataset_kind": "pair_classification",
+        "fingerprint": {
+          "file_count": 145,
+          "sha256": "2807e39d8966c680d3c7a60532f3363999096fb051afda0e8e8a4fd05059d486",
+          "source_type": "directory",
+          "total_bytes": 147006
+        },
+        "license": "unknown",
+        "metadata": {
+          "benchmark_sample": {
+            "corpus_limit": 64,
+            "pair_limit": 128,
+            "query_limit": 24,
+            "sampled_pairs": 128,
+            "seed": 7,
+            "source_pairs": 293
+          },
+          "dataset_kind": "pair_classification",
+          "license": "unknown",
+          "name": "student_code_similarity",
+          "source_preset": "student_code_similarity",
+          "source_url": "https://www.kaggle.com/datasets/ehsankhani/student-code-similarity-and-plagiarism-labels",
+          "task_type": "plagiarism"
+        },
+        "name": "student_code_similarity",
+        "schema_version": 1,
+        "source": {
+          "identifier": "ehsankhani/student-code-similarity-and-plagiarism-labels",
+          "preset": "student_code_similarity",
+          "source": "kaggle",
+          "url": "https://www.kaggle.com/datasets/ehsankhani/student-code-similarity-and-plagiarism-labels"
+        },
+        "source_url": "https://www.kaggle.com/datasets/ehsankhani/student-code-similarity-and-plagiarism-labels",
+        "task_family": "pair",
+        "task_type": "plagiarism"
+      }
+    ]
+  },
+  "manifest": {
+    "algorithms": [
+      {
+        "algorithm_options": {},
+        "algorithm_path": null,
+        "k": null,
+        "name": "Balanced",
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "levenshtein": 0.3,
+            "semantic": 0.7
+          },
+          "static_vector_dim": 256,
+          "vector_backend": "static_hash"
+        },
+        "threshold": null
+      },
+      {
+        "algorithm_options": {},
+        "algorithm_path": null,
+        "k": null,
+        "name": "Lexical Only",
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "gst": 0.25,
+            "levenshtein": 0.5,
+            "winnowing": 0.25
+          },
+          "static_vector_dim": 256,
+          "vector_backend": "static_hash"
+        },
+        "threshold": null
+      },
+      {
+        "algorithm_options": {},
+        "algorithm_path": null,
+        "k": null,
+        "name": "Embedding Only",
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "semantic": 1.0
+          },
+          "static_vector_dim": 256,
+          "vector_backend": "static_hash"
+        },
+        "threshold": null
+      },
+      {
+        "algorithm_options": {},
+        "algorithm_path": null,
+        "k": null,
+        "name": "Code-Aware",
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.25,
+          "device": "cpu",
+          "feature_weights": {
+            "code_metric": 0.25,
+            "levenshtein": 0.25,
+            "semantic": 0.5
+          },
+          "static_vector_dim": 256,
+          "vector_backend": "static_hash"
+        },
+        "threshold": null
+      },
+      {
+        "algorithm_options": {},
+        "algorithm_path": null,
+        "k": null,
+        "name": "Jaro-Winkler",
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "jaro_winkler": 1.0
+          },
+          "static_vector_dim": 256,
+          "vector_backend": "static_hash"
+        },
+        "threshold": null
+      },
+      {
+        "algorithm_options": {},
+        "algorithm_path": null,
+        "k": null,
+        "name": "Winnowing",
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "winnowing": 1.0
+          },
+          "static_vector_dim": 256,
+          "vector_backend": "static_hash"
+        },
+        "threshold": null
+      },
+      {
+        "algorithm_options": {},
+        "algorithm_path": null,
+        "k": null,
+        "name": "GST",
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 0.0,
+          "device": "cpu",
+          "feature_weights": {
+            "gst": 1.0
+          },
+          "static_vector_dim": 256,
+          "vector_backend": "static_hash"
+        },
+        "threshold": null
+      },
+      {
+        "algorithm_options": {},
+        "algorithm_path": null,
+        "k": null,
+        "name": "CodeBLEU",
+        "similarity_options": {
+          "code_metric": "codebleu",
+          "code_metric_weight": 1.0,
+          "device": "cpu",
+          "feature_weights": {
+            "code_metric": 1.0
+          },
+          "static_vector_dim": 256,
+          "vector_backend": "static_hash"
+        },
+        "threshold": null
+      }
+    ],
+    "datasets": [
+      {
+        "k": null,
+        "name": "conplag",
+        "similarity_options": {
+          "code_language": "java"
+        },
+        "spec": {
+          "identifier": "7332790",
+          "name": "conplag",
+          "preset": "conplag",
+          "source": "zenodo",
+          "task_families": [
+            "pair"
+          ],
+          "url": "https://zenodo.org/records/7332790"
+        },
+        "task_family": "pair",
+        "threshold": 0.5
+      },
+      {
+        "k": null,
+        "name": "criminal_minds",
+        "similarity_options": {
+          "code_language": "java"
+        },
+        "spec": {
+          "identifier": "19115559",
+          "name": "criminal_minds",
+          "preset": "criminal_minds",
+          "source": "zenodo",
+          "task_families": [
+            "pair"
+          ],
+          "url": "https://zenodo.org/records/19115559"
+        },
+        "task_family": "pair",
+        "threshold": 0.5
+      },
+      {
+        "k": null,
+        "name": "ipca",
+        "similarity_options": {
+          "code_language": "cpp"
+        },
+        "spec": {
+          "identifier": "humsha/IPCA",
+          "name": "ipca",
+          "preset": "ipca",
+          "source": "github",
+          "task_families": [
+            "pair"
+          ],
+          "url": "https://github.com/humsha/IPCA"
+        },
+        "task_family": "pair",
+        "threshold": 0.5
+      },
+      {
+        "k": null,
+        "name": "irplag_pair",
+        "similarity_options": {
+          "code_language": "java"
+        },
+        "spec": {
+          "identifier": "oscarkarnalim/sourcecodeplagiarismdataset",
+          "name": "irplag_pair",
+          "preset": "irplag",
+          "source": "github",
+          "task_families": [
+            "pair"
+          ],
+          "url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset"
+        },
+        "task_family": "pair",
+        "threshold": 0.5
+      },
+      {
+        "k": 10,
+        "name": "irplag_retrieval",
+        "similarity_options": {
+          "code_language": "java"
+        },
+        "spec": {
+          "identifier": "oscarkarnalim/sourcecodeplagiarismdataset",
+          "name": "irplag_retrieval",
+          "preset": "irplag",
+          "source": "github",
+          "task_families": [
+            "retrieval"
+          ],
+          "url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset"
+        },
+        "task_family": "retrieval",
+        "threshold": null
+      },
+      {
+        "k": 10,
+        "name": "soco14",
+        "similarity_options": {
+          "code_language": "cpp"
+        },
+        "spec": {
+          "identifier": "7433031",
+          "name": "soco14",
+          "preset": "soco14",
+          "source": "zenodo",
+          "task_families": [
+            "retrieval"
+          ],
+          "url": "https://zenodo.org/records/7433031"
+        },
+        "task_family": "retrieval",
+        "threshold": null
+      },
+      {
+        "k": null,
+        "name": "student_code_similarity",
+        "similarity_options": {
+          "code_language": "python"
+        },
+        "spec": {
+          "identifier": "ehsankhani/student-code-similarity-and-plagiarism-labels",
+          "name": "student_code_similarity",
+          "preset": "student_code_similarity",
+          "source": "kaggle",
+          "task_families": [
+            "pair"
+          ],
+          "url": "https://www.kaggle.com/datasets/ehsankhani/student-code-similarity-and-plagiarism-labels"
+        },
+        "task_family": "pair",
+        "threshold": 0.5
+      }
+    ],
+    "name": "Matheel Ready-made Public Leaderboard",
+    "pair_metrics": [
+      "f1",
+      "accuracy",
+      "auroc",
+      "average_precision"
+    ],
+    "retrieval_metrics": [
+      "mean_average_precision",
+      "mean_reciprocal_rank",
+      "ndcg_at_k",
+      "precision_at_k",
+      "recall_at_k"
+    ],
+    "schema_version": 1,
+    "seed": 7
+  },
+  "metadata": {
+    "benchmark_profile": {
+      "algorithm_presets": [
+        "Balanced",
+        "Lexical Only",
+        "Embedding Only",
+        "Code-Aware",
+        "Jaro-Winkler",
+        "Winnowing",
+        "GST",
+        "CodeBLEU"
+      ],
+      "dataset_presets": [
+        "conplag",
+        "criminal_minds",
+        "ipca",
+        "irplag",
+        "soco14",
+        "student_code_similarity"
+      ],
+      "dataset_task_count": 7,
+      "generated_at": "2026-07-16T17:03:12+00:00",
+      "pair_sample_limit": 128,
+      "profile": "sampled_public_snapshot",
+      "retrieval_corpus_limit": 64,
+      "retrieval_query_limit": 24,
+      "seed": 7,
+      "static_vector_dim": 256,
+      "vector_backend": "static_hash"
+    },
+    "name": "Matheel Ready-made Public Leaderboard",
+    "pair_metrics": [
+      "f1",
+      "accuracy",
+      "auroc",
+      "average_precision"
+    ],
+    "retrieval_metrics": [
+      "mean_average_precision",
+      "mean_reciprocal_rank",
+      "ndcg_at_k",
+      "precision_at_k",
+      "recall_at_k"
+    ],
+    "schema_version": 1,
+    "seed": 7
+  },
+  "per_dataset": [
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7109375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.6875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.671875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.6640625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.5234375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.515625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.5,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.5,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.75341796875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.7518310546875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.74609375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.710693359375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.6943359375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.68359375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.6751708984375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.6329345703125,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7568576748502717,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.7501913247981334,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.7490839658623487,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.716838188050789,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.7094727169942896,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.7044802802912479,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.69745657628427,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.6881926897189472,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.6736842105263158,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.6666666666666666,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.6666666666666666,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.6595744680851063,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.6407766990291262,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.574468085106383,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.5531914893617021,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "conplag",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.5274725274725275,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.9140625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.890625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.8515625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.8046875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.2734375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.2734375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.2734375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.2734375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.9674347158218122,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.9585253456221196,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.9514592933947766,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.9348694316436247,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.9281105990783404,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.9142857142857137,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.8230414746543776,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "auroc",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.6894009216589859,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.9621114778900307,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.9521990356227357,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.9520640732265446,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.9279852488185821,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.9265109893880616,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.8978228694826491,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.7799214664690306,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "average_precision",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.6156912326537285,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.8135593220338984,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.7499999999999999,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.6274509803921569,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.4444444444444445,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.4294478527607362,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.4294478527607362,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.4294478527607362,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "criminal_minds",
+      "dataset_source": "zenodo",
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.4294478527607362,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7109375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7109375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.6875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.5625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.5625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.5,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.5,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.4921875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7314453125,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.730224609375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.719482421875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.719482421875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.7193603515625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.7109375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.704833984375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.672607421875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7998428400706629,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.7926967435339002,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.7916713877086519,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.7895330579217847,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.7895168308762787,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.7746851430113617,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.7718224475801972,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.7174157090998402,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.6666666666666666,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.6666666666666666,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.656084656084656,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.6363636363636365,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.6262626262626262,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.6021505376344085,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.5918367346938775,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "ipca",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.2222222222222222,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.6015625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.59375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.578125,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.578125,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.5625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.5625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.5625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "accuracy",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.5,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.6995849609375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.681884765625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.665283203125,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.64501953125,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.634765625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.623291015625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.60400390625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "auroc",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.5458984375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7469214184197887,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.7287596311467154,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.6981018276706048,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.6897697807190576,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.6784288381525189,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.6660539783541585,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.6557264967855821,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "average_precision",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.6021717642135509,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7150837988826816,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.7032967032967034,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.7011494252873562,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.6666666666666666,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.6585365853658537,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.6164383561643836,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.4615384615384615,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "github",
+      "metric": "f1",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.2702702702702703,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "accuracy",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.6875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "accuracy",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.609375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "accuracy",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.5625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "accuracy",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.5390625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "accuracy",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.53125,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "accuracy",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.5234375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "accuracy",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.515625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "accuracy",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.5,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "auroc",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.74853515625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "auroc",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.7353515625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "auroc",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.698974609375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "auroc",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.6669921875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "auroc",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.6640625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "auroc",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.6148681640625,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "auroc",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.591796875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "auroc",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.559326171875,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "average_precision",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7326505640007483,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "average_precision",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.7300738590023756,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "average_precision",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.7084010591212848,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "average_precision",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.6876114168502041,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "average_precision",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.6813221568051532,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "average_precision",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.6631205248238571,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "average_precision",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.6254462326482182,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "average_precision",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.6162078315227816,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 128,
+      "score": 0.7183098591549296,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "f1",
+      "rank": 2,
+      "sample_count": 128,
+      "score": 0.6775956284153005,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "f1",
+      "rank": 3,
+      "sample_count": 128,
+      "score": 0.6702702702702702,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "f1",
+      "rank": 4,
+      "sample_count": 128,
+      "score": 0.6666666666666667,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "f1",
+      "rank": 5,
+      "sample_count": 128,
+      "score": 0.6595744680851063,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "f1",
+      "rank": 6,
+      "sample_count": 128,
+      "score": 0.609375,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "f1",
+      "rank": 7,
+      "sample_count": 128,
+      "score": 0.5714285714285714,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "student_code_similarity",
+      "dataset_source": "kaggle",
+      "metric": "f1",
+      "rank": 8,
+      "sample_count": 128,
+      "score": 0.2631578947368421,
+      "task_family": "pair"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_average_precision",
+      "rank": 7,
+      "sample_count": 168,
+      "score": 0.6770833333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_average_precision",
+      "rank": 8,
+      "sample_count": 168,
+      "score": 0.5736111111111111,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_reciprocal_rank",
+      "rank": 7,
+      "sample_count": 168,
+      "score": 0.6770833333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "mean_reciprocal_rank",
+      "rank": 8,
+      "sample_count": 168,
+      "score": 0.5736111111111111,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "ndcg_at_k",
+      "rank": 7,
+      "sample_count": 168,
+      "score": 0.6846115232530581,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "ndcg_at_k",
+      "rank": 8,
+      "sample_count": 168,
+      "score": 0.6048652337004853,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.07083333333333335,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.07083333333333335,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.07083333333333335,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.07083333333333335,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.07083333333333335,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.07083333333333335,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.07083333333333335,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.07083333333333335,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "github",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 168,
+      "score": 0.7083333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 1536,
+      "score": 0.27377519479889284,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_average_precision",
+      "rank": 2,
+      "sample_count": 1536,
+      "score": 0.2640609945993451,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_average_precision",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.2596849343230307,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_average_precision",
+      "rank": 4,
+      "sample_count": 1536,
+      "score": 0.2555347748786189,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_average_precision",
+      "rank": 5,
+      "sample_count": 1536,
+      "score": 0.22745257612981598,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_average_precision",
+      "rank": 6,
+      "sample_count": 1536,
+      "score": 0.22742918816476917,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_average_precision",
+      "rank": 7,
+      "sample_count": 1536,
+      "score": 0.22681006122993716,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_average_precision",
+      "rank": 8,
+      "sample_count": 1536,
+      "score": 0.22426364973444654,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 1536,
+      "score": 0.27655515593318863,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_reciprocal_rank",
+      "rank": 2,
+      "sample_count": 1536,
+      "score": 0.266746503534854,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_reciprocal_rank",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.26226085105335917,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_reciprocal_rank",
+      "rank": 4,
+      "sample_count": 1536,
+      "score": 0.2583702925713727,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_reciprocal_rank",
+      "rank": 5,
+      "sample_count": 1536,
+      "score": 0.2338398595241037,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_reciprocal_rank",
+      "rank": 6,
+      "sample_count": 1536,
+      "score": 0.23048215371773473,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_reciprocal_rank",
+      "rank": 7,
+      "sample_count": 1536,
+      "score": 0.2299953152277889,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "mean_reciprocal_rank",
+      "rank": 8,
+      "sample_count": 1536,
+      "score": 0.22690604445629606,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 1536,
+      "score": 0.28580369281769086,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "ndcg_at_k",
+      "rank": 2,
+      "sample_count": 1536,
+      "score": 0.2679448565863914,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "ndcg_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.2656252791628489,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "ndcg_at_k",
+      "rank": 4,
+      "sample_count": 1536,
+      "score": 0.2607674669246403,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "ndcg_at_k",
+      "rank": 5,
+      "sample_count": 1536,
+      "score": 0.2489316573791902,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "ndcg_at_k",
+      "rank": 6,
+      "sample_count": 1536,
+      "score": 0.23756547802194908,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "ndcg_at_k",
+      "rank": 7,
+      "sample_count": 1536,
+      "score": 0.23659112832650694,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "ndcg_at_k",
+      "rank": 8,
+      "sample_count": 1536,
+      "score": 0.2262781899197247,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "precision_at_k",
+      "rank": 1,
+      "sample_count": 1536,
+      "score": 0.05000000000000001,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "precision_at_k",
+      "rank": 2,
+      "sample_count": 1536,
+      "score": 0.049999999999999996,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "precision_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.04583333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "precision_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.04583333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "precision_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.04583333333333334,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "precision_at_k",
+      "rank": 6,
+      "sample_count": 1536,
+      "score": 0.04583333333333333,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "precision_at_k",
+      "rank": 6,
+      "sample_count": 1536,
+      "score": 0.04583333333333333,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "precision_at_k",
+      "rank": 8,
+      "sample_count": 1536,
+      "score": 0.04166666666666668,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Code-Aware",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 1536,
+      "score": 0.375,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Jaro-Winkler",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "recall_at_k",
+      "rank": 1,
+      "sample_count": 1536,
+      "score": 0.375,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "CodeBLEU",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.3333333333333333,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Embedding Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.3333333333333333,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "GST",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.3333333333333333,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Lexical Only",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.3333333333333333,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Winnowing",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "recall_at_k",
+      "rank": 3,
+      "sample_count": 1536,
+      "score": 0.3333333333333333,
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_kind": "builtin",
+      "algorithm_name": "Balanced",
+      "dataset_name": "soco14",
+      "dataset_source": "zenodo",
+      "metric": "recall_at_k",
+      "rank": 8,
+      "sample_count": 1536,
+      "score": 0.2916666666666667,
+      "task_family": "retrieval"
+    }
+  ],
+  "schema_version": 1
+}

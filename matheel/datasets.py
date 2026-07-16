@@ -2213,20 +2213,27 @@ def _find_conplag_versions_root(source_root):
     return None
 
 
-def _find_conplag_submission_file(versions_root, problem, submission):
+def _index_conplag_submission_files(versions_root):
+    base = _coerce_path(versions_root)
+    files_by_stem = {}
+    for path in sorted(candidate for candidate in base.rglob("*") if candidate.is_file()):
+        files_by_stem.setdefault(path.stem, []).append(path)
+    return files_by_stem
+
+
+def _find_conplag_submission_file(versions_root, problem, submission, files_by_stem=None):
     base = _coerce_path(versions_root)
     problem_text = str(problem).strip()
     submission_text = str(submission).strip()
-    search_roots = []
+    index = files_by_stem if files_by_stem is not None else _index_conplag_submission_files(base)
+    matches = index.get(submission_text, ())
     if problem_text:
-        search_roots.append(base / f"version_{problem_text}")
-    search_roots.append(base)
-    for search_root in search_roots:
-        if not search_root.exists():
-            continue
-        matches = sorted(search_root.rglob(f"{submission_text}.*"))
-        if matches:
-            return matches[0]
+        problem_root = base / f"version_{problem_text}"
+        for match in matches:
+            if _is_relative_to(match, problem_root):
+                return match
+    if matches:
+        return matches[0]
     return None
 
 
@@ -2251,10 +2258,21 @@ def _adapt_conplag_pair_dataset(source_root, destination, dataset_name=None, **o
     files = []
     file_ids_by_key = {}
     pairs = []
+    files_by_stem = _index_conplag_submission_files(versions_root)
     for row in labels.to_dict(orient="records"):
         problem = row.get(problem_col) if problem_col else ""
-        left_path = _find_conplag_submission_file(versions_root, problem, row[left_col])
-        right_path = _find_conplag_submission_file(versions_root, problem, row[right_col])
+        left_path = _find_conplag_submission_file(
+            versions_root,
+            problem,
+            row[left_col],
+            files_by_stem=files_by_stem,
+        )
+        right_path = _find_conplag_submission_file(
+            versions_root,
+            problem,
+            row[right_col],
+            files_by_stem=files_by_stem,
+        )
         if left_path is None or right_path is None:
             continue
         left_id = _add_tabular_file(
@@ -2805,20 +2823,25 @@ def _resolve_kaggle_dataset_source(identifier, destination, revision="main", tok
         from kaggle.api.kaggle_api_extended import KaggleApi
     except ImportError:
         kaggle_binary = shutil.which("kaggle")
-        if kaggle_binary is None:
-            raise ImportError("Kaggle dataset resolution requires the optional Kaggle API or CLI.")
-        subprocess.run(
-            [
-                kaggle_binary,
-                "datasets",
-                "download",
-                "-d",
-                str(identifier),
-                "-p",
-                os.fspath(destination),
-            ],
-            check=True,
-        )
+        if kaggle_binary is not None:
+            subprocess.run(
+                [
+                    kaggle_binary,
+                    "datasets",
+                    "download",
+                    "-d",
+                    str(identifier),
+                    "-p",
+                    os.fspath(destination),
+                ],
+                check=True,
+            )
+        else:
+            dataset_path = urllib.parse.quote(str(identifier).strip(), safe="/")
+            _download_url_to_file(
+                f"https://www.kaggle.com/api/v1/datasets/download/{dataset_path}",
+                destination / "kaggle_dataset.zip",
+            )
         return _extract_downloaded_archives(destination)
 
     api = KaggleApi()

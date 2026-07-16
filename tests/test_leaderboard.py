@@ -251,6 +251,34 @@ def test_leaderboard_manifest_preserves_remote_dataset_identifiers(tmp_path):
     assert spec["destination"] == str((config_dir / "cache" / "remote").resolve())
 
 
+def test_leaderboard_manifest_keeps_dataset_specific_similarity_options(tmp_path):
+    pair_root = _write_pair_fixture(tmp_path)
+
+    manifest = normalize_leaderboard_manifest(
+        {
+            "datasets": [
+                {
+                    "name": "python_pairs",
+                    "task": "pair",
+                    "path": str(pair_root),
+                    "similarity_options": {
+                        "code_language": "python",
+                        "vector_backend": "static",
+                    },
+                }
+            ],
+            "algorithms": ["CodeBLEU"],
+        }
+    )
+
+    dataset = manifest["datasets"][0]
+    assert dataset["similarity_options"] == {
+        "code_language": "python",
+        "vector_backend": "static",
+    }
+    assert "similarity_options" not in dataset["spec"]
+
+
 def test_leaderboard_payload_and_html_escape_values(tmp_path):
     pair_root = _write_pair_fixture(tmp_path)
     exact_path, _ = _write_algorithm_fixtures(tmp_path)

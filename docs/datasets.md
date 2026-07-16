@@ -152,7 +152,7 @@ Built-in generic source resolvers:
 | `github` | Download a repository archive by `owner/repo`. | Public repositories need no token. |
 | `zenodo` | Download files for a Zenodo record id. | Archives are extracted with path traversal checks. |
 | `huggingface` | Resolve a Hugging Face dataset repository. | Requires optional Hugging Face Hub support. |
-| `kaggle` | Download a Kaggle dataset. | Requires optional Kaggle API or CLI credentials. |
+| `kaggle` | Download a Kaggle dataset. | Uses the API/CLI when installed and otherwise supports Kaggle's anonymous public download endpoint. Private datasets still require Kaggle credentials. |
 
 Source resolvers only locate or download data; users are responsible for dataset access, credentials, licenses, and source terms.
 

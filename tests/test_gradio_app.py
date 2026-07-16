@@ -32,6 +32,7 @@ EXPECTED_GRADIO_TABS = (
     "Dataset Map",
     "Pair Explanation",
     "Reports",
+    "Ready-made Leaderboard",
     "Build Leaderboard",
     "Inspect Artifacts",
 )
@@ -43,7 +44,7 @@ EXPECTED_PRIMARY_ACTIONS = {
     "Run Dataset Evaluation": "evaluate_dataset_gradio_with_state",
     "Generate Map": "generate_dataset_map_gradio",
     "Generate Explanation": "generate_pair_explanation_gradio",
-    "Run Ready Leaderboard": "run_ready_leaderboard_gradio",
+    "Run Custom Leaderboard": "run_ready_leaderboard_gradio",
     "Inspect Leaderboard": "inspect_leaderboard_artifacts_gradio",
 }
 
@@ -960,6 +961,33 @@ def test_ready_leaderboard_registered_datasets_frame_lists_all_presets():
     assert set(frame["Preset"]) == set(available_dataset_presets())
     assert "Evaluation Metrics" in frame.columns
     assert "Sampling Default" in frame.columns
+
+
+def test_ready_made_leaderboard_covers_all_presets_and_algorithms():
+    payload = gradio_app.load_ready_made_leaderboard_payload()
+    report = gradio_app._leaderboard_report_from_payload(payload)
+    profile = report["metadata"]["benchmark_profile"]
+    coverage = gradio_app.ready_made_leaderboard_coverage_frame(report)
+
+    assert set(profile["dataset_presets"]) == {
+        "conplag",
+        "criminal_minds",
+        "ipca",
+        "irplag",
+        "soco14",
+        "student_code_similarity",
+    }
+    assert set(profile["dataset_presets"]).issubset(set(available_dataset_presets()))
+    assert set(profile["algorithm_presets"]) == set(
+        gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES
+    )
+    assert profile["dataset_task_count"] == 7
+    assert len(coverage) == 7
+    assert set(report["per_dataset"]["algorithm_name"]) == set(
+        gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES
+    )
+    assert set(report["aggregate"]["task_family"]) == {"pair", "retrieval"}
+    assert "static_hash" in gradio_app.ready_made_leaderboard_summary_html(report)
 
 
 def test_ready_leaderboard_rejects_empty_algorithm_selection():
