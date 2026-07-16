@@ -1,6 +1,8 @@
 name: Real Model Integration Tests
 
 on:
+  schedule:
+    - cron: "0 5 * * 1"
   workflow_dispatch:
     inputs:
       python-version:
@@ -23,7 +25,7 @@ concurrency:
 
 jobs:
   integration:
-    name: Python ${{ inputs.python-version }} real models
+    name: Python ${{ inputs.python-version || '3.12' }} real models
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -38,21 +40,21 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6.2.0
         with:
-          python-version: ${{ inputs.python-version }}
+          python-version: ${{ inputs.python-version || '3.12' }}
           cache: pip
 
       - name: Cache Hugging Face models
         uses: actions/cache@v5.0.5
         with:
           path: ~/.cache/huggingface
-          key: hf-models-${{ runner.os }}-py${{ inputs.python-version }}-${{ hashFiles('tests/test_real_models.py') }}
+          key: hf-models-${{ runner.os }}-py${{ inputs.python-version || '3.12' }}-${{ hashFiles('tests/test_real_models.py') }}
           restore-keys: |
-            hf-models-${{ runner.os }}-py${{ inputs.python-version }}-
+            hf-models-${{ runner.os }}-py${{ inputs.python-version || '3.12' }}-
             hf-models-${{ runner.os }}-
 
       - name: Document integration requirements
         run: |
-          echo "This manual workflow installs matheel[all,dev]."
+          echo "This workflow installs matheel[all,dev]."
           echo "It may download public Hugging Face model weights and cache them under ${HF_HOME}."
           echo "The default pull-request workflow does not run these tests."
 
