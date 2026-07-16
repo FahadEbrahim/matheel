@@ -5,7 +5,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from ._path_utils import is_unsafe_relative_path, relative_path_to_posix
+from ._path_utils import (
+    is_unsafe_relative_path,
+    resolve_relative_path_within_root,
+)
 
 
 PAIR_KIND = "pair_classification"
@@ -385,8 +388,11 @@ def _inspect_files_manifest(root, files, counts, issues):
         if is_unsafe_relative_path(raw_path):
             unsafe_paths.append(str(raw_path))
             continue
-        relative_path = Path(relative_path_to_posix(raw_path))
-        target = root / relative_path
+        try:
+            target = resolve_relative_path_within_root(root, raw_path)
+        except ValueError:
+            unsafe_paths.append(str(raw_path))
+            continue
         if not target.exists():
             missing_files.append(str(raw_path))
             continue

@@ -72,24 +72,24 @@ def _fingerprint_file(path):
 def _fingerprint_directory(root):
     root_path = Path(root)
     digest = sha256()
-    file_count = 0
-    total_size = 0
+    entries = []
     for current_root, _, file_names in os.walk(root_path):
         current_root_path = Path(current_root)
-        for file_name in sorted(file_names):
+        for file_name in file_names:
             full_path = current_root_path / file_name
             relative = full_path.relative_to(root_path).as_posix()
             if _is_hidden_name(relative):
                 continue
             stat = full_path.stat()
             file_hash = _hash_file(full_path)
-            file_count += 1
-            total_size += int(stat.st_size)
-            digest.update(f"{relative}|{int(stat.st_size)}|{file_hash}".encode("utf-8"))
+            entries.append((relative, int(stat.st_size), file_hash))
+
+    for relative, file_size, file_hash in sorted(entries):
+        digest.update(f"{relative}|{file_size}|{file_hash}".encode("utf-8"))
     return {
         "source_type": "directory",
-        "file_count": int(file_count),
-        "total_bytes": int(total_size),
+        "file_count": len(entries),
+        "total_bytes": sum(file_size for _, file_size, _ in entries),
         "sha256": digest.hexdigest(),
     }
 

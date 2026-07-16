@@ -17,7 +17,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from ._path_utils import is_unsafe_relative_path, relative_path_to_posix
+from ._path_utils import (
+    is_unsafe_relative_path,
+    relative_path_to_posix,
+    resolve_relative_path_within_root,
+)
 
 
 DATASET_TASK_TYPES = ("plagiarism",)
@@ -370,7 +374,7 @@ def load_pair_dataset(dataset_root):
     pairs_path = root / "pairs.csv"
     if not pairs_path.exists():
         raise ValueError(f"Missing pairs manifest: {pairs_path}")
-    pairs = pd.read_csv(pairs_path)
+    pairs = pd.read_csv(pairs_path, dtype={"left_id": "string", "right_id": "string"})
     dataset = PairDataset(root=root, files=files, pairs=pairs, metadata=metadata)
     return validate_pair_dataset(dataset)
 
@@ -421,7 +425,7 @@ def validate_pair_dataset(dataset):
         raise ValueError(f"pairs.csv references unknown file ids: {', '.join(missing)}")
 
     for file_path in files["file_path"].tolist():
-        target = dataset.root / file_path
+        target = _resolve_dataset_file(dataset.root, file_path)
         if not target.exists():
             raise ValueError(f"files.csv references missing file: {file_path}")
         if not target.is_file():
@@ -449,9 +453,9 @@ def load_retrieval_dataset(dataset_root):
     dataset = RetrievalDataset(
         root=root,
         files=files,
-        queries=pd.read_csv(queries_path),
-        corpus=pd.read_csv(corpus_path),
-        qrels=pd.read_csv(qrels_path),
+        queries=pd.read_csv(queries_path, dtype={"query_id": "string", "file_id": "string"}),
+        corpus=pd.read_csv(corpus_path, dtype={"document_id": "string", "file_id": "string"}),
+        qrels=pd.read_csv(qrels_path, dtype={"query_id": "string", "document_id": "string"}),
         metadata=metadata,
     )
     return validate_retrieval_dataset(dataset)
@@ -578,7 +582,7 @@ def validate_retrieval_dataset(dataset):
         raise ValueError(f"qrels.csv references unknown document ids: {', '.join(missing_documents)}")
 
     for file_path in files["file_path"].tolist():
-        target = dataset.root / file_path
+        target = _resolve_dataset_file(dataset.root, file_path)
         if not target.exists():
             raise ValueError(f"files.csv references missing file: {file_path}")
         if not target.is_file():
@@ -610,7 +614,7 @@ def load_code_texts(dataset):
     for row in dataset.files.to_dict(orient="records"):
         file_id = _normalize_id(row["file_id"], "file_id")
         file_path = _normalize_relative_file_path(row["file_path"])
-        target = dataset.root / file_path
+        target = _resolve_dataset_file(dataset.root, file_path)
         if not target.is_file():
             raise ValueError(f"files.csv references path that is not a file: {file_path}")
         texts[file_id] = target.read_text(encoding="utf-8", errors="ignore")
@@ -669,7 +673,13 @@ def _coerce_frame(records, required_columns, frame_name):
 
 
 def _normalize_id(value, label):
-    text = str(value or "").strip()
+    try:
+        is_missing = bool(pd.isna(value))
+    except (TypeError, ValueError):
+        is_missing = False
+    if value is None or is_missing:
+        raise ValueError(f"{label} must be non-empty.")
+    text = str(value).strip()
     if not text:
         raise ValueError(f"{label} must be non-empty.")
     if "/" in text or "\\" in text:
@@ -687,6 +697,15 @@ def _normalize_relative_file_path(value):
     if not normalized:
         raise ValueError("file_path must be non-empty.")
     return normalized
+
+
+def _resolve_dataset_file(root, file_path):
+    try:
+        return resolve_relative_path_within_root(root, file_path)
+    except ValueError as exc:
+        raise ValueError(
+            f"file_path must resolve within the dataset root. Got: {file_path}"
+        ) from exc
 
 
 def _normalize_binary_label(value):
@@ -815,7 +834,7 @@ def _load_files_manifest(dataset_root):
     files_path = Path(dataset_root) / "files.csv"
     if not files_path.exists():
         raise ValueError(f"Missing files manifest: {files_path}")
-    return pd.read_csv(files_path)
+    return pd.read_csv(files_path, dtype={"file_id": "string"})
 
 
 def _normalize_task_family(value):

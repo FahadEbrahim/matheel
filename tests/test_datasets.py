@@ -1033,6 +1033,32 @@ def test_pair_dataset_loader_matches_validation_binary_label_vocabulary(tmp_path
     assert "invalid_pair_labels" not in {issue["code"] for issue in report["issues"]}
 
 
+def test_pair_dataset_roundtrip_preserves_zero_string_ids(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame([{"file_id": "0", "text": "print(0)"}]),
+        pairs=pd.DataFrame([{"left_id": "0", "right_id": "0", "label": 1}]),
+    )
+
+    loaded = load_pair_dataset(dataset_root)
+
+    assert loaded.files["file_id"].tolist() == ["0"]
+    assert loaded.pairs[["left_id", "right_id"]].to_dict(orient="records") == [
+        {"left_id": "0", "right_id": "0"}
+    ]
+
+
+@pytest.mark.parametrize("missing_id", [None, float("nan"), pd.NA, ""])
+def test_pair_dataset_rejects_missing_file_ids(tmp_path, missing_id):
+    with pytest.raises(ValueError, match="file_id must be non-empty"):
+        write_pair_dataset(
+            tmp_path / "pairs",
+            files=pd.DataFrame([{"file_id": missing_id, "text": "print(1)"}]),
+            pairs=pd.DataFrame([{"left_id": "a", "right_id": "a", "label": 1}]),
+        )
+
+
 def test_pair_dataset_rejects_unknown_file_reference(tmp_path):
     dataset_root = tmp_path / "pairs"
     write_pair_dataset(
@@ -1102,6 +1128,29 @@ def test_pair_dataset_rejects_directory_file_references(tmp_path):
     assert "non_file_paths" in {issue["code"] for issue in report["issues"]}
 
 
+def test_pair_dataset_rejects_symlinks_outside_dataset_root(tmp_path):
+    dataset_root = tmp_path / "pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame([{"file_id": "a", "text": "inside", "suffix": ".py"}]),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "a", "label": 1}]),
+    )
+    outside = tmp_path / "outside.py"
+    outside.write_text("secret", encoding="utf-8")
+    linked_file = dataset_root / "files" / "a.py"
+    linked_file.unlink()
+    try:
+        linked_file.symlink_to(outside)
+    except OSError as exc:
+        pytest.skip(f"Symlinks are unavailable: {exc}")
+
+    with pytest.raises(ValueError, match="within the dataset root"):
+        load_pair_dataset(dataset_root)
+
+    report = validate_dataset_report(dataset_root, kind="pair")
+    assert "unsafe_file_paths" in {issue["code"] for issue in report["issues"]}
+
+
 def test_retrieval_dataset_roundtrip_writes_manifests(tmp_path):
     dataset_root = tmp_path / "retrieval"
 
@@ -1136,6 +1185,26 @@ def test_retrieval_dataset_roundtrip_writes_manifests(tmp_path):
     assert (dataset_root / "queries.csv").exists()
     assert (dataset_root / "corpus.csv").exists()
     assert (dataset_root / "qrels.csv").exists()
+
+
+def test_retrieval_dataset_roundtrip_preserves_zero_string_ids(tmp_path):
+    dataset_root = tmp_path / "retrieval"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame([{"file_id": "0", "text": "print(0)"}]),
+        queries=pd.DataFrame([{"query_id": "0", "file_id": "0"}]),
+        corpus=pd.DataFrame([{"document_id": "0", "file_id": "0"}]),
+        qrels=pd.DataFrame([{"query_id": "0", "document_id": "0", "relevance": 1}]),
+    )
+
+    loaded = load_retrieval_dataset(dataset_root)
+
+    assert loaded.files["file_id"].tolist() == ["0"]
+    assert loaded.queries.to_dict(orient="records") == [{"query_id": "0", "file_id": "0"}]
+    assert loaded.corpus.to_dict(orient="records") == [{"document_id": "0", "file_id": "0"}]
+    assert loaded.qrels[["query_id", "document_id"]].to_dict(orient="records") == [
+        {"query_id": "0", "document_id": "0"}
+    ]
 
 
 def test_retrieval_dataset_rejects_unknown_qrels_reference(tmp_path):
@@ -1176,3 +1245,28 @@ def test_retrieval_dataset_rejects_directory_file_references(tmp_path):
 
     with pytest.raises(ValueError, match="not a file"):
         load_retrieval_dataset(dataset_root)
+
+
+def test_retrieval_dataset_rejects_symlinks_outside_dataset_root(tmp_path):
+    dataset_root = tmp_path / "retrieval"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame([{"file_id": "q", "text": "inside", "suffix": ".py"}]),
+        queries=pd.DataFrame([{"query_id": "q1", "file_id": "q"}]),
+        corpus=pd.DataFrame([{"document_id": "d1", "file_id": "q"}]),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 1}]),
+    )
+    outside = tmp_path / "outside.py"
+    outside.write_text("secret", encoding="utf-8")
+    linked_file = dataset_root / "files" / "q.py"
+    linked_file.unlink()
+    try:
+        linked_file.symlink_to(outside)
+    except OSError as exc:
+        pytest.skip(f"Symlinks are unavailable: {exc}")
+
+    with pytest.raises(ValueError, match="within the dataset root"):
+        load_retrieval_dataset(dataset_root)
+
+    report = validate_dataset_report(dataset_root, kind="retrieval")
+    assert "unsafe_file_paths" in {issue["code"] for issue in report["issues"]}

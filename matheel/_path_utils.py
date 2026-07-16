@@ -32,3 +32,17 @@ def relative_path_to_posix(value):
     else:
         parts = Path(text).parts
     return "/".join(part for part in parts if part not in ("", "."))
+
+
+def resolve_relative_path_within_root(root, value):
+    text = str(value or "").strip()
+    if not text or is_unsafe_relative_path(text):
+        raise ValueError(f"Path must be a safe relative path. Got: {value}")
+
+    root_path = Path(root).expanduser().resolve()
+    target = (root_path / relative_path_to_posix(text)).resolve()
+    try:
+        target.relative_to(root_path)
+    except ValueError as exc:
+        raise ValueError(f"Path resolves outside its root: {value}") from exc
+    return target
