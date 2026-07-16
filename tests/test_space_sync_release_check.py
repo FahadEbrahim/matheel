@@ -1,6 +1,11 @@
+from pathlib import Path
+
 import pytest
 
 from scripts.check_pinned_matheel_release import check_pinned_release, pinned_matheel_version
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def write_sample_repo(root, version="1.2.3"):
@@ -101,3 +106,17 @@ def test_publish_event_fails_when_pin_never_appears(tmp_path):
 
     assert result == 1
     assert read_outputs(output_path)["should_sync_space"] == "false"
+
+
+def test_space_sync_updates_the_existing_repository_without_create_api():
+    workflow = (ROOT / ".github" / "workflows" / "sync-hf-space.yml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "hf repo create" not in workflow
+    assert "hf upload" not in workflow
+    assert "git clone --depth 1" in workflow
+    assert "git archive HEAD:gradio_app" in workflow
+    assert "rsync --archive --delete" in workflow
+    assert '--exclude=".gitattributes"' in workflow
+    assert "HEAD:main" in workflow

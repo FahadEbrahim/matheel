@@ -47,12 +47,6 @@ jobs:
         timeout-minutes: 12
         run: python scripts/check_pinned_matheel_release.py
 
-      - name: Set up uv
-        if: steps.pinned-release.outputs.should_sync_space == 'true'
-        uses: astral-sh/setup-uv@v8.1.0
-        with:
-          enable-cache: true
-
       - name: Sync Gradio app to Hugging Face Space
         if: steps.pinned-release.outputs.should_sync_space == 'true'
         env:
@@ -61,11 +55,31 @@ jobs:
         run: |
           set -euo pipefail
 
-          uvx hf upload \
-            "${HF_REPO_ID}" \
-            gradio_app \
-            --repo-type space \
-            --exclude=".git*" \
-            --exclude=".github*" \
-            --delete="*" \
-            --commit-message="Sync from GitHub Actions"
+          space_dir="${RUNNER_TEMP}/hf-space"
+          staging_dir="${RUNNER_TEMP}/gradio-app"
+          hf_username="${HF_REPO_ID%%/*}"
+
+          git clone --depth 1 \
+            "https://huggingface.co/spaces/${HF_REPO_ID}" \
+            "${space_dir}"
+          mkdir -p "${staging_dir}"
+          git archive HEAD:gradio_app | tar -x -C "${staging_dir}"
+          rsync --archive --delete \
+            --exclude=".git/" \
+            --exclude=".gitattributes" \
+            "${staging_dir}/" \
+            "${space_dir}/"
+
+          git -C "${space_dir}" config user.name "github-actions[bot]"
+          git -C "${space_dir}" config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C "${space_dir}" add --all
+
+          if git -C "${space_dir}" diff --cached --quiet; then
+            echo "Space is already synchronized."
+            exit 0
+          fi
+
+          git -C "${space_dir}" commit -m "Sync from GitHub Actions"
+          git -C "${space_dir}" push \
+            "https://${hf_username}:${HF_TOKEN}@huggingface.co/spaces/${HF_REPO_ID}" \
+            HEAD:main
