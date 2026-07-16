@@ -4,7 +4,7 @@ Matheel leaderboards rank algorithms across normalized pair-classification and r
 
 The Gradio app includes two leaderboard workflows:
 
-- **Ready Leaderboard** runs selected algorithm presets over uploaded normalized dataset ZIPs, shows all registered dataset presets, applies task-specific metric defaults, and exports standard leaderboard artifacts.
+- **Build Leaderboard** runs selected algorithm presets over uploaded normalized dataset ZIPs, shows all registered dataset presets, applies task-specific metric defaults, and exports standard leaderboard artifacts.
 - **Inspect Artifacts** loads a leaderboard JSON or ZIP artifact and renders the aggregate table, per-dataset table, static report, and downloadable report bundle.
 
 ## Manifest
@@ -96,9 +96,9 @@ python examples/evaluation/leaderboard_demo.py --overwrite
 
 The example is deterministic and offline. It uses synthetic normalized datasets plus two algorithm entries: a lexical baseline and a tiny local custom scorer.
 
-## Gradio Ready Leaderboard
+## Gradio Build Leaderboard
 
-The Gradio Ready Leaderboard tab expects normalized dataset ZIP uploads. It does not bundle real datasets or credentials. The registered dataset table lists the current dataset presets, their task families, their source resolver, and the default evaluation plan:
+The Gradio **Reports → Build Leaderboard** workflow expects normalized dataset ZIP uploads. It does not bundle real datasets or credentials. The registered dataset table lists the current dataset presets, their task families, their source resolver, and the default evaluation plan:
 
 - Pair-classification datasets use pair metrics such as `f1`, `accuracy`, `auroc`, and `average_precision`.
 - Retrieval datasets use ranking metrics such as `mean_average_precision`, `mean_reciprocal_rank`, `ndcg_at_k`, `precision_at_k`, and `recall_at_k`.

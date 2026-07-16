@@ -1,6 +1,6 @@
 # Gradio App
 
-Matheel's Gradio app provides interactive pairwise, collection, suite, dataset, visualization, and leaderboard workflows. Use the [hosted Hugging Face Space](https://huggingface.co/spaces/buelfhood/matheel-framework), the [Colab launcher](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb), or a local checkout.
+Matheel's Gradio app provides one guided workspace for code comparison, collection scoring, suite comparison, dataset evaluation, explanations, and reports. Use the [hosted Hugging Face Space](https://huggingface.co/spaces/buelfhood/matheel-framework), the [Colab launcher](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb), or a local checkout.
 
 ## Run Locally
 
@@ -20,7 +20,7 @@ The app targets Gradio 5. Its dependencies intentionally require `gradio>=5,<6` 
 
 Start with a lexical-only comparison so the first run does not need model weights:
 
-1. Open the **Pairwise** tab.
+1. Open the **Compare** tab.
 2. Paste this into **Code A**:
 
     ```python
@@ -35,7 +35,7 @@ Start with a lexical-only comparison so the first run does not need model weight
         return x + y
     ```
 
-4. Under **Metrics**, set **Metric Preset** to **Lexical Only**.
+4. Under **Scoring setup**, set **Metric Preset** to **Lexical Only**.
 5. Select **Run Pair** and inspect the overall score and metric breakdown.
 
 Semantic presets can download model weights and may take longer on their first run.
@@ -44,14 +44,16 @@ Semantic presets can download model weights and may take longer on their first r
 
 | Tab | Use it for |
 | --- | --- |
-| **Pairwise** | Compare two pasted code snippets and inspect the metric breakdown. |
+| **Compare** | Compare two pasted code snippets and inspect the metric breakdown. |
 | **Collection** | Rank similar files from an uploaded ZIP archive. |
-| **Suite** | Run multiple saved comparison configurations over the same collection. |
+| **Suites** | Run multiple saved comparison configurations over the same collection. |
 | **Datasets** | Validate normalized dataset ZIPs, evaluate scores, tune thresholds, and export reports. |
-| **Visualization** | Generate dataset maps or explain scored pairs. |
-| **Leaderboard** | Build a ready leaderboard from normalized data or inspect exported JSON/ZIP artifacts. |
+| **Explain** | Generate dataset maps or explain matched regions in a code pair. |
+| **Reports** | Build a leaderboard from normalized data or inspect exported JSON/ZIP artifacts. |
 
-Collection and dataset uploads are ZIP-first. Keep source paths relative inside the archive, and use normalized dataset ZIPs for evaluation, visualization, and ready-leaderboard tasks. Download generated artifacts if you need to retain them after the session ends.
+The top banner shows the recommended path from a quick comparison through evaluation and reporting. Each workflow states what it produces, while advanced preparation options remain collapsed until needed. On wider screens, the configuration panel stays available while results grow.
+
+Collection and dataset uploads are ZIP-first. Keep source paths relative inside the archive, and use normalized dataset ZIPs for evaluation, explanation, and leaderboard tasks. Download generated artifacts if you need to retain them after the session ends.
 
 ## Troubleshooting
 

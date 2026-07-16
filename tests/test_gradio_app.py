@@ -24,15 +24,15 @@ SPEC.loader.exec_module(gradio_app)
 
 
 EXPECTED_GRADIO_TABS = (
-    "Pairwise",
+    "Compare",
     "Collection",
-    "Suite",
+    "Suites",
     "Datasets",
-    "Visualization",
+    "Explain",
     "Dataset Map",
     "Pair Explanation",
-    "Leaderboard",
-    "Ready Leaderboard",
+    "Reports",
+    "Build Leaderboard",
     "Inspect Artifacts",
 )
 EXPECTED_PRIMARY_ACTIONS = {
@@ -46,6 +46,19 @@ EXPECTED_PRIMARY_ACTIONS = {
     "Run Ready Leaderboard": "run_ready_leaderboard_gradio",
     "Inspect Leaderboard": "inspect_leaderboard_artifacts_gradio",
 }
+
+
+def test_gradio_shell_copy_is_guided_and_html_safe():
+    header = gradio_app.app_header_html()
+    intro = gradio_app.workflow_intro_html("<kicker>", "<title>", "<description>", "<outcome>")
+
+    assert "Recommended workflow" in header
+    assert "Start with two snippets" in header
+    assert "<kicker>" not in intro
+    assert "&lt;kicker&gt;" in intro
+    assert "&lt;title&gt;" in intro
+    assert "&lt;description&gt;" in intro
+    assert "&lt;outcome&gt;" in intro
 
 
 def test_gradio_ui_keeps_core_workflow_tabs_and_primary_actions_wired():
