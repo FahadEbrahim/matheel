@@ -1,4 +1,5 @@
 import importlib.util
+import inspect
 import json
 import os
 import socket
@@ -40,8 +41,8 @@ EXPECTED_PRIMARY_ACTIONS = {
     "Run Pair": "calculate_similarity_gradio",
     "Run Collection": "get_sim_list_gradio",
     "Run Suite": "run_suite_gradio",
-    "Validate Dataset": "validate_dataset_gradio",
-    "Run Dataset Evaluation": "evaluate_dataset_gradio_with_state",
+    "Validate Dataset": False,
+    "Run Dataset Evaluation": False,
     "Generate Map": "generate_dataset_map_gradio",
     "Generate Explanation": "generate_pair_explanation_gradio",
     "Run Custom Leaderboard": "run_ready_leaderboard_gradio",
@@ -89,6 +90,253 @@ def test_gradio_ui_keeps_core_workflow_tabs_and_primary_actions_wired():
         assert len(click_dependencies) == 1
         assert click_dependencies[0]["backend_fn"] is True
         assert click_dependencies[0]["api_name"] == api_name
+
+
+def test_dataset_public_api_contracts_preserve_legacy_shape_and_order():
+    config = gradio_app.demo.get_config_file()
+    components = {component["id"]: component for component in config["components"]}
+    contracts = {
+        "validate_dataset_gradio": {
+            "inputs": ["Normalized Dataset ZIP", "Task"],
+            "outputs": ["html", "dataframe", "html", "file"],
+        },
+        "evaluate_dataset_gradio_with_state": {
+            "inputs": [
+                "Normalized Dataset ZIP",
+                "Task",
+                "Metric Preset",
+                "Embedding Model",
+                "Vector Backend",
+                "Runtime Device",
+                "Preprocessing Mode",
+                "Code Language",
+                "Lexical Tokenizer",
+                "Pair Threshold",
+                "Retrieval k",
+                "K-fold Resampling Folds (0 = off)",
+                "Resampling Seed",
+            ],
+            "outputs": ["html", "dataframe", "dataframe", "dataframe", "dataframe", "file"],
+        },
+    }
+
+    for api_name, expected in contracts.items():
+        dependencies = [
+            dependency
+            for dependency in config["dependencies"]
+            if dependency.get("api_name") == api_name
+        ]
+        assert len(dependencies) == 1
+        dependency = dependencies[0]
+        assert dependency["show_api"] is True
+        assert [
+            components[component_id]["props"].get("label")
+            for component_id in dependency["inputs"]
+        ] == expected["inputs"]
+        assert [components[component_id]["type"] for component_id in dependency["outputs"]] == (
+            expected["outputs"]
+        )
+
+    signature = inspect.signature(gradio_app.evaluate_dataset_gradio_with_state)
+    assert list(signature.parameters) == [
+        "dataset_file",
+        "task_label",
+        "metric_preset",
+        "model_name",
+        "vector_backend",
+        "runtime_device",
+        "preprocess_mode",
+        "code_language",
+        "lexical_tokenizer",
+        "threshold",
+        "retrieval_k",
+        "resampling_folds",
+        "resampling_seed",
+        "progress",
+    ]
+
+
+def test_dataset_public_api_direct_empty_calls_keep_output_types_without_validation():
+    validation_outputs = gradio_app.validate_dataset_gradio(
+        None,
+        "Pair Classification",
+        progress=None,
+    )
+    evaluation_outputs = gradio_app.evaluate_dataset_gradio_with_state(
+        None,
+        "Pair Classification",
+        "Lexical Only",
+        gradio_app.DEFAULT_MODEL,
+        "auto",
+        "auto",
+        "none",
+        "python",
+        "raw",
+        0.5,
+        10,
+        0,
+        7,
+        progress=None,
+    )
+
+    assert len(validation_outputs) == 4
+    assert isinstance(validation_outputs[0], str)
+    assert isinstance(validation_outputs[1], pd.DataFrame)
+    assert isinstance(validation_outputs[2], str)
+    assert validation_outputs[3] is None
+    assert len(evaluation_outputs) == 6
+    assert isinstance(evaluation_outputs[0], str)
+    assert all(isinstance(output, pd.DataFrame) for output in evaluation_outputs[1:5])
+    assert evaluation_outputs[5] is None
+
+
+def test_gradio_overflow_tabs_have_live_accessibility_metadata():
+    app_js = gradio_app.demo.get_config_file()["js"]
+
+    assert 'querySelectorAll(".overflow-menu")' in app_js
+    assert '"aria-label", "More workflow tabs"' in app_js
+    assert '"aria-haspopup", "menu"' in app_js
+    assert '"aria-expanded"' in app_js
+    assert 'dropdown.classList.contains("hide")' in app_js
+    assert "MutationObserver" in app_js
+    assert 'dropdown.setAttribute("role", "menu")' in app_js
+    assert 'item.setAttribute("role", "menuitem")' in app_js
+
+
+def test_gradio_config_exposes_guided_dataset_stages_and_correct_tsed_order():
+    config = gradio_app.demo.get_config_file()
+    components = config["components"]
+    labels = [component["props"].get("label") for component in components]
+
+    assert "Insert, Delete, Rename Costs" not in labels
+    assert labels.count("Delete, Insert, Rename Costs") == 3
+    assert any(
+        component["props"].get("elem_id") == "dataset-artifact-workspace"
+        and component["props"].get("label") == "Artifact Workspace"
+        for component in components
+    )
+    assert gradio_app.dataset_run.interactive is False
+    assert gradio_app.dataset_threshold_tune.visible is False
+    assert gradio_app.dataset_pair_explanation_actions.visible is False
+    assert gradio_app.dataset_next_actions.visible is False
+    setup_ids = {
+        gradio_app.dataset_file._id,
+        gradio_app.dataset_task._id,
+        gradio_app.dataset_validate._id,
+        gradio_app.dataset_run._id,
+    }
+    component_order = [component["id"] for component in components]
+    assert max(
+        component_order.index(component_id) for component_id in setup_ids
+    ) < component_order.index(gradio_app.dataset_validation_summary._id)
+    assert all(
+        component.visible is False
+        for component in (
+            gradio_app.dataset_summary,
+            gradio_app.dataset_metrics,
+            gradio_app.dataset_scores,
+            gradio_app.dataset_threshold_summary,
+            gradio_app.dataset_pair_explain_summary,
+        )
+    )
+
+
+def test_dataset_upstream_events_clear_stale_dependent_state():
+    config = gradio_app.demo.get_config_file()
+    state_id = gradio_app.dataset_scored_state._id
+    validation_state_id = gradio_app.dataset_validation_state._id
+
+    reset_dependencies = [
+        dependency
+        for dependency in config["dependencies"]
+        if "reset_dataset" in str(dependency.get("api_name"))
+    ]
+    assert reset_dependencies
+    assert all(dependency["show_api"] is False for dependency in reset_dependencies)
+
+    for component in (
+        gradio_app.dataset_metric_preset,
+        gradio_app.dataset_model,
+        gradio_app.dataset_vector_backend,
+        gradio_app.dataset_runtime_device,
+        gradio_app.dataset_preprocess_mode,
+        gradio_app.dataset_code_language,
+        gradio_app.dataset_lexical_tokenizer,
+        gradio_app.dataset_threshold,
+        gradio_app.dataset_k,
+        gradio_app.dataset_resampling_folds,
+        gradio_app.dataset_resampling_seed,
+    ):
+        assert any(
+            (component._id, "input") in dependency["targets"] and state_id in dependency["outputs"]
+            for dependency in config["dependencies"]
+        )
+
+    for component in (gradio_app.dataset_file, gradio_app.dataset_task):
+        assert any(
+            (component._id, "change") in dependency["targets"]
+            and state_id in dependency["outputs"]
+            and validation_state_id in dependency["outputs"]
+            for dependency in config["dependencies"]
+        )
+
+    assert any(
+        (gradio_app.dataset_threshold_optimize._id, "input") in dependency["targets"]
+        and gradio_app.dataset_threshold_artifacts._id in dependency["outputs"]
+        for dependency in config["dependencies"]
+    )
+    for component in (
+        gradio_app.dataset_pair_explain_row,
+        gradio_app.dataset_pair_explain_segment_mode,
+        gradio_app.dataset_pair_explain_high_threshold,
+        gradio_app.dataset_pair_explain_medium_threshold,
+        gradio_app.dataset_pair_explain_low_threshold,
+        gradio_app.dataset_pair_explain_chunk_size,
+    ):
+        assert any(
+            (component._id, "input") in dependency["targets"]
+            and gradio_app.dataset_pair_explain_artifacts._id in dependency["outputs"]
+            for dependency in config["dependencies"]
+        )
+
+
+def test_dataset_next_actions_share_inputs_and_select_destination_tabs():
+    explain_outputs = gradio_app.handoff_dataset_to_explain(
+        "dataset.zip",
+        "Pair Classification",
+    )
+    reports_outputs = gradio_app.handoff_dataset_to_reports("leaderboard_artifacts.zip")
+
+    assert explain_outputs[:2] == ("dataset.zip", "Pair Classification")
+    assert explain_outputs[2]["selected"] == "explain"
+    assert explain_outputs[3]["selected"] == "dataset-map"
+    assert reports_outputs[0] == "leaderboard_artifacts.zip"
+    assert reports_outputs[1]["selected"] == "reports"
+    assert reports_outputs[2]["selected"] == "inspect-artifacts"
+
+    config = gradio_app.demo.get_config_file()
+    expected = {
+        gradio_app.dataset_continue_explain._id: [
+            gradio_app.map_dataset_file._id,
+            gradio_app.map_task._id,
+            gradio_app.workflow_tabs._id,
+            gradio_app.explain_tabs._id,
+        ],
+        gradio_app.dataset_continue_reports._id: [
+            gradio_app.leaderboard_file._id,
+            gradio_app.workflow_tabs._id,
+            gradio_app.reports_tabs._id,
+        ],
+    }
+    for button_id, output_ids in expected.items():
+        dependencies = [
+            dependency
+            for dependency in config["dependencies"]
+            if (button_id, "click") in dependency["targets"]
+        ]
+        assert len(dependencies) == 1
+        assert dependencies[0]["api_name"] is False
+        assert dependencies[0]["outputs"] == output_ids
 
 
 def test_gradio_app_launches_and_serves_root_and_config():
@@ -167,6 +415,7 @@ def _build_suite_row(**overrides):
         "similarity_function": "cosine",
         "pooling_method": "mean",
         "max_token_length": 256,
+        "runtime_device": "auto",
         "semantic_weight": 0.0,
         "levenshtein_weight": 1.0,
         "jaro_winkler_weight": 0.0,
@@ -213,6 +462,75 @@ def test_suite_threshold_preserves_zero():
     configs = gradio_app.suite_rows_to_configs([row])
 
     assert configs[0]["options"]["threshold"] == 0.0
+
+
+def test_suite_preserves_device_and_valid_zero_metric_controls():
+    row = _build_suite_row(
+        selected_features=["Jaro-Winkler", "Code Metric"],
+        levenshtein_weight=0.0,
+        jaro_winkler_weight=0.5,
+        code_metric="crystalbleu",
+        code_metric_weight=0.5,
+        runtime_device="cpu",
+        jaro_winkler_prefix_weight=0.0,
+        crystalbleu_trivial_ngram_count=0,
+    )
+
+    config = gradio_app.suite_rows_to_configs([row])[0]["options"]
+
+    assert row["runtime_device"] == "cpu"
+    assert config["device"] == "cpu"
+    assert config["jaro_winkler_prefix_weight"] == 0.0
+    assert config["crystalbleu_trivial_ngram_count"] == 0
+
+
+def test_suite_rejects_zero_ruby_timeout_instead_of_defaulting_it():
+    with pytest.raises(gradio_app.gr.Error, match="at least 0.1 seconds"):
+        _build_suite_row(
+            selected_features=["Code Metric"],
+            levenshtein_weight=0.0,
+            code_metric="ruby",
+            code_metric_weight=1.0,
+            ruby_graph_timeout_seconds=0.0,
+        )
+
+
+def test_empty_active_metric_selection_is_rejected():
+    with pytest.raises(gradio_app.gr.Error, match="Select at least one active metric"):
+        _build_suite_row(selected_features=[], levenshtein_weight=0.0)
+
+
+def test_tsed_costs_map_delete_insert_rename_in_display_order():
+    kwargs = gradio_app.resolve_metric_kwargs(
+        "tsed",
+        gradio_app.DEFAULT_RUBY_MODE,
+        gradio_app.DEFAULT_RUBY_GRAPH_TIMEOUT,
+        "1,2,3",
+        gradio_app.DEFAULT_CODEBERTSCORE_MODEL,
+        gradio_app.DEFAULT_CODEBERTSCORE_MAX_LENGTH,
+    )
+
+    assert kwargs == {
+        "tsed_delete_cost": 1.0,
+        "tsed_insert_cost": 2.0,
+        "tsed_rename_cost": 3.0,
+    }
+
+
+def test_shared_scoring_bundles_keep_the_same_handler_order():
+    bundles = (
+        gradio_app.pair_controls,
+        gradio_app.collection_controls,
+        gradio_app.suite_controls,
+    )
+
+    assert all(isinstance(bundle, gradio_app.ScoringControls) for bundle in bundles)
+    labels = [
+        [getattr(component, "label", None) for component in bundle.handler_inputs()]
+        for bundle in bundles
+    ]
+    assert labels[0] == labels[1] == labels[2]
+    assert labels[0][5:8] == ["Max Tokens per Input", "Runtime Device", "Embedding Weight"]
 
 
 def test_suite_rows_preserve_lexical_tokenizer():
@@ -349,6 +667,34 @@ def test_suite_html_helpers_escape_run_names():
     assert "&lt;b&gt;best&lt;/b&gt;" in summary_html
     assert "1.234s" in summary_html
     assert "&lt;i&gt;semantic&lt;/i&gt;" in summary_html
+
+
+def test_suite_summary_uses_all_statistics_from_the_selected_winner():
+    summary = pd.DataFrame(
+        [
+            {
+                "run_name": "selected-winner",
+                "mean_score": 0.71,
+                "max_score": 0.82,
+                "elapsed_seconds": 0.432,
+                "feature_set": "semantic",
+            },
+            {
+                "run_name": "different-maxima",
+                "mean_score": 0.99,
+                "max_score": 1.0,
+                "elapsed_seconds": 2.0,
+                "feature_set": "lexical",
+            },
+        ]
+    )
+
+    summary_html = gradio_app.suite_summary_html(summary)
+
+    assert "0.710" in summary_html
+    assert "0.820" in summary_html
+    assert "0.990" not in summary_html
+    assert "1.000" not in summary_html
 
 
 def test_results_summary_html_escapes_uploaded_file_names():
@@ -497,8 +843,10 @@ def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
         output_format="csv",
         progress_callback=None,
     ):
-        _ = zipped_file, summary_out, details_dir, output_format, progress_callback
+        _ = zipped_file, summary_out, output_format, progress_callback
+        assert details_dir is None
         assert run_configs[0]["run_name"] == "../baseline/strong"
+        assert run_configs[0]["options"]["device"] == "auto"
         return summary, {"../baseline/strong": details}
 
     monkeypatch.setattr(gradio_app, "run_comparison_suite", fake_run_comparison_suite)
@@ -514,6 +862,7 @@ def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
         "cosine",
         "mean",
         256,
+        "auto",
         0.0,
         1.0,
         0.0,
@@ -552,6 +901,22 @@ def test_run_suite_export_sanitizes_detail_zip_filenames(monkeypatch):
     details_zip_path = outputs[6]
     with zipfile.ZipFile(details_zip_path) as archive:
         assert archive.namelist() == ["baseline_strong.csv"]
+    run_configs = json.loads(Path(outputs[7]).read_text(encoding="utf-8"))
+    assert run_configs[0]["options"]["device"] == "auto"
+
+
+def test_suite_detail_filenames_are_unique_after_slugification():
+    filenames = gradio_app.unique_suite_detail_filenames(
+        ["baseline/strong", "baseline_strong", "BASELINE_STRONG", "../"],
+    )
+
+    assert filenames == [
+        "baseline_strong.csv",
+        "baseline_strong_2.csv",
+        "BASELINE_STRONG_3.csv",
+        "run.csv",
+    ]
+    assert len({name.casefold() for name in filenames}) == len(filenames)
 
 
 def _zip_directory(source_root, zip_path):
@@ -587,7 +952,7 @@ def test_dataset_pair_evaluation_exports_leaderboard_artifacts(tmp_path):
     )
     archive_path = _zip_directory(dataset_root, tmp_path / "pair_dataset.zip")
 
-    outputs = gradio_app.evaluate_dataset_gradio(
+    outputs = gradio_app.evaluate_dataset_gradio_with_state(
         archive_path,
         "Pair Classification",
         "Lexical Only",
@@ -604,7 +969,14 @@ def test_dataset_pair_evaluation_exports_leaderboard_artifacts(tmp_path):
         progress=None,
     )
 
-    summary_html, metrics_frame, scored_frame, resample_metrics, resample_summary, artifacts_path = outputs
+    (
+        summary_html,
+        metrics_frame,
+        scored_frame,
+        resample_metrics,
+        resample_summary,
+        artifacts_path,
+    ) = outputs
     assert "Dataset Evaluation" in summary_html
     assert "tiny_pairs" in summary_html
     assert "F1" in metrics_frame["Metric"].tolist()
@@ -616,13 +988,63 @@ def test_dataset_pair_evaluation_exports_leaderboard_artifacts(tmp_path):
         names = archive.namelist()
         assert names == sorted(names)
         assert "leaderboard_manifest.json" in names
+        assert "leaderboard_report.json" in names
         assert "pair_scored_rows.csv" in names
         assert "pair_metrics.json" in names
         assert "pair_resampling_summary.csv" in names
         assert "pair_threshold_tuning_threshold_sweep.csv" in names
         manifest = json.loads(archive.read("leaderboard_manifest.json").decode("utf-8"))
+        report = json.loads(archive.read("leaderboard_report.json").decode("utf-8"))
     assert manifest["workflow"] == "gradio_dataset_evaluation"
     assert manifest["dataset_kind"] == "pair_classification"
+    assert report["metadata"]["name"] == "tiny_pairs Dataset Evaluation"
+    assert {row["algorithm_name"] for row in report["aggregate"]} == {"Lexical Only"}
+
+    inspection = gradio_app.inspect_leaderboard_artifacts_gradio(artifacts_path)
+    assert "tiny_pairs Dataset Evaluation" in inspection[0]
+    assert set(inspection[1]["algorithm_name"]) == {"Lexical Only"}
+    assert set(inspection[2]["dataset_name"]) == {"tiny_pairs"}
+
+
+def test_dataset_display_rounding_does_not_change_interpretation_or_state(monkeypatch, tmp_path):
+    raw_score = 0.84996
+    display = gradio_app.dataset_scores_display_frame(
+        pd.DataFrame(
+            [
+                {
+                    "left_id": "a",
+                    "right_id": "b",
+                    "label": 1,
+                    "similarity_score": raw_score,
+                }
+            ]
+        ),
+        "Pair Classification",
+    )
+
+    assert display.loc[0, "Similarity Score"] == 0.85
+    assert display.loc[0, "Interpretation"].startswith("High:")
+    assert display.attrs["raw_scored_records"][0]["similarity_score"] == raw_score
+
+    monkeypatch.setattr(
+        gradio_app,
+        "evaluate_dataset_gradio_with_state",
+        lambda *args, **kwargs: (
+            "summary",
+            pd.DataFrame(),
+            display,
+            pd.DataFrame(),
+            pd.DataFrame(),
+            None,
+        ),
+    )
+    monkeypatch.setattr(gradio_app, "_dataset_root_from_upload", lambda *args: tmp_path)
+
+    outputs = gradio_app.evaluate_dataset_gradio_for_journey(
+        "dataset.zip", "Pair Classification"
+    )
+
+    assert outputs[-1]["scored"][0]["similarity_score"] == raw_score
 
 
 def test_gradio_dataset_validation_exports_report(tmp_path):
@@ -653,6 +1075,71 @@ def test_gradio_dataset_validation_exports_report(tmp_path):
     with zipfile.ZipFile(artifacts_path) as archive:
         assert "dataset_validation_report.json" in archive.namelist()
 
+    journey_outputs = gradio_app.validate_dataset_journey_gradio(
+        archive_path,
+        "Pair Classification",
+        progress=None,
+    )
+    assert journey_outputs[4] == gradio_app.dataset_upload_identity(
+        archive_path,
+        "Pair Classification",
+    )
+    assert journey_outputs[5]["interactive"] is True
+    assert "run the dataset evaluation" in journey_outputs[6]
+
+
+def test_dataset_evaluation_requires_matching_successful_validation(monkeypatch, tmp_path):
+    dataset_file = tmp_path / "dataset.zip"
+    dataset_file.write_bytes(b"dataset")
+    validation_state = gradio_app.dataset_upload_identity(dataset_file, "Pair Classification")
+
+    with pytest.raises(gradio_app.gr.Error, match="Validate this dataset and task"):
+        gradio_app.evaluate_dataset_journey_gradio(
+            validation_state,
+            dataset_file,
+            "Retrieval",
+            progress=None,
+        )
+
+    evaluated_state = {"task": "pair", "dataset_root": str(tmp_path), "scored": []}
+    monkeypatch.setattr(
+        gradio_app,
+        "evaluate_dataset_gradio_for_journey",
+        lambda *args, **kwargs: (
+            "summary",
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pd.DataFrame(),
+            pd.DataFrame(),
+            "artifacts.zip",
+            evaluated_state,
+        ),
+    )
+
+    outputs = gradio_app.evaluate_dataset_journey_gradio(
+        validation_state,
+        dataset_file,
+        "Pair Classification",
+        progress=None,
+    )
+
+    assert all(update["visible"] is True for update in outputs[:5])
+    assert outputs[6] == evaluated_state
+    assert "Tune the pair threshold" in outputs[7]
+    assert all(update["visible"] is True for update in outputs[8:])
+
+
+def test_dataset_result_reset_hides_and_clears_all_dependent_stages():
+    outputs = gradio_app.reset_dataset_results()
+
+    assert outputs[0] is None
+    assert all(update["visible"] is False for update in outputs[1:6])
+    assert outputs[6] is None
+    assert all(outputs[index]["visible"] is False for index in (7, 8, 9, 11, 12, 13))
+    assert outputs[10] is None
+    assert outputs[14] is None
+    assert all(update["visible"] is False for update in outputs[16:])
+
 
 def test_gradio_threshold_tuning_uses_scored_pair_state(tmp_path):
     _ = tmp_path
@@ -676,6 +1163,10 @@ def test_gradio_threshold_tuning_uses_scored_pair_state(tmp_path):
     with zipfile.ZipFile(artifacts_path) as archive:
         assert "threshold_tuning_threshold_sweep.csv" in archive.namelist()
 
+    journey_outputs = gradio_app.threshold_tuning_journey_gradio(state, "f1", progress=None)
+    assert all(update["visible"] is True for update in journey_outputs[:3])
+    assert "Threshold tuning complete" in journey_outputs[4]
+
 
 def test_gradio_scored_pair_explanation_uses_dataset_state(tmp_path):
     dataset_root = tmp_path / "pair_dataset"
@@ -698,7 +1189,26 @@ def test_gradio_scored_pair_explanation_uses_dataset_state(tmp_path):
         ],
     }
 
-    summary_html, matches_frame, report_html, artifacts_path = gradio_app.explain_scored_pair_gradio(
+    summary_html, matches_frame, report_html, artifacts_path = (
+        gradio_app.explain_scored_pair_gradio(
+            state,
+            0,
+            "line",
+            0.85,
+            0.6,
+            0.3,
+            5,
+            progress=None,
+        )
+    )
+
+    assert "Pair Explanation" in summary_html
+    assert not matches_frame.empty
+    assert "a vs b" in report_html
+    with zipfile.ZipFile(artifacts_path) as archive:
+        assert "scored_pair_explanation.html" in archive.namelist()
+
+    journey_outputs = gradio_app.explain_scored_pair_journey_gradio(
         state,
         0,
         "line",
@@ -708,12 +1218,8 @@ def test_gradio_scored_pair_explanation_uses_dataset_state(tmp_path):
         5,
         progress=None,
     )
-
-    assert "Pair Explanation" in summary_html
-    assert not matches_frame.empty
-    assert "a vs b" in report_html
-    with zipfile.ZipFile(artifacts_path) as archive:
-        assert "scored_pair_explanation.html" in archive.namelist()
+    assert all(update["visible"] is True for update in journey_outputs[:3])
+    assert "Pair explanation complete" in journey_outputs[4]
 
 
 def test_dataset_pair_resampling_reports_invalid_label_folds():
@@ -781,7 +1287,14 @@ def test_dataset_retrieval_evaluation_exports_leaderboard_artifacts(tmp_path):
         progress=None,
     )
 
-    summary_html, metrics_frame, scored_frame, resample_metrics, resample_summary, artifacts_path = outputs
+    (
+        summary_html,
+        metrics_frame,
+        scored_frame,
+        resample_metrics,
+        resample_summary,
+        artifacts_path,
+    ) = outputs
     assert "tiny_retrieval" in summary_html
     assert "Mean Average Precision" in metrics_frame["Metric"].tolist()
     assert "Interpretation" in scored_frame.columns
@@ -823,7 +1336,7 @@ def test_dataset_retrieval_resampling_reports_invalid_query_folds(tmp_path):
         gradio_app._resample_retrieval_scores(scored, dataset, folds=2, seed=7, k=1)
 
 
-def test_gradio_dataset_map_exports_visualization_artifacts(tmp_path):
+def test_gradio_dataset_map_preserves_zero_seed_and_exports_artifacts(tmp_path):
     dataset_root = tmp_path / "map_pairs"
     write_pair_dataset(
         dataset_root,
@@ -848,7 +1361,7 @@ def test_gradio_dataset_map_exports_visualization_artifacts(tmp_path):
         archive_path,
         "Pair Classification",
         "pca",
-        7,
+        0,
         32,
         "split",
         progress=None,
@@ -856,6 +1369,7 @@ def test_gradio_dataset_map_exports_visualization_artifacts(tmp_path):
 
     assert "Dataset Map" in summary_html
     assert "tiny_map_pairs" in summary_html
+    assert ">0</span>" in summary_html
     assert "document_id" in points_frame.columns
     assert "split" in points_frame.columns
     assert len(points_frame) == 3
@@ -897,7 +1411,9 @@ def test_gradio_leaderboard_inspection_renders_uploaded_zip(tmp_path):
         "manifest": {"name": "<tiny leaderboard>"},
         "cards": {
             "datasets": [{"name": "pairs", "card_type": "dataset", "task_family": "pair"}],
-            "algorithms": [{"name": "<exact>", "card_type": "algorithm", "algorithm_kind": "builtin"}],
+            "algorithms": [
+                {"name": "<exact>", "card_type": "algorithm", "algorithm_kind": "builtin"}
+            ],
         },
         "aggregate": [
             {
@@ -978,9 +1494,7 @@ def test_ready_made_leaderboard_covers_all_presets_and_algorithms():
         "student_code_similarity",
     }
     assert set(profile["dataset_presets"]).issubset(set(available_dataset_presets()))
-    assert set(profile["algorithm_presets"]) == set(
-        gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES
-    )
+    assert set(profile["algorithm_presets"]) == set(gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES)
     assert profile["dataset_task_count"] == 7
     assert len(coverage) == 7
     assert set(report["per_dataset"]["algorithm_name"]) == set(
@@ -1014,9 +1528,7 @@ def test_ready_made_leaderboard_uses_task_metrics_and_descending_defaults():
     assert pair_options["metric"] == "f1"
     assert pair_options["metrics"] == list(gradio_app.READY_LEADERBOARD_PAIR_METRICS)
     assert retrieval_options["metric"] == "mean_average_precision"
-    assert retrieval_options["metrics"] == list(
-        gradio_app.READY_LEADERBOARD_RETRIEVAL_METRICS
-    )
+    assert retrieval_options["metrics"] == list(gradio_app.READY_LEADERBOARD_RETRIEVAL_METRICS)
 
     aggregate, per_dataset = gradio_app.filter_ready_made_leaderboard(
         "pair",
@@ -1147,19 +1659,21 @@ def test_gradio_ready_leaderboard_runs_pair_and_retrieval_uploads(tmp_path):
     )
     retrieval_zip = _zip_directory(retrieval_root, tmp_path / "ready_retrieval.zip")
 
-    summary_html, aggregate, per_dataset, report_html, artifacts_path = gradio_app.run_ready_leaderboard_gradio(
-        [pair_zip, retrieval_zip],
-        ["Lexical Only"],
-        gradio_app.DEFAULT_MODEL,
-        "auto",
-        "auto",
-        "none",
-        "python",
-        "raw",
-        0.5,
-        2,
-        7,
-        progress=None,
+    summary_html, aggregate, per_dataset, report_html, artifacts_path = (
+        gradio_app.run_ready_leaderboard_gradio(
+            [pair_zip, retrieval_zip],
+            ["Lexical Only"],
+            gradio_app.DEFAULT_MODEL,
+            "auto",
+            "auto",
+            "none",
+            "python",
+            "raw",
+            0.5,
+            2,
+            7,
+            progress=None,
+        )
     )
 
     assert "Ready Leaderboard" in summary_html

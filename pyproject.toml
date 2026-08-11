@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "matheel"
-version = "0.5.7"
+version = "0.5.8"
 authors = [
   { name = "Fahad Ebrahim" }
 ]
@@ -81,6 +81,10 @@ visualization = [
     # 0.5.11 supports the NumPy 2 / Python 3.13 / current scikit-learn stack.
     "umap-learn>=0.5.11,<0.6"
 ]
+browser = [
+    "playwright>=1.61,<2",
+    "pytest-playwright>=0.8,<0.9"
+]
 all = [
     "chonkie[code]>=1.5,<1.7",
     "apted>=1.0,<2",
@@ -114,11 +118,12 @@ include = ["matheel*"]
 exclude = ["gradio_app*"]
 
 [tool.pytest.ini_options]
-addopts = ["-m", "not integration"]
+addopts = ["-m", "not integration and not browser"]
 pythonpath = ["."]
 testpaths = ["tests"]
 markers = [
     "integration: real-model tests that use actual embedding backends and cached/downloaded model weights",
+    "browser: real-browser Gradio end-to-end tests requiring Playwright and Chromium",
 ]
 
 [tool.ruff]

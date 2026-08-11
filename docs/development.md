@@ -51,6 +51,23 @@ python -m pytest tests/test_gradio_app.py tests/test_gradio_html_utils.py
 
 These tests cover workflow helpers, the stable tab and primary-action structure, and a live server smoke check of the root page and `/config` endpoint. They intentionally avoid model downloads.
 
+The real-browser workflows use Chromium and deterministic local ZIP fixtures. They exercise the lexical pair and collection paths, dataset validation and evaluation, artifact downloads, and leaderboard inspection without model or network access. Install the browser extra and Chromium, then override the default marker filter explicitly:
+
+```bash
+python -m pip install -e ".[dev,gradio,browser]"
+python -m playwright install chromium
+export MATHEEL_BROWSER_ARTIFACTS_DIR=test-results/browser
+python -m pytest -o addopts='' -m browser tests/browser --collect-only -q
+python -m pytest -o addopts='' -m browser tests/browser \
+  --browser chromium \
+  --tracing retain-on-failure \
+  --video retain-on-failure \
+  --screenshot only-on-failure \
+  --output test-results/browser
+```
+
+The collection guard prevents an accidentally filtered zero-test run. When a browser workflow fails, screenshots, traces, video, browser console events, failed requests, and the Gradio server log are retained under `test-results/browser`.
+
 ## Package Checks
 
 When preparing release or packaging changes, build the package and check the distribution metadata:
