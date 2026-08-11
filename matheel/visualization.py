@@ -2,6 +2,7 @@ import html
 import json
 import re
 from bisect import bisect_right
+from collections.abc import Mapping
 from pathlib import Path
 
 import numpy as np
@@ -82,6 +83,7 @@ def build_embedding_projection(embeddings, ids=None, metadata=None, method="auto
         if "document_id" not in metadata_frame.columns:
             raise ValueError("metadata must include a document_id column.")
         metadata_frame["document_id"] = metadata_frame["document_id"].astype(str)
+        _require_unique_document_ids(metadata_frame["document_id"], source="metadata")
         projection = projection.merge(metadata_frame, on="document_id", how="left")
         projection.attrs.update(attrs)
     return projection
@@ -129,6 +131,7 @@ def dataset_map_payload(projection):
     missing = sorted(required.difference(frame.columns))
     if missing:
         raise ValueError(f"projection is missing required columns: {', '.join(missing)}")
+    _require_unique_document_ids(frame["document_id"], source="projection")
     return {
         "schema_version": 1,
         "metadata": _json_safe_dict(getattr(frame, "attrs", {})),
@@ -140,6 +143,7 @@ def dataset_map_html(projection, title="Matheel Dataset Map", color_column=None)
     frame = projection.copy() if isinstance(projection, pd.DataFrame) else pd.DataFrame(projection)
     if frame.empty:
         raise ValueError("projection must contain at least one point.")
+    _require_unique_document_ids(frame["document_id"], source="projection")
     color_column = color_column or _default_color_column(frame)
     points = _svg_points(frame, color_column=color_column)
     legend = _legend_html(points)
@@ -858,7 +862,7 @@ def _pair_match_table_row(match):
 
 
 def _json_safe_pair_explanation(explanation):
-    payload = json.loads(json.dumps(explanation))
+    payload = _json_safe_value(explanation)
     for side in ("left", "right"):
         for segment in payload[side]["segments"]:
             segment["level"] = _safe_css_level(segment.get("level"))
@@ -905,6 +909,7 @@ def _document_ids_for_embeddings(array, ids):
     document_ids = [str(value) for value in ids]
     if len(document_ids) != array.shape[0]:
         raise ValueError("ids must have the same length as embeddings.")
+    _require_unique_document_ids(document_ids, source="ids")
     return document_ids
 
 
@@ -931,7 +936,13 @@ def _project_umap(array, seed=7):
             "Install `matheel[visualization]` or use method='pca'."
         ) from exc
     n_neighbors = min(15, max(2, array.shape[0] - 1))
-    reducer = umap.UMAP(n_components=2, n_neighbors=n_neighbors, random_state=int(seed))
+    reducer = umap.UMAP(
+        n_components=2,
+        n_neighbors=n_neighbors,
+        random_state=int(seed),
+        n_jobs=1,
+        init="random" if array.shape[0] == 3 else "spectral",
+    )
     return np.asarray(reducer.fit_transform(array), dtype=float)
 
 
@@ -986,6 +997,7 @@ def _merge_document_metadata(records, document_metadata):
         raise ValueError("document_metadata must include a document_id column.")
     extra = extra.copy()
     extra["document_id"] = extra["document_id"].astype(str)
+    _require_unique_document_ids(extra["document_id"], source="document_metadata")
     override_columns = [
         column
         for column in extra.columns
@@ -1069,7 +1081,16 @@ def _svg_points(frame, color_column=None):
 def _color_groups(frame, color_column):
     if color_column is None or color_column not in frame.columns:
         return ["documents"] * len(frame)
-    return [str(value) if pd.notna(value) else "unknown" for value in frame[color_column].tolist()]
+    groups = []
+    for value in frame[color_column].tolist():
+        normalized = _json_safe_value(value)
+        if normalized is None:
+            groups.append("unknown")
+        elif isinstance(normalized, (dict, list)):
+            groups.append(json.dumps(normalized, sort_keys=True, separators=(",", ":")))
+        else:
+            groups.append(str(normalized))
+    return groups
 
 
 def _scale_value(value, values, output_min, output_max):
@@ -1113,14 +1134,48 @@ def _point_table_row(point):
 def _json_safe_dict(values):
     payload = {}
     for key, value in dict(values).items():
-        if key.startswith("_"):
+        if str(key).startswith("_"):
             continue
-        if isinstance(value, (np.integer,)):
-            payload[str(key)] = int(value)
-        elif isinstance(value, (np.floating,)):
-            payload[str(key)] = float(value)
-        elif pd.isna(value):
-            payload[str(key)] = None
-        else:
-            payload[str(key)] = value
+        payload[str(key)] = _json_safe_value(value)
     return payload
+
+
+def _json_safe_value(value):
+    if value is None or value is pd.NA or value is pd.NaT:
+        return None
+    if isinstance(value, Mapping):
+        return {str(key): _json_safe_value(item) for key, item in value.items()}
+    if isinstance(value, np.ndarray):
+        return _json_safe_value(value.tolist())
+    if isinstance(value, (list, tuple)):
+        return [_json_safe_value(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        return [_json_safe_value(item) for item in sorted(value, key=repr)]
+    if isinstance(value, (bool, np.bool_)):
+        return bool(value)
+    if isinstance(value, (int, np.integer)):
+        return int(value)
+    if isinstance(value, (float, np.floating)):
+        normalized = float(value)
+        return normalized if np.isfinite(normalized) else None
+    if isinstance(value, str):
+        return value
+
+    missing = pd.isna(value)
+    if isinstance(missing, (bool, np.bool_)) and missing:
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    try:
+        json.dumps(value, allow_nan=False)
+    except (TypeError, ValueError):
+        return str(value)
+    return value
+
+
+def _require_unique_document_ids(values, source):
+    document_ids = pd.Series([str(value) for value in values], dtype="object")
+    duplicates = sorted(document_ids[document_ids.duplicated(keep=False)].unique().tolist())
+    if duplicates:
+        joined = ", ".join(duplicates)
+        raise ValueError(f"{source} document_id values must be unique. Duplicates: {joined}")

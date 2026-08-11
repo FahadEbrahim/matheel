@@ -46,6 +46,68 @@ jobs:
       - name: Run tests
         run: python -m pytest
 
+  minimum-dependencies:
+    name: Minimum dependency smoke
+    runs-on: ubuntu-latest
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      TOKENIZERS_PARALLELISM: "false"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.10"
+          cache: pip
+
+      - name: Install verified dependency floors
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            "click==8.2.0" \
+            "pandas==2.2.2" \
+            "numpy==2.0.0" \
+            "tqdm==4.66.3" \
+            "bert-score==0.3.13" \
+            "sentence-transformers==5.1.1" \
+            "pylate==1.4.0" \
+            "umap-learn==0.5.11"
+          python -m pip install -e ".[dev,metrics,pylate,visualization]"
+          python -m pip check
+
+      - name: Verify critical floors and optional imports
+        run: |
+          python - <<'PY'
+          from importlib.metadata import version
+
+          expected = {
+              "click": "8.2.0",
+              "pandas": "2.2.2",
+              "numpy": "2.0.0",
+              "tqdm": "4.66.3",
+              "bert-score": "0.3.13",
+              "sentence-transformers": "5.1.1",
+              "pylate": "1.4.0",
+              "umap-learn": "0.5.11",
+          }
+          installed = {name: version(name) for name in expected}
+          assert installed == expected, installed
+
+          from bert_score import BERTScorer  # noqa: F401
+          import pylate  # noqa: F401
+          from sentence_transformers import SentenceTransformer  # noqa: F401
+          import umap  # noqa: F401
+          PY
+
+      - name: Run offline floor regressions
+        run: |
+          python -m pytest tests/test_preprocessing.py tests/test_visualization.py
+          python -m pytest tests/test_cli.py -k cli_and_package_expose_version
+
   codebleu-compatibility:
     name: CodeBLEU compatibility
     runs-on: ubuntu-latest

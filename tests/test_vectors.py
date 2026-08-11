@@ -197,6 +197,32 @@ def test_configure_model_max_token_length_updates_pylate_style_lengths():
     assert model.max_seq_length == 96
 
 
+def test_configure_model_max_token_length_caps_both_pylate_roles():
+    class DummyModel:
+        document_length = 180
+        query_length = 32
+        max_seq_length = 180
+
+    model = DummyModel()
+    configure_model_max_token_length(model, max_token_length=24)
+
+    assert model.document_length == 24
+    assert model.query_length == 24
+    assert model.max_seq_length == 24
+
+
+def test_configure_model_max_token_length_caps_each_pylate_role_independently():
+    class DummyModel:
+        document_length = 32
+        query_length = 180
+
+    model = DummyModel()
+    configure_model_max_token_length(model, max_token_length=96)
+
+    assert model.document_length == 32
+    assert model.query_length == 96
+
+
 def test_load_vector_model_requires_pylate_package(monkeypatch):
     real_import = __import__
 

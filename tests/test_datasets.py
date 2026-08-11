@@ -1,5 +1,7 @@
+import io
 import json
 import sys
+import tarfile
 import zipfile
 from pathlib import Path
 from types import ModuleType
@@ -8,6 +10,7 @@ import pandas as pd
 import pytest
 
 import matheel
+import matheel.datasets as datasets_module
 from matheel.dataset_validation import (
     dataset_validation_report_payload,
     validate_dataset_report,
@@ -184,6 +187,56 @@ def test_dataset_validation_report_finds_retrieval_reference_errors(tmp_path):
     assert "invalid_qrel_relevance" in codes
 
 
+def test_dataset_validation_matches_loader_for_duplicate_qrels_and_infinite_relevance(tmp_path):
+    dataset_root = tmp_path / "retrieval"
+    write_retrieval_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "001", "text": "query"},
+                {"file_id": "1", "text": "document"},
+            ]
+        ),
+        queries=pd.DataFrame([{"query_id": "NA", "file_id": "001"}]),
+        corpus=pd.DataFrame([{"document_id": "NULL", "file_id": "1"}]),
+        qrels=pd.DataFrame([{"query_id": "NA", "document_id": "NULL", "relevance": 1}]),
+    )
+    (dataset_root / "qrels.csv").write_text(
+        "query_id,document_id,relevance\nNA,NULL,inf\nNA,NULL,1\n",
+        encoding="utf-8",
+    )
+
+    report = validate_dataset_report(dataset_root, kind="retrieval")
+    issues = {issue["code"]: issue for issue in report["issues"]}
+
+    assert report["status"] == "error"
+    assert issues["duplicate_qrels"]["severity"] == "error"
+    assert issues["invalid_qrel_relevance"]["severity"] == "error"
+    assert "missing_ids" not in issues
+
+
+def test_dataset_validation_and_loader_reject_blank_primary_ids(tmp_path):
+    dataset_root = tmp_path / "blank-id"
+    (dataset_root / "files").mkdir(parents=True)
+    (dataset_root / "files" / "blank.py").write_text("blank", encoding="utf-8")
+    (dataset_root / "files" / "b.py").write_text("b", encoding="utf-8")
+    (dataset_root / "metadata.json").write_text(
+        json.dumps({"dataset_kind": "pair_classification"}), encoding="utf-8"
+    )
+    (dataset_root / "files.csv").write_text(
+        "file_id,file_path\n,files/blank.py\nb,files/b.py\n", encoding="utf-8"
+    )
+    (dataset_root / "pairs.csv").write_text(
+        "left_id,right_id,label\n,b,1\n", encoding="utf-8"
+    )
+
+    report = validate_dataset_report(dataset_root, kind="pair")
+
+    assert any(issue["code"] == "blank_ids" for issue in report["issues"])
+    with pytest.raises(ValueError, match="must be non-empty"):
+        load_pair_dataset(dataset_root)
+
+
 def test_default_dataset_sources_include_generic_resolvers():
     sources = set(available_dataset_sources())
 
@@ -210,6 +263,32 @@ def test_default_remote_dataset_cache_includes_revision_and_split():
     assert first != second
     assert first != third
     assert len(set(destinations)) == 3
+
+
+def test_remote_source_cache_is_staged_and_reuses_provenanced_child(tmp_path, monkeypatch):
+    calls = []
+
+    def resolver(identifier, destination=None, revision="main", token=None, split=None):
+        _ = (token, split)
+        destination = Path(destination)
+        calls.append(destination)
+        child = destination / f"{identifier}-{revision}"
+        child.mkdir(parents=True)
+        (child / "data.csv").write_text("value\n1\n", encoding="utf-8")
+        return child
+
+    monkeypatch.setitem(datasets_module._DATASET_SOURCE_HANDLERS, "github", resolver)
+    destination = tmp_path / "remote-cache"
+
+    first = resolve_dataset_source("github", "owner-repo", destination=destination, revision="v1")
+    second = resolve_dataset_source("github", "owner-repo", destination=destination, revision="v1")
+
+    assert first == second == destination / "owner-repo-v1"
+    assert len(calls) == 1
+    assert calls[0] != destination
+    assert (destination / ".matheel-source-provenance").is_file()
+    with pytest.raises(ValueError, match="not a complete cache"):
+        resolve_dataset_source("github", "owner-repo", destination=destination, revision="v2")
 
 
 def test_default_dataset_presets_include_only_approved_plagiarism_presets():
@@ -255,6 +334,58 @@ def test_safe_archive_extraction_rejects_path_traversal(tmp_path):
         _safe_extract_archive(archive_path, tmp_path / "out")
 
     assert not (tmp_path / "escape.txt").exists()
+
+
+@pytest.mark.parametrize("archive_kind", ["zip", "tar"])
+def test_safe_archive_extraction_rejects_duplicate_normalized_names(tmp_path, archive_kind):
+    archive_path = tmp_path / f"duplicate.{archive_kind}"
+    if archive_kind == "zip":
+        with zipfile.ZipFile(archive_path, "w") as archive:
+            archive.writestr("same.txt", "first")
+            archive.writestr("nested/../SAME.txt", "second")
+    else:
+        with tarfile.open(archive_path, "w") as archive:
+            for name, content in (("same.txt", b"first"), ("nested/../SAME.txt", b"second")):
+                member = tarfile.TarInfo(name)
+                member.size = len(content)
+                archive.addfile(member, io.BytesIO(content))
+
+    with pytest.raises(ValueError, match="duplicate normalized member names"):
+        _safe_extract_archive(archive_path, tmp_path / "out")
+
+
+def test_safe_archive_extraction_enforces_configurable_total_size_limit(tmp_path):
+    archive_path = tmp_path / "large.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("data.txt", "12345")
+
+    with pytest.raises(ValueError, match="total uncompressed size limit"):
+        _safe_extract_archive(archive_path, tmp_path / "out", max_total_bytes=4)
+
+
+def test_dataset_download_enforces_configurable_stream_size_limit(tmp_path, monkeypatch):
+    class Response(io.BytesIO):
+        headers = {}
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            self.close()
+
+    monkeypatch.setattr(
+        datasets_module.urllib.request,
+        "urlopen",
+        lambda request, timeout: Response(b"12345"),
+    )
+    target = tmp_path / "download.bin"
+
+    with pytest.raises(ValueError, match="Download exceeds the size limit"):
+        datasets_module._download_url_to_file(
+            "https://example.invalid/data", target, max_bytes=4
+        )
+
+    assert not target.exists()
 
 
 def test_tabular_adapter_rejects_paths_outside_source_root(tmp_path):
@@ -717,6 +848,65 @@ def test_auto_pair_tabular_adapter_supports_configured_text_columns(tmp_path):
     assert sorted(loaded.pairs["label"].tolist()) == [0, 1]
     assert loaded.metadata["adapter"] == "auto_pair_tabular"
     assert "print('x')" in set(texts.values())
+
+
+def test_auto_pair_tabular_adapter_preserves_ids_and_literal_na_text(tmp_path):
+    source_root = tmp_path / "lossless"
+    source_root.mkdir()
+    (source_root / "pairs.csv").write_text(
+        "left_id,right_id,left_code,right_code,label\n001,1,NA,NULL,1\n",
+        encoding="utf-8",
+    )
+
+    loaded = load_pair_dataset(adapt_pair_dataset(source_root, adapter="auto_pair_tabular"))
+
+    assert len(loaded.files) == 2
+    assert loaded.pairs.loc[0, "left_id"] != loaded.pairs.loc[0, "right_id"]
+    assert set(load_code_texts(loaded).values()) == {"NA", "NULL"}
+
+
+def test_auto_pair_tabular_adapter_rejects_missing_content(tmp_path):
+    source_root = tmp_path / "missing-content"
+    source_root.mkdir()
+    (source_root / "pairs.csv").write_text(
+        "left_id,right_id,left_code,right_code,label\na,b,print(1),,1\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(
+        ValueError, match="right content must include non-blank text or a valid path"
+    ):
+        adapt_pair_dataset(source_root, adapter="auto_pair_tabular")
+
+
+def test_auto_pair_tabular_adapter_rejects_conflicting_repeated_ids(tmp_path):
+    source_root = tmp_path / "conflicting-id"
+    source_root.mkdir()
+    (source_root / "pairs.csv").write_text(
+        "left_id,right_id,left_code,right_code,label\n"
+        "001,a,first,right-a,1\n"
+        "001,b,second,right-b,0\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="conflicting content"):
+        adapt_pair_dataset(source_root, adapter="auto_pair_tabular")
+
+
+def test_auto_pair_tabular_adapter_requires_requested_split_match(tmp_path):
+    source_root = tmp_path / "splits"
+    source_root.mkdir()
+    (source_root / "train.csv").write_text(
+        "left_code,right_code,label\ntrain-left,train-right,0\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="matching split 'test'"):
+        adapt_pair_dataset(
+            source_root,
+            adapter="auto_pair_tabular",
+            adapter_options={"split": "test"},
+        )
 
 
 def test_auto_pair_tabular_adapter_supports_path_columns(tmp_path):

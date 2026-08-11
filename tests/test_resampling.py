@@ -80,6 +80,58 @@ def test_repeated_kfold_splits_marks_method_and_count():
     assert all(split.method == "repeated_kfold" for split in splits)
 
 
+def test_grouped_kfold_seed_changes_unequal_group_layout_and_preserves_coverage():
+    groups = [group for group, size in enumerate((8, 7, 6, 5, 4, 3, 2, 1)) for _ in range(size)]
+
+    first = kfold_splits(len(groups), n_splits=3, groups=groups, seed=1)
+    repeated = kfold_splits(len(groups), n_splits=3, groups=groups, seed=1)
+    second = kfold_splits(len(groups), n_splits=3, groups=groups, seed=3)
+
+    assert [split.test_indices for split in first] == [split.test_indices for split in repeated]
+    assert [split.test_indices for split in first] != [split.test_indices for split in second]
+    for splits in (first, second):
+        assert sorted(index for split in splits for index in split.test_indices) == list(
+            range(len(groups))
+        )
+        assert all(
+            {groups[index] for index in split.train_indices}.isdisjoint(
+                groups[index] for index in split.test_indices
+            )
+            for split in splits
+        )
+
+
+def test_repeated_grouped_kfold_produces_distinct_deterministic_repetitions():
+    groups = [group for group, size in enumerate((8, 7, 6, 5, 4, 3, 2, 1)) for _ in range(size)]
+
+    splits = repeated_kfold_splits(len(groups), n_splits=3, n_repeats=3, groups=groups, seed=7)
+    rerun = repeated_kfold_splits(len(groups), n_splits=3, n_repeats=3, groups=groups, seed=7)
+    layouts = [
+        tuple(split.test_indices for split in splits[start : start + 3]) for start in range(0, 9, 3)
+    ]
+
+    assert len(set(layouts)) == 3
+    assert splits == rerun
+    assert all(
+        sorted(index for fold in layouts[repeat] for index in fold) == list(range(len(groups)))
+        for repeat in range(3)
+    )
+
+
+@pytest.mark.parametrize(
+    ("keyword", "values", "message"),
+    [
+        ("labels", [0, 0, 1, np.nan], "missing"),
+        ("groups", ["a", "a", "b", None], "missing"),
+        ("labels", [[0], [0], [1], [1]], "scalar"),
+        ("groups", [{"a": 1}, {"a": 1}, {"b": 1}, {"b": 1}], "scalar"),
+    ],
+)
+def test_kfold_rejects_missing_or_non_scalar_labels_and_groups(keyword, values, message):
+    with pytest.raises(ValueError, match=message):
+        kfold_splits(4, n_splits=2, **{keyword: values})
+
+
 def test_bootstrap_resamples_returns_requested_rounds():
     splits = bootstrap_resamples(range(15), n_rounds=5, sample_size=10, seed=9)
 

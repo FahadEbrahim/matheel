@@ -1,6 +1,8 @@
+import numpy as np
 import pandas as pd
 import pytest
 
+import matheel.evaluation as evaluation_module
 from matheel.datasets import write_pair_dataset, write_retrieval_dataset
 from matheel.evaluation import (
     evaluate_pair_dataset,
@@ -78,6 +80,40 @@ def test_score_pair_dataset_uses_custom_scorer(tmp_path):
 
     assert scored["similarity_score"].tolist() == [1.0, 0.0]
     assert scored["label"].tolist() == [1, 0]
+
+
+def test_score_pair_dataset_loads_once_and_embeds_unique_texts(tmp_path, monkeypatch):
+    dataset = _write_tiny_pair_dataset(tmp_path / "pairs")
+    load_calls = []
+    encode_calls = []
+
+    class FakeSentenceModel:
+        def encode(self, inputs, convert_to_numpy=True):
+            assert convert_to_numpy is True
+            batch = [inputs] if isinstance(inputs, str) else list(inputs)
+            encode_calls.append(batch)
+            return np.asarray(
+                [[1.0, 0.0] if text == "print(1)" else [0.0, 1.0] for text in batch],
+                dtype=float,
+            )
+
+    def fake_load(*args, **kwargs):
+        load_calls.append((args, kwargs))
+        return FakeSentenceModel()
+
+    monkeypatch.setattr(evaluation_module._similarity, "load_backend_model", fake_load)
+
+    scored = score_pair_dataset(
+        dataset,
+        similarity_options={
+            "feature_weights": {"semantic": 1.0},
+            "vector_backend": "sentence_transformers",
+        },
+    )
+
+    assert scored["similarity_score"].tolist() == pytest.approx([1.0, 0.0])
+    assert len(load_calls) == 1
+    assert encode_calls == [["print(1)", "print(2)"]]
 
 
 def test_evaluate_pair_dataset_returns_scored_pairs_and_metrics(tmp_path):
@@ -208,6 +244,50 @@ def test_score_retrieval_dataset_uses_custom_scorer(tmp_path):
     assert len(scored) == 6
     assert scored.loc[scored["query_id"] == "q1", "similarity_score"].tolist() == [1.0, 0.0, 0.0]
     assert scored["relevance"].sum() == 2.0
+
+
+def test_score_retrieval_dataset_uses_query_aware_pylate_embeddings(
+    tmp_path,
+    monkeypatch,
+):
+    dataset = _write_tiny_retrieval_dataset(tmp_path / "retrieval")
+    load_calls = []
+    encode_calls = []
+
+    class FakePyLateModel:
+        def encode(self, inputs, convert_to_numpy=True, is_query=False):
+            assert convert_to_numpy is True
+            encode_calls.append((str(inputs), bool(is_query)))
+            return np.asarray([[1.0, 0.0]], dtype=float)
+
+    FakePyLateModel.__module__ = "pylate.models"
+
+    def fake_load(*args, **kwargs):
+        load_calls.append((args, kwargs))
+        return FakePyLateModel()
+
+    monkeypatch.setattr(evaluation_module._similarity, "load_backend_model", fake_load)
+
+    scored = score_retrieval_dataset(
+        dataset,
+        similarity_options={
+            "feature_weights": {"semantic": 1.0},
+            "vector_backend": "pylate",
+        },
+    )
+
+    assert len(scored) == 6
+    assert len(load_calls) == 1
+    assert {text for text, is_query in encode_calls if is_query} == {
+        "print(1)",
+        "print(2)",
+    }
+    assert {text for text, is_query in encode_calls if not is_query} == {
+        "print(1)",
+        "print(2)",
+        "print(3)",
+    }
+    assert len(encode_calls) == 5
 
 
 def test_evaluate_retrieval_dataset_returns_ranking_metrics(tmp_path):

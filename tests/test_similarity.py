@@ -56,6 +56,7 @@ def test_get_sim_list_uses_preprocessed_code(tmp_path, monkeypatch):
         number_results=10,
         feature_weights={"semantic": 0.0, "levenshtein": 1.0, "jaro_winkler": 0.0},
         preprocess_mode="basic",
+        code_language="python",
         chunking_method="chonkie_token",
         chunk_size=2,
         chunk_overlap=1,
@@ -87,6 +88,7 @@ def test_get_sim_list_accepts_directory_source(tmp_path, monkeypatch):
         number_results=10,
         feature_weights={"semantic": 0.0, "levenshtein": 1.0, "jaro_winkler": 0.0},
         preprocess_mode="basic",
+        code_language="python",
         chunking_method="chonkie_token",
         chunk_size=2,
         chunk_overlap=1,
@@ -111,6 +113,76 @@ def test_get_sim_list_rejects_regular_file_source(tmp_path):
         )
 
 
+def test_read_zip_source_rejects_duplicate_normalized_member_names(tmp_path):
+    archive_path = tmp_path / "duplicates.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("a.py", "print(1)")
+        archive.writestr("folder/../a.py", "print(2)")
+
+    with pytest.raises(ValueError, match="duplicate normalized member name"):
+        similarity.read_zip_source(archive_path)
+
+
+@pytest.mark.parametrize(
+    "limits,match",
+    [
+        ({"archive_max_members": 1}, "contains 2 members"),
+        ({"archive_max_member_bytes": 3}, "per-member limit"),
+        ({"archive_max_total_bytes": 7}, "expands to more than"),
+    ],
+)
+def test_read_zip_source_enforces_configurable_resource_limits(
+    tmp_path,
+    limits,
+    match,
+):
+    archive_path = tmp_path / "limited.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("a.py", "1234")
+        archive.writestr("b.py", "5678")
+
+    with pytest.raises(ValueError, match=match):
+        similarity.read_zip_source(archive_path, **limits)
+
+
+def test_read_zip_source_can_disable_individual_resource_limits(tmp_path):
+    archive_path = tmp_path / "unlimited.zip"
+    with zipfile.ZipFile(
+        archive_path,
+        "w",
+        compression=zipfile.ZIP_DEFLATED,
+    ) as archive:
+        archive.writestr("large.py", "x" * 10_000)
+
+    names, codes = similarity.read_zip_source(
+        archive_path,
+        archive_max_members=None,
+        archive_max_member_bytes=None,
+        archive_max_total_bytes=None,
+        archive_max_compression_ratio=None,
+    )
+
+    assert names == ["large.py"]
+    assert codes == ["x" * 10_000]
+    assert "archive_max_*" in similarity.get_sim_list.__doc__
+
+
+def test_read_zip_source_enforces_compression_ratio_limit(tmp_path):
+    archive_path = tmp_path / "compressed.zip"
+    with zipfile.ZipFile(
+        archive_path,
+        "w",
+        compression=zipfile.ZIP_DEFLATED,
+    ) as archive:
+        archive.writestr("repeated.py", "value = 1\n" * 1_000)
+
+    with pytest.raises(ValueError, match="compression ratio"):
+        similarity.read_zip_source(
+            archive_path,
+            archive_max_compression_ratio=2.0,
+        )
+
+
 def test_get_sim_list_rejects_non_positive_number_results(tmp_path):
     archive_path = tmp_path / "codes.zip"
     with zipfile.ZipFile(archive_path, "w") as archive:
@@ -123,6 +195,55 @@ def test_get_sim_list_rejects_non_positive_number_results(tmp_path):
             number_results=0,
             feature_weights={"levenshtein": 1.0},
         )
+
+
+@pytest.mark.parametrize(
+    "options,match",
+    [
+        ({"chunking_method": "unknown"}, "Unsupported chunking method"),
+        ({"chunk_aggregation": "unknown"}, "Unsupported chunk aggregation"),
+        ({"levenshtein_weights": (1, 0, 1)}, "levenshtein_weights"),
+        ({"levenshtein_weights": (1, 1.5, 1)}, "levenshtein_weights"),
+        ({"jaro_winkler_prefix_weight": float("nan")}, "prefix_weight"),
+        ({"winnowing_kgram": 1.5}, "winnowing_kgram"),
+        ({"static_vector_dim": 7}, "static_vector_dim"),
+    ],
+)
+def test_calculate_similarity_rejects_invalid_public_options(options, match):
+    with pytest.raises(ValueError, match=match):
+        similarity.calculate_similarity(
+            "left",
+            "right",
+            feature_weights={"levenshtein": 1.0},
+            vector_backend="static_hash",
+            **options,
+        )
+
+
+def test_static_hash_embeddings_honor_chunking_options(monkeypatch):
+    chunk_calls = []
+
+    def fake_chunk_text(code, **kwargs):
+        chunk_calls.append((code, kwargs))
+        return ["first", "second"]
+
+    monkeypatch.setattr(similarity, "chunk_text", fake_chunk_text)
+    monkeypatch.setattr(
+        similarity,
+        "build_static_hash_vectors",
+        lambda codes, dim, lowercase: np.asarray([[1.0, 0.0], [0.0, 1.0]]),
+    )
+
+    embeddings = similarity.build_document_embeddings(
+        None,
+        ["whole document"],
+        chunking_method="code",
+        chunk_aggregation="mean",
+        vector_backend="static_hash",
+    )
+
+    assert len(chunk_calls) == 1
+    assert embeddings[0].tolist() == [0.5, 0.5]
 
 
 def test_load_model_keeps_sentence_transformer_compatibility_wrapper(monkeypatch):

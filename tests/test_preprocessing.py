@@ -612,6 +612,71 @@ def test_basic_preprocess_preserves_python_floor_division():
     assert processed == "value = total // count"
 
 
+def test_preprocess_preserves_rust_attribute_as_code():
+    code = """
+    #[derive(Debug, Clone)]
+    struct Demo { value: i32 } // trailing comment
+    """
+
+    basic = preprocess_code(code, mode="basic", language="rust")
+    advanced = preprocess_code(code, mode="advanced", language="rust")
+
+    assert basic == "#[derive(Debug, Clone)] struct Demo { value: i32 }"
+    assert advanced.startswith("# [")
+    assert "struct" in advanced
+    assert "trailing" not in advanced
+
+
+def test_preprocess_preserves_objective_c_import_before_advanced_import_stripping():
+    code = """
+    #import <Foundation/Foundation.h>
+    int value = 1; // trailing comment
+    """
+
+    basic = preprocess_code(code, mode="basic", language="objc")
+    advanced = preprocess_code(code, mode="advanced", language="objc")
+
+    assert basic == "#import <Foundation/Foundation.h> int value = 1;"
+    assert "#import" not in advanced
+    assert "int" in advanced
+    assert "<NUM>" in advanced
+
+
+def test_preprocess_preserves_hash_lines_inside_python_triple_quoted_strings():
+    code = '''
+    message = """
+    # Markdown heading
+    body text
+    """
+    result = 1  # trailing comment
+    '''
+
+    basic = preprocess_code(code, mode="basic", language="python")
+    advanced = preprocess_code(code, mode="advanced", language="python")
+
+    assert '# Markdown heading' in basic
+    assert "trailing comment" not in basic
+    assert advanced == "id1 = <STR> id2 = <NUM>"
+
+
+def test_preprocess_handles_parenthesized_python_from_import_as_one_construct():
+    code = """
+    from package import (
+        first,
+        second,
+    )
+    result = first
+    """
+
+    basic = preprocess_code(code, mode="basic", language="python")
+    advanced = preprocess_code(code, mode="advanced", language="python")
+
+    assert basic == "from package import ( first, second, ) result = first"
+    assert "package" not in advanced
+    assert "second" not in advanced
+    assert advanced == "id1 = id2"
+
+
 def test_advanced_preprocess_strips_imports_literals_and_identifiers():
     code = """
     import os
