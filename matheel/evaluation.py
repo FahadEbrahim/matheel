@@ -1,7 +1,9 @@
 import math
+from inspect import signature
 
 import pandas as pd
 
+from . import similarity as _similarity
 from .algorithms import (
     attach_algorithm_metadata,
     prepare_algorithm_dataset,
@@ -10,6 +12,8 @@ from .algorithms import (
 )
 from .calibration import evaluate_threshold
 from .datasets import PairDataset, RetrievalDataset, load_code_texts, load_pair_dataset, load_retrieval_dataset
+from .feature_weights import resolve_feature_weights
+from .model_routing import backend_is_multivector, load_hf_model_info
 from .preprocessing import preprocess_code
 from .resampling import DataSplit, summarize_metric_samples
 from .similarity import calculate_similarity
@@ -33,6 +37,19 @@ def score_pair_dataset(
     resolved_algorithm = resolve_pair_algorithm(algorithm) if algorithm is not None else None
     if resolved_algorithm is not None:
         texts = _preprocess_algorithm_texts(texts, options)
+    pair_rows = dataset.pairs.to_dict(orient="records")
+    builtin_context = None
+    if scorer is None and resolved_algorithm is None and pair_rows:
+        used_file_ids = {
+            str(row[key])
+            for row in pair_rows
+            for key in ("left_id", "right_id")
+        }
+        builtin_context = _prepare_builtin_scoring_context(
+            texts,
+            options,
+            document_file_ids=used_file_ids,
+        )
     dataset_context = (
         prepare_algorithm_dataset(
             resolved_algorithm,
@@ -44,7 +61,7 @@ def score_pair_dataset(
         else None
     )
     rows = []
-    for pair in dataset.pairs.to_dict(orient="records"):
+    for pair in pair_rows:
         left_id = str(pair["left_id"])
         right_id = str(pair["right_id"])
         left_text = texts[left_id]
@@ -59,7 +76,12 @@ def score_pair_dataset(
                 row=pair,
             )
         elif scorer is None:
-            score = calculate_similarity(left_text, right_text, **options)
+            score = _score_builtin_pair(
+                builtin_context,
+                left_id,
+                right_id,
+                left_is_query=False,
+            )
         else:
             score = scorer(left_text, right_text, pair)
         numeric_score = float(score)
@@ -153,6 +175,14 @@ def score_retrieval_dataset(
 
     query_rows = dataset.queries.to_dict(orient="records")
     corpus_rows = dataset.corpus.to_dict(orient="records")
+    builtin_context = None
+    if scorer is None and resolved_algorithm is None and query_rows and corpus_rows:
+        builtin_context = _prepare_builtin_scoring_context(
+            texts,
+            options,
+            query_file_ids={str(row["file_id"]) for row in query_rows},
+            document_file_ids={str(row["file_id"]) for row in corpus_rows},
+        )
     for query in query_rows:
         query_id = str(query["query_id"])
         query_file_id = str(query["file_id"])
@@ -178,7 +208,12 @@ def score_retrieval_dataset(
                     row=row,
                 )
             elif scorer is None:
-                score = calculate_similarity(query_text, document_text, **options)
+                score = _score_builtin_pair(
+                    builtin_context,
+                    query_file_id,
+                    document_file_id,
+                    left_is_query=True,
+                )
             else:
                 score = scorer(query_text, document_text, row)
             numeric_score = float(score)
@@ -191,6 +226,240 @@ def score_retrieval_dataset(
     if resolved_algorithm is not None:
         attach_algorithm_metadata(scored, resolved_algorithm, algorithm_options=algorithm_options)
     return scored
+
+
+def _prepare_builtin_scoring_context(
+    texts,
+    options,
+    query_file_ids=None,
+    document_file_ids=None,
+):
+    options = dict(options or {})
+    signature(calculate_similarity).bind("", "", **options)
+
+    chunking_method = _similarity.normalize_chunking_method(
+        options.get("chunking_method", "none")
+    )
+    chunk_aggregation = _similarity.normalize_chunk_aggregation(
+        options.get("chunk_aggregation", "mean")
+    )
+    _similarity.validate_code_metric_options(
+        options.get("code_metric_weight", 0.0),
+        options.get("codebleu_component_weights"),
+    )
+    _similarity.validate_edit_distance_options(
+        options.get("levenshtein_weights"),
+        jaro_winkler_prefix_weight=options.get(
+            "jaro_winkler_prefix_weight",
+            0.1,
+        ),
+    )
+    _similarity.validate_lexical_baseline_options(
+        winnowing_kgram=options.get("winnowing_kgram", 5),
+        winnowing_window=options.get("winnowing_window", 4),
+        gst_min_match_length=options.get("gst_min_match_length", 5),
+    )
+    _similarity.normalize_lexical_tokenizer(options.get("lexical_tokenizer", "raw"))
+
+    resolved_weights = resolve_feature_weights(
+        feature_weights=options.get("feature_weights"),
+        code_metric_weight=options.get("code_metric_weight", 0.0),
+    )
+    _similarity.validate_active_code_metric_weight(
+        options.get("code_metric", "none"),
+        resolved_weights,
+    )
+
+    requested_backend = options.get("vector_backend", "auto")
+    model_name = options.get("model_name", _similarity.DEFAULT_MODEL_NAME)
+    model_info = None
+    if (
+        resolved_weights.get("semantic", 0.0) > 0.0
+        and str(requested_backend or "auto").strip().lower() in {"", "auto"}
+    ):
+        model_info = load_hf_model_info(model_name or _similarity.DEFAULT_MODEL_NAME)
+    vector_backend, static_vector_dim = _similarity.validate_vector_options(
+        requested_backend,
+        options.get("static_vector_dim", 256),
+        model_name=model_name,
+        model_info=model_info,
+    )
+    selected_similarity = _similarity.normalize_similarity_function_name(
+        options.get("similarity_function", "cosine")
+    )
+    selected_pooling = _similarity.normalize_pooling_method_name(
+        options.get("pooling_method", "mean")
+    )
+    normalize_semantic_scores = bool(options.get("normalize_semantic_scores", False))
+    _similarity.validate_semantic_score_scale_options(
+        resolved_weights,
+        vector_backend,
+        selected_similarity,
+        normalize_semantic_scores=normalize_semantic_scores,
+    )
+
+    prepared_texts = _preprocess_algorithm_texts(texts, options)
+    semantic_weight = float(resolved_weights.get("semantic", 0.0))
+    nonsemantic_weights = {
+        name: float(weight)
+        for name, weight in resolved_weights.items()
+        if name != "semantic" and float(weight) > 0.0
+    }
+    nonsemantic_weight = float(sum(nonsemantic_weights.values()))
+    nonsemantic_options = None
+    if nonsemantic_weight > 0.0:
+        nonsemantic_options = dict(options)
+        nonsemantic_options.update(
+            {
+                "preprocess_mode": "none",
+                "chunking_method": chunking_method,
+                "chunk_aggregation": chunk_aggregation,
+                "feature_weights": nonsemantic_weights,
+                "code_metric_weight": 0.0,
+            }
+        )
+
+    context = {
+        "texts": prepared_texts,
+        "semantic_weight": semantic_weight,
+        "nonsemantic_weight": nonsemantic_weight,
+        "nonsemantic_options": nonsemantic_options,
+        "vector_backend": vector_backend,
+        "similarity_function": selected_similarity,
+        "normalize_semantic_scores": normalize_semantic_scores,
+        "multivector_bidirectional": bool(
+            options.get("multivector_bidirectional", False)
+        ),
+        "embeddings": {},
+    }
+    if semantic_weight <= 0.0:
+        return context
+
+    model = _similarity.load_backend_model(
+        model_name,
+        vector_backend=vector_backend,
+        device=options.get("device", "auto"),
+        similarity_function=selected_similarity,
+        pooling_method=selected_pooling,
+        max_token_length=options.get("max_token_length"),
+    )
+    query_ids = {
+        str(file_id)
+        for file_id in (query_file_ids or ())
+        if str(file_id) in prepared_texts
+    }
+    document_ids = {
+        str(file_id)
+        for file_id in (document_file_ids or ())
+        if str(file_id) in prepared_texts
+    }
+    if backend_is_multivector(vector_backend):
+        _add_semantic_embeddings(
+            context,
+            model,
+            prepared_texts,
+            query_ids,
+            is_query=True,
+            options=options,
+            chunking_method=chunking_method,
+            chunk_aggregation=chunk_aggregation,
+            static_vector_dim=static_vector_dim,
+            selected_pooling=selected_pooling,
+        )
+        _add_semantic_embeddings(
+            context,
+            model,
+            prepared_texts,
+            document_ids,
+            is_query=False,
+            options=options,
+            chunking_method=chunking_method,
+            chunk_aggregation=chunk_aggregation,
+            static_vector_dim=static_vector_dim,
+            selected_pooling=selected_pooling,
+        )
+    else:
+        _add_semantic_embeddings(
+            context,
+            model,
+            prepared_texts,
+            query_ids | document_ids,
+            is_query=False,
+            options=options,
+            chunking_method=chunking_method,
+            chunk_aggregation=chunk_aggregation,
+            static_vector_dim=static_vector_dim,
+            selected_pooling=selected_pooling,
+        )
+    return context
+
+
+def _add_semantic_embeddings(
+    context,
+    model,
+    prepared_texts,
+    file_ids,
+    *,
+    is_query,
+    options,
+    chunking_method,
+    chunk_aggregation,
+    static_vector_dim,
+    selected_pooling,
+):
+    unique_texts = list(
+        dict.fromkeys(prepared_texts[file_id] for file_id in sorted(file_ids))
+    )
+    if not unique_texts:
+        return
+    embeddings = _similarity.build_document_embeddings(
+        model,
+        unique_texts,
+        chunking_method=chunking_method,
+        chunk_size=options.get("chunk_size", 200),
+        chunk_overlap=options.get("chunk_overlap", 0),
+        max_chunks=options.get("max_chunks", 0),
+        chunk_aggregation=chunk_aggregation,
+        chunk_language=options.get("chunk_language", "text"),
+        chunker_options=options.get("chunker_options"),
+        vector_backend=context["vector_backend"],
+        static_vector_dim=static_vector_dim,
+        static_vector_lowercase=bool(options.get("static_vector_lowercase", True)),
+        pooling_method=selected_pooling,
+        is_query=is_query,
+    )
+    role = bool(is_query) if backend_is_multivector(context["vector_backend"]) else False
+    for text, embedding in zip(unique_texts, embeddings, strict=True):
+        context["embeddings"][(role, text)] = embedding
+
+
+def _score_builtin_pair(context, left_id, right_id, left_is_query=False):
+    left_text = context["texts"][str(left_id)]
+    right_text = context["texts"][str(right_id)]
+    score = 0.0
+    if context["semantic_weight"] > 0.0:
+        multivector = backend_is_multivector(context["vector_backend"])
+        left_role = bool(left_is_query) if multivector else False
+        embedding1 = context["embeddings"][(left_role, left_text)]
+        embedding2 = context["embeddings"][(False, right_text)]
+        semantic_score = _similarity.semantic_similarity(
+            embedding1,
+            embedding2,
+            vector_backend=context["vector_backend"],
+            multivector_bidirectional=context["multivector_bidirectional"],
+            similarity_function=context["similarity_function"],
+            normalize_semantic_scores=context["normalize_semantic_scores"],
+        )
+        score += context["semantic_weight"] * float(semantic_score)
+
+    if context["nonsemantic_weight"] > 0.0:
+        nonsemantic_score = calculate_similarity(
+            left_text,
+            right_text,
+            **context["nonsemantic_options"],
+        )
+        score += context["nonsemantic_weight"] * float(nonsemantic_score)
+    return float(score)
 
 
 def retrieval_ranking_metrics(

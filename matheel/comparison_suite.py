@@ -65,7 +65,9 @@ def parse_run_configs(raw_data):
         runs = raw_data
     if not isinstance(runs, list):
         raise ValueError("Comparison config must be a list or an object with a 'runs' list.")
-    return [normalize_run_config(item, index=index) for index, item in enumerate(runs, start=1)]
+    normalized = [normalize_run_config(item, index=index) for index, item in enumerate(runs, start=1)]
+    _validate_unique_run_names(normalized)
+    return normalized
 
 
 def normalize_run_config(config, index=1):
@@ -249,6 +251,7 @@ def run_comparison_suite(
     progress_callback=None,
 ):
     normalized_runs = [normalize_run_config(config, index=index) for index, config in enumerate(run_configs, start=1)]
+    _validate_unique_run_names(normalized_runs)
     summary_rows = []
     result_frames = {}
 
@@ -312,6 +315,41 @@ def run_comparison_suite(
         write_reproducibility_snapshot(snapshot, reproducibility_out)
 
     return summary, result_frames
+
+
+def _validate_unique_run_names(runs):
+    names = [str(run["run_name"]) for run in runs]
+    identities = [name.strip().casefold() for name in names]
+    if any(not identity for identity in identities):
+        raise ValueError("Comparison run names must not be blank.")
+    duplicate_identities = sorted(
+        {identity for identity in identities if identities.count(identity) > 1}
+    )
+    if duplicate_identities:
+        duplicates = ", ".join(
+            repr(names[identities.index(identity)]) for identity in duplicate_identities
+        )
+        raise ValueError(f"Comparison run names must be unique; duplicate name(s): {duplicates}.")
+
+    slugs = [slugify_run_name(name) for name in names]
+    slug_identities = [slug.casefold() for slug in slugs]
+    duplicate_slugs = sorted(
+        {slug for slug in slug_identities if slug_identities.count(slug) > 1}
+    )
+    if duplicate_slugs:
+        collisions = []
+        for slug in duplicate_slugs:
+            colliding_names = [
+                name
+                for name, candidate in zip(names, slug_identities)
+                if candidate == slug
+            ]
+            collisions.append(f"{slug!r} ({', '.join(repr(name) for name in colliding_names)})")
+        raise ValueError(
+            "Comparison run names must produce unique artifact names; slug collision(s): "
+            + ", ".join(collisions)
+            + "."
+        )
 
 
 def _cache_key_payload(source_path, run, cache_dir, use_cache, cache_seed):

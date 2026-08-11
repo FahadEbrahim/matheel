@@ -95,6 +95,7 @@ def kfold_splits(items_or_count, n_splits=5, shuffle=True, seed=None, labels=Non
         shuffle=shuffle,
         seed=seed,
     )
+    _validate_fold_test_coverage(fold_tests, count)
 
     all_indices = np.arange(count, dtype=int)
     splits = []
@@ -128,18 +129,26 @@ def repeated_kfold_splits(
         raise ValueError("n_repeats must be at least 1.")
 
     generator = _rng(seed)
-    seeds = generator.integers(0, np.iinfo(np.int32).max, size=repeats)
     splits = []
-    for repeat_index, repeat_seed in enumerate(seeds.tolist(), start=1):
-        repeated = kfold_splits(
-            items_or_count,
-            n_splits=n_splits,
-            shuffle=shuffle,
-            seed=int(repeat_seed),
-            labels=labels,
-            groups=groups,
-            prefix=f"repeat_{repeat_index}_fold",
-        )
+    seen_layouts = set()
+    for repeat_index in range(1, repeats + 1):
+        repeated = None
+        for _attempt in range(100 if shuffle else 1):
+            repeat_seed = int(generator.integers(0, np.iinfo(np.int32).max))
+            candidate = kfold_splits(
+                items_or_count,
+                n_splits=n_splits,
+                shuffle=shuffle,
+                seed=repeat_seed,
+                labels=labels,
+                groups=groups,
+                prefix=f"repeat_{repeat_index}_fold",
+            )
+            layout = tuple(split.test_indices for split in candidate)
+            repeated = candidate
+            if not shuffle or layout not in seen_layouts:
+                seen_layouts.add(layout)
+                break
         for split in repeated:
             splits.append(
                 DataSplit(
@@ -304,9 +313,20 @@ def _rng(seed=None):
 def _normalize_optional_array(values, expected_length, name):
     if values is None:
         return None
-    array = np.asarray(values)
-    if array.shape[0] != expected_length:
+    array = np.asarray(values, dtype=object)
+    if array.ndim != 1:
+        raise ValueError(f"{name} must be one-dimensional and contain scalar values.")
+    if len(array) != expected_length:
         raise ValueError(f"{name} must have length {expected_length}.")
+    for value in array.tolist():
+        if isinstance(value, (dict, list, set, tuple, np.ndarray, pd.Series, pd.DataFrame)):
+            raise ValueError(f"{name} must be one-dimensional and contain scalar values.")
+        if bool(pd.isna(value)):
+            raise ValueError(f"{name} must not contain missing values.")
+        try:
+            hash(value)
+        except TypeError as exc:
+            raise ValueError(f"{name} must contain hashable scalar values.") from exc
     return array
 
 
@@ -346,8 +366,8 @@ def _stratified_single_split(count, labels, train_size, validation_size, test_si
     validation_parts = []
     test_parts = []
 
-    for label in np.unique(labels):
-        label_indices = np.where(labels == label)[0]
+    for label, label_indices in _value_indices(labels).items():
+        label_indices = np.asarray(label_indices, dtype=int)
         if shuffle:
             generator.shuffle(label_indices)
         train_count, validation_count, _ = _partition_counts(
@@ -398,9 +418,11 @@ def _validate_stratified_partition_counts(label_count, counts, ratios):
         )
 
 
-def _group_single_split(count, groups, train_size, validation_size, test_size, shuffle=True, seed=None):
+def _group_single_split(
+    count, groups, train_size, validation_size, test_size, shuffle=True, seed=None
+):
     generator = _rng(seed)
-    unique_groups = np.unique(groups)
+    unique_groups = _unique_values(groups)
     if shuffle:
         generator.shuffle(unique_groups)
 
@@ -443,17 +465,15 @@ def _group_single_split(count, groups, train_size, validation_size, test_size, s
             while group_position < max_position:
                 group = unique_groups[group_position]
                 selected_groups.append(group)
-                selected_count += int(np.sum(groups == group))
+                selected_count += len(_indices_for_value(groups, group))
                 group_position += 1
                 if selected_count >= target_count:
                     break
 
         for group in selected_groups:
-            partition_indices[partition_name].extend(np.where(groups == group)[0].tolist())
+            partition_indices[partition_name].extend(_indices_for_value(groups, group))
 
-    empty_partitions = [
-        name for name, _ in requested_partitions if not partition_indices[name]
-    ]
+    empty_partitions = [name for name, _ in requested_partitions if not partition_indices[name]]
     if empty_partitions:
         raise ValueError(
             "Grouped single split could not populate requested partition(s): "
@@ -475,28 +495,43 @@ def _folds_from_labels_or_groups(count, groups=None, labels=None, n_splits=5, sh
 
     generator = _rng(seed)
     if groups is not None:
-        unique_groups = np.unique(groups)
+        unique_groups = _unique_values(groups)
         if n_splits > len(unique_groups):
             raise ValueError("n_splits must not exceed the number of unique groups.")
+        grouped_indices = _value_indices(groups)
+        group_sizes = {group: len(grouped_indices[group]) for group in unique_groups}
+        group_order = sorted(unique_groups, key=lambda group: (-group_sizes[group], str(group)))
         if shuffle:
-            generator.shuffle(unique_groups)
-        group_sizes = {group: int(np.sum(groups == group)) for group in unique_groups}
+            for start in range(0, len(group_order), 2):
+                block = group_order[start : start + 2]
+                generator.shuffle(block)
+                group_order[start : start + 2] = block
         fold_groups = [[] for _ in range(n_splits)]
         fold_sizes = [0] * n_splits
-        for group in sorted(unique_groups, key=lambda item: (-group_sizes[item], str(item))):
-            target = int(np.argmin(fold_sizes))
+        for group in group_order:
+            smallest_size = min(fold_sizes)
+            candidates = [index for index, size in enumerate(fold_sizes) if size == smallest_size]
+            target = int(generator.choice(candidates)) if shuffle else candidates[0]
             fold_groups[target].append(group)
             fold_sizes[target] += group_sizes[group]
-        return [np.where(np.isin(groups, fold_groups[index]))[0] for index in range(n_splits)]
+        return [
+            np.asarray(
+                sorted(
+                    index for group in fold_groups[fold_index] for index in grouped_indices[group]
+                ),
+                dtype=int,
+            )
+            for fold_index in range(n_splits)
+        ]
 
     if labels is not None:
-        unique_labels, label_counts = np.unique(labels, return_counts=True)
-        smallest_label_count = int(np.min(label_counts)) if label_counts.size else 0
+        label_indices_by_value = _value_indices(labels)
+        smallest_label_count = min(map(len, label_indices_by_value.values()), default=0)
         if n_splits > smallest_label_count:
             raise ValueError("n_splits must not exceed the smallest label count.")
         folds = [[] for _ in range(n_splits)]
-        for label in unique_labels:
-            label_indices = np.where(labels == label)[0]
+        for label_indices in label_indices_by_value.values():
+            label_indices = np.asarray(label_indices, dtype=int)
             if shuffle:
                 generator.shuffle(label_indices)
             for index, value in enumerate(label_indices.tolist()):
@@ -505,6 +540,29 @@ def _folds_from_labels_or_groups(count, groups=None, labels=None, n_splits=5, sh
 
     indices = _ordered_indices(count, shuffle=shuffle, seed=seed)
     return [np.asarray(values, dtype=int) for values in np.array_split(indices, n_splits)]
+
+
+def _unique_values(values):
+    return list(_value_indices(values))
+
+
+def _value_indices(values):
+    indices = {}
+    for index, value in enumerate(values.tolist()):
+        indices.setdefault(value, []).append(index)
+    return indices
+
+
+def _indices_for_value(values, target):
+    return _value_indices(values)[target]
+
+
+def _validate_fold_test_coverage(fold_tests, count):
+    if any(len(indices) == 0 for indices in fold_tests):
+        raise ValueError("Every fold must contain at least one test item.")
+    coverage = [int(index) for indices in fold_tests for index in indices]
+    if len(coverage) != count or sorted(coverage) != list(range(count)):
+        raise RuntimeError("K-fold test indices must cover every item exactly once.")
 
 
 def _concat_sorted(parts):

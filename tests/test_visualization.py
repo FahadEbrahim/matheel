@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -55,6 +56,28 @@ def test_project_embeddings_reports_pca_for_tiny_auto_projection():
     assert projection.attrs["projection_method"] == "pca"
 
 
+def test_project_embeddings_umap_runs_real_optional_reducer():
+    pytest.importorskip("umap")
+    embeddings = [
+        [1.0, 0.0, 0.0],
+        [0.9, 0.1, 0.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 0.9, 0.1],
+        [0.0, 0.0, 1.0],
+    ]
+
+    projection = project_embeddings(embeddings, method="umap", seed=11)
+    minimum_projection = project_embeddings(embeddings[:3], method="umap", seed=11)
+
+    assert projection.shape == (5, 2)
+    assert projection.attrs["projection_method"] == "umap"
+    assert projection.attrs["requested_projection_method"] == "umap"
+    assert np.isfinite(projection[["x", "y"]].to_numpy()).all()
+    assert minimum_projection.shape == (3, 2)
+    assert minimum_projection.attrs["projection_method"] == "umap"
+    assert np.isfinite(minimum_projection[["x", "y"]].to_numpy()).all()
+
+
 def test_project_embeddings_rejects_invalid_values():
     with pytest.raises(ValueError, match="finite"):
         project_embeddings([[1.0], [float("nan")]], method="pca")
@@ -73,6 +96,52 @@ def test_build_embedding_projection_merges_metadata():
 
     assert projection["document_id"].tolist() == ["a", "b"]
     assert projection["role"].tolist() == ["query", "document"]
+
+
+def test_build_embedding_projection_rejects_duplicate_ids_and_metadata_rows():
+    with pytest.raises(ValueError, match=r"ids document_id values must be unique.*a"):
+        build_embedding_projection([[1.0], [2.0]], ids=["a", "a"], method="pca")
+
+    with pytest.raises(ValueError, match=r"metadata document_id values must be unique.*a"):
+        build_embedding_projection(
+            [[1.0], [2.0]],
+            ids=["a", "b"],
+            metadata=[{"document_id": "a"}, {"document_id": "a"}],
+            method="pca",
+        )
+
+
+def test_dataset_map_payload_json_normalizes_list_metadata():
+    projection = build_embedding_projection(
+        [[1.0, 0.0], [0.0, 1.0]],
+        ids=["a", "b"],
+        metadata=[
+            {"document_id": "a", "tags": ["train", np.int64(2), np.nan]},
+            {"document_id": "b", "tags": ["test"], "details": {"missing": pd.NA}},
+        ],
+        method="pca",
+    )
+
+    payload = dataset_map_payload(projection)
+
+    assert payload["points"][0]["tags"] == ["train", 2, None]
+    assert payload["points"][1]["details"] == {"missing": None}
+    json.dumps(payload, allow_nan=False)
+    assert "train" in dataset_map_html(projection, color_column="tags")
+
+
+def test_dataset_map_outputs_reject_duplicate_projection_ids():
+    projection = pd.DataFrame(
+        [
+            {"document_id": "a", "x": 0.0, "y": 0.0},
+            {"document_id": "a", "x": 1.0, "y": 1.0},
+        ]
+    )
+
+    with pytest.raises(ValueError, match=r"projection document_id values must be unique.*a"):
+        dataset_map_payload(projection)
+    with pytest.raises(ValueError, match=r"projection document_id values must be unique.*a"):
+        dataset_map_html(projection)
 
 
 def test_dataset_embedding_map_writes_pair_artifacts(tmp_path):
@@ -181,6 +250,14 @@ def test_dataset_embedding_map_preserves_file_and_extra_metadata(tmp_path):
     assert "train" in split_html
     assert "test" in split_html
     assert score_payload["points"][0]["metric_score"] == 0.95
+
+    with pytest.raises(ValueError, match=r"document_metadata document_id values must be unique.*a"):
+        build_dataset_embedding_map(
+            dataset_root,
+            kind="pair",
+            method="pca",
+            document_metadata=[{"document_id": "a"}, {"document_id": "a"}],
+        )
 
 
 def test_dataset_embedding_map_marks_retrieval_roles(tmp_path):

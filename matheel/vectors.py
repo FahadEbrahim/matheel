@@ -253,39 +253,51 @@ def configure_model_max_token_length(model, max_token_length=None):
     if model is None:
         return model
 
+    requested = _coerce_token_length(max_token_length)
+    if requested is None:
+        return model
     detected = _detect_token_length_from_model(model)
-    selected = resolve_max_token_length(
-        max_token_length,
+    fallback_cap = resolve_max_token_length(
+        requested,
         detected_max_token_length=detected,
     )
-    if selected is None:
-        return model
 
-    has_document_length = hasattr(model, "document_length")
-    has_query_length = hasattr(model, "query_length")
-
-    if has_document_length:
-        try:
-            model.document_length = selected
-        except Exception:
-            pass
-    elif has_query_length:
-        try:
-            model.query_length = selected
-        except Exception:
-            pass
-    if hasattr(model, "max_seq_length"):
-        model.max_seq_length = selected
-    if hasattr(model, "max_length"):
-        try:
-            model.max_length = selected
-        except Exception:
-            pass
+    for attr_name in (
+        "document_length",
+        "query_length",
+        "max_seq_length",
+        "max_length",
+    ):
+        _lower_model_length_attribute(
+            model,
+            attr_name,
+            requested,
+            fallback_cap=fallback_cap,
+        )
 
     tokenizer = getattr(model, "tokenizer", None)
-    if tokenizer is not None and hasattr(tokenizer, "model_max_length"):
-        tokenizer.model_max_length = selected
+    if tokenizer is not None:
+        _lower_model_length_attribute(
+            tokenizer,
+            "model_max_length",
+            requested,
+            fallback_cap=fallback_cap,
+        )
     return model
+
+
+def _lower_model_length_attribute(target, attr_name, requested, fallback_cap=None):
+    try:
+        current_value = getattr(target, attr_name)
+    except Exception:
+        return
+    current = _coerce_token_length(current_value)
+    current_cap = current if current is not None else fallback_cap
+    effective = min(requested, current_cap) if current_cap is not None else requested
+    try:
+        setattr(target, attr_name, effective)
+    except Exception:
+        pass
 
 
 def tokenize_for_static_vectors(text, lowercase=True):
@@ -624,6 +636,7 @@ def build_multivector_embeddings(
     max_chunks=0,
     chunk_language="text",
     chunker_options=None,
+    is_query=False,
 ):
     embeddings_by_doc = []
 
@@ -644,7 +657,11 @@ def build_multivector_embeddings(
                 chunker_options=chunker_options,
             )
             inputs = chunks if len(chunks) > 1 else chunks[0]
-        chunk_embeddings = _encode_multivector_to_numpy(model, inputs, is_query=False)
+        chunk_embeddings = _encode_multivector_to_numpy(
+            model,
+            inputs,
+            is_query=bool(is_query),
+        )
         chunk_embeddings = _stack_multivectors(chunk_embeddings)
         embeddings_by_doc.append(chunk_embeddings)
 

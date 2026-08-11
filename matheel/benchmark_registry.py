@@ -11,6 +11,16 @@ from .leaderboard import leaderboard_payload
 
 
 REGISTRY_SCHEMA_VERSION = 1
+_CREDENTIAL_KEYS = frozenset(
+    {
+        "api_key",
+        "authorization",
+        "client_secret",
+        "password",
+        "secret",
+        "token",
+    }
+)
 
 
 def empty_benchmark_registry():
@@ -31,7 +41,7 @@ def load_benchmark_registry(registry_path):
         raise ValueError("Benchmark registry runs must be a list.")
     return {
         "schema_version": int(payload.get("schema_version") or REGISTRY_SCHEMA_VERSION),
-        "runs": [_clean_json_object(run) for run in runs],
+        "runs": [_clean_json_object(_redact_credentials(run)) for run in runs],
     }
 
 
@@ -40,7 +50,7 @@ def write_benchmark_registry(registry_path, registry):
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": int(registry.get("schema_version") or REGISTRY_SCHEMA_VERSION),
-        "runs": [_clean_json_object(run) for run in registry.get("runs", [])],
+        "runs": [_clean_json_object(_redact_credentials(run)) for run in registry.get("runs", [])],
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return path
@@ -164,7 +174,7 @@ def _coerce_leaderboard_payload(report_or_path):
         payload = leaderboard_payload(report_or_path)
     if not _looks_like_payload(payload):
         raise ValueError("Expected a Matheel leaderboard report or JSON artifact.")
-    return _clean_json_object(payload)
+    return _clean_json_object(_redact_credentials(payload))
 
 
 def _looks_like_payload(value):
@@ -204,6 +214,33 @@ def _sanitize_artifact_paths(artifact_paths):
 
 def _clean_json_object(value):
     return json.loads(json.dumps(value, default=_json_default, allow_nan=False))
+
+
+def _redact_credentials(value):
+    if isinstance(value, dict):
+        return {
+            str(key): "<redacted>" if _is_credential_key(key) else _redact_credentials(item)
+            for key, item in value.items()
+        }
+    if isinstance(value, (list, tuple)):
+        return [_redact_credentials(item) for item in value]
+    return value
+
+
+def _is_credential_key(value):
+    name = "".join(
+        character
+        for character in str(value or "").strip().casefold()
+        if character.isalnum()
+    )
+    exact = {"".join(character for character in key if character.isalnum()) for key in _CREDENTIAL_KEYS}
+    return (
+        name in exact
+        or name.endswith("apikey")
+        or name.endswith("password")
+        or name.endswith("secret")
+        or name.endswith("token")
+    )
 
 
 def _json_default(value):

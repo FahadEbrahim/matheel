@@ -64,7 +64,7 @@ jobs:
           python -m pip install -e ".[all,dev]"
 
       - name: Check integration test selection
-        run: python -m pytest -m integration --collect-only
+        run: python -m pytest -o addopts='' -m integration tests/test_real_models.py --collect-only
 
       - name: Run real-model integration tests
-        run: python -m pytest -m integration
+        run: python -m pytest -o addopts='' -m integration tests/test_real_models.py

@@ -39,6 +39,14 @@ _TASK_ALIASES = {
 _PATH_KEYS = {"identifier", "path", "algorithm_path", "destination", "adapted_destination"}
 _ALWAYS_LOCAL_PATH_KEYS = {"path", "algorithm_path", "destination", "adapted_destination"}
 _MAYBE_LOCAL_PATH_KEYS = {"identifier"}
+_CREDENTIAL_KEYS = {
+    "api_key",
+    "authorization",
+    "client_secret",
+    "password",
+    "secret",
+    "token",
+}
 
 
 def available_leaderboard_metrics(task_family=None):
@@ -54,6 +62,13 @@ def available_leaderboard_metrics(task_family=None):
 def load_leaderboard_manifest(config_path):
     path = Path(config_path)
     payload = json.loads(path.read_text(encoding="utf-8"))
+    credential_paths = _credential_paths(payload)
+    if credential_paths:
+        names = ", ".join(credential_paths)
+        raise ValueError(
+            "Leaderboard manifest files must not contain credentials; "
+            f"remove credential field(s): {names}. Use provider-managed authentication instead."
+        )
     return normalize_leaderboard_manifest(payload, base_dir=path.parent)
 
 
@@ -66,6 +81,16 @@ def normalize_leaderboard_manifest(manifest, base_dir=None):
         raise ValueError("Leaderboard manifest must include at least one dataset.")
     if not algorithms:
         raise ValueError("Leaderboard manifest must include at least one algorithm.")
+    normalized_datasets = [
+        _normalize_leaderboard_dataset(item, index=index, base_dir=base_dir)
+        for index, item in enumerate(datasets, start=1)
+    ]
+    normalized_algorithms = [
+        _normalize_leaderboard_algorithm(item, index=index, base_dir=base_dir)
+        for index, item in enumerate(algorithms, start=1)
+    ]
+    _validate_unique_names(normalized_datasets, "dataset")
+    _validate_unique_names(normalized_algorithms, "algorithm")
     return {
         "schema_version": int(manifest.get("schema_version") or 1),
         "name": str(manifest.get("name") or "matheel_leaderboard"),
@@ -78,19 +103,15 @@ def normalize_leaderboard_manifest(manifest, base_dir=None):
             manifest.get("retrieval_metrics") or manifest.get("retrieval_metric") or ("mean_average_precision",),
             "retrieval",
         ),
-        "datasets": [
-            _normalize_leaderboard_dataset(item, index=index, base_dir=base_dir)
-            for index, item in enumerate(datasets, start=1)
-        ],
-        "algorithms": [
-            _normalize_leaderboard_algorithm(item, index=index, base_dir=base_dir)
-            for index, item in enumerate(algorithms, start=1)
-        ],
+        "datasets": normalized_datasets,
+        "algorithms": normalized_algorithms,
     }
 
 
 def run_leaderboard(manifest, output_dir=None, basename="leaderboard"):
     config = normalize_leaderboard_manifest(manifest) if not _is_normalized_manifest(manifest) else manifest
+    _validate_unique_names(config["datasets"], "dataset")
+    _validate_unique_names(config["algorithms"], "algorithm")
     rows = []
     for dataset_config in config["datasets"]:
         for algorithm_config in config["algorithms"]:
@@ -462,7 +483,7 @@ def _frame_records(frame):
 def _json_safe(value, key_name=None):
     if isinstance(value, dict):
         return {
-            str(key): _json_safe(item, key_name=str(key))
+            str(key): "<redacted>" if _is_credential_key(key) else _json_safe(item, key_name=str(key))
             for key, item in sorted(value.items(), key=lambda item: str(item[0]))
         }
     if isinstance(value, (list, tuple)):
@@ -476,6 +497,55 @@ def _json_safe(value, key_name=None):
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value
     return value.item() if hasattr(value, "item") else str(value)
+
+
+def _is_credential_key(value):
+    name = "".join(
+        character
+        for character in str(value or "").strip().casefold()
+        if character.isalnum()
+    )
+    exact = {"".join(character for character in key if character.isalnum()) for key in _CREDENTIAL_KEYS}
+    return (
+        name in exact
+        or name.endswith("apikey")
+        or name.endswith("password")
+        or name.endswith("secret")
+        or name.endswith("token")
+    )
+
+
+def _credential_paths(value, prefix=""):
+    paths = []
+    if isinstance(value, dict):
+        for key, item in value.items():
+            name = str(key)
+            path = f"{prefix}.{name}" if prefix else name
+            if _is_credential_key(name) and item not in (None, ""):
+                paths.append(path)
+            else:
+                paths.extend(_credential_paths(item, prefix=path))
+    elif isinstance(value, (list, tuple)):
+        for index, item in enumerate(value):
+            path = f"{prefix}[{index}]" if prefix else f"[{index}]"
+            paths.extend(_credential_paths(item, prefix=path))
+    return paths
+
+
+def _validate_unique_names(items, kind):
+    seen = {}
+    duplicates = []
+    for item in items:
+        name = str(item["name"])
+        identity = name.strip().casefold()
+        if not identity:
+            raise ValueError(f"Leaderboard {kind} names must not be blank.")
+        if identity in seen and identity not in duplicates:
+            duplicates.append(identity)
+        seen.setdefault(identity, name)
+    if duplicates:
+        names = ", ".join(repr(seen[identity]) for identity in duplicates)
+        raise ValueError(f"Leaderboard {kind} names must be unique; duplicate name(s): {names}.")
 
 
 def _should_sanitize_manifest_path(key_name, value):

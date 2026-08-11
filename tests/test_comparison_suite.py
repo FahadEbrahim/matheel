@@ -117,6 +117,28 @@ def test_parse_run_configs_rejects_unknown_custom_algorithm_options():
         )
 
 
+def test_parse_run_configs_rejects_duplicate_run_names():
+    with pytest.raises(ValueError, match="run names must be unique"):
+        parse_run_configs(
+            '[{"run_name":"baseline","feature_weights":{"levenshtein":1}},'
+            '{"run_name":"baseline","feature_weights":{"levenshtein":1}}]'
+        )
+
+    with pytest.raises(ValueError, match="run names must be unique"):
+        parse_run_configs(
+            '[{"run_name":"Baseline","feature_weights":{"levenshtein":1}},'
+            '{"run_name":" baseline ","feature_weights":{"levenshtein":1}}]'
+        )
+
+
+def test_parse_run_configs_rejects_detail_artifact_slug_collisions():
+    with pytest.raises(ValueError, match="slug collision"):
+        parse_run_configs(
+            '[{"run_name":"a/b","feature_weights":{"levenshtein":1}},'
+            '{"run_name":"a b","feature_weights":{"levenshtein":1}}]'
+        )
+
+
 def test_slugify_run_name_removes_path_separators():
     assert slugify_run_name("../baseline/strong") == "baseline_strong"
     assert slugify_run_name("...") == "run"

@@ -5,20 +5,25 @@ import sys
 from datetime import datetime, timezone
 from hashlib import sha256
 from importlib.metadata import PackageNotFoundError, version as package_version
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from ._path_utils import path_name
 
 
 _PACKAGE_NAMES = (
+    "apted",
+    "bert-score",
+    "chonkie",
+    "gradio",
     "matheel",
+    "model2vec",
     "numpy",
     "pandas",
+    "pylate",
     "rapidfuzz",
     "sentence-transformers",
-    "model2vec",
-    "pylate",
     "tree-sitter-language-pack",
+    "umap-learn",
 )
 _PATH_OPTION_NAMES = frozenset(
     {
@@ -30,6 +35,18 @@ _PATH_OPTION_NAMES = frozenset(
         "reproducibility_out",
         "summary_out",
         "details_dir",
+        "manifest",
+    }
+)
+_MAYBE_PATH_OPTION_NAMES = frozenset({"identifier"})
+_CREDENTIAL_KEYS = frozenset(
+    {
+        "api_key",
+        "authorization",
+        "client_secret",
+        "password",
+        "secret",
+        "token",
     }
 )
 
@@ -108,8 +125,12 @@ def _json_safe(value):
         payload = {}
         for key, item in sorted(value.items(), key=lambda item: str(item[0])):
             name = str(key)
-            if name in _PATH_OPTION_NAMES and isinstance(item, (str, Path)):
+            if _is_credential_key(name):
+                payload[name] = "<redacted>"
+            elif name in _PATH_OPTION_NAMES and isinstance(item, (str, Path)):
                 payload[name] = path_name(item) if item else item
+            elif name in _MAYBE_PATH_OPTION_NAMES and _is_local_path_value(item):
+                payload[name] = path_name(item)
             else:
                 payload[name] = _json_safe(item)
         return payload
@@ -124,6 +145,36 @@ def _json_safe(value):
     except (TypeError, ValueError):
         return str(value)
     return value
+
+
+def _is_credential_key(value):
+    name = "".join(
+        character
+        for character in str(value or "").strip().casefold()
+        if character.isalnum()
+    )
+    exact = {"".join(character for character in key if character.isalnum()) for key in _CREDENTIAL_KEYS}
+    return (
+        name in exact
+        or name.endswith("apikey")
+        or name.endswith("password")
+        or name.endswith("secret")
+        or name.endswith("token")
+    )
+
+
+def _is_local_path_value(value):
+    if not isinstance(value, (str, Path)):
+        return False
+    text = str(value or "").strip()
+    return bool(
+        text
+        and (
+            Path(text).expanduser().is_absolute()
+            or PureWindowsPath(text).is_absolute()
+            or text.startswith(".")
+        )
+    )
 
 
 def collect_reproducibility_snapshot(source_path=None, run_configs=None, result_attrs=None):

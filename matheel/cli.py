@@ -1335,6 +1335,69 @@ def compare(
     parsed_algorithm_options = _parse_algorithm_options(algorithm_options)
     if parsed_algorithm_options and not algorithm_path:
         raise click.UsageError("--algorithm-option requires --algorithm-path.")
+    similarity_options = {
+        "model_name": model,
+        "threshold": threshold,
+        "number_results": num,
+        "feature_weights": feature_weights,
+        "preprocess_mode": preprocess_mode,
+        "chunking_method": chunking_method,
+        "chunk_size": chunk_size,
+        "chunk_overlap": chunk_overlap,
+        "max_chunks": max_chunks,
+        "chunk_language": chunk_language,
+        "chunker_options": chunker_options,
+        "chunk_aggregation": chunk_aggregation,
+        "code_metric": code_metric,
+        "code_metric_weight": code_metric_weight,
+        "code_language": code_language,
+        "codebleu_component_weights": codebleu_component_weights,
+        "crystalbleu_max_order": crystalbleu_max_order,
+        "crystalbleu_trivial_ngram_count": crystalbleu_trivial_ngram_count,
+        "ruby_max_order": ruby_max_order,
+        "ruby_epsilon": ruby_epsilon,
+        "ruby_mode": ruby_mode,
+        "ruby_tokenizer": ruby_tokenizer,
+        "ruby_denominator": ruby_denominator,
+        "ruby_graph_timeout_seconds": ruby_graph_timeout_seconds,
+        "ruby_graph_use_edge_cost": ruby_graph_use_edge_cost,
+        "ruby_graph_include_leaf_edges": ruby_graph_include_leaf_edges,
+        "ruby_tree_max_nodes": ruby_tree_max_nodes,
+        "ruby_tree_max_depth": ruby_tree_max_depth,
+        "ruby_tree_max_children": ruby_tree_max_children,
+        "tsed_delete_cost": tsed_delete_cost,
+        "tsed_insert_cost": tsed_insert_cost,
+        "tsed_rename_cost": tsed_rename_cost,
+        "tsed_max_nodes": tsed_max_nodes,
+        "tsed_max_depth": tsed_max_depth,
+        "tsed_max_children": tsed_max_children,
+        "codebertscore_model": codebertscore_model,
+        "codebertscore_num_layers": (
+            None if int(codebertscore_num_layers or 0) <= 0 else int(codebertscore_num_layers)
+        ),
+        "codebertscore_batch_size": codebertscore_batch_size,
+        "codebertscore_max_length": codebertscore_max_length,
+        "codebertscore_device": codebertscore_device,
+        "codebertscore_lang": str(codebertscore_lang).strip() or None,
+        "codebertscore_idf": codebertscore_idf,
+        "codebertscore_rescale_with_baseline": codebertscore_rescale_with_baseline,
+        "codebertscore_use_fast_tokenizer": codebertscore_use_fast_tokenizer,
+        "codebertscore_nthreads": codebertscore_nthreads,
+        "codebertscore_verbose": codebertscore_verbose,
+        "levenshtein_weights": levenshtein_weights,
+        "jaro_winkler_prefix_weight": jaro_winkler_prefix_weight,
+        "winnowing_kgram": winnowing_kgram,
+        "winnowing_window": winnowing_window,
+        "gst_min_match_length": gst_min_match_length,
+        "lexical_tokenizer": lexical_tokenizer,
+        "vector_backend": vector_backend,
+        "similarity_function": similarity_function,
+        "normalize_semantic_scores": normalize_semantic_scores,
+        "static_vector_dim": static_vector_dim,
+        "max_token_length": max_token_length,
+        "pooling_method": pooling_method,
+        "device": device,
+    }
     if algorithm_path:
         results = score_source_pairs_with_algorithm(
             source_path,
@@ -1349,67 +1412,7 @@ def compare(
     else:
         results = get_sim_list(
             source_path,
-            model_name=model,
-            threshold=threshold,
-            number_results=num,
-            feature_weights=feature_weights,
-            preprocess_mode=preprocess_mode,
-            chunking_method=chunking_method,
-            chunk_size=chunk_size,
-            chunk_overlap=chunk_overlap,
-            max_chunks=max_chunks,
-            chunk_language=chunk_language,
-            chunker_options=chunker_options,
-            chunk_aggregation=chunk_aggregation,
-            code_metric=code_metric,
-            code_metric_weight=code_metric_weight,
-            code_language=code_language,
-            codebleu_component_weights=codebleu_component_weights,
-            crystalbleu_max_order=crystalbleu_max_order,
-            crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
-            ruby_max_order=ruby_max_order,
-            ruby_epsilon=ruby_epsilon,
-            ruby_mode=ruby_mode,
-            ruby_tokenizer=ruby_tokenizer,
-            ruby_denominator=ruby_denominator,
-            ruby_graph_timeout_seconds=ruby_graph_timeout_seconds,
-            ruby_graph_use_edge_cost=ruby_graph_use_edge_cost,
-            ruby_graph_include_leaf_edges=ruby_graph_include_leaf_edges,
-            ruby_tree_max_nodes=ruby_tree_max_nodes,
-            ruby_tree_max_depth=ruby_tree_max_depth,
-            ruby_tree_max_children=ruby_tree_max_children,
-            tsed_delete_cost=tsed_delete_cost,
-            tsed_insert_cost=tsed_insert_cost,
-            tsed_rename_cost=tsed_rename_cost,
-            tsed_max_nodes=tsed_max_nodes,
-            tsed_max_depth=tsed_max_depth,
-            tsed_max_children=tsed_max_children,
-            codebertscore_model=codebertscore_model,
-            codebertscore_num_layers=(
-                None if int(codebertscore_num_layers or 0) <= 0 else int(codebertscore_num_layers)
-            ),
-            codebertscore_batch_size=codebertscore_batch_size,
-            codebertscore_max_length=codebertscore_max_length,
-            codebertscore_device=codebertscore_device,
-            codebertscore_lang=(str(codebertscore_lang).strip() or None),
-            codebertscore_idf=codebertscore_idf,
-            codebertscore_rescale_with_baseline=codebertscore_rescale_with_baseline,
-            codebertscore_use_fast_tokenizer=codebertscore_use_fast_tokenizer,
-            codebertscore_nthreads=codebertscore_nthreads,
-            codebertscore_verbose=codebertscore_verbose,
-            levenshtein_weights=levenshtein_weights,
-            jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
-            winnowing_kgram=winnowing_kgram,
-            winnowing_window=winnowing_window,
-            gst_min_match_length=gst_min_match_length,
-            lexical_tokenizer=lexical_tokenizer,
-            vector_backend=vector_backend,
-            similarity_function=similarity_function,
-            normalize_semantic_scores=normalize_semantic_scores,
-            static_vector_dim=static_vector_dim,
-            max_token_length=max_token_length,
-            pooling_method=pooling_method,
-            device=device,
+            **similarity_options,
             progress=show_progress,
         )
     _write_cli_reproducibility(
@@ -1419,13 +1422,7 @@ def compare(
         {
             "algorithm_path": algorithm_path,
             "algorithm_options": parsed_algorithm_options,
-            "model_name": model,
-            "threshold": threshold,
-            "number_results": num,
-            "feature_weights": feature_weights,
-            "preprocess_mode": preprocess_mode,
-            "code_language": code_language,
-            "lexical_tokenizer": lexical_tokenizer,
+            **similarity_options,
         },
         results,
     )
@@ -1666,27 +1663,42 @@ def evaluate_pairs(
         path_in_archive,
     )
     if manifest is not None:
+        dataset_source = {"manifest": manifest}
         resolved_dataset = load_pair_datasets_from_manifest(manifest)
     else:
-        resolved_dataset = load_pair_datasets(
-            _dataset_spec_from_cli(
-                dataset_spec,
-                task_family="pair",
-                preset=preset,
-                source=source,
-                identifier=identifier,
-                dataset_name=dataset_name,
-                adapter=adapter,
-                adapter_options=adapter_options,
-                destination=destination,
-                adapted_destination=adapted_destination,
-                revision=revision,
-                split=split,
-                path_in_archive=path_in_archive,
-            )
+        dataset_source = _dataset_spec_from_cli(
+            dataset_spec,
+            task_family="pair",
+            preset=preset,
+            source=source,
+            identifier=identifier,
+            dataset_name=dataset_name,
+            adapter=adapter,
+            adapter_options=adapter_options,
+            destination=destination,
+            adapted_destination=adapted_destination,
+            revision=revision,
+            split=split,
+            path_in_archive=path_in_archive,
         )
+        resolved_dataset = load_pair_datasets(dataset_source)
+        if not isinstance(dataset_source, dict):
+            dataset_source = {"identifier": dataset_source}
     selected_weights = feature_weights or ("levenshtein=1.0",)
     parsed_algorithm_options = _parse_algorithm_options(algorithm_options)
+    similarity_options = {
+        "feature_weights": selected_weights,
+        "model_name": model,
+        "preprocess_mode": preprocess_mode,
+        "code_language": code_language,
+        "lexical_tokenizer": lexical_tokenizer,
+        "vector_backend": vector_backend,
+        "similarity_function": similarity_function,
+        "normalize_semantic_scores": normalize_semantic_scores,
+        "max_token_length": max_token_length,
+        "pooling_method": pooling_method,
+        "device": device,
+    }
     if algorithm_path:
         scored_pairs, metrics = evaluate_pair_dataset(
             resolved_dataset,
@@ -1704,19 +1716,7 @@ def evaluate_pairs(
         scored_pairs, metrics = evaluate_pair_dataset(
             resolved_dataset,
             threshold=threshold,
-            similarity_options={
-                "feature_weights": selected_weights,
-                "model_name": model,
-                "preprocess_mode": preprocess_mode,
-                "code_language": code_language,
-                "lexical_tokenizer": lexical_tokenizer,
-                "vector_backend": vector_backend,
-                "similarity_function": similarity_function,
-                "normalize_semantic_scores": normalize_semantic_scores,
-                "max_token_length": max_token_length,
-                "pooling_method": pooling_method,
-                "device": device,
-            },
+            similarity_options=similarity_options,
         )
     scores_path = Path(scores_out)
     metrics_path = Path(metrics_out)
@@ -1731,12 +1731,9 @@ def evaluate_pairs(
         {
             "algorithm_path": algorithm_path,
             "algorithm_options": parsed_algorithm_options,
+            "dataset_source": dataset_source,
             "threshold": threshold,
-            "feature_weights": selected_weights,
-            "model_name": model,
-            "preprocess_mode": preprocess_mode,
-            "code_language": code_language,
-            "lexical_tokenizer": lexical_tokenizer,
+            **similarity_options,
         },
         scored_pairs,
     )
@@ -1901,27 +1898,42 @@ def evaluate_retrieval(
         path_in_archive,
     )
     if manifest is not None:
+        dataset_source = {"manifest": manifest}
         resolved_dataset = load_retrieval_datasets_from_manifest(manifest)
     else:
-        resolved_dataset = load_retrieval_datasets(
-            _dataset_spec_from_cli(
-                dataset_spec,
-                task_family="retrieval",
-                preset=preset,
-                source=source,
-                identifier=identifier,
-                dataset_name=dataset_name,
-                adapter=adapter,
-                adapter_options=adapter_options,
-                destination=destination,
-                adapted_destination=adapted_destination,
-                revision=revision,
-                split=split,
-                path_in_archive=path_in_archive,
-            )
+        dataset_source = _dataset_spec_from_cli(
+            dataset_spec,
+            task_family="retrieval",
+            preset=preset,
+            source=source,
+            identifier=identifier,
+            dataset_name=dataset_name,
+            adapter=adapter,
+            adapter_options=adapter_options,
+            destination=destination,
+            adapted_destination=adapted_destination,
+            revision=revision,
+            split=split,
+            path_in_archive=path_in_archive,
         )
+        resolved_dataset = load_retrieval_datasets(dataset_source)
+        if not isinstance(dataset_source, dict):
+            dataset_source = {"identifier": dataset_source}
     selected_weights = feature_weights or ("levenshtein=1.0",)
     parsed_algorithm_options = _parse_algorithm_options(algorithm_options)
+    similarity_options = {
+        "feature_weights": selected_weights,
+        "model_name": model,
+        "preprocess_mode": preprocess_mode,
+        "code_language": code_language,
+        "lexical_tokenizer": lexical_tokenizer,
+        "vector_backend": vector_backend,
+        "similarity_function": similarity_function,
+        "normalize_semantic_scores": normalize_semantic_scores,
+        "max_token_length": max_token_length,
+        "pooling_method": pooling_method,
+        "device": device,
+    }
     if algorithm_path:
         scored_results, metrics = evaluate_retrieval_dataset(
             resolved_dataset,
@@ -1939,19 +1951,7 @@ def evaluate_retrieval(
         scored_results, metrics = evaluate_retrieval_dataset(
             resolved_dataset,
             k=k,
-            similarity_options={
-                "feature_weights": selected_weights,
-                "model_name": model,
-                "preprocess_mode": preprocess_mode,
-                "code_language": code_language,
-                "lexical_tokenizer": lexical_tokenizer,
-                "vector_backend": vector_backend,
-                "similarity_function": similarity_function,
-                "normalize_semantic_scores": normalize_semantic_scores,
-                "max_token_length": max_token_length,
-                "pooling_method": pooling_method,
-                "device": device,
-            },
+            similarity_options=similarity_options,
         )
     scores_path = Path(scores_out)
     metrics_path = Path(metrics_out)
@@ -1966,12 +1966,9 @@ def evaluate_retrieval(
         {
             "algorithm_path": algorithm_path,
             "algorithm_options": parsed_algorithm_options,
+            "dataset_source": dataset_source,
             "k": k,
-            "feature_weights": selected_weights,
-            "model_name": model,
-            "preprocess_mode": preprocess_mode,
-            "code_language": code_language,
-            "lexical_tokenizer": lexical_tokenizer,
+            **similarity_options,
         },
         scored_results,
     )

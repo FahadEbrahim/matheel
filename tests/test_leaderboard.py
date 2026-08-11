@@ -1,6 +1,7 @@
 import json
 
 import pandas as pd
+import pytest
 
 import matheel
 from matheel.benchmark_registry import (
@@ -251,6 +252,32 @@ def test_leaderboard_manifest_preserves_remote_dataset_identifiers(tmp_path):
     assert spec["destination"] == str((config_dir / "cache" / "remote").resolve())
 
 
+def test_file_backed_leaderboard_manifest_rejects_embedded_credentials(tmp_path):
+    manifest_path = tmp_path / "leaderboard.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "datasets": [
+                    {
+                        "name": "private",
+                        "task": "pair",
+                        "source": "huggingface",
+                        "identifier": "owner/private-dataset",
+                        "token": "hf_SECRET_VALUE",
+                    }
+                ],
+                "algorithms": [
+                    {"name": "lexical", "feature_weights": {"levenshtein": 1.0}}
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match=r"must not contain credentials.*datasets\[0\].token"):
+        load_leaderboard_manifest(manifest_path)
+
+
 def test_leaderboard_manifest_keeps_dataset_specific_similarity_options(tmp_path):
     pair_root = _write_pair_fixture(tmp_path)
 
@@ -277,6 +304,25 @@ def test_leaderboard_manifest_keeps_dataset_specific_similarity_options(tmp_path
         "vector_backend": "static",
     }
     assert "similarity_options" not in dataset["spec"]
+
+
+@pytest.mark.parametrize("kind", ["datasets", "algorithms"])
+def test_leaderboard_manifest_rejects_duplicate_names(tmp_path, kind):
+    pair_root = _write_pair_fixture(tmp_path)
+    manifest = {
+        "datasets": [
+            {"name": "pairs", "task": "pair", "path": str(pair_root)},
+        ],
+        "algorithms": [
+            {"name": "lexical", "feature_weights": {"levenshtein": 1.0}},
+        ],
+    }
+    duplicate = dict(manifest[kind][0])
+    duplicate["name"] = f" {duplicate['name'].upper()} "
+    manifest[kind] = [manifest[kind][0], duplicate]
+
+    with pytest.raises(ValueError, match=rf"{kind[:-1]} names must be unique"):
+        normalize_leaderboard_manifest(manifest)
 
 
 def test_leaderboard_payload_and_html_escape_values(tmp_path):
@@ -379,6 +425,86 @@ def test_leaderboard_payload_keeps_remote_identifiers():
     )
 
     assert payload["manifest"]["datasets"][0]["spec"]["identifier"] == "owner/repository"
+
+
+def test_shareable_leaderboard_artifacts_recursively_redact_credentials(tmp_path):
+    pair_root = _write_pair_fixture(tmp_path)
+    report, _ = run_leaderboard(
+        {
+            "name": "private_source",
+            "datasets": [{"name": "pairs", "task": "pair", "path": str(pair_root)}],
+            "algorithms": [{"name": "lexical", "feature_weights": {"levenshtein": 1.0}}],
+        }
+    )
+    report["manifest"]["datasets"][0]["spec"].update(
+        {
+            "token": "hf_SECRET_VALUE",
+            "headers": {"Authorization": "Bearer SECRET_HEADER"},
+        }
+    )
+    report["manifest"]["algorithms"][0]["algorithm_options"] = {
+        "provider_api_key": "SECRET_API_KEY"
+    }
+
+    artifacts = write_leaderboard_artifacts(report, tmp_path / "artifacts")
+    registry_path = tmp_path / "registry.json"
+    register_benchmark_run(registry_path, report, artifact_paths=artifacts)
+
+    payload = leaderboard_payload(report)
+    assert payload["manifest"]["datasets"][0]["spec"]["token"] == "<redacted>"
+    assert payload["manifest"]["datasets"][0]["spec"]["headers"]["Authorization"] == "<redacted>"
+    assert payload["manifest"]["algorithms"][0]["algorithm_options"]["provider_api_key"] == "<redacted>"
+    combined = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in (*artifacts.values(), registry_path)
+        if path.suffix in {".json", ".html"}
+    )
+    assert "hf_SECRET_VALUE" not in combined
+    assert "SECRET_HEADER" not in combined
+    assert "SECRET_API_KEY" not in combined
+
+
+def test_benchmark_registry_redacts_credentials_from_prebuilt_payload(tmp_path):
+    registry_path = tmp_path / "registry.json"
+    register_benchmark_run(
+        registry_path,
+        {
+            "metadata": {"name": "legacy_payload"},
+            "manifest": {
+                "datasets": [{"spec": {"token": "LEGACY_SECRET"}}],
+                "algorithms": [],
+            },
+            "cards": {},
+            "per_dataset": [],
+            "aggregate": [],
+        },
+    )
+
+    text = registry_path.read_text(encoding="utf-8")
+    assert "LEGACY_SECRET" not in text
+    assert '"token": "<redacted>"' in text
+
+
+def test_benchmark_registry_redacts_credentials_when_loading_legacy_file(tmp_path):
+    registry_path = tmp_path / "legacy_registry.json"
+    registry_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "runs": [
+                    {
+                        "run_id": "legacy",
+                        "manifest": {"datasets": [{"spec": {"token": "LEGACY_SECRET"}}]},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    loaded = load_benchmark_run(registry_path, "legacy")
+
+    assert loaded["manifest"]["datasets"][0]["spec"]["token"] == "<redacted>"
 
 
 def _write_pair_fixture(tmp_path):

@@ -1,5 +1,7 @@
 import hashlib
+import math
 import os
+import posixpath
 import zipfile
 from itertools import combinations
 
@@ -17,6 +19,7 @@ from .code_metrics import (
     score_code_metric_pair,
     tokenize_for_code_metrics,
 )
+from .chunking import available_chunk_aggregations, available_chunking_methods, chunk_text
 from .feature_weights import combine_weighted_scores, resolve_feature_weights
 from .model_routing import (
     backend_is_multivector,
@@ -47,6 +50,10 @@ from .vectors import (
 DEFAULT_MODEL_NAME = "huggingface/CodeBERTa-small-v1"
 RESULT_COLUMNS = ["file_name_1", "file_name_2", "similarity_score"]
 LEXICAL_TOKENIZERS = ("raw", "parser")
+DEFAULT_ARCHIVE_MAX_MEMBERS = 10_000
+DEFAULT_ARCHIVE_MAX_MEMBER_BYTES = 16 * 1024 * 1024
+DEFAULT_ARCHIVE_MAX_TOTAL_BYTES = 256 * 1024 * 1024
+DEFAULT_ARCHIVE_MAX_COMPRESSION_RATIO = 200.0
 
 
 def _semantic_backend_dependency_error(vector_backend, exc):
@@ -261,24 +268,155 @@ def read_directory_source(directory_path):
     return file_names, codes
 
 
-def read_zip_source(zip_path):
+def read_zip_source(
+    zip_path,
+    archive_max_members=DEFAULT_ARCHIVE_MAX_MEMBERS,
+    archive_max_member_bytes=DEFAULT_ARCHIVE_MAX_MEMBER_BYTES,
+    archive_max_total_bytes=DEFAULT_ARCHIVE_MAX_TOTAL_BYTES,
+    archive_max_compression_ratio=DEFAULT_ARCHIVE_MAX_COMPRESSION_RATIO,
+):
+    """Read visible UTF-8 ZIP members subject to configurable resource limits.
+
+    Each ``archive_max_*`` limit accepts a positive value; pass ``None`` to
+    disable that individual limit. Member names are normalized before duplicate
+    detection so aliases such as ``a.py`` and ``./a.py`` are rejected.
+    """
+    max_members = _optional_positive_limit(
+        "archive_max_members",
+        archive_max_members,
+        integer=True,
+    )
+    max_member_bytes = _optional_positive_limit(
+        "archive_max_member_bytes",
+        archive_max_member_bytes,
+        integer=True,
+    )
+    max_total_bytes = _optional_positive_limit(
+        "archive_max_total_bytes",
+        archive_max_total_bytes,
+        integer=True,
+    )
+    max_compression_ratio = _optional_positive_limit(
+        "archive_max_compression_ratio",
+        archive_max_compression_ratio,
+        integer=False,
+    )
+
     with zipfile.ZipFile(zip_path, "r") as archive:
-        file_names = [
-            name for name in archive.namelist()
-            if not name.endswith("/") and not is_hidden_name(name)
-        ]
-        file_names.sort()
-        codes = [archive.read(name).decode("utf-8", errors="ignore") for name in file_names]
+        members = archive.infolist()
+        if max_members is not None and len(members) > max_members:
+            raise ValueError(
+                f"ZIP archive contains {len(members)} members; limit is {max_members}."
+            )
+
+        selected = []
+        seen_names = set()
+        total_bytes = 0
+        for member in members:
+            if member.is_dir() or member.filename.endswith(("/", "\\")):
+                continue
+            normalized_name = _normalize_archive_member_name(member.filename)
+            if normalized_name in seen_names:
+                raise ValueError(
+                    "ZIP archive contains duplicate normalized member name: "
+                    f"{normalized_name}"
+                )
+            seen_names.add(normalized_name)
+            if is_hidden_name(normalized_name):
+                continue
+            if member.flag_bits & 0x1:
+                raise ValueError(f"Encrypted ZIP members are not supported: {normalized_name}")
+
+            member_bytes = int(member.file_size)
+            if max_member_bytes is not None and member_bytes > max_member_bytes:
+                raise ValueError(
+                    f"ZIP member {normalized_name!r} is {member_bytes} bytes; "
+                    f"per-member limit is {max_member_bytes}."
+                )
+            total_bytes += member_bytes
+            if max_total_bytes is not None and total_bytes > max_total_bytes:
+                raise ValueError(
+                    f"ZIP archive expands to more than {max_total_bytes} bytes."
+                )
+            compressed_bytes = int(member.compress_size)
+            ratio = member_bytes / float(max(1, compressed_bytes))
+            if max_compression_ratio is not None and ratio > max_compression_ratio:
+                raise ValueError(
+                    f"ZIP member {normalized_name!r} has compression ratio {ratio:.1f}; "
+                    f"limit is {max_compression_ratio:.1f}."
+                )
+            selected.append((normalized_name, member))
+
+        selected.sort(key=lambda item: item[0])
+        file_names = []
+        codes = []
+        actual_total_bytes = 0
+        for normalized_name, member in selected:
+            with archive.open(member, "r") as handle:
+                data = (
+                    handle.read()
+                    if max_member_bytes is None
+                    else handle.read(max_member_bytes + 1)
+                )
+            if max_member_bytes is not None and len(data) > max_member_bytes:
+                raise ValueError(
+                    f"ZIP member {normalized_name!r} exceeds the per-member limit "
+                    f"of {max_member_bytes} bytes."
+                )
+            actual_total_bytes += len(data)
+            if max_total_bytes is not None and actual_total_bytes > max_total_bytes:
+                raise ValueError(
+                    f"ZIP archive expands to more than {max_total_bytes} bytes."
+                )
+            file_names.append(normalized_name)
+            codes.append(data.decode("utf-8", errors="ignore"))
     return file_names, codes
 
 
-def extract_and_read_source(source_path):
+def _normalize_archive_member_name(value):
+    raw_name = str(value or "").replace("\\", "/")
+    normalized = posixpath.normpath(raw_name)
+    if normalized in {"", ".", ".."} or normalized.startswith(("/", "../")):
+        raise ValueError(f"ZIP archive contains an unsafe member name: {value}")
+    return normalized
+
+
+def _optional_positive_limit(name, value, integer=False):
+    if value is None:
+        return None
+    try:
+        numeric = float(value)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a positive finite number or None.") from exc
+    if not math.isfinite(numeric) or numeric <= 0:
+        raise ValueError(f"{name} must be a positive finite number or None.")
+    if integer:
+        if not numeric.is_integer():
+            raise ValueError(f"{name} must be a positive integer or None.")
+        return int(numeric)
+    return numeric
+
+
+def extract_and_read_source(
+    source_path,
+    archive_max_members=DEFAULT_ARCHIVE_MAX_MEMBERS,
+    archive_max_member_bytes=DEFAULT_ARCHIVE_MAX_MEMBER_BYTES,
+    archive_max_total_bytes=DEFAULT_ARCHIVE_MAX_TOTAL_BYTES,
+    archive_max_compression_ratio=DEFAULT_ARCHIVE_MAX_COMPRESSION_RATIO,
+):
+    """Read a directory or a ZIP archive using the configured archive limits."""
     resolved_path = resolve_file_path(source_path)
     if os.path.isdir(resolved_path):
         return read_directory_source(resolved_path)
     if not zipfile.is_zipfile(resolved_path):
         raise ValueError("source_path must be a directory or a ZIP archive.")
-    return read_zip_source(resolved_path)
+    return read_zip_source(
+        resolved_path,
+        archive_max_members=archive_max_members,
+        archive_max_member_bytes=archive_max_member_bytes,
+        archive_max_total_bytes=archive_max_total_bytes,
+        archive_max_compression_ratio=archive_max_compression_ratio,
+    )
 
 
 def _validate_weight(name, value):
@@ -314,14 +452,29 @@ def validate_edit_distance_options(levenshtein_weights=None, jaro_winkler_prefix
         values = [item.strip() for item in levenshtein_weights.split(",") if item.strip()]
         if len(values) != 3:
             raise ValueError("levenshtein_weights must contain exactly 3 values: insert, delete, substitute.")
-        parsed_levenshtein_weights = tuple(max(1, int(float(value))) for value in values)
+        parsed_levenshtein_weights = tuple(
+            _positive_integer_option("levenshtein_weights", value)
+            for value in values
+        )
     else:
-        values = list(levenshtein_weights)
+        try:
+            values = list(levenshtein_weights)
+        except TypeError as exc:
+            raise ValueError(
+                "levenshtein_weights must contain exactly 3 values: "
+                "insert, delete, substitute."
+            ) from exc
         if len(values) != 3:
             raise ValueError("levenshtein_weights must contain exactly 3 values: insert, delete, substitute.")
-        parsed_levenshtein_weights = tuple(max(1, int(float(value))) for value in values)
+        parsed_levenshtein_weights = tuple(
+            _positive_integer_option("levenshtein_weights", value)
+            for value in values
+        )
 
-    prefix_weight = float(jaro_winkler_prefix_weight)
+    prefix_weight = _finite_numeric_option(
+        "jaro_winkler_prefix_weight",
+        jaro_winkler_prefix_weight,
+    )
     if prefix_weight < 0 or prefix_weight > 0.25:
         raise ValueError("jaro_winkler_prefix_weight must be between 0.0 and 0.25.")
 
@@ -333,16 +486,18 @@ def validate_lexical_baseline_options(
     winnowing_window=4,
     gst_min_match_length=5,
 ):
-    parsed_winnowing_kgram = int(float(winnowing_kgram or 0))
-    parsed_winnowing_window = int(float(winnowing_window or 0))
-    parsed_gst_min_match_length = int(float(gst_min_match_length or 0))
-
-    if parsed_winnowing_kgram < 1:
-        raise ValueError("winnowing_kgram must be at least 1.")
-    if parsed_winnowing_window < 1:
-        raise ValueError("winnowing_window must be at least 1.")
-    if parsed_gst_min_match_length < 1:
-        raise ValueError("gst_min_match_length must be at least 1.")
+    parsed_winnowing_kgram = _positive_integer_option(
+        "winnowing_kgram",
+        winnowing_kgram,
+    )
+    parsed_winnowing_window = _positive_integer_option(
+        "winnowing_window",
+        winnowing_window,
+    )
+    parsed_gst_min_match_length = _positive_integer_option(
+        "gst_min_match_length",
+        gst_min_match_length,
+    )
 
     return (
         parsed_winnowing_kgram,
@@ -351,13 +506,65 @@ def validate_lexical_baseline_options(
     )
 
 
+def _positive_integer_option(name, value):
+    try:
+        numeric = float(value)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a positive integer.") from exc
+    if not math.isfinite(numeric) or numeric < 1 or not numeric.is_integer():
+        raise ValueError(f"{name} must be a positive integer.")
+    return int(numeric)
+
+
+def _finite_numeric_option(name, value):
+    try:
+        numeric = float(value)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be finite.") from exc
+    if not math.isfinite(numeric):
+        raise ValueError(f"{name} must be finite.")
+    return numeric
+
+
+def normalize_chunking_method(chunking_method):
+    selected = str(chunking_method or "none").strip().lower()
+    if selected == "document":
+        return "none"
+    supported = available_chunking_methods()
+    if selected not in supported:
+        names = ", ".join(supported)
+        raise ValueError(
+            f"Unsupported chunking method: {chunking_method}. "
+            f"Supported chunking methods: {names}"
+        )
+    return selected
+
+
+def normalize_chunk_aggregation(chunk_aggregation):
+    selected = str(chunk_aggregation or "mean").strip().lower()
+    supported = available_chunk_aggregations()
+    if selected not in supported:
+        names = ", ".join(supported)
+        raise ValueError(
+            f"Unsupported chunk aggregation: {chunk_aggregation}. "
+            f"Supported aggregations: {names}"
+        )
+    return selected
+
+
 def validate_vector_options(vector_backend, static_vector_dim, model_name=None, model_info=None):
     backend = resolve_vector_backend(
         vector_backend,
         model_name=model_name or DEFAULT_MODEL_NAME,
         model_info=model_info,
     )
-    return backend, max(8, int(static_vector_dim or 0))
+    parsed_static_vector_dim = _positive_integer_option(
+        "static_vector_dim",
+        static_vector_dim,
+    )
+    if parsed_static_vector_dim < 8:
+        raise ValueError("static_vector_dim must be at least 8.")
+    return backend, parsed_static_vector_dim
 
 
 def validate_semantic_score_scale_options(
@@ -414,14 +621,15 @@ def semantic_similarity(
 
 
 def aggregate_chunk_embeddings(chunk_embeddings, chunk_aggregation="mean"):
+    selected_aggregation = normalize_chunk_aggregation(chunk_aggregation)
     vectors = np.asarray(chunk_embeddings, dtype=float)
     if vectors.size == 0:
         return np.zeros(1, dtype=float)
     if vectors.ndim == 1:
         return vectors
-    if chunk_aggregation == "max":
+    if selected_aggregation == "max":
         return vectors.max(axis=0)
-    if chunk_aggregation == "first":
+    if selected_aggregation == "first":
         return vectors[0]
     return vectors.mean(axis=0)
 
@@ -431,7 +639,7 @@ def prepare_code(code, preprocess_mode="none", code_language=None):
 
 
 def _should_use_chunking(chunking_method):
-    return (chunking_method or "none").strip().lower() != "none"
+    return normalize_chunking_method(chunking_method) != "none"
 
 
 def _stable_token_hash(tokens):
@@ -588,13 +796,44 @@ def build_document_embeddings(
     static_vector_dim=256,
     static_vector_lowercase=True,
     pooling_method="mean",
+    is_query=False,
 ):
     if not codes:
         return []
 
+    chunking_method = normalize_chunking_method(chunking_method)
+    chunk_aggregation = normalize_chunk_aggregation(chunk_aggregation)
     backend = normalize_vector_backend_name(vector_backend)
     if backend == "static_hash":
-        return build_static_hash_vectors(codes, dim=static_vector_dim, lowercase=static_vector_lowercase)
+        if not _should_use_chunking(chunking_method):
+            return build_static_hash_vectors(
+                codes,
+                dim=static_vector_dim,
+                lowercase=static_vector_lowercase,
+            )
+        embeddings = []
+        for code in codes:
+            chunks = chunk_text(
+                code,
+                method=chunking_method,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+                max_chunks=max_chunks,
+                chunk_language=chunk_language,
+                chunker_options=chunker_options,
+            )
+            vectors = build_static_hash_vectors(
+                chunks,
+                dim=static_vector_dim,
+                lowercase=static_vector_lowercase,
+            )
+            embeddings.append(
+                aggregate_chunk_embeddings(
+                    vectors,
+                    chunk_aggregation=chunk_aggregation,
+                )
+            )
+        return embeddings
     if backend == "model2vec" and model is None:
         raise ValueError(
             "vector_backend='model2vec' requires a loaded Model2Vec model. "
@@ -611,6 +850,7 @@ def build_document_embeddings(
             max_chunks=max_chunks,
             chunk_language=chunk_language,
             chunker_options=chunker_options,
+            is_query=is_query,
         )
 
     if backend == "sentence_transformers" and model is not None:
@@ -994,8 +1234,22 @@ def get_sim_list(
     normalize_semantic_scores=False,
     progress=False,
     progress_callback=None,
+    archive_max_members=DEFAULT_ARCHIVE_MAX_MEMBERS,
+    archive_max_member_bytes=DEFAULT_ARCHIVE_MAX_MEMBER_BYTES,
+    archive_max_total_bytes=DEFAULT_ARCHIVE_MAX_TOTAL_BYTES,
+    archive_max_compression_ratio=DEFAULT_ARCHIVE_MAX_COMPRESSION_RATIO,
 ):
+    """Rank source pairs, enforcing configurable limits when the source is ZIP.
+
+    The four ``archive_max_*`` keyword arguments cap member count, expanded
+    member bytes, total expanded bytes, and compression ratio. Passing ``None``
+    disables the corresponding limit.
+    """
     start_time = perf_counter()
+    chunking_method = normalize_chunking_method(chunking_method)
+    chunk_aggregation = normalize_chunk_aggregation(chunk_aggregation)
+    threshold = _finite_numeric_option("threshold", threshold)
+    result_count = _positive_integer_option("number_results", number_results)
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
         codebleu_component_weights,
@@ -1017,7 +1271,13 @@ def get_sim_list(
     )
     validate_active_code_metric_weight(code_metric, resolved_feature_weights)
     use_semantic = resolved_feature_weights.get("semantic", 0.0) > 0.0
-    file_names, raw_codes = extract_and_read_source(zipped_file)
+    file_names, raw_codes = extract_and_read_source(
+        zipped_file,
+        archive_max_members=archive_max_members,
+        archive_max_member_bytes=archive_max_member_bytes,
+        archive_max_total_bytes=archive_max_total_bytes,
+        archive_max_compression_ratio=archive_max_compression_ratio,
+    )
     if use_semantic and (vector_backend or "auto").strip().lower() in ("", "auto"):
         model_info = load_hf_model_info(model_name or DEFAULT_MODEL_NAME)
     vector_backend, static_vector_dim = validate_vector_options(
@@ -1172,13 +1432,10 @@ def get_sim_list(
             "similarity_score": round(score, 4),
         }
         for score, i, j in code_pairs
-        if score >= float(threshold)
+        if score >= threshold
     ]
 
     similarity_df = pd.DataFrame(pairs_results, columns=RESULT_COLUMNS)
-    result_count = int(number_results)
-    if result_count < 1:
-        raise ValueError("number_results must be at least 1.")
     result = similarity_df.head(result_count)
     return attach_run_metadata(
         result,
@@ -1257,6 +1514,8 @@ def calculate_similarity(
     progress=False,
     progress_callback=None,
 ):
+    chunking_method = normalize_chunking_method(chunking_method)
+    chunk_aggregation = normalize_chunk_aggregation(chunk_aggregation)
     code_metric_weight, component_weights = validate_code_metric_options(
         code_metric_weight,
         codebleu_component_weights,

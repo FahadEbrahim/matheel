@@ -16,6 +16,7 @@ from matheel.code_metrics import (
     codebleu_components,
     normalize_code_language,
     parse_component_weights,
+    prepare_codebertscore_context,
     prepare_crystalbleu_context,
     prepare_ruby_context,
     score_code_metric_pair,
@@ -758,6 +759,120 @@ def test_codebertscore_reuses_pair_cache(monkeypatch):
     assert first == pytest.approx(0.4321)
     assert second == pytest.approx(0.4321)
     assert calls["count"] == 1
+
+
+def test_codebertscore_prepared_context_validates_indices_and_texts(monkeypatch):
+    monkeypatch.setattr(
+        code_metrics_module,
+        "_score_codebertscore_pair",
+        lambda *args, **kwargs: 0.5,
+    )
+    context = prepare_codebertscore_context(["left", "right"])
+
+    with pytest.raises(ValueError, match="out of range"):
+        score_code_metric_pair(
+            "left",
+            "right",
+            metric_name="codebertscore",
+            codebertscore_context=context,
+            reference_index=0,
+            prediction_index=2,
+        )
+    with pytest.raises(ValueError, match="reference does not match"):
+        score_code_metric_pair(
+            "changed",
+            "right",
+            metric_name="codebertscore",
+            codebertscore_context=context,
+            reference_index=0,
+            prediction_index=1,
+        )
+    with pytest.raises(ValueError, match="requires reference_index"):
+        score_code_metric_pair(
+            "left",
+            "right",
+            metric_name="codebertscore",
+            codebertscore_context=context,
+        )
+
+
+def test_codebertscore_cache_identity_includes_text_content(monkeypatch):
+    calls = []
+
+    def fake_score(reference, prediction, **kwargs):
+        calls.append((reference, prediction))
+        return len(calls) / 10.0
+
+    monkeypatch.setattr(code_metrics_module, "_score_codebertscore_pair", fake_score)
+    context = {"pair_cache": {}}
+
+    first = score_code_metric_pair(
+        "left",
+        "right",
+        metric_name="codebertscore",
+        codebertscore_context=context,
+        reference_index=0,
+        prediction_index=1,
+    )
+    second = score_code_metric_pair(
+        "changed left",
+        "changed right",
+        metric_name="codebertscore",
+        codebertscore_context=context,
+        reference_index=0,
+        prediction_index=1,
+    )
+
+    assert first == pytest.approx(0.1)
+    assert second == pytest.approx(0.2)
+    assert calls == [("left", "right"), ("changed left", "changed right")]
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"codebertscore_num_layers": -1},
+        {"codebertscore_num_layers": 1.5},
+        {"codebertscore_batch_size": 0},
+        {"codebertscore_batch_size": 1.5},
+        {"codebertscore_max_length": -1},
+        {"codebertscore_max_length": 1.5},
+        {"codebertscore_nthreads": 0},
+        {"codebertscore_nthreads": 1.5},
+    ],
+)
+def test_codebertscore_rejects_invalid_integer_options(monkeypatch, options):
+    monkeypatch.setattr(
+        code_metrics_module,
+        "_score_codebertscore_pair",
+        lambda *args, **kwargs: pytest.fail("invalid options reached the scorer"),
+    )
+
+    with pytest.raises(ValueError, match="codebertscore"):
+        score_code_metric_pair(
+            "left",
+            "right",
+            metric_name="codebertscore",
+            **options,
+        )
+
+
+def test_codebertscore_rejects_fractional_context_indices(monkeypatch):
+    monkeypatch.setattr(
+        code_metrics_module,
+        "_score_codebertscore_pair",
+        lambda *args, **kwargs: pytest.fail("invalid indices reached the scorer"),
+    )
+
+    with pytest.raises(ValueError, match="indices must be integers"):
+        score_code_metric_pair(
+            "left",
+            "right",
+            metric_name="codebertscore",
+            codebertscore_context={"pair_cache": {}},
+            reference_index=0.5,
+            prediction_index=1,
+        )
 
 
 def test_codebertscore_bidirectional_cache_is_symmetric(monkeypatch):

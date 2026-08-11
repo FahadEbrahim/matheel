@@ -5,9 +5,12 @@ from pathlib import Path
 
 import pandas as pd
 
-from ._path_utils import (
-    is_unsafe_relative_path,
-    resolve_relative_path_within_root,
+from ._path_utils import resolve_relative_path_within_root
+from .datasets import (
+    _normalize_binary_label,
+    _normalize_id,
+    _normalize_nonnegative_relevance,
+    _normalize_relative_file_path,
 )
 
 
@@ -151,16 +154,38 @@ def _inspect_pair_dataset(root, metadata, counts, issues):
     if pairs is None:
         return
 
-    _add_duplicate_issue(pairs, ("left_id", "right_id"), issues, "duplicate_pairs", "pairs.csv contains duplicate pair rows.")
+    _inspect_reference_ids(pairs, ("left_id", "right_id"), "pairs.csv", issues)
+    _add_duplicate_issue(
+        pairs,
+        ("left_id", "right_id"),
+        issues,
+        "duplicate_pairs",
+        "pairs.csv contains duplicate pair rows.",
+    )
     if "label" in pairs.columns:
         labels = pairs["label"]
-        missing_labels = int(labels.isna().sum())
+        missing_labels = sum(not _has_manifest_value(value) for value in labels.tolist())
         if missing_labels:
-            _add_issue(issues, "error", "missing_pair_labels", "pairs.csv contains missing label values.", missing_labels)
-        normalized_labels = labels.dropna().map(_coerce_binary_label)
-        invalid_count = int(normalized_labels.isna().sum())
+            _add_issue(
+                issues,
+                "error",
+                "missing_pair_labels",
+                "pairs.csv contains missing label values.",
+                missing_labels,
+            )
+        normalized_labels = labels.map(_coerce_binary_label)
+        invalid_count = sum(
+            value is None and _has_manifest_value(raw)
+            for raw, value in zip(labels.tolist(), normalized_labels.tolist())
+        )
         if invalid_count:
-            _add_issue(issues, "error", "invalid_pair_labels", "pairs.csv labels must be binary values.", invalid_count)
+            _add_issue(
+                issues,
+                "error",
+                "invalid_pair_labels",
+                "pairs.csv labels must be binary values.",
+                invalid_count,
+            )
         valid_labels = normalized_labels.dropna().astype(int)
         positive_count = int(valid_labels.sum())
         negative_count = int(len(valid_labels) - positive_count)
@@ -176,13 +201,10 @@ def _inspect_pair_dataset(root, metadata, counts, issues):
 
     if file_ids is None or not {"left_id", "right_id"}.issubset(pairs.columns):
         return
-    missing = sorted(
-        {
-            str(value)
-            for value in pd.concat([pairs["left_id"], pairs["right_id"]], ignore_index=True).dropna()
-            if str(value) not in file_ids
-        }
+    referenced_file_ids = _normalized_ids(pairs["left_id"], "left_id") | _normalized_ids(
+        pairs["right_id"], "right_id"
     )
+    missing = sorted(referenced_file_ids - file_ids)
     if missing:
         _add_issue(
             issues,
@@ -211,10 +233,20 @@ def _inspect_retrieval_dataset(root, metadata, counts, issues):
     file_ids = _inspect_files_manifest(root, files, counts, issues)
     query_ids = _inspect_id_manifest(queries, "query_id", "queries.csv", issues)
     document_ids = _inspect_id_manifest(corpus, "document_id", "corpus.csv", issues)
-    _add_duplicate_issue(qrels, ("query_id", "document_id"), issues, "duplicate_qrels", "qrels.csv contains duplicate query/document judgments.")
+    _inspect_reference_ids(queries, ("file_id",), "queries.csv", issues)
+    _inspect_reference_ids(corpus, ("file_id",), "corpus.csv", issues)
+    _inspect_reference_ids(qrels, ("query_id", "document_id"), "qrels.csv", issues)
+    _add_duplicate_issue(
+        qrels,
+        ("query_id", "document_id"),
+        issues,
+        "duplicate_qrels",
+        "qrels.csv contains duplicate query/document judgments.",
+        severity="error",
+    )
 
     if file_ids is not None and queries is not None and "file_id" in queries:
-        missing = sorted({str(value) for value in queries["file_id"].dropna() if str(value) not in file_ids})
+        missing = sorted(_normalized_ids(queries["file_id"], "file_id") - file_ids)
         if missing:
             _add_issue(
                 issues,
@@ -224,7 +256,7 @@ def _inspect_retrieval_dataset(root, metadata, counts, issues):
                 len(missing),
             )
     if file_ids is not None and corpus is not None and "file_id" in corpus:
-        missing = sorted({str(value) for value in corpus["file_id"].dropna() if str(value) not in file_ids})
+        missing = sorted(_normalized_ids(corpus["file_id"], "file_id") - file_ids)
         if missing:
             _add_issue(
                 issues,
@@ -235,7 +267,7 @@ def _inspect_retrieval_dataset(root, metadata, counts, issues):
             )
     if qrels is not None:
         if query_ids is not None and "query_id" in qrels:
-            missing = sorted({str(value) for value in qrels["query_id"].dropna() if str(value) not in query_ids})
+            missing = sorted(_normalized_ids(qrels["query_id"], "query_id") - query_ids)
             if missing:
                 _add_issue(
                     issues,
@@ -245,7 +277,9 @@ def _inspect_retrieval_dataset(root, metadata, counts, issues):
                     len(missing),
                 )
         if document_ids is not None and "document_id" in qrels:
-            missing = sorted({str(value) for value in qrels["document_id"].dropna() if str(value) not in document_ids})
+            missing = sorted(
+                _normalized_ids(qrels["document_id"], "document_id") - document_ids
+            )
             if missing:
                 _add_issue(
                     issues,
@@ -255,8 +289,8 @@ def _inspect_retrieval_dataset(root, metadata, counts, issues):
                     len(missing),
                 )
         if "relevance" in qrels:
-            relevance = pd.to_numeric(qrels["relevance"], errors="coerce")
-            invalid_count = int(relevance.isna().sum() + (relevance < 0).sum())
+            relevance = qrels["relevance"].map(_coerce_nonnegative_relevance)
+            invalid_count = int(relevance.isna().sum())
             if invalid_count:
                 _add_issue(
                     issues,
@@ -330,18 +364,27 @@ def _inspect_metadata(metadata, expected_kind, issues):
             f"metadata.json dataset_kind is {dataset_kind!r}, expected {expected_kind!r}.",
         )
     if not str(metadata.get("name") or "").strip():
-        _add_issue(issues, "warning", "missing_dataset_name", "metadata.json does not include a dataset name.")
+        _add_issue(
+            issues,
+            "warning",
+            "missing_dataset_name",
+            "metadata.json does not include a dataset name.",
+        )
     if not str(metadata.get("task_type") or "").strip():
-        _add_issue(issues, "warning", "missing_task_type", "metadata.json does not include task_type.")
+        _add_issue(
+            issues, "warning", "missing_task_type", "metadata.json does not include task_type."
+        )
 
 
 def _read_csv_manifest(root, filename, required_columns, issues):
     path = root / filename
     if not path.exists():
-        _add_issue(issues, "error", "missing_manifest", f"Required manifest is missing: {filename}.")
+        _add_issue(
+            issues, "error", "missing_manifest", f"Required manifest is missing: {filename}."
+        )
         return None
     try:
-        frame = pd.read_csv(path)
+        frame = pd.read_csv(path, dtype=str, keep_default_na=False, na_filter=False)
     except pd.errors.EmptyDataError:
         expected = ", ".join(required_columns)
         _add_issue(
@@ -373,9 +416,15 @@ def _inspect_files_manifest(root, files, counts, issues):
     if files is None or not {"file_id", "file_path"}.issubset(files.columns):
         return None
     file_ids = _inspect_id_manifest(files, "file_id", "files.csv", issues)
-    missing_paths = int(files["file_path"].isna().sum())
+    missing_paths = sum(not _has_manifest_value(value) for value in files["file_path"].tolist())
     if missing_paths:
-        _add_issue(issues, "error", "missing_file_paths", "files.csv contains missing file_path values.", missing_paths)
+        _add_issue(
+            issues,
+            "error",
+            "missing_file_paths",
+            "files.csv contains missing file_path values.",
+            missing_paths,
+        )
 
     missing_files = []
     unsafe_paths = []
@@ -383,13 +432,15 @@ def _inspect_files_manifest(root, files, counts, issues):
     empty_files = []
     for row in files.to_dict(orient="records"):
         raw_path = row.get("file_path")
-        if pd.isna(raw_path):
+        if not _has_manifest_value(raw_path):
             continue
-        if is_unsafe_relative_path(raw_path):
+        try:
+            normalized_path = _normalize_relative_file_path(raw_path)
+        except ValueError:
             unsafe_paths.append(str(raw_path))
             continue
         try:
-            target = resolve_relative_path_within_root(root, raw_path)
+            target = resolve_relative_path_within_root(root, normalized_path)
         except ValueError:
             unsafe_paths.append(str(raw_path))
             continue
@@ -445,14 +496,41 @@ def _inspect_id_manifest(frame, id_column, filename, issues):
     if frame is None or id_column not in frame.columns:
         return None
     ids = frame[id_column]
-    missing = int(ids.isna().sum())
+    missing_mask = ids.map(_is_manifest_missing)
+    missing = int(missing_mask.sum())
     if missing:
-        _add_issue(issues, "error", "missing_ids", f"{filename} contains missing {id_column} values.", missing)
-    string_ids = ids.dropna().map(str)
-    blank = int((string_ids.str.strip() == "").sum())
+        _add_issue(
+            issues,
+            "error",
+            "missing_ids",
+            f"{filename} contains missing {id_column} values.",
+            missing,
+        )
+    nonmissing_ids = ids[~missing_mask].map(str)
+    blank_mask = nonmissing_ids.str.strip() == ""
+    blank = int(blank_mask.sum())
     if blank:
-        _add_issue(issues, "error", "blank_ids", f"{filename} contains blank {id_column} values.", blank)
-    duplicates = string_ids[string_ids.duplicated()].tolist()
+        _add_issue(
+            issues, "error", "blank_ids", f"{filename} contains blank {id_column} values.", blank
+        )
+    string_ids = nonmissing_ids[~blank_mask]
+    invalid = []
+    valid_ids = []
+    for value in string_ids.tolist():
+        try:
+            valid_ids.append(_normalize_id(value, id_column))
+        except ValueError:
+            invalid.append(value)
+    if invalid:
+        _add_issue(
+            issues,
+            "error",
+            "invalid_ids",
+            f"{filename} contains invalid {id_column} values: {', '.join(sorted(set(invalid))[:8])}.",
+            len(invalid),
+        )
+    valid_series = pd.Series(valid_ids, dtype=str)
+    duplicates = valid_series[valid_series.duplicated()].tolist()
     if duplicates:
         _add_issue(
             issues,
@@ -461,65 +539,91 @@ def _inspect_id_manifest(frame, id_column, filename, issues):
             f"{filename} contains duplicate {id_column} values: {', '.join(sorted(set(duplicates))[:8])}.",
             len(set(duplicates)),
         )
-    return set(value for value in string_ids.tolist() if value.strip())
+    return set(valid_ids)
 
 
-def _add_duplicate_issue(frame, columns, issues, code, message):
+def _add_duplicate_issue(frame, columns, issues, code, message, severity="warning"):
     if frame is None or not set(columns).issubset(frame.columns):
         return
-    duplicate_count = int(frame.duplicated(subset=list(columns)).sum())
+    normalized = frame.loc[:, list(columns)].copy()
+    for column in columns:
+        normalized[column] = normalized[column].map(
+            lambda value, label=column: _coerce_normalized_id(value, label)
+        )
+    normalized = normalized.dropna(subset=list(columns))
+    duplicate_count = int(normalized.duplicated(subset=list(columns)).sum())
     if duplicate_count:
-        _add_issue(issues, "warning", code, message, duplicate_count)
+        _add_issue(issues, severity, code, message, duplicate_count)
 
 
 def _coerce_binary_label(value):
-    if pd.isna(value):
+    if not _has_manifest_value(value):
         return None
-    if isinstance(value, bool):
-        return int(value)
-    text = str(value).strip().lower()
-    if text in {
-        "1",
-        "1.0",
-        "true",
-        "yes",
-        "y",
-        "p",
-        "positive",
-        "cheating",
-        "clone",
-        "plagiarized",
-        "plagiarised",
-        "plagiarism",
-        "match",
-        "same",
-    }:
-        return 1
-    if text in {
-        "0",
-        "0.0",
-        "false",
-        "no",
-        "n",
-        "negative",
-        "original",
-        "nonplagiarized",
-        "nonplagiarised",
-        "non_plagiarized",
-        "non_plagiarised",
-        "not plagiarized",
-        "not plagiarised",
-        "not_plagiarized",
-        "not_plagiarised",
-        "non_plagiarism",
-        "non-plagiarism",
-        "nonmatch",
-        "non-match",
-        "different",
-        "np",
-    }:
-        return 0
-    return None
+    try:
+        return _normalize_binary_label(value)
+    except ValueError:
+        return None
+
+
+def _coerce_nonnegative_relevance(value):
+    try:
+        return _normalize_nonnegative_relevance(value)
+    except ValueError:
+        return None
+
+
+def _has_manifest_value(value):
+    if _is_manifest_missing(value):
+        return False
+    return bool(str(value).strip())
+
+
+def _is_manifest_missing(value):
+    if value is None:
+        return True
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _inspect_reference_ids(frame, columns, filename, issues):
+    if frame is None:
+        return
+    for column in columns:
+        if column not in frame.columns:
+            continue
+        invalid = []
+        for value in frame[column].tolist():
+            try:
+                _normalize_id(value, column)
+            except ValueError:
+                invalid.append(str(value))
+        if invalid:
+            _add_issue(
+                issues,
+                "error",
+                "invalid_reference_ids",
+                f"{filename} contains invalid {column} values: {', '.join(sorted(set(invalid))[:8])}.",
+                len(invalid),
+            )
+
+
+def _coerce_normalized_id(value, label):
+    try:
+        return _normalize_id(value, label)
+    except ValueError:
+        return None
+
+
+def _normalized_ids(values, label):
+    return {
+        normalized
+        for normalized in values.map(
+            lambda value: _coerce_normalized_id(value, label)
+        ).tolist()
+        if normalized is not None
+    }
 
 
 def _add_issue(issues, severity, code, message, count=1):

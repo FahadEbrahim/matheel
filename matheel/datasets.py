@@ -42,6 +42,12 @@ _DATASET_REGISTRY = {}
 _DATASET_SOURCE_HANDLERS = {}
 _DATASET_PRESETS = {}
 _DATASET_ADAPTERS = {}
+_STAGED_REMOTE_SOURCES = frozenset({"github", "zenodo", "huggingface", "kaggle"})
+_REMOTE_PROVENANCE_FILENAME = ".matheel-source-provenance"
+_DEFAULT_MAX_DOWNLOAD_BYTES = 10 * 1024**3
+_DEFAULT_MAX_ARCHIVE_MEMBERS = 100_000
+_DEFAULT_MAX_ARCHIVE_MEMBER_BYTES = 4 * 1024**3
+_DEFAULT_MAX_ARCHIVE_TOTAL_BYTES = 20 * 1024**3
 
 
 @dataclass(frozen=True)
@@ -171,14 +177,17 @@ def resolve_dataset_source(
         resolved_destination = _coerce_path(resolved_destination)
 
     resolver = _DATASET_SOURCE_HANDLERS[source_key]
-    resolved = _invoke_with_supported_kwargs(
-        resolver,
-        identifier=identifier,
-        destination=resolved_destination,
-        revision=revision,
-        token=token,
-        split=split,
-    )
+    resolver_kwargs = {
+        "identifier": identifier,
+        "destination": resolved_destination,
+        "revision": revision,
+        "token": token,
+        "split": split,
+    }
+    if source_key in _STAGED_REMOTE_SOURCES:
+        resolved = _resolve_staged_remote_source(source_key, resolver, resolver_kwargs)
+    else:
+        resolved = _invoke_with_supported_kwargs(resolver, **resolver_kwargs)
     return _coerce_path(resolved)
 
 
@@ -374,7 +383,7 @@ def load_pair_dataset(dataset_root):
     pairs_path = root / "pairs.csv"
     if not pairs_path.exists():
         raise ValueError(f"Missing pairs manifest: {pairs_path}")
-    pairs = pd.read_csv(pairs_path, dtype={"left_id": "string", "right_id": "string"})
+    pairs = _read_csv_lossless(pairs_path)
     dataset = PairDataset(root=root, files=files, pairs=pairs, metadata=metadata)
     return validate_pair_dataset(dataset)
 
@@ -453,9 +462,9 @@ def load_retrieval_dataset(dataset_root):
     dataset = RetrievalDataset(
         root=root,
         files=files,
-        queries=pd.read_csv(queries_path, dtype={"query_id": "string", "file_id": "string"}),
-        corpus=pd.read_csv(corpus_path, dtype={"document_id": "string", "file_id": "string"}),
-        qrels=pd.read_csv(qrels_path, dtype={"query_id": "string", "document_id": "string"}),
+        queries=_read_csv_lossless(queries_path),
+        corpus=_read_csv_lossless(corpus_path),
+        qrels=_read_csv_lossless(qrels_path),
         metadata=metadata,
     )
     return validate_retrieval_dataset(dataset)
@@ -834,7 +843,17 @@ def _load_files_manifest(dataset_root):
     files_path = Path(dataset_root) / "files.csv"
     if not files_path.exists():
         raise ValueError(f"Missing files manifest: {files_path}")
-    return pd.read_csv(files_path, dtype={"file_id": "string"})
+    return _read_csv_lossless(files_path)
+
+
+def _read_csv_lossless(path, **kwargs):
+    return pd.read_csv(
+        path,
+        dtype=str,
+        keep_default_na=False,
+        na_filter=False,
+        **kwargs,
+    )
 
 
 def _normalize_task_family(value):
@@ -880,6 +899,88 @@ def _default_dataset_destination(source, identifier, revision="main", split=None
         Path(tempfile.gettempdir())
         / "matheel_datasets"
         / f"{source}_{safe_identifier}_{safe_revision}_{digest}"
+    )
+
+
+def _resolve_staged_remote_source(source, resolver, resolver_kwargs):
+    destination = _coerce_path(resolver_kwargs["destination"])
+    if destination.exists() and not destination.is_dir():
+        raise ValueError(f"Remote dataset destination must be a directory: {destination}")
+    provenance = {
+        "identifier": str(resolver_kwargs["identifier"]),
+        "revision": str(resolver_kwargs.get("revision") or "main"),
+        "source": source,
+        "split": None if resolver_kwargs.get("split") is None else str(resolver_kwargs["split"]),
+    }
+    cached = _cached_remote_source_path(destination, provenance)
+    if cached is not None:
+        return cached
+
+    if destination.exists() and any(destination.iterdir()):
+        raise ValueError(
+            f"Remote dataset destination is not a complete cache for the requested source: {destination}"
+        )
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(
+        tempfile.mkdtemp(
+            prefix=f".{_safe_name_component(destination.name)}.staging-",
+            dir=destination.parent,
+        )
+    ).resolve()
+    try:
+        staged_kwargs = dict(resolver_kwargs)
+        staged_kwargs["destination"] = staging
+        resolved = _coerce_path(_invoke_with_supported_kwargs(resolver, **staged_kwargs))
+        try:
+            resolved_relative = resolved.relative_to(staging)
+        except ValueError as exc:
+            raise ValueError(
+                "Remote source resolver returned a path outside its staging directory."
+            ) from exc
+        if not _remote_dataset_path_has_content(resolved):
+            raise ValueError("Remote source resolver did not produce a non-empty dataset directory.")
+        marker = {
+            **provenance,
+            "complete": True,
+            "resolved_path": resolved_relative.as_posix() or ".",
+        }
+        (staging / _REMOTE_PROVENANCE_FILENAME).write_text(
+            json.dumps(marker, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        if destination.exists():
+            destination.rmdir()
+        os.replace(staging, destination)
+        return destination / resolved_relative
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+
+
+def _cached_remote_source_path(destination, provenance):
+    if not destination.is_dir() or not any(destination.iterdir()):
+        return None
+    marker_path = destination / _REMOTE_PROVENANCE_FILENAME
+    try:
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return None
+    if not marker.get("complete") or any(
+        marker.get(key) != value for key, value in provenance.items()
+    ):
+        return None
+    relative = marker.get("resolved_path") or "."
+    try:
+        resolved = resolve_relative_path_within_root(destination, relative)
+    except ValueError:
+        return None
+    return resolved if _remote_dataset_path_has_content(resolved) else None
+
+
+def _remote_dataset_path_has_content(path):
+    return path.is_dir() and any(
+        child.name != _REMOTE_PROVENANCE_FILENAME for child in path.iterdir()
     )
 
 
@@ -1303,12 +1404,17 @@ def _read_tabular_file(path):
     target = _coerce_path(path)
     suffix = target.suffix.lower()
     if suffix == ".tsv" or suffix == ".tab":
-        return pd.read_csv(target, sep="\t")
+        return _read_csv_lossless(target, sep="\t")
     if suffix == ".jsonl":
-        return pd.read_json(target, lines=True)
+        rows = [
+            json.loads(line)
+            for line in target.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        return pd.DataFrame(rows)
     if suffix == ".json":
-        return pd.read_json(target)
-    return pd.read_csv(target)
+        return pd.DataFrame(json.loads(target.read_text(encoding="utf-8")))
+    return _read_csv_lossless(target)
 
 
 def _pick_column(columns, aliases):
@@ -1334,16 +1440,19 @@ def _column_from_options(frame, options, option_name, aliases, label, required=F
 def _prioritized_tabular_files(root, requested_table=None, split=None):
     base = _coerce_path(root)
     if requested_table:
-        return [_resolve_tabular_root_file(base, requested_table, "Tabular adapter table")]
+        requested = _resolve_tabular_root_file(base, requested_table, "Tabular adapter table")
+        if split is not None and not _tabular_path_matches_split(requested, base, split):
+            raise ValueError(f"Requested table does not match split {split!r}: {requested_table}")
+        return [requested]
 
     candidates = _find_tabular_files(base)
     if split is None:
         return candidates
 
-    variants = _split_name_variants(split)
-    matching = [path for path in candidates if path.stem.lower() in variants or path.name.lower() in variants]
-    remaining = [path for path in candidates if path not in matching]
-    return matching + remaining
+    matching = [path for path in candidates if _tabular_path_matches_split(path, base, split)]
+    if not matching:
+        raise ValueError(f"Could not find a tabular dataset matching split {split!r}.")
+    return matching
 
 
 def _split_name_variants(split):
@@ -1352,6 +1461,16 @@ def _split_name_variants(split):
         return set()
     variants = {key, key.replace("-", "_"), key.replace("_", "-")}
     return variants.union({f"{variant}.csv" for variant in variants})
+
+
+def _tabular_path_matches_split(path, root, split):
+    variants = {value.removesuffix(".csv") for value in _split_name_variants(split)}
+    relative = path.relative_to(root)
+    for part in relative.parts:
+        stem = Path(part).stem.lower()
+        if stem in variants or variants.intersection(re.split(r"[^a-z0-9]+", stem)):
+            return True
+    return False
 
 
 def _select_pair_table(root, options):
@@ -1739,27 +1858,41 @@ def _generated_id(prefix, value):
     return _normalize_id(f"{prefix}_{digest}", prefix)
 
 
-def _add_tabular_file(files, file_ids_by_key, source_root, role, id_value, text_value, path_value, suffix):
+def _add_tabular_file(
+    files, file_ids_by_key, source_root, role, id_value, text_value, path_value, suffix
+):
+    source_path = None
+    if _has_value(path_value):
+        source_path = _resolve_tabular_source_path(source_root, path_value)
+        content = source_path.read_bytes()
+    elif _has_value(text_value):
+        content = str(text_value).encode("utf-8")
+    else:
+        raise ValueError(f"Tabular {role} content must include non-blank text or a valid path.")
+    content_digest = sha1(content).hexdigest()
+
     if _has_value(id_value):
         identity_role = "source" if role in {"left", "right"} else role
-        key = ("id", identity_role, str(id_value))
-        preferred_id = _generated_id(identity_role, id_value)
-    elif _has_value(path_value):
-        resolved_path = _resolve_tabular_source_path(source_root, path_value)
-        key = ("path", resolved_path.as_posix())
-        preferred_id = _generated_id(role, resolved_path.as_posix())
+        normalized_identity = str(id_value).strip()
+        key = ("id", identity_role, normalized_identity)
+        preferred_id = _generated_id(identity_role, normalized_identity)
+    elif source_path is not None:
+        key = ("path", source_path.as_posix())
+        preferred_id = _generated_id(role, source_path.as_posix())
     else:
         key = ("text", str(text_value))
         preferred_id = _generated_id(role, text_value)
 
     if key in file_ids_by_key:
-        return file_ids_by_key[key]
+        file_id, previous_digest = file_ids_by_key[key]
+        if previous_digest != content_digest:
+            raise ValueError(f"Repeated {role} id {id_value!r} has conflicting content.")
+        return file_id
 
     file_id = preferred_id
-    file_ids_by_key[key] = file_id
+    file_ids_by_key[key] = (file_id, content_digest)
     row = {"file_id": file_id}
-    if _has_value(path_value):
-        source_path = _resolve_tabular_source_path(source_root, path_value)
+    if source_path is not None:
         row["source_path"] = source_path
         row["suffix"] = source_path.suffix or suffix
     else:
@@ -2656,12 +2789,27 @@ def _is_relative_to(path, parent):
     return True
 
 
-def _safe_extract_zip(archive_path, output_dir):
+def _safe_extract_zip(
+    archive_path,
+    output_dir,
+    *,
+    max_members=_DEFAULT_MAX_ARCHIVE_MEMBERS,
+    max_member_bytes=_DEFAULT_MAX_ARCHIVE_MEMBER_BYTES,
+    max_total_bytes=_DEFAULT_MAX_ARCHIVE_TOTAL_BYTES,
+):
     archive = _coerce_path(archive_path)
     destination = _coerce_path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(archive) as archive_file:
-        for member in archive_file.infolist():
+        members = archive_file.infolist()
+        _validate_archive_member_names(member.filename for member in members)
+        _validate_archive_limits(
+            ((member.filename, member.file_size) for member in members),
+            max_members=max_members,
+            max_member_bytes=max_member_bytes,
+            max_total_bytes=max_total_bytes,
+        )
+        for member in members:
             target = destination / member.filename
             if not _is_relative_to(target, destination):
                 raise ValueError(f"Archive member would escape output directory: {member.filename}")
@@ -2669,12 +2817,27 @@ def _safe_extract_zip(archive_path, output_dir):
     return destination
 
 
-def _safe_extract_tar(archive_path, output_dir):
+def _safe_extract_tar(
+    archive_path,
+    output_dir,
+    *,
+    max_members=_DEFAULT_MAX_ARCHIVE_MEMBERS,
+    max_member_bytes=_DEFAULT_MAX_ARCHIVE_MEMBER_BYTES,
+    max_total_bytes=_DEFAULT_MAX_ARCHIVE_TOTAL_BYTES,
+):
     archive = _coerce_path(archive_path)
     destination = _coerce_path(output_dir)
     destination.mkdir(parents=True, exist_ok=True)
     with tarfile.open(archive) as archive_file:
-        for member in archive_file.getmembers():
+        members = archive_file.getmembers()
+        _validate_archive_member_names(member.name for member in members)
+        _validate_archive_limits(
+            ((member.name, member.size if member.isfile() else 0) for member in members),
+            max_members=max_members,
+            max_member_bytes=max_member_bytes,
+            max_total_bytes=max_total_bytes,
+        )
+        for member in members:
             target = destination / member.name
             if not _is_relative_to(target, destination):
                 raise ValueError(f"Archive member would escape output directory: {member.name}")
@@ -2682,16 +2845,18 @@ def _safe_extract_tar(archive_path, output_dir):
                 link_target = target.parent / member.linkname
                 if not _is_relative_to(link_target, destination):
                     raise ValueError(f"Archive link would escape output directory: {member.name}")
+            if member.isdev() or member.isfifo():
+                raise ValueError(f"Archive contains an unsupported special file: {member.name}")
         archive_file.extractall(destination)
     return destination
 
 
-def _safe_extract_archive(archive_path, output_dir):
+def _safe_extract_archive(archive_path, output_dir, **limits):
     archive = _coerce_path(archive_path)
     if zipfile.is_zipfile(archive):
-        return _safe_extract_zip(archive, output_dir)
+        return _safe_extract_zip(archive, output_dir, **limits)
     if tarfile.is_tarfile(archive):
-        return _safe_extract_tar(archive, output_dir)
+        return _safe_extract_tar(archive, output_dir, **limits)
     raise ValueError(f"Unsupported archive format: {archive.name}")
 
 
@@ -2714,13 +2879,62 @@ def _single_child_directory_or_self(path):
     return root
 
 
-def _download_url_to_file(url, output_file, headers=None):
+def _validate_archive_limits(members, *, max_members, max_member_bytes, max_total_bytes):
+    entries = list(members)
+    if len(entries) > int(max_members):
+        raise ValueError(f"Archive contains too many members ({len(entries)} > {max_members}).")
+    total_bytes = 0
+    for name, size in entries:
+        size = int(size)
+        if size > int(max_member_bytes):
+            raise ValueError(f"Archive member exceeds the size limit: {name}")
+        total_bytes += size
+        if total_bytes > int(max_total_bytes):
+            raise ValueError("Archive exceeds the total uncompressed size limit.")
+
+
+def _validate_archive_member_names(names):
+    seen = set()
+    for name in names:
+        parts = []
+        for part in str(name).replace("\\", "/").split("/"):
+            if part in {"", "."}:
+                continue
+            if part == "..":
+                if parts:
+                    parts.pop()
+                continue
+            parts.append(part)
+        normalized = "/".join(parts).casefold()
+        if normalized in seen:
+            raise ValueError(f"Archive contains duplicate normalized member names: {normalized}")
+        seen.add(normalized)
+
+
+def _download_url_to_file(
+    url,
+    output_file,
+    headers=None,
+    *,
+    max_bytes=_DEFAULT_MAX_DOWNLOAD_BYTES,
+    timeout=60,
+):
     target = _coerce_path(output_file)
     target.parent.mkdir(parents=True, exist_ok=True)
     request = urllib.request.Request(url, headers=dict(headers or {}))
-    with urllib.request.urlopen(request) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        content_length = response.headers.get("Content-Length")
+        if content_length is not None and int(content_length) > int(max_bytes):
+            raise ValueError(f"Download exceeds the size limit of {max_bytes} bytes.")
         with target.open("wb") as handle:
-            shutil.copyfileobj(response, handle)
+            downloaded = 0
+            while chunk := response.read(1024 * 1024):
+                downloaded += len(chunk)
+                if downloaded > int(max_bytes):
+                    handle.close()
+                    target.unlink(missing_ok=True)
+                    raise ValueError(f"Download exceeds the size limit of {max_bytes} bytes.")
+                handle.write(chunk)
     return target
 
 

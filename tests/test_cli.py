@@ -431,6 +431,7 @@ def test_benchmark_registry_commands_add_list_and_compare(tmp_path):
 def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     archive_path = tmp_path / "codes.zip"
     archive_path.write_bytes(b"placeholder")
+    reproducibility_path = tmp_path / "compare_reproducibility.json"
 
     captured = {}
 
@@ -555,6 +556,8 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
             "max",
             "--device",
             "cpu",
+            "--reproducibility-out",
+            str(reproducibility_path),
             "--progress",
         ],
     )
@@ -607,6 +610,20 @@ def test_compare_command_accepts_new_options(tmp_path, monkeypatch):
     assert captured["kwargs"]["pooling_method"] == "max"
     assert captured["kwargs"]["device"] == "cpu"
     assert captured["kwargs"]["progress"] is True
+    snapshot_options = json.loads(reproducibility_path.read_text(encoding="utf-8"))["run_configs"][0]["options"]
+    executed_options = {
+        key: value for key, value in captured["kwargs"].items() if key != "progress"
+    }
+    serialized_execution = json.loads(json.dumps(executed_options))
+    assert {key: snapshot_options[key] for key in executed_options} == serialized_execution
+    assert snapshot_options["chunking_method"] == "code"
+    assert snapshot_options["crystalbleu_trivial_ngram_count"] == 40
+    assert snapshot_options["ruby_graph_timeout_seconds"] == 0.5
+    assert snapshot_options["tsed_insert_cost"] == 3.0
+    assert snapshot_options["codebertscore_num_layers"] == 7
+    assert snapshot_options["similarity_function"] == "dot"
+    assert snapshot_options["static_vector_dim"] == 512
+    assert snapshot_options["device"] == "cpu"
     assert "Elapsed: 1.2346s" in result.stderr
     assert "features=code_metric,semantic" in result.stderr
 
@@ -1099,6 +1116,7 @@ def test_evaluate_pairs_command_writes_scores_and_metrics(tmp_path):
     )
     scores_path = tmp_path / "scores.csv"
     metrics_path = tmp_path / "metrics.json"
+    reproducibility_path = tmp_path / "pair_reproducibility.json"
 
     runner = CliRunner()
     result = runner.invoke(
@@ -1112,6 +1130,8 @@ def test_evaluate_pairs_command_writes_scores_and_metrics(tmp_path):
             str(scores_path),
             "--metrics-out",
             str(metrics_path),
+            "--reproducibility-out",
+            str(reproducibility_path),
         ],
     )
 
@@ -1120,6 +1140,13 @@ def test_evaluate_pairs_command_writes_scores_and_metrics(tmp_path):
     assert metrics_path.exists()
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert metrics["pair_count"] == 2
+    snapshot_options = json.loads(reproducibility_path.read_text(encoding="utf-8"))["run_configs"][0]["options"]
+    assert snapshot_options["dataset_source"]["identifier"] == "pairs"
+    assert snapshot_options["vector_backend"] == "auto"
+    assert snapshot_options["similarity_function"] == "cosine"
+    assert snapshot_options["normalize_semantic_scores"] is False
+    assert snapshot_options["pooling_method"] == "mean"
+    assert snapshot_options["device"] == "auto"
     assert "accuracy=" in result.output
 
 
@@ -1194,6 +1221,7 @@ def test_evaluate_pairs_command_loads_tabular_adapter_spec(tmp_path):
     ).to_csv(raw_root / "pairs.csv", index=False)
     scores_path = tmp_path / "adapter_scores.csv"
     metrics_path = tmp_path / "adapter_metrics.json"
+    reproducibility_path = tmp_path / "adapter_reproducibility.json"
 
     runner = CliRunner()
     result = runner.invoke(
@@ -1213,6 +1241,8 @@ def test_evaluate_pairs_command_loads_tabular_adapter_spec(tmp_path):
             str(scores_path),
             "--metrics-out",
             str(metrics_path),
+            "--reproducibility-out",
+            str(reproducibility_path),
         ],
     )
 
@@ -1220,6 +1250,15 @@ def test_evaluate_pairs_command_loads_tabular_adapter_spec(tmp_path):
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert metrics["pair_count"] == 2
     assert pd.read_csv(scores_path)["label"].tolist() == [1, 0]
+    snapshot_options = json.loads(reproducibility_path.read_text(encoding="utf-8"))["run_configs"][0]["options"]
+    source = snapshot_options["dataset_source"]
+    assert source["identifier"] == "raw_pairs"
+    assert source["adapter"] == "auto_pair_tabular"
+    assert source["adapter_options"] == {
+        "label_column": "target",
+        "left_text_column": "left_code",
+        "right_text_column": "right_code",
+    }
 
 
 def test_evaluate_pairs_command_loads_registered_preset(tmp_path, monkeypatch):
@@ -1368,6 +1407,7 @@ def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
     )
     scores_path = tmp_path / "retrieval_scores.csv"
     metrics_path = tmp_path / "retrieval_metrics.json"
+    reproducibility_path = tmp_path / "retrieval_reproducibility.json"
 
     runner = CliRunner()
     result = runner.invoke(
@@ -1381,6 +1421,8 @@ def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
             str(scores_path),
             "--metrics-out",
             str(metrics_path),
+            "--reproducibility-out",
+            str(reproducibility_path),
         ],
     )
 
@@ -1390,6 +1432,13 @@ def test_evaluate_retrieval_command_writes_scores_and_metrics(tmp_path):
     metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     assert metrics["query_count"] == 1
     assert metrics["result_count"] == 2
+    snapshot_options = json.loads(reproducibility_path.read_text(encoding="utf-8"))["run_configs"][0]["options"]
+    assert snapshot_options["dataset_source"]["identifier"] == "retrieval"
+    assert snapshot_options["vector_backend"] == "auto"
+    assert snapshot_options["similarity_function"] == "cosine"
+    assert snapshot_options["normalize_semantic_scores"] is False
+    assert snapshot_options["pooling_method"] == "mean"
+    assert snapshot_options["device"] == "auto"
     assert "map=" in result.output
 
 

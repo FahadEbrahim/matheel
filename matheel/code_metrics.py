@@ -1,3 +1,4 @@
+import hashlib
 import math
 import re
 import time
@@ -1241,7 +1242,20 @@ def _resolve_codebertscore_scorer(
 
 
 def prepare_codebertscore_context(codes):
-    return {"texts": list(codes), "pair_cache": {}}
+    return {
+        "texts": [_normalize_codebertscore_text(code) for code in codes],
+        "pair_cache": {},
+    }
+
+
+def _normalize_codebertscore_text(value):
+    return str(value or "")
+
+
+def _codebertscore_text_fingerprint(value):
+    return hashlib.sha256(
+        _normalize_codebertscore_text(value).encode("utf-8", errors="surrogatepass")
+    ).hexdigest()
 
 
 def _tensor_values_to_float_list(values):
@@ -1310,13 +1324,29 @@ def _context_item_count(context, keys):
     return max(counts, default=0)
 
 
-def _validate_context_indices(context_name, item_count, reference_index, prediction_index):
+def _coerce_context_indices(context_name, reference_index, prediction_index):
     if reference_index is None or prediction_index is None:
         raise ValueError(
             f"{context_name} context scoring requires reference_index and prediction_index."
         )
-    left_index = int(reference_index)
-    right_index = int(prediction_index)
+    parsed = []
+    for value in (reference_index, prediction_index):
+        try:
+            numeric = float(value)
+        except (OverflowError, TypeError, ValueError) as exc:
+            raise ValueError(f"{context_name} context indices must be integers.") from exc
+        if not math.isfinite(numeric) or not numeric.is_integer():
+            raise ValueError(f"{context_name} context indices must be integers.")
+        parsed.append(int(numeric))
+    return tuple(parsed)
+
+
+def _validate_context_indices(context_name, item_count, reference_index, prediction_index):
+    left_index, right_index = _coerce_context_indices(
+        context_name,
+        reference_index,
+        prediction_index,
+    )
     if (
         left_index < 0
         or right_index < 0
@@ -1327,6 +1357,34 @@ def _validate_context_indices(context_name, item_count, reference_index, predict
             f"{context_name} context indices are out of range for the prepared context."
         )
     return left_index, right_index
+
+
+def _codebertscore_positive_integer(name, value):
+    try:
+        numeric = float(value)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a positive integer.") from exc
+    if not math.isfinite(numeric) or numeric < 1 or not numeric.is_integer():
+        raise ValueError(f"{name} must be a positive integer.")
+    return int(numeric)
+
+
+def _codebertscore_optional_positive_integer(name, value):
+    if value in (None, "", 0, "0"):
+        return None
+    return _codebertscore_positive_integer(name, value)
+
+
+def _codebertscore_nonnegative_integer(name, value):
+    if value in (None, ""):
+        return 0
+    try:
+        numeric = float(value)
+    except (OverflowError, TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must be a non-negative integer.") from exc
+    if not math.isfinite(numeric) or numeric < 0 or not numeric.is_integer():
+        raise ValueError(f"{name} must be a non-negative integer.")
+    return int(numeric)
 
 
 def _codebertscore_cache_options(
@@ -1664,14 +1722,69 @@ def score_code_metric_pair(
         )
 
     if metric_key == "codebertscore":
+        codebertscore_num_layers = _codebertscore_optional_positive_integer(
+            "codebertscore_num_layers",
+            codebertscore_num_layers,
+        )
+        codebertscore_batch_size = _codebertscore_positive_integer(
+            "codebertscore_batch_size",
+            codebertscore_batch_size,
+        )
+        codebertscore_max_length = _codebertscore_nonnegative_integer(
+            "codebertscore_max_length",
+            codebertscore_max_length,
+        )
+        codebertscore_nthreads = _codebertscore_positive_integer(
+            "codebertscore_nthreads",
+            codebertscore_nthreads,
+        )
         cache = {}
         cache_key = None
-        if (
-            codebertscore_context is not None
-            and reference_index is not None
-            and prediction_index is not None
-        ):
+        if codebertscore_context is not None:
+            if not isinstance(codebertscore_context, dict):
+                raise ValueError("CodeBERTScore context must be a mapping.")
+            if reference_index is None or prediction_index is None:
+                raise ValueError(
+                    "CodeBERTScore context scoring requires reference_index and prediction_index."
+                )
+            left_index, right_index = _coerce_context_indices(
+                "CodeBERTScore",
+                reference_index,
+                prediction_index,
+            )
+            if left_index < 0 or right_index < 0:
+                raise ValueError(
+                    "CodeBERTScore context indices are out of range for the prepared context."
+                )
+
+            context_texts = codebertscore_context.get("texts")
+            if context_texts is not None:
+                left_index, right_index = _validate_context_indices(
+                    "CodeBERTScore",
+                    len(context_texts),
+                    left_index,
+                    right_index,
+                )
+                expected_reference = _normalize_codebertscore_text(
+                    context_texts[left_index]
+                )
+                expected_prediction = _normalize_codebertscore_text(
+                    context_texts[right_index]
+                )
+                if _normalize_codebertscore_text(reference) != expected_reference:
+                    raise ValueError(
+                        "CodeBERTScore reference does not match the prepared context index."
+                    )
+                if _normalize_codebertscore_text(prediction) != expected_prediction:
+                    raise ValueError(
+                        "CodeBERTScore prediction does not match the prepared context index."
+                    )
+                reference = expected_reference
+                prediction = expected_prediction
+
             cache = codebertscore_context.get("pair_cache", {})
+            if not isinstance(cache, dict):
+                raise ValueError("CodeBERTScore context pair_cache must be a mapping.")
             options_key = _codebertscore_cache_options(
                 codebertscore_model,
                 codebertscore_num_layers,
@@ -1684,20 +1797,29 @@ def score_code_metric_pair(
                 codebertscore_use_fast_tokenizer,
                 codebertscore_nthreads,
             )
+            reference_fingerprint = _codebertscore_text_fingerprint(reference)
+            prediction_fingerprint = _codebertscore_text_fingerprint(prediction)
             if bidirectional:
-                left_index = min(int(reference_index), int(prediction_index))
-                right_index = max(int(reference_index), int(prediction_index))
+                indexed_fingerprints = sorted(
+                    (
+                        (left_index, reference_fingerprint),
+                        (right_index, prediction_fingerprint),
+                    ),
+                    key=lambda item: item[0],
+                )
                 cache_key = (
                     "sym",
-                    left_index,
-                    right_index,
+                    *indexed_fingerprints[0],
+                    *indexed_fingerprints[1],
                     *options_key,
                 )
             else:
                 cache_key = (
                     "dir",
-                    int(reference_index),
-                    int(prediction_index),
+                    left_index,
+                    right_index,
+                    reference_fingerprint,
+                    prediction_fingerprint,
                     *options_key,
                 )
             if cache_key in cache:

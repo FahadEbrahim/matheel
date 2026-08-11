@@ -1,11 +1,17 @@
 import re
 
 
-_STRING_LITERAL_RE = re.compile(r"`(?:\\.|[^`\\])*`|\"(?:\\.|[^\"\\])*\"|'(?:\\.|[^'\\])*'")
+_STRING_LITERAL_RE = re.compile(
+    r'"""(?:\\.|(?!""").)*"""'
+    r"|'''(?:\\.|(?!''').)*'''"
+    r'|`(?:\\.|[^`\\])*`|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'',
+    re.DOTALL,
+)
 _NUMBER_LITERAL_RE = re.compile(r"\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b")
 _TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|<STR>|<NUM>|[^\w\s]")
 _IDENTIFIER_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _IMPORT_BLOCK_START_RE = re.compile(r"^\s*import\s*\(\s*$")
+_PARENTHESIZED_FROM_IMPORT_RE = re.compile(r"^\s*from\s+\S+\s+import\s*\(")
 _IMPORT_LIKE_RE = re.compile(
     r"""
     ^\s*(?:
@@ -30,6 +36,7 @@ _IMPORT_LIKE_RE = re.compile(
 )
 _HASH_DIRECTIVES = (
     "#include",
+    "#import",
     "#define",
     "#if",
     "#ifdef",
@@ -317,6 +324,7 @@ _SLASH_LINE_COMMENT_LANGUAGES = {
     "typescript",
 }
 _LUA_LINE_COMMENT_LANGUAGES = {"lua"}
+_HASH_LINE_COMMENT_LANGUAGES = {"julia", "php", "python", "r", "ruby"}
 _SLASH_BLOCK_COMMENT_LANGUAGES = _SLASH_LINE_COMMENT_LANGUAGES
 _LUA_BLOCK_COMMENT_LANGUAGES = {"lua"}
 _GENERIC_LINE_COMMENT_MARKERS = ("//", "#")
@@ -370,7 +378,9 @@ def _line_comment_markers(language=None):
     if not normalized_language:
         return _GENERIC_LINE_COMMENT_MARKERS
 
-    markers = [] if normalized_language in _LUA_LINE_COMMENT_LANGUAGES else ["#"]
+    markers = []
+    if normalized_language in _HASH_LINE_COMMENT_LANGUAGES:
+        markers.append("#")
     if normalized_language in _SLASH_LINE_COMMENT_LANGUAGES:
         markers.append("//")
     if normalized_language in _LUA_LINE_COMMENT_LANGUAGES:
@@ -444,19 +454,31 @@ def strip_block_comments(text, language=None):
     return _strip_block_comments_with_markers(text, _block_comment_markers(language))
 
 
-def _strip_line_comment_with_markers(line, markers):
+def _strip_line_comment_with_markers(line, markers, language=None, triple_quote=None):
     if not markers:
-        return line
-    if "#" in markers and line.lstrip().startswith(_HASH_DIRECTIVES):
-        return line
-    if "#" in markers and line.lstrip().startswith("#"):
-        return ""
+        return line, triple_quote
+    normalized_language = normalize_preprocess_language(language)
+    if "#" in markers and not normalized_language and line.lstrip().startswith(_HASH_DIRECTIVES):
+        return line, triple_quote
 
     index = 0
     quote = None
     escaped = False
+    supports_triple_quotes = normalized_language == "python"
 
     while index < len(line):
+        if triple_quote:
+            if line.startswith(triple_quote, index) and not escaped:
+                index += len(triple_quote)
+                triple_quote = None
+                continue
+            if escaped:
+                escaped = False
+            elif line[index] == "\\":
+                escaped = True
+            index += 1
+            continue
+
         char = line[index]
         if quote:
             if escaped:
@@ -468,6 +490,12 @@ def _strip_line_comment_with_markers(line, markers):
             index += 1
             continue
 
+        if supports_triple_quotes and line.startswith(("'''", '\"\"\"'), index):
+            triple_quote = line[index : index + 3]
+            escaped = False
+            index += 3
+            continue
+
         if char in ("'", '"', "`"):
             quote = char
             index += 1
@@ -475,31 +503,44 @@ def _strip_line_comment_with_markers(line, markers):
 
         for marker in markers:
             if line.startswith(marker, index):
-                return line[:index].rstrip()
+                return line[:index].rstrip(), triple_quote
         index += 1
 
-    return line
+    return line, triple_quote
 
 
 def strip_line_comments(text, language=None):
     markers = _line_comment_markers(language)
     cleaned_lines = []
+    triple_quote = None
     for line in normalize_newlines(text).split("\n"):
-        cleaned_lines.append(_strip_line_comment_with_markers(line, markers).rstrip())
+        cleaned, triple_quote = _strip_line_comment_with_markers(
+            line,
+            markers,
+            language=language,
+            triple_quote=triple_quote,
+        )
+        cleaned_lines.append(cleaned.rstrip())
     return "\n".join(cleaned_lines)
 
 
 def strip_import_like_lines(text):
     cleaned_lines = []
     in_import_block = False
+    import_parenthesis_depth = 0
     for line in normalize_newlines(text).split("\n"):
-        stripped = line.strip()
         if in_import_block:
-            if stripped == ")":
+            import_parenthesis_depth += line.count("(") - line.count(")")
+            if import_parenthesis_depth <= 0:
                 in_import_block = False
             continue
         if _IMPORT_BLOCK_START_RE.match(line):
             in_import_block = True
+            import_parenthesis_depth = 1
+            continue
+        if _PARENTHESIZED_FROM_IMPORT_RE.match(line):
+            import_parenthesis_depth = line.count("(") - line.count(")")
+            in_import_block = import_parenthesis_depth > 0
             continue
         if _IMPORT_LIKE_RE.match(line):
             continue
