@@ -164,6 +164,54 @@ jobs:
       - name: Run Gradio structure and launch checks
         run: python -m pytest tests/test_gradio_app.py tests/test_gradio_html_utils.py
 
+  gradio-browser:
+    name: Gradio browser workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GRADIO_ANALYTICS_ENABLED: "False"
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+      TOKENIZERS_PARALLELISM: "false"
+      MATHEEL_BROWSER_ARTIFACTS_DIR: test-results/browser
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package and browser test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,gradio,browser]"
+
+      - name: Install Chromium and system dependencies
+        run: python -m playwright install --with-deps chromium
+
+      - name: Run offline Gradio browser workflows
+        run: |
+          python -m pytest -o addopts='' -m browser tests/browser --collect-only -q
+          python -m pytest -o addopts='' -m browser tests/browser \
+            --browser chromium \
+            --tracing retain-on-failure \
+            --video retain-on-failure \
+            --screenshot only-on-failure \
+            --output test-results/browser
+
+      - name: Preserve browser failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: gradio-browser-failure-artifacts
+          path: test-results/browser
+          if-no-files-found: warn
+          retention-days: 7
+
   package-smoke:
     name: Package smoke
     runs-on: ubuntu-latest

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import math
 import os
@@ -6,6 +7,7 @@ import tempfile
 import time
 import zipfile
 from pathlib import Path
+from typing import NamedTuple
 
 mpl_config_dir = os.path.join(tempfile.gettempdir(), "matheel-mpl")
 os.makedirs(mpl_config_dir, exist_ok=True)
@@ -42,7 +44,10 @@ from matheel.leaderboard import (
     run_leaderboard,
     write_leaderboard_artifacts,
 )
-from matheel.leaderboard_presets import available_leaderboard_algorithm_presets, get_leaderboard_algorithm_preset
+from matheel.leaderboard_presets import (
+    available_leaderboard_algorithm_presets,
+    get_leaderboard_algorithm_preset,
+)
 from matheel.model_routing import available_vector_backends
 from matheel.preprocessing import available_preprocess_modes
 from matheel.reports import benchmark_report_html
@@ -178,7 +183,9 @@ def _metric_preset_from_leaderboard_preset(name):
         "features": features or list(DEFAULT_FEATURE_SELECTION),
         "weights": weights,
         "code_metric": str(options.get("code_metric") or "codebleu"),
-        "code_metric_weight": float(options.get("code_metric_weight") or weights.get("code_metric", 0.0)),
+        "code_metric_weight": float(
+            options.get("code_metric_weight") or weights.get("code_metric", 0.0)
+        ),
     }
 
 
@@ -433,6 +440,14 @@ APP_CSS = """
     gap: 18px;
 }
 
+#dataset-setup-column {
+    order: 1;
+}
+
+#dataset-results-column {
+    order: 2;
+}
+
 .matheel-results-panel,
 .matheel-control-panel {
     min-width: 0;
@@ -598,20 +613,73 @@ button.primary {
 }
 """
 
+APP_JS = """
+() => {
+    let animationFrame = null;
+
+    const syncOverflowMenus = () => {
+        document.querySelectorAll(".overflow-menu").forEach((overflowMenu) => {
+            const trigger = overflowMenu.querySelector(":scope > button");
+            const adjacentDropdown = trigger?.nextElementSibling;
+            const dropdown =
+                overflowMenu.querySelector(":scope > .overflow-dropdown") ||
+                (adjacentDropdown?.classList.contains("overflow-dropdown")
+                    ? adjacentDropdown
+                    : overflowMenu.parentElement?.querySelector(".overflow-dropdown") ||
+                      overflowMenu.closest(".tab-wrapper")?.querySelector(".overflow-dropdown"));
+            if (!trigger) {
+                return;
+            }
+
+            trigger.setAttribute("aria-label", "More workflow tabs");
+            trigger.setAttribute("aria-haspopup", "menu");
+            trigger.setAttribute(
+                "aria-expanded",
+                String(Boolean(dropdown && !dropdown.classList.contains("hide"))),
+            );
+
+            if (dropdown) {
+                dropdown.setAttribute("role", "menu");
+                dropdown.querySelectorAll("button").forEach((item) => {
+                    item.setAttribute("role", "menuitem");
+                });
+            }
+        });
+    };
+
+    const scheduleSync = () => {
+        if (animationFrame !== null) {
+            window.cancelAnimationFrame(animationFrame);
+        }
+        animationFrame = window.requestAnimationFrame(syncOverflowMenus);
+    };
+
+    syncOverflowMenus();
+    const observer = new MutationObserver(scheduleSync);
+    observer.observe(document.body, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["class", "hidden", "aria-hidden"],
+    });
+    window.addEventListener("resize", scheduleSync);
+}
+"""
+
 
 def app_header_html():
     return (
         '<section class="matheel-hero">'
         '<p class="matheel-hero-topline">Source-code similarity workspace</p>'
-        '<h1>Matheel</h1>'
+        "<h1>Matheel</h1>"
         '<p class="matheel-hero-copy">Move from a quick code comparison to reproducible '
-        'dataset evaluation, explanations, and shareable reports without changing tools.</p>'
+        "dataset evaluation, explanations, and shareable reports without changing tools.</p>"
         '<div class="matheel-journey" aria-label="Recommended workflow">'
         '<div class="matheel-journey-step"><span>01 · Compare</span>Start with two snippets</div>'
         '<div class="matheel-journey-step"><span>02 · Scale</span>Rank a collection or suite</div>'
         '<div class="matheel-journey-step"><span>03 · Evaluate</span>Validate on known datasets</div>'
         '<div class="matheel-journey-step"><span>04 · Explain</span>Export evidence and reports</div>'
-        '</div></section>'
+        "</div></section>"
     )
 
 
@@ -619,10 +687,10 @@ def workflow_intro_html(kicker, title, description, outcome):
     return (
         '<section class="matheel-workflow-intro">'
         '<div><p class="matheel-workflow-kicker">'
-        f'{escape_html(kicker)}</p><h2>{escape_html(title)}</h2>'
-        f'<p>{escape_html(description)}</p></div>'
+        f"{escape_html(kicker)}</p><h2>{escape_html(title)}</h2>"
+        f"<p>{escape_html(description)}</p></div>"
         '<div class="matheel-workflow-outcome"><strong>What you get</strong>'
-        f'{escape_html(outcome)}</div></section>'
+        f"{escape_html(outcome)}</div></section>"
     )
 
 
@@ -634,15 +702,15 @@ def summary_panel_html(title, items, variant="summary"):
     rendered_items = []
     for label, value in items:
         rendered_items.append(
-            "<span class=\"matheel-summary-item\">"
-            f"<span class=\"matheel-summary-label\">{escape_html(label)}</span>"
-            f"<span class=\"matheel-summary-value\">{escape_html(value)}</span>"
+            '<span class="matheel-summary-item">'
+            f'<span class="matheel-summary-label">{escape_html(label)}</span>'
+            f'<span class="matheel-summary-value">{escape_html(value)}</span>'
             "</span>"
         )
     return (
-        f"<div class=\"{' '.join(classes)}\">"
-        f"<strong class=\"matheel-summary-title\">{escaped_title}</strong>"
-        f"<div class=\"matheel-summary-grid\">{''.join(rendered_items)}</div>"
+        f'<div class="{" ".join(classes)}">'
+        f'<strong class="matheel-summary-title">{escaped_title}</strong>'
+        f'<div class="matheel-summary-grid">{"".join(rendered_items)}</div>'
         "</div>"
     )
 
@@ -652,7 +720,7 @@ def status_panel_html(label, message, variant="status"):
     if variant and variant != "status":
         classes.append(f"matheel-{variant}")
     return (
-        f"<div class=\"{' '.join(classes)}\">"
+        f'<div class="{" ".join(classes)}">'
         f"<strong>{escape_html(label)}:</strong> {escape_html(message)}"
         "</div>"
     )
@@ -704,6 +772,18 @@ def build_feature_weights(
 ):
     weights = {}
     fallback_names = []
+
+    if not any(
+        (
+            use_semantic,
+            use_levenshtein,
+            use_jaro_winkler,
+            use_winnowing,
+            use_gst,
+            (code_metric or "none") != "none",
+        )
+    ):
+        raise gr.Error("Select at least one active metric.")
 
     if use_semantic:
         weights["semantic"] = max(0.0, float(semantic_weight))
@@ -897,7 +977,9 @@ def sync_codebertscore_model_settings_gradio(model_name, codebertscore_max_lengt
     try:
         _, selected, detected = resolve_codebertscore_model_length(model_name, current)
     except Exception:
-        return gr.update(minimum=0, maximum=max(current, DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE), value=current)
+        return gr.update(
+            minimum=0, maximum=max(current, DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE), value=current
+        )
     return gr.update(minimum=0, maximum=detected, value=selected)
 
 
@@ -979,7 +1061,9 @@ def metric_preset_options(preset_name):
         "winnowing_weight": float(weights.get("winnowing", 0.0)),
         "gst_weight": float(weights.get("gst", 0.0)),
         "code_metric": str(preset.get("code_metric") or "codebleu"),
-        "code_metric_weight": float(preset.get("code_metric_weight") or weights.get("code_metric", 0.0)),
+        "code_metric_weight": float(
+            preset.get("code_metric_weight") or weights.get("code_metric", 0.0)
+        ),
     }
 
 
@@ -1056,6 +1140,7 @@ SUITE_COLUMNS = [
     "similarity_function",
     "pooling_method",
     "max_token_length",
+    "runtime_device",
     "preprocess_mode",
     "chunking_method",
     "chunk_size",
@@ -1089,6 +1174,7 @@ SUITE_COLUMNS = [
     "threshold",
     "number_results",
 ]
+
 
 def empty_suite_rows():
     return pd.DataFrame(columns=SUITE_COLUMNS)
@@ -1158,13 +1244,17 @@ def suite_rows_to_configs(rows):
                 row.get("codebleu_component_weights") or "0.25,0.25,0.25,0.25"
             )
         ruby_mode = str(row.get("ruby_mode") or DEFAULT_RUBY_MODE).strip() or DEFAULT_RUBY_MODE
-        ruby_graph_timeout_seconds = float(row.get("ruby_graph_timeout_seconds") or DEFAULT_RUBY_GRAPH_TIMEOUT)
+        ruby_graph_timeout_seconds = float(
+            resolve_numeric_value(row.get("ruby_graph_timeout_seconds"), DEFAULT_RUBY_GRAPH_TIMEOUT)
+        )
         tsed_costs = str(row.get("tsed_costs") or DEFAULT_TSED_COSTS).strip() or DEFAULT_TSED_COSTS
         codebertscore_model = (
             str(row.get("codebertscore_model") or DEFAULT_CODEBERTSCORE_MODEL).strip()
             or DEFAULT_CODEBERTSCORE_MODEL
         )
-        codebertscore_max_length = int(float(row.get("codebertscore_max_length") or DEFAULT_CODEBERTSCORE_MAX_LENGTH))
+        codebertscore_max_length = int(
+            float(row.get("codebertscore_max_length") or DEFAULT_CODEBERTSCORE_MAX_LENGTH)
+        )
         metric_kwargs = resolve_metric_kwargs(
             code_metric,
             ruby_mode,
@@ -1177,9 +1267,11 @@ def suite_rows_to_configs(rows):
         options = {
             "model_name": str(row.get("model_name") or DEFAULT_MODEL).strip() or DEFAULT_MODEL,
             "vector_backend": str(row.get("vector_backend") or "auto").strip() or "auto",
-            "similarity_function": str(row.get("similarity_function") or "cosine").strip() or "cosine",
+            "similarity_function": str(row.get("similarity_function") or "cosine").strip()
+            or "cosine",
             "pooling_method": str(row.get("pooling_method") or "mean").strip() or "mean",
             "max_token_length": max(8, int(float(row.get("max_token_length") or 256))),
+            "device": str(row.get("runtime_device") or "auto").strip() or "auto",
             "preprocess_mode": str(row.get("preprocess_mode") or "none").strip() or "none",
             "chunking_method": str(row.get("chunking_method") or "none").strip() or "none",
             "chunk_size": max(10, int(float(row.get("chunk_size") or 120))),
@@ -1194,7 +1286,8 @@ def suite_rows_to_configs(rows):
             "codebleu_component_weights": effective_codebleu_component_weights,
             "crystalbleu_max_order": max(1, int(float(row.get("crystalbleu_max_order") or 4))),
             "crystalbleu_trivial_ngram_count": max(
-                0, int(float(row.get("crystalbleu_trivial_ngram_count") or 50))
+                0,
+                int(float(resolve_numeric_value(row.get("crystalbleu_trivial_ngram_count"), 50))),
             ),
             "ruby_mode": ruby_mode,
             "ruby_graph_timeout_seconds": ruby_graph_timeout_seconds,
@@ -1202,7 +1295,8 @@ def suite_rows_to_configs(rows):
             "codebertscore_max_length": codebertscore_max_length,
             "levenshtein_weights": effective_levenshtein_weights,
             "jaro_winkler_prefix_weight": max(
-                0.0, min(0.25, float(row.get("jaro_winkler_prefix_weight") or 0.1))
+                0.0,
+                min(0.25, float(resolve_numeric_value(row.get("jaro_winkler_prefix_weight"), 0.1))),
             ),
             "winnowing_kgram": effective_winnowing_kgram,
             "winnowing_window": effective_winnowing_window,
@@ -1260,7 +1354,10 @@ def default_suite_run_name(
 ):
     selected_steps = set(selected_preparation or [])
     parts = _selected_suite_algorithm_names(selected_features, code_metric)
-    if "Preprocessing" in selected_steps and str(preprocess_mode or "none").strip() not in ("", "none"):
+    if "Preprocessing" in selected_steps and str(preprocess_mode or "none").strip() not in (
+        "",
+        "none",
+    ):
         parts.append(str(preprocess_mode).strip().lower())
     if "Chunking" in selected_steps and str(chunking_method or "none").strip() not in ("", "none"):
         parts.append(str(chunking_method).strip().lower())
@@ -1304,6 +1401,7 @@ def build_suite_run_row_data(
     similarity_function,
     pooling_method,
     max_token_length,
+    runtime_device,
     semantic_weight,
     levenshtein_weight,
     jaro_winkler_weight,
@@ -1377,18 +1475,25 @@ def build_suite_run_row_data(
 
     normalized_codebleu_weights = "0.25,0.25,0.25,0.25"
     if normalized_code_metric.startswith("codebleu"):
-        normalized_codebleu_weights = validate_codebleu_component_weights_text(codebleu_component_weights)
+        normalized_codebleu_weights = validate_codebleu_component_weights_text(
+            codebleu_component_weights
+        )
     normalized_ruby_mode = str(ruby_mode or DEFAULT_RUBY_MODE).strip().lower() or DEFAULT_RUBY_MODE
-    normalized_ruby_timeout = float(ruby_graph_timeout_seconds or DEFAULT_RUBY_GRAPH_TIMEOUT)
+    normalized_ruby_timeout = float(
+        resolve_numeric_value(ruby_graph_timeout_seconds, DEFAULT_RUBY_GRAPH_TIMEOUT)
+    )
     normalized_tsed_costs_raw = str(tsed_costs or DEFAULT_TSED_COSTS).strip() or DEFAULT_TSED_COSTS
     if normalized_code_metric == "tsed":
         _, normalized_tsed_costs = validate_tsed_costs_text(normalized_tsed_costs_raw)
     else:
         normalized_tsed_costs = normalized_tsed_costs_raw
     normalized_codebertscore_model = (
-        str(codebertscore_model or DEFAULT_CODEBERTSCORE_MODEL).strip() or DEFAULT_CODEBERTSCORE_MODEL
+        str(codebertscore_model or DEFAULT_CODEBERTSCORE_MODEL).strip()
+        or DEFAULT_CODEBERTSCORE_MODEL
     )
-    normalized_codebertscore_max_length = int(float(codebertscore_max_length or DEFAULT_CODEBERTSCORE_MAX_LENGTH))
+    normalized_codebertscore_max_length = int(
+        float(codebertscore_max_length or DEFAULT_CODEBERTSCORE_MAX_LENGTH)
+    )
 
     resolve_metric_kwargs(
         normalized_code_metric,
@@ -1421,6 +1526,7 @@ def build_suite_run_row_data(
         "similarity_function": str(similarity_function or "cosine").strip() or "cosine",
         "pooling_method": str(pooling_method or "mean").strip() or "mean",
         "max_token_length": max(8, int(float(max_token_length or 256))),
+        "runtime_device": str(runtime_device or "auto").strip() or "auto",
         "preprocess_mode": preprocess_mode if "Preprocessing" in selected_steps else "none",
         "chunking_method": chunking_method if "Chunking" in selected_steps else "none",
         "chunk_size": max(10, int(float(chunk_size or 120))),
@@ -1434,7 +1540,10 @@ def build_suite_run_row_data(
         "code_language": str(code_language or "python").strip() or "python",
         "codebleu_component_weights": normalized_codebleu_weights,
         "crystalbleu_max_order": max(1, int(float(crystalbleu_max_order or 4))),
-        "crystalbleu_trivial_ngram_count": max(0, int(float(crystalbleu_trivial_ngram_count or 50))),
+        "crystalbleu_trivial_ngram_count": max(
+            0,
+            int(float(resolve_numeric_value(crystalbleu_trivial_ngram_count, 50))),
+        ),
         "ruby_mode": normalized_ruby_mode,
         "ruby_graph_timeout_seconds": normalized_ruby_timeout,
         "tsed_costs": normalized_tsed_costs,
@@ -1444,7 +1553,10 @@ def build_suite_run_row_data(
         "levenshtein_weight": feature_weights.get("levenshtein", 0.0),
         "levenshtein_weights": normalized_levenshtein_weights,
         "jaro_winkler_weight": feature_weights.get("jaro_winkler", 0.0),
-        "jaro_winkler_prefix_weight": max(0.0, min(0.25, float(jaro_winkler_prefix_weight or 0.1))),
+        "jaro_winkler_prefix_weight": max(
+            0.0,
+            min(0.25, float(resolve_numeric_value(jaro_winkler_prefix_weight, 0.1))),
+        ),
         "winnowing_weight": feature_weights.get("winnowing", 0.0),
         "winnowing_kgram": normalized_winnowing_kgram,
         "winnowing_window": normalized_winnowing_window,
@@ -1466,6 +1578,7 @@ def append_suite_run_gradio(
     similarity_function,
     pooling_method,
     max_token_length,
+    runtime_device,
     semantic_weight,
     levenshtein_weight,
     jaro_winkler_weight,
@@ -1509,6 +1622,7 @@ def append_suite_run_gradio(
         similarity_function,
         pooling_method,
         max_token_length,
+        runtime_device,
         semantic_weight,
         levenshtein_weight,
         jaro_winkler_weight,
@@ -1566,6 +1680,7 @@ def append_suite_run_gradio(
             chunking_method,
         ),
     )
+
 
 def suite_runs_overview_html(rows):
     frame = normalize_suite_rows_frame(rows)
@@ -1627,8 +1742,8 @@ def suite_summary_html(summary):
         [
             ("Best Run", best["run_name"]),
             ("Runs", str(len(summary))),
-            ("Best Mean", f"{float(summary['mean_score'].max()):.3f}"),
-            ("Best Max", f"{float(summary['max_score'].max()):.3f}"),
+            ("Best Mean", f"{float(best['mean_score']):.3f}"),
+            ("Best Max", f"{float(best['max_score']):.3f}"),
             ("Elapsed", format_elapsed_seconds(elapsed_seconds)),
             ("Features", feature_set),
         ],
@@ -1641,6 +1756,22 @@ def load_suite_details(run_name, details_store):
         return pd.DataFrame(columns=["file_name_1", "file_name_2", "similarity_score"])
     return pd.DataFrame(rows)
 
+
+def unique_suite_detail_filenames(run_names):
+    used_names = set()
+    filenames = []
+    for run_name in run_names:
+        detail_stem = slugify_run_name(run_name) or "run"
+        candidate = detail_stem
+        suffix = 2
+        while candidate.casefold() in used_names:
+            candidate = f"{detail_stem}_{suffix}"
+            suffix += 1
+        used_names.add(candidate.casefold())
+        filenames.append(f"{candidate}.csv")
+    return filenames
+
+
 def run_suite_gradio(
     zipped_file,
     run_sheet_rows,
@@ -1652,6 +1783,7 @@ def run_suite_gradio(
     similarity_function,
     pooling_method,
     max_token_length,
+    runtime_device,
     semantic_weight,
     levenshtein_weight,
     jaro_winkler_weight,
@@ -1714,6 +1846,7 @@ def run_suite_gradio(
             similarity_function,
             pooling_method,
             max_token_length,
+            runtime_device,
             semantic_weight,
             levenshtein_weight,
             jaro_winkler_weight,
@@ -1760,25 +1893,23 @@ def run_suite_gradio(
     export_root = os.fspath(make_temp_workspace("matheel-suite-"))
     summary_name = f"comparison_suite_summary.{output_format}"
     summary_export_path = os.path.join(export_root, summary_name)
-    details_dir = os.path.join(export_root, "comparison_suite_details")
     summary, result_frames = run_comparison_suite(
         zipped_file,
         run_configs,
         summary_out=summary_export_path,
-        details_dir=details_dir,
+        details_dir=None,
         output_format=output_format,
         progress_callback=gradio_progress_callback(progress),
     )
     details_store = {
-        run_name: frame.to_dict(orient="records")
-        for run_name, frame in result_frames.items()
+        run_name: frame.to_dict(orient="records") for run_name, frame in result_frames.items()
     }
     first_run = summary.iloc[0]["run_name"] if not summary.empty else None
     first_details = load_suite_details(first_run, details_store)
     details_zip_path = os.path.join(export_root, "comparison_suite_details.zip")
     with zipfile.ZipFile(details_zip_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for run_name, frame in result_frames.items():
-            detail_filename = f"{slugify_run_name(run_name)}.csv"
+        detail_filenames = unique_suite_detail_filenames(result_frames)
+        for (_, frame), detail_filename in zip(result_frames.items(), detail_filenames):
             detail_path = os.path.join(export_root, detail_filename)
             frame.to_csv(detail_path, index=False)
             archive.write(detail_path, arcname=detail_filename)
@@ -1983,8 +2114,10 @@ def generate_dataset_map_gradio(
         return empty_dataset_map_summary_html(), pd.DataFrame(), "", None
 
     dataset_root = _dataset_root_from_upload(dataset_file, task_label)
-    resolved_dim = validate_positive_int_value(static_vector_dim, "Static vector dimension", minimum=8)
-    resolved_seed = int(float(seed or 7))
+    resolved_dim = validate_positive_int_value(
+        static_vector_dim, "Static vector dimension", minimum=8
+    )
+    resolved_seed = int(float(resolve_numeric_value(seed, 7)))
     if progress is not None:
         progress(0.2, desc="Loading dataset texts")
     try:
@@ -2012,7 +2145,9 @@ def generate_dataset_map_gradio(
         title=str(projection.attrs.get("dataset_name") or "Matheel Dataset Map"),
         color_column=resolved_color,
     )
-    artifacts_zip = _zip_artifact_paths(artifacts.values(), export_root / "dataset_map_artifacts.zip")
+    artifacts_zip = _zip_artifact_paths(
+        artifacts.values(), export_root / "dataset_map_artifacts.zip"
+    )
     if progress is not None:
         progress(1.0, desc="Dataset map complete")
     return (
@@ -2197,7 +2332,10 @@ def ready_made_leaderboard_summary_html(report):
         "Ready-made Leaderboard",
         [
             ("Dataset Presets", str(len(dataset_presets))),
-            ("Task Views", str(profile.get("dataset_task_count") or len(report["cards"]["datasets"]))),
+            (
+                "Task Views",
+                str(profile.get("dataset_task_count") or len(report["cards"]["datasets"])),
+            ),
             ("Algorithms", str(len(algorithms) or len(report["cards"]["algorithms"]))),
             ("Backend", str(profile.get("vector_backend") or "unknown")),
             ("Sampling", sample_plan),
@@ -2243,13 +2381,7 @@ def _ready_made_task_family(task_family):
 def _ready_made_unique_values(frame, column):
     if not isinstance(frame, pd.DataFrame) or column not in frame:
         return []
-    return sorted(
-        {
-            str(value)
-            for value in frame[column].dropna().tolist()
-            if str(value).strip()
-        }
-    )
+    return sorted({str(value) for value in frame[column].dropna().tolist() if str(value).strip()})
 
 
 def _ready_made_filter_options_from_report(report, task_family):
@@ -2257,9 +2389,7 @@ def _ready_made_filter_options_from_report(report, task_family):
     per_dataset = report["per_dataset"]
     task_rows = per_dataset[per_dataset["task_family"] == task]
     configured_metrics = (
-        READY_LEADERBOARD_PAIR_METRICS
-        if task == "pair"
-        else READY_LEADERBOARD_RETRIEVAL_METRICS
+        READY_LEADERBOARD_PAIR_METRICS if task == "pair" else READY_LEADERBOARD_RETRIEVAL_METRICS
     )
     available_metrics = set(_ready_made_unique_values(task_rows, "metric"))
     metrics = [metric for metric in configured_metrics if metric in available_metrics]
@@ -2336,8 +2466,7 @@ def _filter_ready_made_leaderboard_report(
 
     per_dataset = report["per_dataset"].copy()
     per_dataset = per_dataset[
-        (per_dataset["task_family"] == task)
-        & (per_dataset["metric"] == selected_metric)
+        (per_dataset["task_family"] == task) & (per_dataset["metric"] == selected_metric)
     ]
     if dataset_name and dataset_name != READY_LEADERBOARD_ALL_DATASETS:
         per_dataset = per_dataset[per_dataset["dataset_name"] == dataset_name]
@@ -2347,17 +2476,14 @@ def _filter_ready_made_leaderboard_report(
     if per_dataset.empty:
         aggregate = report["aggregate"].iloc[0:0].copy()
     else:
-        aggregate = (
-            per_dataset.groupby(
-                ["task_family", "algorithm_name", "metric"],
-                as_index=False,
-            )
-            .agg(
-                mean_score=("score", "mean"),
-                median_score=("score", "median"),
-                dataset_count=("dataset_name", "nunique"),
-                sample_count=("sample_count", "sum"),
-            )
+        aggregate = per_dataset.groupby(
+            ["task_family", "algorithm_name", "metric"],
+            as_index=False,
+        ).agg(
+            mean_score=("score", "mean"),
+            median_score=("score", "median"),
+            dataset_count=("dataset_name", "nunique"),
+            sample_count=("sample_count", "sum"),
         )
         aggregate["rank"] = (
             aggregate.groupby(["task_family", "metric"])["mean_score"]
@@ -2399,9 +2525,7 @@ def _sort_ready_made_leaderboard_frame(
         selected_column = allowed_columns[0]
     sort_columns = [selected_column]
     sort_columns.extend(
-        column
-        for column in tie_breakers
-        if column != selected_column and column in frame.columns
+        column for column in tie_breakers if column != selected_column and column in frame.columns
     )
     primary_ascending = str(direction) == "Ascending"
     return frame.sort_values(
@@ -2669,7 +2793,9 @@ def _normalized_dataset_roots_from_upload(uploaded_path):
     if path.is_dir():
         return _find_normalized_dataset_roots(path)
     if not zipfile.is_zipfile(path):
-        raise gr.Error("Ready leaderboard inputs must be normalized dataset ZIP archives or directories.")
+        raise gr.Error(
+            "Ready leaderboard inputs must be normalized dataset ZIP archives or directories."
+        )
     extract_root = make_temp_workspace("matheel-ready-leaderboard-upload-")
     _safe_extract_uploaded_zip(path, extract_root)
     return _find_normalized_dataset_roots(extract_root)
@@ -2771,7 +2897,7 @@ def run_ready_leaderboard_gradio(
     )
     manifest = {
         "name": "gradio_ready_leaderboard",
-        "seed": int(float(seed or 7)),
+        "seed": int(float(resolve_numeric_value(seed, 7))),
         "pair_metrics": list(READY_LEADERBOARD_PAIR_METRICS),
         "retrieval_metrics": list(READY_LEADERBOARD_RETRIEVAL_METRICS),
         "datasets": datasets,
@@ -2798,7 +2924,9 @@ def run_ready_leaderboard_gradio(
     if progress is not None:
         progress(1.0, desc="Ready leaderboard complete")
     return (
-        ready_leaderboard_summary_html(report, len(_uploaded_file_paths(dataset_files)), len(algorithms)),
+        ready_leaderboard_summary_html(
+            report, len(_uploaded_file_paths(dataset_files)), len(algorithms)
+        ),
         leaderboard_display_frame(report["aggregate"]),
         leaderboard_display_frame(report["per_dataset"]),
         artifacts["html"].read_text(encoding="utf-8"),
@@ -2829,7 +2957,9 @@ def _find_normalized_dataset_root(root, task_label):
     if len(candidates) == 1:
         return candidates[0]
     if len(candidates) > 1:
-        raise gr.Error("Dataset archive contains multiple normalized datasets. Upload one dataset at a time.")
+        raise gr.Error(
+            "Dataset archive contains multiple normalized datasets. Upload one dataset at a time."
+        )
     raise gr.Error("Could not find a normalized Matheel dataset in the uploaded archive.")
 
 
@@ -2895,15 +3025,22 @@ def metrics_dict_frame(metrics):
 
 def dataset_scores_display_frame(scored, task_label):
     frame = scored.copy() if isinstance(scored, pd.DataFrame) else pd.DataFrame(scored)
-    columns = RETRIEVAL_DATASET_SCORE_COLUMNS if str(task_label).startswith("Retrieval") else PAIR_DATASET_SCORE_COLUMNS
+    raw_records = frame.to_dict(orient="records")
+    columns = (
+        RETRIEVAL_DATASET_SCORE_COLUMNS
+        if str(task_label).startswith("Retrieval")
+        else PAIR_DATASET_SCORE_COLUMNS
+    )
     selected = [column for column in columns if column in frame.columns]
     if not selected:
+        frame.attrs["raw_scored_records"] = raw_records
         return frame
     display = frame[selected].copy()
     if "similarity_score" in display.columns:
-        display["similarity_score"] = display["similarity_score"].astype(float).round(4)
-        display["Interpretation"] = display["similarity_score"].map(score_band_label)
-    return display.rename(
+        raw_scores = display["similarity_score"].astype(float)
+        display["Interpretation"] = raw_scores.map(score_band_label)
+        display["similarity_score"] = raw_scores.round(4)
+    display = display.rename(
         columns={
             "left_id": "Left File",
             "right_id": "Right File",
@@ -2914,6 +3051,8 @@ def dataset_scores_display_frame(scored, task_label):
             "similarity_score": "Similarity Score",
         }
     )
+    display.attrs["raw_scored_records"] = raw_records
+    return display
 
 
 def _dataset_count_items(task_label, dataset, scored):
@@ -2931,8 +3070,14 @@ def _dataset_count_items(task_label, dataset, scored):
     ]
 
 
-def dataset_evaluation_summary_html(task_label, dataset, scored, metrics, elapsed_seconds, preset_name):
-    scores = scored["similarity_score"].astype(float) if "similarity_score" in scored else pd.Series(dtype=float)
+def dataset_evaluation_summary_html(
+    task_label, dataset, scored, metrics, elapsed_seconds, preset_name
+):
+    scores = (
+        scored["similarity_score"].astype(float)
+        if "similarity_score" in scored
+        else pd.Series(dtype=float)
+    )
     top_score = scores.max() if not scores.empty else 0.0
     task_name = "Retrieval Dataset" if str(task_label).startswith("Retrieval") else "Pair Dataset"
     items = [
@@ -2958,6 +3103,98 @@ def _write_json(path, payload):
     return Path(path)
 
 
+def dataset_evaluation_leaderboard_payload(
+    task_label,
+    dataset,
+    scored,
+    metrics,
+    algorithm_name,
+    similarity_options,
+):
+    """Build an Inspector-compatible leaderboard payload for one dataset run."""
+    task_family = "retrieval" if str(task_label).startswith("Retrieval") else "pair"
+    dataset_name = str(dataset.metadata.get("name") or dataset.root.name)
+    resolved_algorithm = str(algorithm_name or "Custom Dataset Evaluation")
+    dataset_source = str(dataset.metadata.get("source") or "uploaded")
+    sample_count = int(len(scored))
+    metric_rows = []
+    for metric, value in sorted(dict(metrics or {}).items()):
+        try:
+            score = float(value)
+        except (TypeError, ValueError):
+            continue
+        if not math.isfinite(score):
+            continue
+        metric_rows.append(
+            {
+                "task_family": task_family,
+                "dataset_name": dataset_name,
+                "algorithm_name": resolved_algorithm,
+                "metric": str(metric),
+                "score": score,
+                "sample_count": sample_count,
+                "dataset_source": dataset_source,
+                "algorithm_kind": "metric_preset",
+                "rank": 1,
+            }
+        )
+    aggregate_rows = [
+        {
+            "task_family": row["task_family"],
+            "algorithm_name": row["algorithm_name"],
+            "metric": row["metric"],
+            "mean_score": row["score"],
+            "median_score": row["score"],
+            "dataset_count": 1,
+            "sample_count": row["sample_count"],
+            "rank": 1,
+        }
+        for row in metric_rows
+    ]
+    return {
+        "schema_version": 1,
+        "metadata": {
+            "schema_version": 1,
+            "name": f"{dataset_name} Dataset Evaluation",
+            "pair_metrics": [row["metric"] for row in metric_rows]
+            if task_family == "pair"
+            else [],
+            "retrieval_metrics": [row["metric"] for row in metric_rows]
+            if task_family == "retrieval"
+            else [],
+        },
+        "manifest": {
+            "schema_version": 1,
+            "name": f"{dataset_name}_dataset_evaluation",
+            "datasets": [{"name": dataset_name, "task_family": task_family}],
+            "algorithms": [
+                {
+                    "name": resolved_algorithm,
+                    "similarity_options": similarity_options,
+                }
+            ],
+        },
+        "cards": {
+            "datasets": [
+                {
+                    "name": dataset_name,
+                    "card_type": "dataset",
+                    "task_family": task_family,
+                }
+            ],
+            "algorithms": [
+                {
+                    "name": resolved_algorithm,
+                    "card_type": "algorithm",
+                    "algorithm_kind": "metric_preset",
+                }
+            ],
+        },
+        "per_dataset": metric_rows,
+        "aggregate": aggregate_rows,
+    }
+
+
 def _write_leaderboard_artifacts(
     output_dir,
     task_label,
@@ -2965,6 +3202,7 @@ def _write_leaderboard_artifacts(
     scored,
     metrics,
     similarity_options,
+    algorithm_name=None,
     resample_metrics=None,
     resample_summary=None,
 ):
@@ -2974,6 +3212,7 @@ def _write_leaderboard_artifacts(
     scored_path = root / f"{prefix}_scored_rows.csv"
     metrics_path = root / f"{prefix}_metrics.json"
     manifest_path = root / "leaderboard_manifest.json"
+    leaderboard_report_path = root / "leaderboard_report.json"
     reproducibility_path = root / "reproducibility.json"
     scored.to_csv(scored_path, index=False)
     _write_json(metrics_path, metrics)
@@ -3005,13 +3244,27 @@ def _write_leaderboard_artifacts(
     manifest = {
         "schema_version": 1,
         "workflow": "gradio_dataset_evaluation",
-        "dataset_kind": "retrieval" if str(task_label).startswith("Retrieval") else "pair_classification",
+        "dataset_kind": "retrieval"
+        if str(task_label).startswith("Retrieval")
+        else "pair_classification",
         "dataset_name": str(dataset.metadata.get("name") or dataset.root.name),
         "files": files,
         "similarity_options": similarity_options,
     }
     _write_json(manifest_path, manifest)
     files["manifest"] = manifest_path.name
+    _write_json(
+        leaderboard_report_path,
+        dataset_evaluation_leaderboard_payload(
+            task_label,
+            dataset,
+            scored,
+            metrics,
+            algorithm_name,
+            similarity_options,
+        ),
+    )
+    files["leaderboard_report"] = leaderboard_report_path.name
 
     snapshot = collect_reproducibility_snapshot(
         dataset.root,
@@ -3052,7 +3305,9 @@ def _resample_retrieval_scores(scored, dataset, folds, seed, k):
 
 def _validate_resampling_fold_count(item_count, folds, item_label):
     if folds < 2:
-        raise gr.Error("K-fold resampling needs at least 2 folds, or set folds to 0 to turn it off.")
+        raise gr.Error(
+            "K-fold resampling needs at least 2 folds, or set folds to 0 to turn it off."
+        )
     if folds > item_count:
         raise gr.Error(f"K-fold resampling folds must not exceed the number of {item_label}.")
 
@@ -3080,7 +3335,11 @@ def dataset_validation_summary_html(report):
             ("Errors", str(report.get("error_count", 0))),
             ("Warnings", str(report.get("warning_count", 0))),
         ],
-        variant="error" if report.get("error_count") else "empty" if report.get("warning_count") else "summary",
+        variant="error"
+        if report.get("error_count")
+        else "empty"
+        if report.get("warning_count")
+        else "summary",
     )
 
 
@@ -3123,6 +3382,234 @@ def validate_dataset_gradio(dataset_file, task_label, progress=gr.Progress(track
         dataset_validation_issues_frame(report),
         artifacts["report_html"].read_text(encoding="utf-8"),
         artifacts_zip,
+    )
+
+
+def dataset_upload_identity(dataset_file, task_label):
+    """Return a stable identity used to bind validation to one upload and task."""
+    uploaded_path = _uploaded_file_path(dataset_file)
+    if uploaded_path is None or not uploaded_path.exists():
+        return None
+    digest = hashlib.sha256()
+    with uploaded_path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return {
+        "sha256": digest.hexdigest(),
+        "task": _dataset_kind_from_task_label(task_label),
+    }
+
+
+def dataset_journey_status_html(step, message, variant="status"):
+    return status_panel_html(f"Step {int(step)}", message, variant=variant)
+
+
+def validate_dataset_journey_gradio(
+    dataset_file, task_label, progress=gr.Progress(track_tqdm=True)
+):
+    outputs = validate_dataset_gradio(dataset_file, task_label, progress=progress)
+    issues = outputs[1]
+    error_count = 0
+    if isinstance(issues, pd.DataFrame) and not issues.empty and "Severity" in issues:
+        error_count = int(issues["Severity"].astype(str).str.lower().eq("error").sum())
+    identity = dataset_upload_identity(dataset_file, task_label) if error_count == 0 else None
+    if identity is None:
+        status = dataset_journey_status_html(
+            2,
+            "Validation must pass before evaluation. Fix the reported errors, then validate again.",
+            variant="error" if dataset_file is not None else "empty",
+        )
+    else:
+        status = dataset_journey_status_html(
+            2,
+            "Validation passed. Review any warnings, then run the dataset evaluation.",
+        )
+    return (*outputs, identity, gr.update(interactive=identity is not None), status)
+
+
+def evaluate_dataset_journey_gradio(
+    validation_state,
+    dataset_file,
+    task_label,
+    *evaluation_args,
+    progress=gr.Progress(track_tqdm=True),
+):
+    current_identity = dataset_upload_identity(dataset_file, task_label)
+    if not validation_state or validation_state != current_identity:
+        raise gr.Error("Validate this dataset and task successfully before running evaluation.")
+    outputs = evaluate_dataset_gradio_for_journey(
+        dataset_file,
+        task_label,
+        *evaluation_args,
+        progress=progress,
+    )
+    is_pair = not str(task_label).startswith("Retrieval")
+    status = dataset_journey_status_html(
+        3,
+        (
+            "Evaluation complete. Tune the pair threshold or explain a scored row, then download artifacts."
+            if is_pair
+            else "Evaluation complete. Review ranked rows and metrics, then download the artifacts."
+        ),
+    )
+    return (
+        gr.update(value=outputs[0], visible=True),
+        gr.update(value=outputs[1], visible=True),
+        gr.update(value=outputs[2], visible=True),
+        gr.update(value=outputs[3], visible=True),
+        gr.update(value=outputs[4], visible=True),
+        outputs[5],
+        outputs[6],
+        status,
+        gr.update(visible=is_pair),
+        gr.update(visible=is_pair),
+        gr.update(visible=is_pair),
+        gr.update(visible=True),
+    )
+
+
+def handoff_dataset_to_explain(dataset_file, task_label):
+    if dataset_file is None:
+        raise gr.Error("Run a dataset evaluation before continuing to Explain.")
+    return (
+        dataset_file,
+        task_label,
+        gr.update(selected="explain"),
+        gr.update(selected="dataset-map"),
+    )
+
+
+def handoff_dataset_to_reports(artifacts_path):
+    if artifacts_path is None:
+        raise gr.Error("Run a dataset evaluation before continuing to Reports.")
+    return (
+        artifacts_path,
+        gr.update(selected="reports"),
+        gr.update(selected="inspect-artifacts"),
+    )
+
+
+def threshold_tuning_journey_gradio(scored_state, optimize, progress=gr.Progress(track_tqdm=True)):
+    outputs = threshold_tuning_gradio(scored_state, optimize, progress=progress)
+    return (
+        gr.update(value=outputs[0], visible=True),
+        gr.update(value=outputs[1], visible=True),
+        gr.update(value=outputs[2], visible=True),
+        outputs[3],
+        dataset_journey_status_html(
+            4,
+            "Threshold tuning complete. Review the sweep, then download calibration artifacts.",
+        ),
+    )
+
+
+def explain_scored_pair_journey_gradio(
+    scored_state,
+    row_index,
+    segment_mode,
+    high_threshold,
+    medium_threshold,
+    low_threshold,
+    chunk_size,
+    progress=gr.Progress(track_tqdm=True),
+):
+    outputs = explain_scored_pair_gradio(
+        scored_state,
+        row_index,
+        segment_mode,
+        high_threshold,
+        medium_threshold,
+        low_threshold,
+        chunk_size,
+        progress=progress,
+    )
+    return (
+        gr.update(value=outputs[0], visible=True),
+        gr.update(value=outputs[1], visible=True),
+        gr.update(value=outputs[2], visible=True),
+        outputs[3],
+        dataset_journey_status_html(
+            4,
+            "Pair explanation complete. Review the matched regions, then download the evidence bundle.",
+        ),
+    )
+
+
+def reset_dataset_results():
+    """Clear evaluation and every dependent stage after a scoring option changes."""
+    return (
+        None,
+        gr.update(
+            value=summary_panel_html(
+                "Dataset Evaluation",
+                [("Status", "Ready to evaluate"), ("Artifacts", "None")],
+                variant="empty",
+            ),
+            visible=False,
+        ),
+        gr.update(value=pd.DataFrame(columns=["Metric", "Value"]), visible=False),
+        gr.update(
+            value=pd.DataFrame(columns=["Similarity Score", "Interpretation"]),
+            visible=False,
+        ),
+        gr.update(value=pd.DataFrame(), visible=False),
+        gr.update(value=pd.DataFrame(), visible=False),
+        None,
+        gr.update(value=empty_threshold_tuning_summary_html(), visible=False),
+        gr.update(value=pd.DataFrame(), visible=False),
+        gr.update(value="", visible=False),
+        None,
+        gr.update(value=empty_pair_explanation_summary_html(), visible=False),
+        gr.update(value=pd.DataFrame(), visible=False),
+        gr.update(value="", visible=False),
+        None,
+        dataset_journey_status_html(3, "Settings changed. Run evaluation to refresh every result."),
+        gr.update(visible=False),
+        gr.update(visible=False),
+        gr.update(visible=False),
+        gr.update(visible=False),
+    )
+
+
+def reset_dataset_threshold_stage():
+    return (
+        gr.update(value=empty_threshold_tuning_summary_html(), visible=False),
+        gr.update(value=pd.DataFrame(), visible=False),
+        gr.update(value="", visible=False),
+        None,
+        dataset_journey_status_html(
+            4, "Threshold options changed. Tune again to refresh calibration."
+        ),
+    )
+
+
+def reset_dataset_explanation_stage():
+    return (
+        gr.update(value=empty_pair_explanation_summary_html(), visible=False),
+        gr.update(value=pd.DataFrame(), visible=False),
+        gr.update(value="", visible=False),
+        None,
+        dataset_journey_status_html(
+            4, "Explanation options changed. Explain again to refresh evidence."
+        ),
+    )
+
+
+def reset_dataset_upload_journey():
+    """Invalidate validation and downstream stages after upload/task changes."""
+    return (
+        None,
+        empty_dataset_validation_summary_html(),
+        pd.DataFrame(columns=["Severity", "Code", "Message", "Count"]),
+        "",
+        None,
+        gr.update(interactive=False),
+        dataset_journey_status_html(1, "Upload a dataset, choose its task, then validate it."),
+        *reset_dataset_results()[:-5],
+        gr.update(visible=False),
+        gr.update(visible=False),
+        gr.update(visible=False),
+        gr.update(visible=False),
     )
 
 
@@ -3235,7 +3722,9 @@ def explain_scored_pair_gradio(
     if not scored_state:
         return empty_pair_explanation_summary_html(), pd.DataFrame(), "", None
     if scored_state.get("task") != "pair":
-        raise gr.Error("Scored pair explanations are only available for pair-classification scores.")
+        raise gr.Error(
+            "Scored pair explanations are only available for pair-classification scores."
+        )
     dataset_root = scored_state.get("dataset_root")
     if not dataset_root:
         raise gr.Error("Run pair dataset evaluation before explaining a scored pair.")
@@ -3356,11 +3845,14 @@ def evaluate_dataset_gradio(
         scored,
         metrics,
         similarity_options,
+        algorithm_name=metric_preset,
         resample_metrics=resample_metrics,
         resample_summary=resample_summary,
     )
     return (
-        dataset_evaluation_summary_html(task_label, dataset, scored, metrics, elapsed_seconds, metric_preset),
+        dataset_evaluation_summary_html(
+            task_label, dataset, scored, metrics, elapsed_seconds, metric_preset
+        ),
         metrics_dict_frame(metrics),
         dataset_scores_display_frame(scored, task_label),
         resample_metrics,
@@ -3369,8 +3861,44 @@ def evaluate_dataset_gradio(
     )
 
 
-def evaluate_dataset_gradio_with_state(*args, **kwargs):
-    outputs = evaluate_dataset_gradio(*args, **kwargs)
+def evaluate_dataset_gradio_with_state(
+    dataset_file,
+    task_label,
+    metric_preset,
+    model_name,
+    vector_backend,
+    runtime_device,
+    preprocess_mode,
+    code_language,
+    lexical_tokenizer,
+    threshold,
+    retrieval_k,
+    resampling_folds,
+    resampling_seed,
+    progress=gr.Progress(track_tqdm=True),
+):
+    """Preserve the historical six-output public dataset evaluation contract."""
+    return evaluate_dataset_gradio(
+        dataset_file,
+        task_label,
+        metric_preset,
+        model_name,
+        vector_backend,
+        runtime_device,
+        preprocess_mode,
+        code_language,
+        lexical_tokenizer,
+        threshold,
+        retrieval_k,
+        resampling_folds,
+        resampling_seed,
+        progress=progress,
+    )
+
+
+def evaluate_dataset_gradio_for_journey(*args, **kwargs):
+    """Add private UI state without changing the historical public endpoint."""
+    outputs = evaluate_dataset_gradio_with_state(*args, **kwargs)
     scored = outputs[2]
     task_label = args[1] if len(args) > 1 else kwargs.get("task_label", DEFAULT_DATASET_TASK)
     dataset_file = args[0] if args else kwargs.get("dataset_file")
@@ -3383,13 +3911,17 @@ def evaluate_dataset_gradio_with_state(*args, **kwargs):
     state = {
         "task": "retrieval" if str(task_label).startswith("Retrieval") else "pair",
         "dataset_root": dataset_root,
-        "scored": _state_scored_records(scored),
+        "scored": list(scored.attrs.get("raw_scored_records") or _state_scored_records(scored)),
     }
     return (*outputs, state)
 
 
 def _state_scored_records(display_frame):
-    frame = display_frame.copy() if isinstance(display_frame, pd.DataFrame) else pd.DataFrame(display_frame)
+    frame = (
+        display_frame.copy()
+        if isinstance(display_frame, pd.DataFrame)
+        else pd.DataFrame(display_frame)
+    )
     if frame.empty:
         return []
     rename = {
@@ -3671,7 +4203,9 @@ def get_sim_list_gradio(
     progress=gr.Progress(track_tqdm=True),
 ):
     if zipped_file is None:
-        return empty_summary_html(), pd.DataFrame(columns=["file_name_1", "file_name_2", "similarity_score"])
+        return empty_summary_html(), pd.DataFrame(
+            columns=["file_name_1", "file_name_2", "similarity_score"]
+        )
 
     selected = set(selected_features or [])
     selected_steps = set(selected_preparation or [])
@@ -3781,13 +4315,482 @@ ready_made_initial = ready_made_leaderboard_values()
 ready_made_filter_initial = ready_made_leaderboard_filter_options()
 
 
+class ModelRoutingControls(NamedTuple):
+    group: object
+    model: object
+    status: object
+    vector_backend: object
+    similarity_group: object
+    similarity_function: object
+    pooling_group: object
+    pooling_method: object
+    max_token_length: object
+    runtime_device: object
+    semantic_weight: object
+
+
+class CodeMetricControls(NamedTuple):
+    group: object
+    metric: object
+    weight: object
+    language: object
+    codebleu_group: object
+    codebleu_component_weights: object
+    crystal_group: object
+    crystalbleu_max_order: object
+    crystalbleu_trivial_ngram_count: object
+    ruby_group: object
+    ruby_mode: object
+    ruby_graph_timeout_seconds: object
+    tsed_group: object
+    tsed_costs: object
+    codebertscore_group: object
+    codebertscore_model: object
+    codebertscore_max_length: object
+
+
+class PreparationControls(NamedTuple):
+    selected: object
+    preprocess_group: object
+    preprocess_mode: object
+    chunk_group: object
+    chunking_method: object
+    chunk_size: object
+    chunk_overlap: object
+    max_chunks: object
+    chunk_aggregation: object
+    chunk_language: object
+    chunker_options: object
+
+
+class ScoringControls(NamedTuple):
+    metric_preset: object
+    features: object
+    model: ModelRoutingControls
+    levenshtein_group: object
+    levenshtein_weight: object
+    levenshtein_weights: object
+    jaro_group: object
+    jaro_winkler_weight: object
+    jaro_prefix_weight: object
+    winnowing_group: object
+    winnowing_weight: object
+    winnowing_kgram: object
+    winnowing_window: object
+    gst_group: object
+    gst_weight: object
+    gst_min_match_length: object
+    lexical_tokenizer: object
+    code: CodeMetricControls
+    preparation: PreparationControls
+
+    def handler_inputs(self):
+        """Return the stable Pair/Collection/Suite scoring argument order."""
+        return [
+            self.features,
+            self.model.model,
+            self.model.vector_backend,
+            self.model.similarity_function,
+            self.model.pooling_method,
+            self.model.max_token_length,
+            self.model.runtime_device,
+            self.model.semantic_weight,
+            self.levenshtein_weight,
+            self.jaro_winkler_weight,
+            self.winnowing_weight,
+            self.gst_weight,
+            self.levenshtein_weights,
+            self.jaro_prefix_weight,
+            self.winnowing_kgram,
+            self.winnowing_window,
+            self.gst_min_match_length,
+            self.lexical_tokenizer,
+            self.code.metric,
+            self.code.weight,
+            self.code.language,
+            self.code.codebleu_component_weights,
+            self.code.crystalbleu_max_order,
+            self.code.crystalbleu_trivial_ngram_count,
+            self.code.ruby_mode,
+            self.code.ruby_graph_timeout_seconds,
+            self.code.tsed_costs,
+            self.code.codebertscore_model,
+            self.code.codebertscore_max_length,
+            self.preparation.selected,
+            self.preparation.preprocess_mode,
+            self.preparation.chunking_method,
+            self.preparation.chunk_size,
+            self.preparation.chunk_overlap,
+            self.preparation.max_chunks,
+            self.preparation.chunk_aggregation,
+            self.preparation.chunk_language,
+            self.preparation.chunker_options,
+        ]
+
+
+def build_model_routing_controls():
+    with gr.Group(visible=True) as group:
+        model = HuggingfaceHubSearch(
+            value=DEFAULT_MODEL,
+            label="Embedding Model",
+            placeholder="Search Hugging Face models",
+            search_type="model",
+        )
+        status = gr.HTML(value=model_status_html(), padding=False)
+        vector_backend = gr.Dropdown(
+            choices=list(available_vector_backends()),
+            value="auto",
+            label="Vector Backend",
+        )
+        with gr.Group(visible=True) as similarity_group:
+            similarity_function = gr.Dropdown(
+                choices=list(available_similarity_functions()),
+                value="cosine",
+                label="Similarity Function",
+            )
+        with gr.Group(visible=True) as pooling_group:
+            pooling_method = gr.Dropdown(
+                choices=list(available_pooling_methods()),
+                value="mean",
+                label="Pooling Method",
+            )
+        max_token_length = gr.Slider(8, 512, value=256, label="Max Tokens per Input", step=1)
+        runtime_device = gr.Dropdown(
+            choices=list(DEVICE_CHOICES),
+            value="auto",
+            label="Runtime Device",
+        )
+        semantic_weight = gr.Slider(
+            0,
+            1,
+            value=DEFAULT_UI_FEATURE_WEIGHTS["semantic"],
+            label="Embedding Weight",
+            step=0.05,
+        )
+    return ModelRoutingControls(
+        group,
+        model,
+        status,
+        vector_backend,
+        similarity_group,
+        similarity_function,
+        pooling_group,
+        pooling_method,
+        max_token_length,
+        runtime_device,
+        semantic_weight,
+    )
+
+
+def build_code_metric_controls():
+    with gr.Group(visible=False) as group:
+        metric = gr.Dropdown(
+            choices=list(CODE_METRIC_CHOICES), value="codebleu", label="Code Metric"
+        )
+        weight = gr.Slider(
+            0,
+            1,
+            value=DEFAULT_UI_FEATURE_WEIGHTS["code_metric"],
+            label="Code Metric Weight",
+            step=0.05,
+        )
+        language = gr.Dropdown(
+            choices=list(available_code_metric_languages()),
+            value="python",
+            label="Code Language",
+        )
+        with gr.Group(visible=True) as codebleu_group:
+            codebleu_component_weights = gr.Textbox(
+                value="0.25,0.25,0.25,0.25",
+                label="CodeBLEU Weights",
+            )
+        with gr.Group(visible=False) as crystal_group:
+            crystalbleu_max_order = gr.Slider(1, 8, value=4, label="Max N-gram Order", step=1)
+            crystalbleu_trivial_ngram_count = gr.Slider(
+                0,
+                500,
+                value=50,
+                label="Ignored Frequent N-grams",
+                step=5,
+            )
+        with gr.Group(visible=False) as ruby_group:
+            ruby_mode = gr.Dropdown(
+                choices=["auto", "graph", "tree", "string", "ngram"],
+                value=DEFAULT_RUBY_MODE,
+                label="RUBY Mode",
+            )
+            ruby_graph_timeout_seconds = gr.Number(
+                value=DEFAULT_RUBY_GRAPH_TIMEOUT,
+                precision=2,
+                label="Graph Timeout (seconds)",
+            )
+        with gr.Group(visible=False) as tsed_group:
+            tsed_costs = gr.Textbox(
+                value=DEFAULT_TSED_COSTS,
+                label="Delete, Insert, Rename Costs",
+                placeholder="1,1,1",
+            )
+        with gr.Group(visible=False) as codebertscore_group:
+            codebertscore_model = HuggingfaceHubSearch(
+                value=DEFAULT_CODEBERTSCORE_MODEL,
+                label="CodeBERTScore Model",
+                placeholder="Search Hugging Face models",
+                search_type="model",
+            )
+            codebertscore_max_length = gr.Slider(
+                0,
+                DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE,
+                value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
+                step=1,
+                label="CodeBERTScore Max Length (0 = model default)",
+            )
+    return CodeMetricControls(
+        group,
+        metric,
+        weight,
+        language,
+        codebleu_group,
+        codebleu_component_weights,
+        crystal_group,
+        crystalbleu_max_order,
+        crystalbleu_trivial_ngram_count,
+        ruby_group,
+        ruby_mode,
+        ruby_graph_timeout_seconds,
+        tsed_group,
+        tsed_costs,
+        codebertscore_group,
+        codebertscore_model,
+        codebertscore_max_length,
+    )
+
+
+def build_preparation_controls():
+    with gr.Accordion("Advanced preparation", open=False):
+        selected = gr.CheckboxGroup(
+            choices=["Preprocessing", "Chunking"],
+            value=[],
+            label="Steps",
+        )
+        with gr.Group(visible=False) as preprocess_group:
+            preprocess_mode = gr.Dropdown(
+                choices=list(PREPROCESSING_UI_CHOICES),
+                value=(PREPROCESSING_UI_CHOICES[0] if PREPROCESSING_UI_CHOICES else "basic"),
+                label="Preprocessing Mode",
+            )
+        with gr.Group(visible=False) as chunk_group:
+            chunking_method = gr.Dropdown(
+                choices=list(CHONKIE_UI_METHODS),
+                value=(CHONKIE_UI_METHODS[0] if CHONKIE_UI_METHODS else "code"),
+                label="Chunking Method",
+            )
+            chunk_size = gr.Slider(10, 400, value=120, label="Chunk Size", step=10)
+            chunk_overlap = gr.Slider(0, 200, value=0, label="Chunk Overlap", step=5)
+            max_chunks = gr.Slider(0, 20, value=0, label="Max Chunks per File", step=1)
+            chunk_aggregation = gr.Dropdown(
+                choices=list(available_chunk_aggregations()),
+                value="mean",
+                label="Chunk Aggregation",
+            )
+            chunk_language = gr.Dropdown(
+                choices=list(CHUNK_LANGUAGE_CHOICES),
+                value="text",
+                label="Chunk Language",
+            )
+            chunker_options = gr.Textbox(
+                value="",
+                label="Chunker Options",
+                placeholder="include_line_numbers=true",
+            )
+    return PreparationControls(
+        selected,
+        preprocess_group,
+        preprocess_mode,
+        chunk_group,
+        chunking_method,
+        chunk_size,
+        chunk_overlap,
+        max_chunks,
+        chunk_aggregation,
+        chunk_language,
+        chunker_options,
+    )
+
+
+def build_scoring_controls():
+    with gr.Accordion("Scoring setup", open=True):
+        metric_preset = gr.Dropdown(
+            choices=list(metric_preset_names()),
+            value="Balanced",
+            label="Metric Preset",
+        )
+        features = gr.CheckboxGroup(
+            choices=FEATURE_UI_CHOICES,
+            value=DEFAULT_FEATURE_SELECTION,
+            label="Active Metrics",
+        )
+        model = build_model_routing_controls()
+        with gr.Group(visible=True) as levenshtein_group:
+            levenshtein_weight = gr.Slider(
+                0,
+                1,
+                value=DEFAULT_UI_FEATURE_WEIGHTS["levenshtein"],
+                label="Levenshtein Weight",
+                step=0.05,
+            )
+            levenshtein_weights = gr.Textbox(value="1,1,1", label="Insert, Delete, Substitute")
+        with gr.Group(visible=False) as jaro_group:
+            jaro_winkler_weight = gr.Slider(
+                0,
+                1,
+                value=DEFAULT_UI_FEATURE_WEIGHTS["jaro_winkler"],
+                label="Jaro-Winkler Weight",
+                step=0.05,
+            )
+            jaro_prefix_weight = gr.Slider(
+                0.0,
+                0.25,
+                value=0.1,
+                label="Prefix Weight",
+                step=0.01,
+            )
+        with gr.Group(visible=False) as winnowing_group:
+            winnowing_weight = gr.Slider(
+                0,
+                1,
+                value=DEFAULT_UI_FEATURE_WEIGHTS["winnowing"],
+                label="Winnowing Baseline Weight",
+                step=0.05,
+            )
+            winnowing_kgram = gr.Slider(1, 32, value=5, label="k-gram Size", step=1)
+            winnowing_window = gr.Slider(1, 32, value=4, label="Window Size", step=1)
+        with gr.Group(visible=False) as gst_group:
+            gst_weight = gr.Slider(
+                0,
+                1,
+                value=DEFAULT_UI_FEATURE_WEIGHTS["gst"],
+                label="GST Baseline Weight",
+                step=0.05,
+            )
+            gst_min_match_length = gr.Slider(1, 32, value=5, label="Min Match Length", step=1)
+        lexical_tokenizer = gr.Dropdown(
+            choices=list(LEXICAL_TOKENIZER_CHOICES),
+            value="raw",
+            label="Lexical Tokenizer",
+        )
+        code = build_code_metric_controls()
+    preparation = build_preparation_controls()
+    return ScoringControls(
+        metric_preset,
+        features,
+        model,
+        levenshtein_group,
+        levenshtein_weight,
+        levenshtein_weights,
+        jaro_group,
+        jaro_winkler_weight,
+        jaro_prefix_weight,
+        winnowing_group,
+        winnowing_weight,
+        winnowing_kgram,
+        winnowing_window,
+        gst_group,
+        gst_weight,
+        gst_min_match_length,
+        lexical_tokenizer,
+        code,
+        preparation,
+    )
+
+
+def wire_scoring_controls(controls):
+    """Wire shared progressive-disclosure and model-routing behavior."""
+    controls.features.change(
+        update_feature_sections,
+        inputs=controls.features,
+        outputs=[
+            controls.model.group,
+            controls.levenshtein_group,
+            controls.jaro_group,
+            controls.winnowing_group,
+            controls.gst_group,
+            controls.code.group,
+        ],
+    )
+    controls.metric_preset.change(
+        apply_metric_preset_gradio,
+        inputs=controls.metric_preset,
+        outputs=[
+            controls.features,
+            controls.model.semantic_weight,
+            controls.levenshtein_weight,
+            controls.jaro_winkler_weight,
+            controls.winnowing_weight,
+            controls.gst_weight,
+            controls.code.metric,
+            controls.code.weight,
+            controls.model.group,
+            controls.levenshtein_group,
+            controls.jaro_group,
+            controls.winnowing_group,
+            controls.gst_group,
+            controls.code.group,
+        ],
+    )
+    controls.preparation.selected.change(
+        update_code_preparation_sections,
+        inputs=controls.preparation.selected,
+        outputs=[controls.preparation.preprocess_group, controls.preparation.chunk_group],
+    )
+    controls.code.metric.change(
+        update_code_metric_sections,
+        inputs=controls.code.metric,
+        outputs=[
+            controls.code.codebleu_group,
+            controls.code.crystal_group,
+            controls.code.ruby_group,
+            controls.code.tsed_group,
+            controls.code.codebertscore_group,
+        ],
+    )
+    controls.code.codebertscore_model.change(
+        sync_codebertscore_model_settings_gradio,
+        inputs=[controls.code.codebertscore_model, controls.code.codebertscore_max_length],
+        outputs=[controls.code.codebertscore_max_length],
+    )
+    for component in (
+        controls.model.model,
+        controls.model.vector_backend,
+        controls.model.runtime_device,
+    ):
+        component.change(
+            sync_model_settings_gradio,
+            inputs=[
+                controls.model.model,
+                controls.model.vector_backend,
+                controls.model.runtime_device,
+                controls.model.similarity_function,
+                controls.model.pooling_method,
+                controls.model.max_token_length,
+            ],
+            outputs=[
+                controls.model.vector_backend,
+                controls.model.max_token_length,
+                controls.model.status,
+                controls.model.similarity_group,
+                controls.model.pooling_group,
+            ],
+        )
+
+
 with gr.Blocks(
     title="Matheel Framework",
     css=APP_CSS,
+    js=APP_JS,
     fill_width=True,
 ) as demo:
     gr.HTML(value=app_header_html(), container=False, padding=False)
-    with gr.Tabs(elem_id="matheel-workflows"):
+    with gr.Tabs(elem_id="matheel-workflows") as workflow_tabs:
         with gr.Tab("Compare"):
             gr.HTML(
                 value=workflow_intro_html(
@@ -3816,333 +4819,17 @@ with gr.Blocks(
                     pair_output = gr.HTML(value=empty_pair_summary_html(), padding=False)
 
                 with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
-                    with gr.Accordion("Scoring setup", open=True):
-                        pair_metric_preset = gr.Dropdown(
-                            choices=list(metric_preset_names()),
-                            value="Balanced",
-                            label="Metric Preset",
-                        )
-                        pair_features = gr.CheckboxGroup(
-                            choices=FEATURE_UI_CHOICES,
-                            value=DEFAULT_FEATURE_SELECTION,
-                            label="Active Metrics",
-                        )
-                        with gr.Group(visible=True) as pair_embedding_group:
-                            pair_model = HuggingfaceHubSearch(
-                                value=DEFAULT_MODEL,
-                                label="Embedding Model",
-                                placeholder="Search Hugging Face models",
-                                search_type="model",
-                            )
-                            pair_model_status = gr.HTML(value=model_status_html(), padding=False)
-                            pair_vector_backend = gr.Dropdown(
-                                choices=list(available_vector_backends()),
-                                value="auto",
-                                label="Vector Backend",
-                            )
-                            with gr.Group(visible=True) as pair_similarity_group:
-                                pair_similarity_function = gr.Dropdown(
-                                    choices=list(available_similarity_functions()),
-                                    value="cosine",
-                                    label="Similarity Function",
-                                )
-                            with gr.Group(visible=True) as pair_pooling_group:
-                                pair_pooling_method = gr.Dropdown(
-                                    choices=list(available_pooling_methods()),
-                                    value="mean",
-                                    label="Pooling Method",
-                                )
-                            pair_max_token_length = gr.Slider(
-                                8, 512, value=256, label="Max Tokens per Input", step=1
-                            )
-                            pair_runtime_device = gr.Dropdown(
-                                choices=list(DEVICE_CHOICES),
-                                value="auto",
-                                label="Runtime Device",
-                            )
-                            pair_semantic_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["semantic"],
-                                label="Embedding Weight",
-                                step=0.05,
-                            )
-                        with gr.Group(visible=True) as pair_levenshtein_group:
-                            pair_levenshtein_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["levenshtein"],
-                                label="Levenshtein Weight",
-                                step=0.05,
-                            )
-                            pair_levenshtein_weights = gr.Textbox(
-                                value="1,1,1",
-                                label="Insert, Delete, Substitute",
-                            )
-                        with gr.Group(visible=False) as pair_jaro_group:
-                            pair_jaro_winkler_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["jaro_winkler"],
-                                label="Jaro-Winkler Weight",
-                                step=0.05,
-                            )
-                            pair_jaro_prefix_weight = gr.Slider(
-                                0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
-                            )
-                        with gr.Group(visible=False) as pair_winnowing_group:
-                            pair_winnowing_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["winnowing"],
-                                label="Winnowing Baseline Weight",
-                                step=0.05,
-                            )
-                            pair_winnowing_kgram = gr.Slider(
-                                1, 32, value=5, label="k-gram Size", step=1
-                            )
-                            pair_winnowing_window = gr.Slider(
-                                1, 32, value=4, label="Window Size", step=1
-                            )
-                        with gr.Group(visible=False) as pair_gst_group:
-                            pair_gst_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["gst"],
-                                label="GST Baseline Weight",
-                                step=0.05,
-                            )
-                            pair_gst_min_match_length = gr.Slider(
-                                1, 32, value=5, label="Min Match Length", step=1
-                            )
-                        pair_lexical_tokenizer = gr.Dropdown(
-                            choices=list(LEXICAL_TOKENIZER_CHOICES),
-                            value="raw",
-                            label="Lexical Tokenizer",
-                        )
-                        with gr.Group(visible=False) as pair_code_group:
-                            pair_code_metric = gr.Dropdown(
-                                choices=list(CODE_METRIC_CHOICES),
-                                value="codebleu",
-                                label="Code Metric",
-                            )
-                            pair_code_metric_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["code_metric"],
-                                label="Code Metric Weight",
-                                step=0.05,
-                            )
-                            pair_code_language = gr.Dropdown(
-                                choices=list(available_code_metric_languages()),
-                                value="python",
-                                label="Code Language",
-                            )
-                            with gr.Group(visible=True) as pair_codebleu_group:
-                                pair_codebleu_component_weights = gr.Textbox(
-                                    value="0.25,0.25,0.25,0.25",
-                                    label="CodeBLEU Weights",
-                                )
-                            with gr.Group(visible=False) as pair_crystal_group:
-                                pair_crystalbleu_max_order = gr.Slider(
-                                    1, 8, value=4, label="Max N-gram Order", step=1
-                                )
-                                pair_crystalbleu_trivial_ngram_count = gr.Slider(
-                                    0, 500, value=50, label="Ignored Frequent N-grams", step=5
-                                )
-                            with gr.Group(visible=False) as pair_ruby_group:
-                                pair_ruby_mode = gr.Dropdown(
-                                    choices=["auto", "graph", "tree", "string", "ngram"],
-                                    value=DEFAULT_RUBY_MODE,
-                                    label="RUBY Mode",
-                                )
-                                pair_ruby_graph_timeout_seconds = gr.Number(
-                                    value=DEFAULT_RUBY_GRAPH_TIMEOUT,
-                                    precision=2,
-                                    label="Graph Timeout (seconds)",
-                                )
-                            with gr.Group(visible=False) as pair_tsed_group:
-                                pair_tsed_costs = gr.Textbox(
-                                    value=DEFAULT_TSED_COSTS,
-                                    label="Insert, Delete, Rename Costs",
-                                    placeholder="1,1,1",
-                                )
-                            with gr.Group(visible=False) as pair_codebertscore_group:
-                                pair_codebertscore_model = HuggingfaceHubSearch(
-                                    value=DEFAULT_CODEBERTSCORE_MODEL,
-                                    label="CodeBERTScore Model",
-                                    placeholder="Search Hugging Face models",
-                                    search_type="model",
-                                )
-                                pair_codebertscore_max_length = gr.Slider(
-                                    0,
-                                    DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE,
-                                    value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
-                                    step=1,
-                                    label="CodeBERTScore Max Length (0 = model default)",
-                                )
-
-                    with gr.Accordion("Advanced preparation", open=False):
-                        pair_code_preparation = gr.CheckboxGroup(
-                            choices=["Preprocessing", "Chunking"],
-                            value=[],
-                            label="Steps",
-                        )
-                        with gr.Group(visible=False) as pair_preprocess_group:
-                            pair_preprocess_mode = gr.Dropdown(
-                                choices=list(PREPROCESSING_UI_CHOICES),
-                                value=(PREPROCESSING_UI_CHOICES[0] if PREPROCESSING_UI_CHOICES else "basic"),
-                                label="Preprocessing Mode",
-                            )
-                        with gr.Group(visible=False) as pair_chunk_group:
-                            pair_chunking_method = gr.Dropdown(
-                                choices=list(CHONKIE_UI_METHODS),
-                                value=(CHONKIE_UI_METHODS[0] if CHONKIE_UI_METHODS else "code"),
-                                label="Chunking Method",
-                            )
-                            pair_chunk_size = gr.Slider(10, 400, value=120, label="Chunk Size", step=10)
-                            pair_chunk_overlap = gr.Slider(0, 200, value=0, label="Chunk Overlap", step=5)
-                            pair_max_chunks = gr.Slider(0, 20, value=0, label="Max Chunks per File", step=1)
-                            pair_chunk_aggregation = gr.Dropdown(
-                                choices=list(available_chunk_aggregations()),
-                                value="mean",
-                                label="Chunk Aggregation",
-                            )
-                            pair_chunk_language = gr.Dropdown(
-                                choices=list(CHUNK_LANGUAGE_CHOICES),
-                                value="text",
-                                label="Chunk Language",
-                            )
-                            pair_chunker_options = gr.Textbox(
-                                value="",
-                                label="Chunker Options",
-                                placeholder="include_line_numbers=true",
-                            )
-
-            pair_features.change(
-                update_feature_sections,
-                inputs=pair_features,
-                outputs=[
-                    pair_embedding_group,
-                    pair_levenshtein_group,
-                    pair_jaro_group,
-                    pair_winnowing_group,
-                    pair_gst_group,
-                    pair_code_group,
-                ],
-            )
-            pair_metric_preset.change(
-                apply_metric_preset_gradio,
-                inputs=pair_metric_preset,
-                outputs=[
-                    pair_features,
-                    pair_semantic_weight,
-                    pair_levenshtein_weight,
-                    pair_jaro_winkler_weight,
-                    pair_winnowing_weight,
-                    pair_gst_weight,
-                    pair_code_metric,
-                    pair_code_metric_weight,
-                    pair_embedding_group,
-                    pair_levenshtein_group,
-                    pair_jaro_group,
-                    pair_winnowing_group,
-                    pair_gst_group,
-                    pair_code_group,
-                ],
-            )
-            pair_code_preparation.change(
-                update_code_preparation_sections,
-                inputs=pair_code_preparation,
-                outputs=[pair_preprocess_group, pair_chunk_group],
-            )
-            pair_code_metric.change(
-                update_code_metric_sections,
-                inputs=pair_code_metric,
-                outputs=[
-                    pair_codebleu_group,
-                    pair_crystal_group,
-                    pair_ruby_group,
-                    pair_tsed_group,
-                    pair_codebertscore_group,
-                ],
-            )
-            pair_codebertscore_model.change(
-                sync_codebertscore_model_settings_gradio,
-                inputs=[pair_codebertscore_model, pair_codebertscore_max_length],
-                outputs=[pair_codebertscore_max_length],
-            )
-
+                    pair_controls = build_scoring_controls()
+            wire_scoring_controls(pair_controls)
             pair_run.click(
                 calculate_similarity_gradio,
                 inputs=[
                     pair_code1,
                     pair_code2,
-                    pair_features,
-                    pair_model,
-                    pair_vector_backend,
-                    pair_similarity_function,
-                    pair_pooling_method,
-                    pair_max_token_length,
-                    pair_runtime_device,
-                    pair_semantic_weight,
-                    pair_levenshtein_weight,
-                    pair_jaro_winkler_weight,
-                    pair_winnowing_weight,
-                    pair_gst_weight,
-                    pair_levenshtein_weights,
-                    pair_jaro_prefix_weight,
-                    pair_winnowing_kgram,
-                    pair_winnowing_window,
-                    pair_gst_min_match_length,
-                    pair_lexical_tokenizer,
-                    pair_code_metric,
-                    pair_code_metric_weight,
-                    pair_code_language,
-                    pair_codebleu_component_weights,
-                    pair_crystalbleu_max_order,
-                    pair_crystalbleu_trivial_ngram_count,
-                    pair_ruby_mode,
-                    pair_ruby_graph_timeout_seconds,
-                    pair_tsed_costs,
-                    pair_codebertscore_model,
-                    pair_codebertscore_max_length,
-                    pair_code_preparation,
-                    pair_preprocess_mode,
-                    pair_chunking_method,
-                    pair_chunk_size,
-                    pair_chunk_overlap,
-                    pair_max_chunks,
-                    pair_chunk_aggregation,
-                    pair_chunk_language,
-                    pair_chunker_options,
+                    *pair_controls.handler_inputs(),
                 ],
                 outputs=pair_output,
             )
-
-            for component in (
-                pair_model,
-                pair_vector_backend,
-                pair_runtime_device,
-            ):
-                component.change(
-                    sync_model_settings_gradio,
-                    inputs=[
-                        pair_model,
-                        pair_vector_backend,
-                        pair_runtime_device,
-                        pair_similarity_function,
-                        pair_pooling_method,
-                        pair_max_token_length,
-                    ],
-                    outputs=[
-                        pair_vector_backend,
-                        pair_max_token_length,
-                        pair_model_status,
-                        pair_similarity_group,
-                        pair_pooling_group,
-                    ],
-                )
 
         with gr.Tab("Collection"):
             gr.HTML(
@@ -4172,346 +4859,26 @@ with gr.Blocks(
                     )
 
                 with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
-                    with gr.Accordion("Scoring setup", open=True):
-                        collection_metric_preset = gr.Dropdown(
-                            choices=list(metric_preset_names()),
-                            value="Balanced",
-                            label="Metric Preset",
-                        )
-                        collection_features = gr.CheckboxGroup(
-                            choices=FEATURE_UI_CHOICES,
-                            value=DEFAULT_FEATURE_SELECTION,
-                            label="Active Metrics",
-                        )
-                        with gr.Group(visible=True) as collection_embedding_group:
-                            collection_model = HuggingfaceHubSearch(
-                                value=DEFAULT_MODEL,
-                                label="Embedding Model",
-                                placeholder="Search Hugging Face models",
-                                search_type="model",
-                            )
-                            collection_model_status = gr.HTML(value=model_status_html(), padding=False)
-                            collection_vector_backend = gr.Dropdown(
-                                choices=list(available_vector_backends()),
-                                value="auto",
-                                label="Vector Backend",
-                            )
-                            with gr.Group(visible=True) as collection_similarity_group:
-                                collection_similarity_function = gr.Dropdown(
-                                    choices=list(available_similarity_functions()),
-                                    value="cosine",
-                                    label="Similarity Function",
-                                )
-                            with gr.Group(visible=True) as collection_pooling_group:
-                                collection_pooling_method = gr.Dropdown(
-                                    choices=list(available_pooling_methods()),
-                                    value="mean",
-                                    label="Pooling Method",
-                                )
-                            collection_max_token_length = gr.Slider(
-                                8, 512, value=256, label="Max Tokens per Input", step=1
-                            )
-                            collection_runtime_device = gr.Dropdown(
-                                choices=list(DEVICE_CHOICES),
-                                value="auto",
-                                label="Runtime Device",
-                            )
-                            collection_semantic_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["semantic"],
-                                label="Embedding Weight",
-                                step=0.05,
-                            )
-                        with gr.Group(visible=True) as collection_levenshtein_group:
-                            collection_levenshtein_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["levenshtein"],
-                                label="Levenshtein Weight",
-                                step=0.05,
-                            )
-                            collection_levenshtein_weights = gr.Textbox(
-                                value="1,1,1",
-                                label="Insert, Delete, Substitute",
-                            )
-                        with gr.Group(visible=False) as collection_jaro_group:
-                            collection_jaro_winkler_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["jaro_winkler"],
-                                label="Jaro-Winkler Weight",
-                                step=0.05,
-                            )
-                            collection_jaro_prefix_weight = gr.Slider(
-                                0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
-                            )
-                        with gr.Group(visible=False) as collection_winnowing_group:
-                            collection_winnowing_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["winnowing"],
-                                label="Winnowing Baseline Weight",
-                                step=0.05,
-                            )
-                            collection_winnowing_kgram = gr.Slider(
-                                1, 32, value=5, label="k-gram Size", step=1
-                            )
-                            collection_winnowing_window = gr.Slider(
-                                1, 32, value=4, label="Window Size", step=1
-                            )
-                        with gr.Group(visible=False) as collection_gst_group:
-                            collection_gst_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["gst"],
-                                label="GST Baseline Weight",
-                                step=0.05,
-                            )
-                            collection_gst_min_match_length = gr.Slider(
-                                1, 32, value=5, label="Min Match Length", step=1
-                            )
-                        collection_lexical_tokenizer = gr.Dropdown(
-                            choices=list(LEXICAL_TOKENIZER_CHOICES),
-                            value="raw",
-                            label="Lexical Tokenizer",
-                        )
-                        with gr.Group(visible=False) as collection_code_group:
-                            collection_code_metric = gr.Dropdown(
-                                choices=list(CODE_METRIC_CHOICES),
-                                value="codebleu",
-                                label="Code Metric",
-                            )
-                            collection_code_metric_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["code_metric"],
-                                label="Code Metric Weight",
-                                step=0.05,
-                            )
-                            collection_code_language = gr.Dropdown(
-                                choices=list(available_code_metric_languages()),
-                                value="python",
-                                label="Code Language",
-                            )
-                            with gr.Group(visible=True) as collection_codebleu_group:
-                                collection_codebleu_component_weights = gr.Textbox(
-                                    value="0.25,0.25,0.25,0.25",
-                                    label="CodeBLEU Weights",
-                                )
-                            with gr.Group(visible=False) as collection_crystal_group:
-                                collection_crystalbleu_max_order = gr.Slider(
-                                    1, 8, value=4, label="Max N-gram Order", step=1
-                                )
-                                collection_crystalbleu_trivial_ngram_count = gr.Slider(
-                                    0, 500, value=50, label="Ignored Frequent N-grams", step=5
-                                )
-                            with gr.Group(visible=False) as collection_ruby_group:
-                                collection_ruby_mode = gr.Dropdown(
-                                    choices=["auto", "graph", "tree", "string", "ngram"],
-                                    value=DEFAULT_RUBY_MODE,
-                                    label="RUBY Mode",
-                                )
-                                collection_ruby_graph_timeout_seconds = gr.Number(
-                                    value=DEFAULT_RUBY_GRAPH_TIMEOUT,
-                                    precision=2,
-                                    label="Graph Timeout (seconds)",
-                                )
-                            with gr.Group(visible=False) as collection_tsed_group:
-                                collection_tsed_costs = gr.Textbox(
-                                    value=DEFAULT_TSED_COSTS,
-                                    label="Insert, Delete, Rename Costs",
-                                    placeholder="1,1,1",
-                                )
-                            with gr.Group(visible=False) as collection_codebertscore_group:
-                                collection_codebertscore_model = HuggingfaceHubSearch(
-                                    value=DEFAULT_CODEBERTSCORE_MODEL,
-                                    label="CodeBERTScore Model",
-                                    placeholder="Search Hugging Face models",
-                                    search_type="model",
-                                )
-                                collection_codebertscore_max_length = gr.Slider(
-                                    0,
-                                    DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE,
-                                    value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
-                                    step=1,
-                                    label="CodeBERTScore Max Length (0 = model default)",
-                                )
-
-                    with gr.Accordion("Advanced preparation", open=False):
-                        collection_code_preparation = gr.CheckboxGroup(
-                            choices=["Preprocessing", "Chunking"],
-                            value=[],
-                            label="Steps",
-                        )
-                        with gr.Group(visible=False) as collection_preprocess_group:
-                            collection_preprocess_mode = gr.Dropdown(
-                                choices=list(PREPROCESSING_UI_CHOICES),
-                                value=(PREPROCESSING_UI_CHOICES[0] if PREPROCESSING_UI_CHOICES else "basic"),
-                                label="Preprocessing Mode",
-                            )
-                        with gr.Group(visible=False) as collection_chunk_group:
-                            collection_chunking_method = gr.Dropdown(
-                                choices=list(CHONKIE_UI_METHODS),
-                                value=(CHONKIE_UI_METHODS[0] if CHONKIE_UI_METHODS else "code"),
-                                label="Chunking Method",
-                            )
-                            collection_chunk_size = gr.Slider(
-                                10, 400, value=120, label="Chunk Size", step=10
-                            )
-                            collection_chunk_overlap = gr.Slider(
-                                0, 200, value=0, label="Chunk Overlap", step=5
-                            )
-                            collection_max_chunks = gr.Slider(
-                                0, 20, value=0, label="Max Chunks per File", step=1
-                            )
-                            collection_chunk_aggregation = gr.Dropdown(
-                                choices=list(available_chunk_aggregations()),
-                                value="mean",
-                                label="Chunk Aggregation",
-                            )
-                            collection_chunk_language = gr.Dropdown(
-                                choices=list(CHUNK_LANGUAGE_CHOICES),
-                                value="text",
-                                label="Chunk Language",
-                            )
-                            collection_chunker_options = gr.Textbox(
-                                value="",
-                                label="Chunker Options",
-                                placeholder="include_line_numbers=true",
-                            )
-
+                    collection_controls = build_scoring_controls()
                     with gr.Accordion("Result limits", open=False):
-                        collection_threshold = gr.Slider(0, 1, value=0.35, label="Threshold", step=0.01)
+                        collection_threshold = gr.Slider(
+                            0, 1, value=0.35, label="Threshold", step=0.01
+                        )
                         collection_number_results = gr.Slider(
                             1, 1000, value=50, label="Max Pairs", step=1
                         )
 
-            collection_features.change(
-                update_feature_sections,
-                inputs=collection_features,
-                outputs=[
-                    collection_embedding_group,
-                    collection_levenshtein_group,
-                    collection_jaro_group,
-                    collection_winnowing_group,
-                    collection_gst_group,
-                    collection_code_group,
-                ],
-            )
-            collection_metric_preset.change(
-                apply_metric_preset_gradio,
-                inputs=collection_metric_preset,
-                outputs=[
-                    collection_features,
-                    collection_semantic_weight,
-                    collection_levenshtein_weight,
-                    collection_jaro_winkler_weight,
-                    collection_winnowing_weight,
-                    collection_gst_weight,
-                    collection_code_metric,
-                    collection_code_metric_weight,
-                    collection_embedding_group,
-                    collection_levenshtein_group,
-                    collection_jaro_group,
-                    collection_winnowing_group,
-                    collection_gst_group,
-                    collection_code_group,
-                ],
-            )
-            collection_code_preparation.change(
-                update_code_preparation_sections,
-                inputs=collection_code_preparation,
-                outputs=[collection_preprocess_group, collection_chunk_group],
-            )
-            collection_code_metric.change(
-                update_code_metric_sections,
-                inputs=collection_code_metric,
-                outputs=[
-                    collection_codebleu_group,
-                    collection_crystal_group,
-                    collection_ruby_group,
-                    collection_tsed_group,
-                    collection_codebertscore_group,
-                ],
-            )
-            collection_codebertscore_model.change(
-                sync_codebertscore_model_settings_gradio,
-                inputs=[collection_codebertscore_model, collection_codebertscore_max_length],
-                outputs=[collection_codebertscore_max_length],
-            )
-
+            wire_scoring_controls(collection_controls)
             collection_run.click(
                 get_sim_list_gradio,
                 inputs=[
                     collection_file,
-                    collection_features,
-                    collection_model,
-                    collection_vector_backend,
-                    collection_similarity_function,
-                    collection_pooling_method,
-                    collection_max_token_length,
-                    collection_runtime_device,
-                    collection_semantic_weight,
-                    collection_levenshtein_weight,
-                    collection_jaro_winkler_weight,
-                    collection_winnowing_weight,
-                    collection_gst_weight,
-                    collection_levenshtein_weights,
-                    collection_jaro_prefix_weight,
-                    collection_winnowing_kgram,
-                    collection_winnowing_window,
-                    collection_gst_min_match_length,
-                    collection_lexical_tokenizer,
-                    collection_code_metric,
-                    collection_code_metric_weight,
-                    collection_code_language,
-                    collection_codebleu_component_weights,
-                    collection_crystalbleu_max_order,
-                    collection_crystalbleu_trivial_ngram_count,
-                    collection_ruby_mode,
-                    collection_ruby_graph_timeout_seconds,
-                    collection_tsed_costs,
-                    collection_codebertscore_model,
-                    collection_codebertscore_max_length,
-                    collection_code_preparation,
-                    collection_preprocess_mode,
-                    collection_chunking_method,
-                    collection_chunk_size,
-                    collection_chunk_overlap,
-                    collection_max_chunks,
-                    collection_chunk_aggregation,
-                    collection_chunk_language,
-                    collection_chunker_options,
+                    *collection_controls.handler_inputs(),
                     collection_threshold,
                     collection_number_results,
                 ],
                 outputs=[collection_summary, collection_output],
             )
-
-            for component in (
-                collection_model,
-                collection_vector_backend,
-                collection_runtime_device,
-            ):
-                component.change(
-                    sync_model_settings_gradio,
-                    inputs=[
-                        collection_model,
-                        collection_vector_backend,
-                        collection_runtime_device,
-                        collection_similarity_function,
-                        collection_pooling_method,
-                        collection_max_token_length,
-                    ],
-                    outputs=[
-                        collection_vector_backend,
-                        collection_max_token_length,
-                        collection_model_status,
-                        collection_similarity_group,
-                        collection_pooling_group,
-                    ],
-                )
 
         with gr.Tab("Suites"):
             suite_details_store = gr.State({})
@@ -4560,209 +4927,7 @@ with gr.Blocks(
                     )
 
                 with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
-                    with gr.Accordion("Scoring setup", open=True):
-                        suite_metric_preset = gr.Dropdown(
-                            choices=list(metric_preset_names()),
-                            value="Balanced",
-                            label="Metric Preset",
-                        )
-                        suite_features = gr.CheckboxGroup(
-                            choices=FEATURE_UI_CHOICES,
-                            value=DEFAULT_FEATURE_SELECTION,
-                            label="Active Metrics",
-                        )
-                        with gr.Group(visible=True) as suite_embedding_group:
-                            suite_model = HuggingfaceHubSearch(
-                                value=DEFAULT_MODEL,
-                                label="Embedding Model",
-                                placeholder="Search Hugging Face models",
-                                search_type="model",
-                            )
-                            suite_model_status = gr.HTML(value=model_status_html(), padding=False)
-                            suite_vector_backend = gr.Dropdown(
-                                choices=list(available_vector_backends()),
-                                value="auto",
-                                label="Vector Backend",
-                            )
-                            with gr.Group(visible=True) as suite_similarity_group:
-                                suite_similarity_function = gr.Dropdown(
-                                    choices=list(available_similarity_functions()),
-                                    value="cosine",
-                                    label="Similarity Function",
-                                )
-                            with gr.Group(visible=True) as suite_pooling_group:
-                                suite_pooling_method = gr.Dropdown(
-                                    choices=list(available_pooling_methods()),
-                                    value="mean",
-                                    label="Pooling Method",
-                                )
-                            suite_max_token_length = gr.Slider(
-                                8, 512, value=256, label="Max Tokens per Input", step=1
-                            )
-                            suite_runtime_device = gr.Dropdown(
-                                choices=list(DEVICE_CHOICES),
-                                value="auto",
-                                label="Runtime Device",
-                            )
-                            suite_semantic_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["semantic"],
-                                label="Embedding Weight",
-                                step=0.05,
-                            )
-                        with gr.Group(visible=True) as suite_levenshtein_group:
-                            suite_levenshtein_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["levenshtein"],
-                                label="Levenshtein Weight",
-                                step=0.05,
-                            )
-                            suite_levenshtein_weights = gr.Textbox(
-                                value="1,1,1",
-                                label="Insert, Delete, Substitute",
-                            )
-                        with gr.Group(visible=False) as suite_jaro_group:
-                            suite_jaro_winkler_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["jaro_winkler"],
-                                label="Jaro-Winkler Weight",
-                                step=0.05,
-                            )
-                            suite_jaro_prefix_weight = gr.Slider(
-                                0.0, 0.25, value=0.1, label="Prefix Weight", step=0.01
-                            )
-                        with gr.Group(visible=False) as suite_winnowing_group:
-                            suite_winnowing_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["winnowing"],
-                                label="Winnowing Baseline Weight",
-                                step=0.05,
-                            )
-                            suite_winnowing_kgram = gr.Slider(
-                                1, 32, value=5, label="k-gram Size", step=1
-                            )
-                            suite_winnowing_window = gr.Slider(
-                                1, 32, value=4, label="Window Size", step=1
-                            )
-                        with gr.Group(visible=False) as suite_gst_group:
-                            suite_gst_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["gst"],
-                                label="GST Baseline Weight",
-                                step=0.05,
-                            )
-                            suite_gst_min_match_length = gr.Slider(
-                                1, 32, value=5, label="Min Match Length", step=1
-                            )
-                        suite_lexical_tokenizer = gr.Dropdown(
-                            choices=list(LEXICAL_TOKENIZER_CHOICES),
-                            value="raw",
-                            label="Lexical Tokenizer",
-                        )
-                        with gr.Group(visible=False) as suite_code_group:
-                            suite_code_metric = gr.Dropdown(
-                                choices=list(CODE_METRIC_CHOICES),
-                                value="codebleu",
-                                label="Code Metric",
-                            )
-                            suite_code_metric_weight = gr.Slider(
-                                0,
-                                1,
-                                value=DEFAULT_UI_FEATURE_WEIGHTS["code_metric"],
-                                label="Code Metric Weight",
-                                step=0.05,
-                            )
-                            suite_code_language = gr.Dropdown(
-                                choices=list(available_code_metric_languages()),
-                                value="python",
-                                label="Code Language",
-                            )
-                            with gr.Group(visible=True) as suite_codebleu_group:
-                                suite_codebleu_component_weights = gr.Textbox(
-                                    value="0.25,0.25,0.25,0.25",
-                                    label="CodeBLEU Weights",
-                                )
-                            with gr.Group(visible=False) as suite_crystal_group:
-                                suite_crystalbleu_max_order = gr.Slider(
-                                    1, 8, value=4, label="Max N-gram Order", step=1
-                                )
-                                suite_crystalbleu_trivial_ngram_count = gr.Slider(
-                                    0, 500, value=50, label="Ignored Frequent N-grams", step=5
-                                )
-                            with gr.Group(visible=False) as suite_ruby_group:
-                                suite_ruby_mode = gr.Dropdown(
-                                    choices=["auto", "graph", "tree", "string", "ngram"],
-                                    value=DEFAULT_RUBY_MODE,
-                                    label="RUBY Mode",
-                                )
-                                suite_ruby_graph_timeout_seconds = gr.Number(
-                                    value=DEFAULT_RUBY_GRAPH_TIMEOUT,
-                                    precision=2,
-                                    label="Graph Timeout (seconds)",
-                                )
-                            with gr.Group(visible=False) as suite_tsed_group:
-                                suite_tsed_costs = gr.Textbox(
-                                    value=DEFAULT_TSED_COSTS,
-                                    label="Insert, Delete, Rename Costs",
-                                    placeholder="1,1,1",
-                                )
-                            with gr.Group(visible=False) as suite_codebertscore_group:
-                                suite_codebertscore_model = HuggingfaceHubSearch(
-                                    value=DEFAULT_CODEBERTSCORE_MODEL,
-                                    label="CodeBERTScore Model",
-                                    placeholder="Search Hugging Face models",
-                                    search_type="model",
-                                )
-                                suite_codebertscore_max_length = gr.Slider(
-                                    0,
-                                    DEFAULT_CODEBERTSCORE_MODEL_MAX_SEQUENCE,
-                                    value=DEFAULT_CODEBERTSCORE_MAX_LENGTH,
-                                    step=1,
-                                    label="CodeBERTScore Max Length (0 = model default)",
-                                )
-
-                    with gr.Accordion("Advanced preparation", open=False):
-                        suite_code_preparation = gr.CheckboxGroup(
-                            choices=["Preprocessing", "Chunking"],
-                            value=[],
-                            label="Steps",
-                        )
-                        with gr.Group(visible=False) as suite_preprocess_group:
-                            suite_preprocess_mode = gr.Dropdown(
-                                choices=list(PREPROCESSING_UI_CHOICES),
-                                value=(PREPROCESSING_UI_CHOICES[0] if PREPROCESSING_UI_CHOICES else "basic"),
-                                label="Preprocessing Mode",
-                            )
-                        with gr.Group(visible=False) as suite_chunk_group:
-                            suite_chunking_method = gr.Dropdown(
-                                choices=list(CHONKIE_UI_METHODS),
-                                value=(CHONKIE_UI_METHODS[0] if CHONKIE_UI_METHODS else "code"),
-                                label="Chunking Method",
-                            )
-                            suite_chunk_size = gr.Slider(10, 400, value=120, label="Chunk Size", step=10)
-                            suite_chunk_overlap = gr.Slider(0, 200, value=0, label="Chunk Overlap", step=5)
-                            suite_max_chunks = gr.Slider(0, 20, value=0, label="Max Chunks per File", step=1)
-                            suite_chunk_aggregation = gr.Dropdown(
-                                choices=list(available_chunk_aggregations()),
-                                value="mean",
-                                label="Chunk Aggregation",
-                            )
-                            suite_chunk_language = gr.Dropdown(
-                                choices=list(CHUNK_LANGUAGE_CHOICES),
-                                value="text",
-                                label="Chunk Language",
-                            )
-                            suite_chunker_options = gr.Textbox(
-                                value="",
-                                label="Chunker Options",
-                                placeholder="include_line_numbers=true",
-                            )
-
+                    suite_controls = build_scoring_controls()
                     with gr.Group():
                         suite_run_name_input = gr.Textbox(
                             value=preview_suite_run_name(
@@ -4800,106 +4965,20 @@ with gr.Blocks(
                     suite_details_download = gr.File(label="Details ZIP")
                     suite_runs_download = gr.File(label="Run JSON")
                     suite_status = gr.HTML(
-                        value=profile_status_html("No saved runs yet. Save a configuration or run the current one."),
+                        value=profile_status_html(
+                            "No saved runs yet. Save a configuration or run the current one."
+                        ),
                         padding=False,
                     )
 
-            suite_features.change(
-                update_feature_sections,
-                inputs=suite_features,
-                outputs=[
-                    suite_embedding_group,
-                    suite_levenshtein_group,
-                    suite_jaro_group,
-                    suite_winnowing_group,
-                    suite_gst_group,
-                    suite_code_group,
-                ],
-            )
-            suite_metric_preset.change(
-                apply_metric_preset_gradio,
-                inputs=suite_metric_preset,
-                outputs=[
-                    suite_features,
-                    suite_semantic_weight,
-                    suite_levenshtein_weight,
-                    suite_jaro_winkler_weight,
-                    suite_winnowing_weight,
-                    suite_gst_weight,
-                    suite_code_metric,
-                    suite_code_metric_weight,
-                    suite_embedding_group,
-                    suite_levenshtein_group,
-                    suite_jaro_group,
-                    suite_winnowing_group,
-                    suite_gst_group,
-                    suite_code_group,
-                ],
-            )
-            suite_code_preparation.change(
-                update_code_preparation_sections,
-                inputs=suite_code_preparation,
-                outputs=[suite_preprocess_group, suite_chunk_group],
-            )
-            suite_code_metric.change(
-                update_code_metric_sections,
-                inputs=suite_code_metric,
-                outputs=[
-                    suite_codebleu_group,
-                    suite_crystal_group,
-                    suite_ruby_group,
-                    suite_tsed_group,
-                    suite_codebertscore_group,
-                ],
-            )
-            suite_codebertscore_model.change(
-                sync_codebertscore_model_settings_gradio,
-                inputs=[suite_codebertscore_model, suite_codebertscore_max_length],
-                outputs=[suite_codebertscore_max_length],
-            )
+            wire_scoring_controls(suite_controls)
 
             suite_add_run.click(
                 append_suite_run_gradio,
                 inputs=[
                     suite_runs_state,
                     suite_run_name_input,
-                    suite_features,
-                    suite_model,
-                    suite_vector_backend,
-                    suite_similarity_function,
-                    suite_pooling_method,
-                    suite_max_token_length,
-                    suite_semantic_weight,
-                    suite_levenshtein_weight,
-                    suite_jaro_winkler_weight,
-                    suite_winnowing_weight,
-                    suite_gst_weight,
-                    suite_levenshtein_weights,
-                    suite_jaro_prefix_weight,
-                    suite_winnowing_kgram,
-                    suite_winnowing_window,
-                    suite_gst_min_match_length,
-                    suite_lexical_tokenizer,
-                    suite_code_metric,
-                    suite_code_metric_weight,
-                    suite_code_language,
-                    suite_codebleu_component_weights,
-                    suite_crystalbleu_max_order,
-                    suite_crystalbleu_trivial_ngram_count,
-                    suite_ruby_mode,
-                    suite_ruby_graph_timeout_seconds,
-                    suite_tsed_costs,
-                    suite_codebertscore_model,
-                    suite_codebertscore_max_length,
-                    suite_code_preparation,
-                    suite_preprocess_mode,
-                    suite_chunking_method,
-                    suite_chunk_size,
-                    suite_chunk_overlap,
-                    suite_max_chunks,
-                    suite_chunk_aggregation,
-                    suite_chunk_language,
-                    suite_chunker_options,
+                    *suite_controls.handler_inputs(),
                     suite_threshold,
                     suite_number_results,
                 ],
@@ -4916,43 +4995,7 @@ with gr.Blocks(
                     suite_runs_state,
                     suite_output_format,
                     suite_run_name_input,
-                    suite_features,
-                    suite_model,
-                    suite_vector_backend,
-                    suite_similarity_function,
-                    suite_pooling_method,
-                    suite_max_token_length,
-                    suite_semantic_weight,
-                    suite_levenshtein_weight,
-                    suite_jaro_winkler_weight,
-                    suite_winnowing_weight,
-                    suite_gst_weight,
-                    suite_levenshtein_weights,
-                    suite_jaro_prefix_weight,
-                    suite_winnowing_kgram,
-                    suite_winnowing_window,
-                    suite_gst_min_match_length,
-                    suite_lexical_tokenizer,
-                    suite_code_metric,
-                    suite_code_metric_weight,
-                    suite_code_language,
-                    suite_codebleu_component_weights,
-                    suite_crystalbleu_max_order,
-                    suite_crystalbleu_trivial_ngram_count,
-                    suite_ruby_mode,
-                    suite_ruby_graph_timeout_seconds,
-                    suite_tsed_costs,
-                    suite_codebertscore_model,
-                    suite_codebertscore_max_length,
-                    suite_code_preparation,
-                    suite_preprocess_mode,
-                    suite_chunking_method,
-                    suite_chunk_size,
-                    suite_chunk_overlap,
-                    suite_max_chunks,
-                    suite_chunk_aggregation,
-                    suite_chunk_language,
-                    suite_chunker_options,
+                    *suite_controls.handler_inputs(),
                     suite_threshold,
                     suite_number_results,
                 ],
@@ -4976,58 +5019,35 @@ with gr.Blocks(
                 outputs=suite_details,
             )
             for component in (
-                suite_features,
-                suite_code_preparation,
-                suite_model,
-                suite_vector_backend,
-                suite_similarity_function,
-                suite_pooling_method,
-                suite_code_metric,
-                suite_preprocess_mode,
-                suite_chunking_method,
+                suite_controls.features,
+                suite_controls.preparation.selected,
+                suite_controls.model.model,
+                suite_controls.model.vector_backend,
+                suite_controls.model.similarity_function,
+                suite_controls.model.pooling_method,
+                suite_controls.code.metric,
+                suite_controls.preparation.preprocess_mode,
+                suite_controls.preparation.chunking_method,
             ):
                 component.change(
                     preview_suite_run_name,
                     inputs=[
                         suite_runs_state,
-                        suite_features,
-                        suite_code_preparation,
-                        suite_model,
-                        suite_vector_backend,
-                        suite_similarity_function,
-                        suite_pooling_method,
-                        suite_code_metric,
-                        suite_preprocess_mode,
-                        suite_chunking_method,
+                        suite_controls.features,
+                        suite_controls.preparation.selected,
+                        suite_controls.model.model,
+                        suite_controls.model.vector_backend,
+                        suite_controls.model.similarity_function,
+                        suite_controls.model.pooling_method,
+                        suite_controls.code.metric,
+                        suite_controls.preparation.preprocess_mode,
+                        suite_controls.preparation.chunking_method,
                     ],
                     outputs=suite_run_name_input,
                 )
-            for component in (
-                suite_model,
-                suite_vector_backend,
-                suite_runtime_device,
-            ):
-                component.change(
-                    sync_model_settings_gradio,
-                    inputs=[
-                        suite_model,
-                        suite_vector_backend,
-                        suite_runtime_device,
-                        suite_similarity_function,
-                        suite_pooling_method,
-                        suite_max_token_length,
-                    ],
-                    outputs=[
-                        suite_vector_backend,
-                        suite_max_token_length,
-                        suite_model_status,
-                        suite_similarity_group,
-                        suite_pooling_group,
-                    ],
-                )
-
-        with gr.Tab("Datasets"):
+        with gr.Tab("Datasets", id="datasets"):
             dataset_scored_state = gr.State(None)
+            dataset_validation_state = gr.State(None)
             gr.HTML(
                 value=workflow_intro_html(
                     "Measure quality",
@@ -5038,109 +5058,36 @@ with gr.Blocks(
                 container=False,
                 padding=False,
             )
+            dataset_journey_status = gr.HTML(
+                value=dataset_journey_status_html(
+                    1,
+                    "Upload a dataset, choose its task, then validate it.",
+                ),
+                padding=False,
+            )
             with gr.Row(elem_classes=["matheel-workflow-grid"]):
-                with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
-                    dataset_file = gr.File(label="Normalized Dataset ZIP", file_types=[".zip"])
-                    with gr.Row():
-                        dataset_validate = gr.Button("Validate Dataset", variant="secondary")
-                        dataset_run = gr.Button("Run Dataset Evaluation", variant="primary")
-                    dataset_validation_summary = gr.HTML(
-                        value=empty_dataset_validation_summary_html(),
-                        padding=False,
-                    )
-                    dataset_validation_issues = gr.Dataframe(
-                        label="Validation Issues",
-                        wrap=False,
-                        interactive=False,
-                        max_height=220,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    dataset_validation_report = gr.HTML(value="", padding=False)
-                    dataset_validation_artifacts = gr.File(label="Validation Artifacts")
-                    dataset_summary = gr.HTML(
-                        value=summary_panel_html(
-                            "Dataset Evaluation",
-                            [("Status", "No dataset uploaded"), ("Artifacts", "None")],
-                            variant="empty",
-                        ),
-                        padding=False,
-                    )
-                    dataset_metrics = gr.Dataframe(
-                        label="Metrics",
-                        wrap=False,
-                        interactive=False,
-                        max_height=280,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    dataset_scores = gr.Dataframe(
-                        label="Scored Rows",
-                        wrap=False,
-                        interactive=False,
-                        max_height=420,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    dataset_resampling_metrics = gr.Dataframe(
-                        label="Resampling Metrics",
-                        wrap=False,
-                        interactive=False,
-                        max_height=260,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    dataset_resampling_summary = gr.Dataframe(
-                        label="Resampling Summary",
-                        wrap=False,
-                        interactive=False,
-                        max_height=260,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    dataset_artifacts = gr.File(label="Leaderboard Artifacts")
-                    dataset_threshold_summary = gr.HTML(
-                        value=empty_threshold_tuning_summary_html(),
-                        padding=False,
-                    )
-                    dataset_threshold_sweep = gr.Dataframe(
-                        label="Threshold Sweep",
-                        wrap=False,
-                        interactive=False,
-                        max_height=300,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    dataset_threshold_report = gr.HTML(value="", padding=False)
-                    dataset_threshold_artifacts = gr.File(label="Threshold Tuning Artifacts")
-                    dataset_pair_explain_summary = gr.HTML(
-                        value=empty_pair_explanation_summary_html(),
-                        padding=False,
-                    )
-                    dataset_pair_explain_matches = gr.Dataframe(
-                        label="Scored Pair Matches",
-                        wrap=False,
-                        interactive=False,
-                        max_height=260,
-                        row_count=1,
-                        show_search="filter",
-                        elem_classes=["matheel-table"],
-                    )
-                    dataset_pair_explain_report = gr.HTML(value="", padding=False)
-                    dataset_pair_explain_artifacts = gr.File(label="Scored Pair Explanation Artifacts")
-
-                with gr.Column(scale=5, elem_classes=["matheel-control-panel"]):
+                with gr.Column(
+                    scale=5,
+                    elem_id="dataset-setup-column",
+                    elem_classes=["matheel-control-panel"],
+                ):
                     with gr.Accordion("Dataset setup", open=True):
+                        dataset_file = gr.File(
+                            label="Normalized Dataset ZIP",
+                            file_types=[".zip"],
+                        )
                         dataset_task = gr.Radio(
                             choices=list(DATASET_TASK_CHOICES),
                             value=DEFAULT_DATASET_TASK,
                             label="Task",
+                        )
+                        dataset_validate = gr.Button(
+                            "Validate Dataset",
+                            variant="secondary",
+                        )
+                        dataset_validate_api = gr.Button(
+                            "Dataset Validation API",
+                            visible=False,
                         )
                         dataset_metric_preset = gr.Dropdown(
                             choices=list(metric_preset_names()),
@@ -5178,7 +5125,6 @@ with gr.Blocks(
                             value="raw",
                             label="Lexical Tokenizer",
                         )
-
                     with gr.Accordion("Evaluation options", open=True):
                         with gr.Group(visible=True) as dataset_pair_group:
                             dataset_threshold = gr.Slider(
@@ -5212,9 +5158,27 @@ with gr.Blocks(
                             choices=list(THRESHOLD_OPTIMIZE_CHOICES),
                             value="f1",
                             label="Threshold Tuning Metric",
+                            visible=False,
                         )
-                        dataset_threshold_tune = gr.Button("Tune Pair Threshold", variant="secondary")
-                    with gr.Accordion("Scored Pair Explanation", open=False):
+                        dataset_threshold_tune = gr.Button(
+                            "Tune Pair Threshold",
+                            variant="secondary",
+                            visible=False,
+                        )
+                        dataset_run = gr.Button(
+                            "Run Dataset Evaluation",
+                            variant="primary",
+                            interactive=False,
+                        )
+                        dataset_evaluate_api = gr.Button(
+                            "Dataset Evaluation API",
+                            visible=False,
+                        )
+                    with gr.Accordion(
+                        "Scored Pair Explanation",
+                        open=False,
+                        visible=False,
+                    ) as dataset_pair_explanation_actions:
                         dataset_pair_explain_row = gr.Number(
                             value=0,
                             precision=0,
@@ -5253,7 +5217,136 @@ with gr.Blocks(
                             step=1,
                             label="Chunk Lines",
                         )
-                        dataset_pair_explain_run = gr.Button("Explain Scored Pair", variant="secondary")
+                        dataset_pair_explain_run = gr.Button(
+                            "Explain Scored Pair", variant="secondary"
+                        )
+
+                with gr.Column(
+                    scale=8,
+                    elem_id="dataset-results-column",
+                    elem_classes=["matheel-results-panel"],
+                ):
+                    dataset_validation_summary = gr.HTML(
+                        value=empty_dataset_validation_summary_html(),
+                        padding=False,
+                    )
+                    dataset_validation_issues = gr.Dataframe(
+                        label="Validation Issues",
+                        wrap=False,
+                        interactive=False,
+                        max_height=220,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    dataset_validation_report = gr.HTML(value="", padding=False)
+                    dataset_summary = gr.HTML(
+                        value=summary_panel_html(
+                            "Dataset Evaluation",
+                            [("Status", "No dataset uploaded"), ("Artifacts", "None")],
+                            variant="empty",
+                        ),
+                        padding=False,
+                        visible=False,
+                    )
+                    dataset_metrics = gr.Dataframe(
+                        label="Metrics",
+                        wrap=False,
+                        interactive=False,
+                        max_height=280,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                        visible=False,
+                    )
+                    dataset_scores = gr.Dataframe(
+                        label="Scored Rows",
+                        wrap=False,
+                        interactive=False,
+                        max_height=420,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                        visible=False,
+                    )
+                    dataset_resampling_metrics = gr.Dataframe(
+                        label="Resampling Metrics",
+                        wrap=False,
+                        interactive=False,
+                        max_height=260,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                        visible=False,
+                    )
+                    dataset_resampling_summary = gr.Dataframe(
+                        label="Resampling Summary",
+                        wrap=False,
+                        interactive=False,
+                        max_height=260,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                        visible=False,
+                    )
+                    dataset_threshold_summary = gr.HTML(
+                        value=empty_threshold_tuning_summary_html(),
+                        padding=False,
+                        visible=False,
+                    )
+                    dataset_threshold_sweep = gr.Dataframe(
+                        label="Threshold Sweep",
+                        wrap=False,
+                        interactive=False,
+                        max_height=300,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                        visible=False,
+                    )
+                    dataset_threshold_report = gr.HTML(value="", padding=False, visible=False)
+                    dataset_pair_explain_summary = gr.HTML(
+                        value=empty_pair_explanation_summary_html(),
+                        padding=False,
+                        visible=False,
+                    )
+                    dataset_pair_explain_matches = gr.Dataframe(
+                        label="Scored Pair Matches",
+                        wrap=False,
+                        interactive=False,
+                        max_height=260,
+                        row_count=1,
+                        show_search="filter",
+                        elem_classes=["matheel-table"],
+                        visible=False,
+                    )
+                    dataset_pair_explain_report = gr.HTML(value="", padding=False, visible=False)
+            with gr.Accordion(
+                "Artifact Workspace",
+                open=True,
+                elem_id="dataset-artifact-workspace",
+            ):
+                gr.Markdown(
+                    "Validation, evaluation, calibration, and explanation downloads stay together here."
+                )
+                dataset_validation_artifacts = gr.File(label="Validation Artifacts")
+                dataset_artifacts = gr.File(label="Leaderboard Artifacts")
+                dataset_threshold_artifacts = gr.File(label="Threshold Tuning Artifacts")
+                dataset_pair_explain_artifacts = gr.File(label="Scored Pair Explanation Artifacts")
+            with gr.Group(
+                visible=False,
+                elem_id="dataset-next-actions",
+            ) as dataset_next_actions:
+                gr.Markdown("Continue with this dataset and its generated evaluation artifacts.")
+                with gr.Row():
+                    dataset_continue_explain = gr.Button(
+                        "Continue to Explain",
+                        variant="secondary",
+                    )
+                    dataset_continue_reports = gr.Button(
+                        "Open Evaluation in Reports",
+                        variant="secondary",
+                    )
 
             dataset_task.change(
                 update_dataset_task_sections,
@@ -5261,6 +5354,54 @@ with gr.Blocks(
                 outputs=[dataset_pair_group, dataset_retrieval_group],
             )
             dataset_validate.click(
+                validate_dataset_journey_gradio,
+                inputs=[dataset_file, dataset_task],
+                outputs=[
+                    dataset_validation_summary,
+                    dataset_validation_issues,
+                    dataset_validation_report,
+                    dataset_validation_artifacts,
+                    dataset_validation_state,
+                    dataset_run,
+                    dataset_journey_status,
+                ],
+                api_name=False,
+            )
+            dataset_run.click(
+                evaluate_dataset_journey_gradio,
+                inputs=[
+                    dataset_validation_state,
+                    dataset_file,
+                    dataset_task,
+                    dataset_metric_preset,
+                    dataset_model,
+                    dataset_vector_backend,
+                    dataset_runtime_device,
+                    dataset_preprocess_mode,
+                    dataset_code_language,
+                    dataset_lexical_tokenizer,
+                    dataset_threshold,
+                    dataset_k,
+                    dataset_resampling_folds,
+                    dataset_resampling_seed,
+                ],
+                outputs=[
+                    dataset_summary,
+                    dataset_metrics,
+                    dataset_scores,
+                    dataset_resampling_metrics,
+                    dataset_resampling_summary,
+                    dataset_artifacts,
+                    dataset_scored_state,
+                    dataset_journey_status,
+                    dataset_threshold_optimize,
+                    dataset_threshold_tune,
+                    dataset_pair_explanation_actions,
+                    dataset_next_actions,
+                ],
+                api_name=False,
+            )
+            dataset_validate_api.click(
                 validate_dataset_gradio,
                 inputs=[dataset_file, dataset_task],
                 outputs=[
@@ -5269,8 +5410,9 @@ with gr.Blocks(
                     dataset_validation_report,
                     dataset_validation_artifacts,
                 ],
+                api_name="validate_dataset_gradio",
             )
-            dataset_run.click(
+            dataset_evaluate_api.click(
                 evaluate_dataset_gradio_with_state,
                 inputs=[
                     dataset_file,
@@ -5294,21 +5436,22 @@ with gr.Blocks(
                     dataset_resampling_metrics,
                     dataset_resampling_summary,
                     dataset_artifacts,
-                    dataset_scored_state,
                 ],
+                api_name="evaluate_dataset_gradio_with_state",
             )
             dataset_threshold_tune.click(
-                threshold_tuning_gradio,
+                threshold_tuning_journey_gradio,
                 inputs=[dataset_scored_state, dataset_threshold_optimize],
                 outputs=[
                     dataset_threshold_summary,
                     dataset_threshold_sweep,
                     dataset_threshold_report,
                     dataset_threshold_artifacts,
+                    dataset_journey_status,
                 ],
             )
             dataset_pair_explain_run.click(
-                explain_scored_pair_gradio,
+                explain_scored_pair_journey_gradio,
                 inputs=[
                     dataset_scored_state,
                     dataset_pair_explain_row,
@@ -5323,10 +5466,122 @@ with gr.Blocks(
                     dataset_pair_explain_matches,
                     dataset_pair_explain_report,
                     dataset_pair_explain_artifacts,
+                    dataset_journey_status,
                 ],
             )
 
-        with gr.Tab("Explain"):
+            dataset_upload_reset_outputs = [
+                dataset_validation_state,
+                dataset_validation_summary,
+                dataset_validation_issues,
+                dataset_validation_report,
+                dataset_validation_artifacts,
+                dataset_run,
+                dataset_journey_status,
+                dataset_scored_state,
+                dataset_summary,
+                dataset_metrics,
+                dataset_scores,
+                dataset_resampling_metrics,
+                dataset_resampling_summary,
+                dataset_artifacts,
+                dataset_threshold_summary,
+                dataset_threshold_sweep,
+                dataset_threshold_report,
+                dataset_threshold_artifacts,
+                dataset_pair_explain_summary,
+                dataset_pair_explain_matches,
+                dataset_pair_explain_report,
+                dataset_pair_explain_artifacts,
+                dataset_threshold_optimize,
+                dataset_threshold_tune,
+                dataset_pair_explanation_actions,
+                dataset_next_actions,
+            ]
+            dataset_file.change(
+                reset_dataset_upload_journey,
+                outputs=dataset_upload_reset_outputs,
+                show_api=False,
+            )
+            dataset_task.change(
+                reset_dataset_upload_journey,
+                outputs=dataset_upload_reset_outputs,
+                show_api=False,
+            )
+
+            dataset_result_reset_outputs = [
+                dataset_scored_state,
+                dataset_summary,
+                dataset_metrics,
+                dataset_scores,
+                dataset_resampling_metrics,
+                dataset_resampling_summary,
+                dataset_artifacts,
+                dataset_threshold_summary,
+                dataset_threshold_sweep,
+                dataset_threshold_report,
+                dataset_threshold_artifacts,
+                dataset_pair_explain_summary,
+                dataset_pair_explain_matches,
+                dataset_pair_explain_report,
+                dataset_pair_explain_artifacts,
+                dataset_journey_status,
+                dataset_threshold_optimize,
+                dataset_threshold_tune,
+                dataset_pair_explanation_actions,
+                dataset_next_actions,
+            ]
+            for component in (
+                dataset_metric_preset,
+                dataset_model,
+                dataset_vector_backend,
+                dataset_runtime_device,
+                dataset_preprocess_mode,
+                dataset_code_language,
+                dataset_lexical_tokenizer,
+                dataset_threshold,
+                dataset_k,
+                dataset_resampling_folds,
+                dataset_resampling_seed,
+            ):
+                component.input(
+                    reset_dataset_results,
+                    outputs=dataset_result_reset_outputs,
+                    show_api=False,
+                )
+
+            dataset_threshold_optimize.input(
+                reset_dataset_threshold_stage,
+                outputs=[
+                    dataset_threshold_summary,
+                    dataset_threshold_sweep,
+                    dataset_threshold_report,
+                    dataset_threshold_artifacts,
+                    dataset_journey_status,
+                ],
+                show_api=False,
+            )
+            for component in (
+                dataset_pair_explain_row,
+                dataset_pair_explain_segment_mode,
+                dataset_pair_explain_high_threshold,
+                dataset_pair_explain_medium_threshold,
+                dataset_pair_explain_low_threshold,
+                dataset_pair_explain_chunk_size,
+            ):
+                component.input(
+                    reset_dataset_explanation_stage,
+                    outputs=[
+                        dataset_pair_explain_summary,
+                        dataset_pair_explain_matches,
+                        dataset_pair_explain_report,
+                        dataset_pair_explain_artifacts,
+                        dataset_journey_status,
+                    ],
+                    show_api=False,
+                )
+
+        with gr.Tab("Explain", id="explain"):
             gr.HTML(
                 value=workflow_intro_html(
                     "Inspect evidence",
@@ -5337,8 +5592,11 @@ with gr.Blocks(
                 container=False,
                 padding=False,
             )
-            with gr.Tabs(elem_classes=["matheel-subtabs"]):
-                with gr.Tab("Dataset Map"):
+            with gr.Tabs(
+                selected="dataset-map",
+                elem_classes=["matheel-subtabs"],
+            ) as explain_tabs:
+                with gr.Tab("Dataset Map", id="dataset-map"):
                     with gr.Row(elem_classes=["matheel-workflow-grid"]):
                         with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                             map_dataset_file = gr.File(
@@ -5346,7 +5604,9 @@ with gr.Blocks(
                                 file_types=[".zip"],
                             )
                             map_run = gr.Button("Generate Map", variant="primary")
-                            map_summary = gr.HTML(value=empty_dataset_map_summary_html(), padding=False)
+                            map_summary = gr.HTML(
+                                value=empty_dataset_map_summary_html(), padding=False
+                            )
                             map_points = gr.Dataframe(
                                 label="Projected Documents",
                                 wrap=False,
@@ -5397,7 +5657,7 @@ with gr.Blocks(
                         outputs=[map_summary, map_points, map_html, map_artifacts],
                     )
 
-                with gr.Tab("Pair Explanation"):
+                with gr.Tab("Pair Explanation", id="pair-explanation"):
                     with gr.Row(elem_classes=["matheel-workflow-grid"]):
                         with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                             with gr.Row():
@@ -5478,7 +5738,7 @@ with gr.Blocks(
                         outputs=[explain_summary, explain_matches, explain_html, explain_artifacts],
                     )
 
-        with gr.Tab("Reports"):
+        with gr.Tab("Reports", id="reports"):
             gr.HTML(
                 value=workflow_intro_html(
                     "Share results",
@@ -5489,8 +5749,11 @@ with gr.Blocks(
                 container=False,
                 padding=False,
             )
-            with gr.Tabs(elem_classes=["matheel-subtabs"]):
-                with gr.Tab("Ready-made Leaderboard"):
+            with gr.Tabs(
+                selected="ready-made-leaderboard",
+                elem_classes=["matheel-subtabs"],
+            ) as reports_tabs:
+                with gr.Tab("Ready-made Leaderboard", id="ready-made-leaderboard"):
                     gr.Markdown(
                         "Scores are precomputed across every registered public dataset preset and "
                         "every built-in algorithm preset. The snapshot uses deterministic samples "
@@ -5667,7 +5930,7 @@ with gr.Blocks(
                         ],
                     )
 
-                with gr.Tab("Build Leaderboard"):
+                with gr.Tab("Build Leaderboard", id="build-leaderboard"):
                     with gr.Row(elem_classes=["matheel-workflow-grid"]):
                         with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                             ready_dataset_files = gr.File(
@@ -5791,14 +6054,16 @@ with gr.Blocks(
                         ],
                     )
 
-                with gr.Tab("Inspect Artifacts"):
+                with gr.Tab("Inspect Artifacts", id="inspect-artifacts"):
                     with gr.Row(elem_classes=["matheel-workflow-grid"]):
                         with gr.Column(scale=8, elem_classes=["matheel-results-panel"]):
                             leaderboard_file = gr.File(
                                 label="Leaderboard JSON or ZIP",
                                 file_types=[".json", ".zip"],
                             )
-                            leaderboard_inspect = gr.Button("Inspect Leaderboard", variant="primary")
+                            leaderboard_inspect = gr.Button(
+                                "Inspect Leaderboard", variant="primary"
+                            )
                             leaderboard_summary = gr.HTML(
                                 value=empty_leaderboard_inspection_summary_html(),
                                 padding=False,
@@ -5835,6 +6100,19 @@ with gr.Blocks(
                             leaderboard_artifacts,
                         ],
                     )
+
+    dataset_continue_explain.click(
+        handoff_dataset_to_explain,
+        inputs=[dataset_file, dataset_task],
+        outputs=[map_dataset_file, map_task, workflow_tabs, explain_tabs],
+        api_name=False,
+    )
+    dataset_continue_reports.click(
+        handoff_dataset_to_reports,
+        inputs=dataset_artifacts,
+        outputs=[leaderboard_file, workflow_tabs, reports_tabs],
+        api_name=False,
+    )
 
 if __name__ == "__main__":
     demo.launch(show_error=True, debug=True)
