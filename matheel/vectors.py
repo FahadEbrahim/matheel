@@ -329,21 +329,45 @@ def build_static_hash_vectors(codes, dim=256, lowercase=True):
 
 
 def _find_sentence_transformer_pooling(model):
-    try:
-        from sentence_transformers.models import Pooling
-    except ImportError:  # pragma: no cover - optional dependency during partial installs
+    Pooling = _sentence_transformer_pooling_class()
+    if Pooling is None:
         return None, None
-
     for module_name, module in reversed(list(getattr(model, "_modules", {}).items())):
         if isinstance(module, Pooling):
             return module_name, module
     return None, None
 
 
+def _sentence_transformer_pooling_class():
+    try:
+        from sentence_transformers.sentence_transformer.modules import Pooling
+    except ImportError:
+        try:
+            from sentence_transformers.models import Pooling
+        except ImportError:  # pragma: no cover - optional dependency during partial installs
+            return None
+    return Pooling
+
+
 def _detect_current_pooling_method(pooling_module):
+    pooling_mode = getattr(pooling_module, "pooling_mode", None)
+    if isinstance(pooling_mode, str):
+        return pooling_mode
+    if isinstance(pooling_mode, (list, tuple)):
+        modes = tuple(str(item).strip() for item in pooling_mode if str(item).strip())
+        if len(modes) == 1:
+            return modes[0]
+        if len(modes) > 1:
+            return modes
+
+    enabled_modes = []
     for method_name, flag_name in _POOLING_MODE_FLAGS.items():
         if getattr(pooling_module, flag_name, False):
-            return method_name
+            enabled_modes.append(method_name)
+    if len(enabled_modes) == 1:
+        return enabled_modes[0]
+    if len(enabled_modes) > 1:
+        return tuple(enabled_modes)
     return None
 
 
@@ -358,10 +382,20 @@ def configure_sentence_transformer_pooling(model, pooling_method="mean"):
     current_method = _detect_current_pooling_method(pooling_module)
     if current_method == selected_method:
         return model
+    if isinstance(current_method, tuple):
+        raise ValueError(
+            "Custom pooling_method is only supported for sentence-transformers models that use a single pooling mode."
+        )
 
-    word_dimension = int(getattr(pooling_module, "word_embedding_dimension", 0) or 0)
+    word_dimension = int(
+        getattr(pooling_module, "word_embedding_dimension", 0)
+        or getattr(pooling_module, "embedding_dimension", 0)
+        or 0
+    )
     output_dimension = None
-    get_dimension = getattr(pooling_module, "get_sentence_embedding_dimension", None)
+    get_dimension = getattr(pooling_module, "get_embedding_dimension", None)
+    if not callable(get_dimension):
+        get_dimension = getattr(pooling_module, "get_sentence_embedding_dimension", None)
     if callable(get_dimension):
         output_dimension = int(get_dimension() or 0)
     if word_dimension <= 0:
@@ -371,7 +405,9 @@ def configure_sentence_transformer_pooling(model, pooling_method="mean"):
             "Custom pooling_method is only supported for sentence-transformers models that use a single pooling mode."
         )
 
-    from sentence_transformers.models import Pooling
+    Pooling = _sentence_transformer_pooling_class()
+    if Pooling is None:
+        return model
 
     model._modules[module_name] = Pooling(
         word_dimension,

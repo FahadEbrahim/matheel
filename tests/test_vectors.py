@@ -20,6 +20,15 @@ from matheel.vectors import (
 )
 
 
+def _pooling_class_or_skip():
+    pytest.importorskip("sentence_transformers")
+    try:
+        from sentence_transformers.sentence_transformer.modules import Pooling
+    except ImportError:
+        from sentence_transformers.models import Pooling
+    return Pooling
+
+
 def test_static_hash_vector_is_normalized_for_same_token_bag():
     left = build_static_hash_vector("def add(a, b):\n    return a + b\n", dim=64, lowercase=True)
     right = build_static_hash_vector("def add(b, a):\n    return b + a\n", dim=64, lowercase=True)
@@ -64,8 +73,7 @@ def test_single_vector_similarity_supports_all_supported_functions():
 
 
 def test_configure_sentence_transformer_pooling_replaces_single_pooling_mode():
-    sentence_transformers = pytest.importorskip("sentence_transformers")
-    pooling_class = sentence_transformers.models.Pooling
+    pooling_class = _pooling_class_or_skip()
 
     class DummyModel:
         def __init__(self):
@@ -83,13 +91,15 @@ def test_configure_sentence_transformer_pooling_replaces_single_pooling_mode():
         "weightedmean",
     )
     assert configured is model
-    assert configured._modules["1"].pooling_mode_max_tokens is True
-    assert configured._modules["1"].pooling_mode_mean_tokens is False
+    configured_mode = getattr(configured._modules["1"], "pooling_mode", None)
+    if isinstance(configured_mode, (list, tuple)):
+        assert tuple(configured_mode) == ("max",)
+    else:
+        assert configured_mode == "max"
 
 
 def test_configure_sentence_transformer_pooling_rejects_multi_mode_pooling():
-    sentence_transformers = pytest.importorskip("sentence_transformers")
-    pooling_class = sentence_transformers.models.Pooling
+    pooling_class = _pooling_class_or_skip()
 
     class DummyModel:
         def __init__(self):
