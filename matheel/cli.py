@@ -1208,7 +1208,7 @@ def benchmark_registry_compare_command(registry_file, run_ids, output_path, outp
     type=click.Choice(available_vector_backends()),
     default='auto',
     show_default=True,
-    help='Vector backend. Auto inspects Hugging Face model metadata and routes to sentence-transformers, model2vec, or PyLate.',
+    help='Vector backend. Auto inspects Hugging Face model metadata and routes to sentence-transformers, model2vec, or multivector.',
 )
 @click.option(
     '--similarity-function',
@@ -1230,7 +1230,7 @@ def benchmark_registry_compare_command(registry_file, run_ids, output_path, outp
     type=click.Choice(available_pooling_methods()),
     default='mean',
     show_default=True,
-    help='Sentence-transformers pooling mode. Ignored by model2vec and PyLate.',
+    help='Sentence-transformers pooling mode. Ignored by model2vec and multivector.',
 )
 @click.option(
     '--device',

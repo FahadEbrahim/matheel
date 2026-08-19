@@ -246,7 +246,7 @@ def test_score_retrieval_dataset_uses_custom_scorer(tmp_path):
     assert scored["relevance"].sum() == 2.0
 
 
-def test_score_retrieval_dataset_uses_query_aware_pylate_embeddings(
+def test_score_retrieval_dataset_uses_query_aware_multivector_embeddings(
     tmp_path,
     monkeypatch,
 ):
@@ -254,17 +254,21 @@ def test_score_retrieval_dataset_uses_query_aware_pylate_embeddings(
     load_calls = []
     encode_calls = []
 
-    class FakePyLateModel:
-        def encode(self, inputs, convert_to_numpy=True, is_query=False):
+    class FakeMultiVectorModel:
+        def encode_query(self, inputs, convert_to_numpy=True, output_value=None):
             assert convert_to_numpy is True
-            encode_calls.append((str(inputs), bool(is_query)))
+            _ = output_value
+            encode_calls.append((str(inputs), True))
             return np.asarray([[1.0, 0.0]], dtype=float)
-
-    FakePyLateModel.__module__ = "pylate.models"
+        def encode_document(self, inputs, convert_to_numpy=True, output_value=None):
+            assert convert_to_numpy is True
+            _ = output_value
+            encode_calls.append((str(inputs), False))
+            return np.asarray([[1.0, 0.0]], dtype=float)
 
     def fake_load(*args, **kwargs):
         load_calls.append((args, kwargs))
-        return FakePyLateModel()
+        return FakeMultiVectorModel()
 
     monkeypatch.setattr(evaluation_module._similarity, "load_backend_model", fake_load)
 
@@ -272,7 +276,7 @@ def test_score_retrieval_dataset_uses_query_aware_pylate_embeddings(
         dataset,
         similarity_options={
             "feature_weights": {"semantic": 1.0},
-            "vector_backend": "pylate",
+            "vector_backend": "multivector",
         },
     )
 

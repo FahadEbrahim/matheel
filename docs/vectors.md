@@ -4,7 +4,7 @@ Matheel supports three public vector backends:
 
 - `sentence_transformers`
 - `model2vec`
-- `pylate`
+- `multivector`
 
 You can also use `vector_backend=auto` and let Matheel route based on Hugging Face metadata and tags.
 
@@ -42,15 +42,15 @@ Best when:
 - you want lighter-weight inference than dense transformer pooling in some setups
 - your selected Hugging Face model is explicitly a `model2vec` model
 
-### `pylate`
+### `multivector`
 
-Multivector late-interaction scoring via PyLate/ColBERT-style models.
+Multivector late-interaction scoring via Sentence Transformers token embeddings.
 
 Best when:
 
 - you want token- or chunk-level late interaction
 - you want higher-fidelity multivector matching
-- your selected Hugging Face model is tagged for `PyLate` or `ColBERT`
+- your selected Hugging Face model is tagged for `ColBERT` or late interaction
 
 ## Auto Routing
 
@@ -58,7 +58,7 @@ Best when:
 
 - Sentence Transformers for dense models
 - model2vec for static models
-- PyLate for multivector models
+- multivector for late-interaction models
 
 If metadata is unavailable, Matheel falls back to simple name/tag heuristics and finally defaults to Sentence Transformers.
 
@@ -106,7 +106,7 @@ These apply to Sentence Transformers single-vector scoring:
 - `mean_sqrt_len_tokens`
 - `weightedmean`
 
-`pooling_method` is ignored by `model2vec` and `pylate`.
+`pooling_method` is ignored by `model2vec` and `multivector`.
 
 ## Backend-Specific Parameters
 

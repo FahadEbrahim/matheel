@@ -11,13 +11,13 @@ _BACKEND_ALIASES = {
     "model2vec": "model2vec",
     "static": "model2vec",
     "static_vector": "model2vec",
-    "pylate": "pylate",
-    "multivector": "pylate",
-    "late_interaction": "pylate",
-    "colbert": "pylate",
+    "pylate": "multivector",
+    "multivector": "multivector",
+    "late_interaction": "multivector",
+    "colbert": "multivector",
     "static_hash": "static_hash",
 }
-_PUBLIC_VECTOR_BACKENDS = ("auto", "sentence_transformers", "model2vec", "pylate")
+_PUBLIC_VECTOR_BACKENDS = ("auto", "sentence_transformers", "model2vec", "multivector")
 _DEPRECATED_VECTOR_BACKENDS = ("static_hash",)
 _HF_MODEL_INFO_CACHE = {}
 _HF_MODEL_INFO_CACHE_LOCK = RLock()
@@ -97,19 +97,19 @@ def infer_model_capabilities(model_name, model_info=None):
     )
 
     if library_name in ("pylate",):
-        preferred_backend = "pylate"
+        preferred_backend = "multivector"
     elif library_name in ("model2vec",):
         preferred_backend = "model2vec"
     elif library_name in ("sentence-transformers", "sentence_transformers"):
         preferred_backend = "sentence_transformers"
     elif has_pylate_tag or has_colbert_tag or "late-interaction" in tags:
-        preferred_backend = "pylate"
+        preferred_backend = "multivector"
     elif any(tag in ("sentence-transformers", "feature-extraction", "sentence-similarity") for tag in tags):
         preferred_backend = "sentence_transformers"
     elif "model2vec" in tags:
         preferred_backend = "model2vec"
     elif "pylate" in model_name_key or "colbert" in model_name_key:
-        preferred_backend = "pylate"
+        preferred_backend = "multivector"
     elif "model2vec" in model_name_key or "/m2v" in model_name_key or model_name_key.startswith("m2v-"):
         preferred_backend = "model2vec"
     else:
@@ -134,4 +134,4 @@ def resolve_vector_backend(requested_backend, model_name=None, model_info=None):
 
 
 def backend_is_multivector(vector_backend):
-    return normalize_vector_backend_name(vector_backend) == "pylate"
+    return normalize_vector_backend_name(vector_backend) == "multivector"

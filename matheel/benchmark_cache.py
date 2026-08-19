@@ -20,7 +20,6 @@ _PACKAGE_NAMES = (
     "rapidfuzz",
     "sentence-transformers",
     "model2vec",
-    "pylate",
     "tree-sitter-language-pack",
 )
 _PATH_KEYS = frozenset(

@@ -387,6 +387,7 @@ def _load_sentence_transformer_model(
     similarity_function="cosine",
     pooling_method="mean",
     max_token_length=None,
+    multivector=False,
 ):
     from sentence_transformers import SentenceTransformer
 
@@ -395,7 +396,8 @@ def _load_sentence_transformer_model(
         device=device,
         similarity_fn_name=normalize_similarity_function_name(similarity_function),
     )
-    model = configure_sentence_transformer_pooling(model, pooling_method=pooling_method)
+    if not multivector:
+        model = configure_sentence_transformer_pooling(model, pooling_method=pooling_method)
     return configure_model_max_token_length(model, max_token_length=max_token_length)
 
 
@@ -407,31 +409,6 @@ def _load_model2vec_model(model_name, max_token_length=None):
     else:
         model = StaticModel(model_name)
     return configure_model_max_token_length(model, max_token_length=max_token_length)
-
-
-def _load_pylate_model(model_name, device="auto", max_token_length=None):
-    try:
-        from pylate import models as pylate_models
-    except ImportError as exc:
-        raise ImportError("PyLate backend requires the optional 'pylate' package.") from exc
-
-    for attr_name in ("ColBERT", "SentenceTransformer", "LateInteractionModel"):
-        model_class = getattr(pylate_models, attr_name, None)
-        if model_class is None:
-            continue
-        if hasattr(model_class, "from_pretrained"):
-            try:
-                model = model_class.from_pretrained(model_name, device=device)
-            except TypeError:
-                model = model_class.from_pretrained(model_name)
-            return configure_model_max_token_length(model, max_token_length=max_token_length)
-        try:
-            model = model_class(model_name, device=device)
-        except TypeError:
-            model = model_class(model_name)
-        return configure_model_max_token_length(model, max_token_length=max_token_length)
-
-    raise ValueError("Installed PyLate package does not provide a supported model class.")
 
 
 def load_vector_model(
@@ -447,8 +424,15 @@ def load_vector_model(
         return None
     if backend == "model2vec":
         return _load_model2vec_model(model_name, max_token_length=max_token_length)
-    if backend == "pylate":
-        return _load_pylate_model(model_name, device=device, max_token_length=max_token_length)
+    if backend == "multivector":
+        return _load_sentence_transformer_model(
+            model_name,
+            device=device,
+            similarity_function=similarity_function,
+            pooling_method=pooling_method,
+            max_token_length=max_token_length,
+            multivector=True,
+        )
     return _load_sentence_transformer_model(
         model_name,
         device=device,
@@ -541,25 +525,37 @@ def _encode_to_numpy(model, inputs):
     raise ValueError("The selected model does not provide an encode() method.")
 
 
-def _is_pylate_model(model):
-    if model is None:
-        return False
-    model_type = type(model)
-    return "pylate" in str(model_type.__module__).lower() or model_type.__name__.lower() == "colbert"
+def _to_numpy(value):
+    if hasattr(value, "detach") and hasattr(value, "cpu") and hasattr(value, "numpy"):
+        return value.detach().cpu().numpy()
+    return np.asarray(value)
 
 
 def _encode_multivector_to_numpy(model, inputs, is_query=False):
-    if _is_pylate_model(model):
+    encoder = None
+    if is_query and hasattr(model, "encode_query"):
+        encoder = model.encode_query
+    elif not is_query and hasattr(model, "encode_document"):
+        encoder = model.encode_document
+    else:
+        encoder = getattr(model, "encode", None)
+    if encoder is not None:
         try:
-            return model.encode(inputs, convert_to_numpy=True, is_query=is_query)
+            vectors = encoder(inputs, convert_to_numpy=True, output_value="token_embeddings")
         except TypeError:
-            return model.encode(inputs, convert_to_numpy=True)
+            try:
+                vectors = encoder(inputs, convert_to_numpy=True)
+            except TypeError:
+                vectors = encoder(inputs)
+        if isinstance(vectors, list):
+            return [_to_numpy(item) for item in vectors]
+        return _to_numpy(vectors)
     if hasattr(model, "encode_as_sequence"):
         try:
             vectors = model.encode_as_sequence(inputs, convert_to_numpy=True)
         except TypeError:
             vectors = model.encode_as_sequence(inputs)
-        return vectors
+        return _to_numpy(vectors)
     return _encode_to_numpy(model, inputs)
 
 
@@ -686,41 +682,9 @@ def multivector_directional_maxsim(left, right):
 
 
 def multivector_similarity(left, right, bidirectional=True, vector_backend=None):
-    if normalize_vector_backend_name(vector_backend or "pylate") == "pylate" and _pylate_scores_available():
-        return _pylate_multivector_similarity(left, right, bidirectional=bidirectional)
-
+    normalize_vector_backend_name(vector_backend or "multivector")
     forward = multivector_directional_maxsim(left, right)
     if not bidirectional:
         return float(forward)
     reverse = multivector_directional_maxsim(right, left)
-    return float((forward + reverse) * 0.5)
-
-
-def _pylate_scores_available():
-    try:
-        __import__("pylate.scores")
-    except ImportError:
-        return False
-    return True
-
-
-def _pylate_directional_score(left, right):
-    from pylate.scores import colbert_scores_pairwise
-
-    left_vectors = _ensure_2d_vectors(left)
-    right_vectors = _ensure_2d_vectors(right)
-    if left_vectors.size == 0 or right_vectors.size == 0:
-        return 0.0
-
-    raw_score = colbert_scores_pairwise([left_vectors], [right_vectors])[0]
-    raw_value = float(raw_score.item() if hasattr(raw_score, "item") else raw_score)
-    token_count = max(1, int(left_vectors.shape[0]))
-    return float(np.clip(raw_value / float(token_count), -1.0, 1.0))
-
-
-def _pylate_multivector_similarity(left, right, bidirectional=True):
-    forward = _pylate_directional_score(left, right)
-    if not bidirectional:
-        return forward
-    reverse = _pylate_directional_score(right, left)
     return float((forward + reverse) * 0.5)

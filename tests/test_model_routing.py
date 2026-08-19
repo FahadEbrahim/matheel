@@ -20,12 +20,12 @@ class FakeModelInfo:
 
 
 def test_available_vector_backends_hides_deprecated_static_hash():
-    assert available_vector_backends() == ("auto", "sentence_transformers", "model2vec", "pylate")
+    assert available_vector_backends() == ("auto", "sentence_transformers", "model2vec", "multivector")
     assert available_vector_backends(include_deprecated=True) == (
         "auto",
         "sentence_transformers",
         "model2vec",
-        "pylate",
+        "multivector",
         "static_hash",
     )
 
@@ -34,7 +34,7 @@ def test_infer_model_backend_prefers_library_name():
     assert infer_model_backend(
         "any/model",
         model_info=FakeModelInfo(library_name="PyLate", tags=["sentence-similarity"]),
-    ) == "pylate"
+    ) == "multivector"
 
     assert infer_model_backend(
         "any/model",
@@ -83,7 +83,7 @@ def test_colbert_tag_marks_model_as_multivector():
         model_info=FakeModelInfo(tags=["ColBERT", "sentence-similarity"]),
     )
 
-    assert capabilities["preferred_backend"] == "pylate"
+    assert capabilities["preferred_backend"] == "multivector"
     assert capabilities["supports_static"] is False
     assert capabilities["supports_multivector"] is True
 

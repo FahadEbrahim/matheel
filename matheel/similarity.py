@@ -63,7 +63,7 @@ def _semantic_backend_dependency_error(vector_backend, exc):
     package_by_backend = {
         "sentence_transformers": "sentence-transformers",
         "model2vec": "model2vec",
-        "pylate": "pylate",
+        "multivector": "sentence-transformers",
     }
     package_name = package_by_backend.get(backend, backend)
     return ImportError(
@@ -229,7 +229,7 @@ def inspect_model_settings(
         "supports_custom_max_token_length": resolved_backend in (
             "sentence_transformers",
             "model2vec",
-            "pylate",
+            "multivector",
         ),
     }
 

@@ -36,7 +36,7 @@ def is_prime(value):
 
 _DENSE_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 _STATIC_MODEL = "Jarbas/m2v-256-paraphrase-multilingual-MiniLM-L12-v2"
-_MULTIVECTOR_MODEL = "NeuML/pylate-bert-tiny"
+_MULTIVECTOR_MODEL = "jinaai/jina-colbert-v2"
 _SKIP_ERROR_MARKERS = (
     "couldn't connect",
     "failed to establish",
@@ -108,12 +108,12 @@ def test_real_model2vec_static_model_uses_code():
     )
 
 
-def test_real_pylate_multivector_model_uses_code():
-    pytest.importorskip("pylate")
+def test_real_sentence_transformer_multivector_model_uses_code():
+    pytest.importorskip("sentence_transformers")
     pytest.importorskip("chonkie")
     _assert_similar_code_scores_higher(
         _MULTIVECTOR_MODEL,
-        "pylate",
+        "multivector",
         chunking_method="chonkie_token",
         chunk_size=32,
         chunk_overlap=8,

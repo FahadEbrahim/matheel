@@ -182,7 +182,7 @@ def test_configure_model_max_token_length_clamps_to_detected_limit():
     assert resolve_max_token_length(1024, detected_max_token_length=512) == 512
 
 
-def test_configure_model_max_token_length_updates_pylate_style_lengths():
+def test_configure_model_max_token_length_updates_multivector_style_lengths():
     class DummyModel:
         document_length = 180
         query_length = 32
@@ -197,7 +197,7 @@ def test_configure_model_max_token_length_updates_pylate_style_lengths():
     assert model.max_seq_length == 96
 
 
-def test_configure_model_max_token_length_caps_both_pylate_roles():
+def test_configure_model_max_token_length_caps_both_multivector_roles():
     class DummyModel:
         document_length = 180
         query_length = 32
@@ -211,7 +211,7 @@ def test_configure_model_max_token_length_caps_both_pylate_roles():
     assert model.max_seq_length == 24
 
 
-def test_configure_model_max_token_length_caps_each_pylate_role_independently():
+def test_configure_model_max_token_length_caps_each_multivector_role_independently():
     class DummyModel:
         document_length = 32
         query_length = 180
@@ -223,15 +223,15 @@ def test_configure_model_max_token_length_caps_each_pylate_role_independently():
     assert model.query_length == 96
 
 
-def test_load_vector_model_requires_pylate_package(monkeypatch):
+def test_load_vector_model_multivector_requires_sentence_transformers(monkeypatch):
     real_import = __import__
 
     def fake_import(name, *args, **kwargs):
-        if name == "pylate" or name.startswith("pylate."):
-            raise ImportError("blocked pylate import")
+        if name == "sentence_transformers" or name.startswith("sentence_transformers."):
+            raise ImportError("blocked sentence_transformers import")
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr("builtins.__import__", fake_import)
 
-    with pytest.raises(ImportError, match="pylate"):
-        vectors_module.load_vector_model("demo/model", vector_backend="pylate")
+    with pytest.raises(ImportError, match="sentence_transformers"):
+        vectors_module.load_vector_model("demo/model", vector_backend="multivector")

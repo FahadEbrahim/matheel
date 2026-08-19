@@ -901,7 +901,7 @@ def test_calculate_similarity_supports_multivector_backend(monkeypatch):
         "def normalize(name):\n    return name.strip().lower()\n",
         model_name="fake",
         feature_weights={"semantic": 1.0},
-        vector_backend="pylate",
+        vector_backend="multivector",
     )
 
     assert score == pytest.approx(1.0)
