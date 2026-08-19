@@ -5,7 +5,7 @@ import zlib
 import numpy as np
 
 from .chunking import chunk_text
-from .model_routing import normalize_vector_backend_name
+from .model_routing import backend_is_multivector, normalize_vector_backend_name
 
 
 _STATIC_TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d+|[^\w\s]")
@@ -450,17 +450,19 @@ def _load_model2vec_model(model_name, max_token_length=None):
 def load_vector_model(
     model_name,
     vector_backend="auto",
+    vector_mode="auto",
     device="cpu",
     similarity_function="cosine",
     pooling_method="mean",
     max_token_length=None,
 ):
     backend = normalize_vector_backend_name(vector_backend)
+    use_multivector = backend_is_multivector(backend, vector_mode=vector_mode)
     if backend == "static_hash":
         return None
     if backend == "model2vec":
         return _load_model2vec_model(model_name, max_token_length=max_token_length)
-    if backend == "multivector":
+    if use_multivector:
         return _load_sentence_transformer_model(
             model_name,
             device=device,

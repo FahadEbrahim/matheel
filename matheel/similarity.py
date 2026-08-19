@@ -25,7 +25,9 @@ from .model_routing import (
     backend_is_multivector,
     load_hf_model_info,
     normalize_vector_backend_name,
+    normalize_vector_mode_name,
     resolve_vector_backend,
+    resolve_vector_mode,
 )
 from ._progress import emit_progress, progress_iter
 from ._run_metadata import attach_run_metadata, elapsed_seconds_since, perf_counter
@@ -161,6 +163,7 @@ def load_model(
 def load_backend_model(
     model_name,
     vector_backend="auto",
+    vector_mode="auto",
     device="auto",
     similarity_function="cosine",
     pooling_method="mean",
@@ -173,6 +176,7 @@ def load_backend_model(
         return load_vector_model(
             model_name or DEFAULT_MODEL_NAME,
             vector_backend=vector_backend,
+            vector_mode=vector_mode,
             device=normalized_device,
             similarity_function=selected_similarity,
             pooling_method=selected_pooling,
@@ -185,6 +189,7 @@ def load_backend_model(
 def inspect_model_settings(
     model_name,
     vector_backend="auto",
+    vector_mode="auto",
     device="auto",
     similarity_function="cosine",
     pooling_method="mean",
@@ -192,15 +197,23 @@ def inspect_model_settings(
 ):
     model_key = model_name or DEFAULT_MODEL_NAME
     requested_backend = (vector_backend or "auto").strip() or "auto"
+    requested_mode = normalize_vector_mode_name(vector_mode)
     normalized_device = normalize_device(device)
     selected_similarity = normalize_similarity_function_name(similarity_function)
     selected_pooling = normalize_pooling_method_name(pooling_method)
 
     model_info = None
-    if requested_backend.lower() == "auto":
+    if requested_backend.lower() == "auto" or requested_mode == "auto":
         model_info = load_hf_model_info(model_key)
     resolved_backend = resolve_vector_backend(
         requested_backend,
+        model_name=model_key,
+        model_info=model_info,
+    )
+    resolved_mode = resolve_vector_mode(
+        requested_mode,
+        requested_backend=requested_backend,
+        resolved_backend=resolved_backend,
         model_name=model_key,
         model_info=model_info,
     )
@@ -217,6 +230,8 @@ def inspect_model_settings(
         "model_name": model_key,
         "requested_vector_backend": requested_backend,
         "resolved_vector_backend": resolved_backend,
+        "requested_vector_mode": requested_mode,
+        "resolved_vector_mode": resolved_mode,
         "runtime_device": normalized_device,
         "similarity_function": selected_similarity,
         "pooling_method": selected_pooling,
@@ -226,11 +241,7 @@ def inspect_model_settings(
             if configured_max_token_length is not None
             else None
         ),
-        "supports_custom_max_token_length": resolved_backend in (
-            "sentence_transformers",
-            "model2vec",
-            "multivector",
-        ),
+        "supports_custom_max_token_length": resolved_backend in ("sentence_transformers", "model2vec"),
     }
 
 
@@ -552,9 +563,22 @@ def normalize_chunk_aggregation(chunk_aggregation):
     return selected
 
 
-def validate_vector_options(vector_backend, static_vector_dim, model_name=None, model_info=None):
+def validate_vector_options(
+    vector_backend,
+    vector_mode,
+    static_vector_dim,
+    model_name=None,
+    model_info=None,
+):
     backend = resolve_vector_backend(
         vector_backend,
+        model_name=model_name or DEFAULT_MODEL_NAME,
+        model_info=model_info,
+    )
+    mode = resolve_vector_mode(
+        vector_mode,
+        requested_backend=vector_backend,
+        resolved_backend=backend,
         model_name=model_name or DEFAULT_MODEL_NAME,
         model_info=model_info,
     )
@@ -564,16 +588,17 @@ def validate_vector_options(vector_backend, static_vector_dim, model_name=None, 
     )
     if parsed_static_vector_dim < 8:
         raise ValueError("static_vector_dim must be at least 8.")
-    return backend, parsed_static_vector_dim
+    return backend, mode, parsed_static_vector_dim
 
 
 def validate_semantic_score_scale_options(
     feature_weights,
     vector_backend,
+    vector_mode,
     similarity_function,
     normalize_semantic_scores=False,
 ):
-    if normalize_semantic_scores or backend_is_multivector(vector_backend):
+    if normalize_semantic_scores or backend_is_multivector(vector_backend, vector_mode=vector_mode):
         return
     active_features = {
         name for name, value in (feature_weights or {}).items() if float(value) > 0.0
@@ -601,11 +626,12 @@ def semantic_similarity(
     embedding1,
     embedding2,
     vector_backend="sentence_transformers",
+    vector_mode="single",
     multivector_bidirectional=False,
     similarity_function="cosine",
     normalize_semantic_scores=False,
 ):
-    if backend_is_multivector(vector_backend):
+    if backend_is_multivector(vector_backend, vector_mode=vector_mode):
         return multivector_similarity(
             embedding1,
             embedding2,
@@ -793,6 +819,7 @@ def build_document_embeddings(
     chunk_language="text",
     chunker_options=None,
     vector_backend="sentence_transformers",
+    vector_mode="single",
     static_vector_dim=256,
     static_vector_lowercase=True,
     pooling_method="mean",
@@ -840,7 +867,7 @@ def build_document_embeddings(
             "Use vector_backend='static_hash' for dependency-free static hashing."
         )
 
-    if backend_is_multivector(backend):
+    if backend_is_multivector(backend, vector_mode=vector_mode):
         return build_multivector_embeddings(
             model,
             codes,
@@ -888,6 +915,7 @@ def build_feature_scores(
     embedding2,
     code_metric_score=0.0,
     vector_backend="sentence_transformers",
+    vector_mode="single",
     multivector_bidirectional=False,
     extra_feature_scores=None,
     similarity_function="cosine",
@@ -927,6 +955,7 @@ def build_feature_scores(
                 embedding1,
                 embedding2,
                 vector_backend=vector_backend,
+                vector_mode=vector_mode,
                 multivector_bidirectional=multivector_bidirectional,
                 similarity_function=similarity_function,
                 normalize_semantic_scores=normalize_semantic_scores,
@@ -984,6 +1013,7 @@ def combined_similarity_from_embeddings(
     feature_weights,
     code_metric_score=0.0,
     vector_backend="sentence_transformers",
+    vector_mode="single",
     multivector_bidirectional=False,
     extra_feature_scores=None,
     similarity_function="cosine",
@@ -999,6 +1029,7 @@ def combined_similarity_from_embeddings(
     validate_semantic_score_scale_options(
         feature_weights,
         vector_backend,
+        vector_mode,
         similarity_function,
         normalize_semantic_scores=normalize_semantic_scores,
     )
@@ -1012,6 +1043,7 @@ def combined_similarity_from_embeddings(
         embedding2,
         code_metric_score=code_metric_score,
         vector_backend=vector_backend,
+        vector_mode=vector_mode,
         multivector_bidirectional=multivector_bidirectional,
         extra_feature_scores=extra_feature_scores,
         similarity_function=similarity_function,
@@ -1071,6 +1103,7 @@ def rank_code_pairs(
     codebertscore_nthreads=4,
     codebertscore_verbose=False,
     vector_backend="sentence_transformers",
+    vector_mode="single",
     multivector_bidirectional=False,
     similarity_function="cosine",
     levenshtein_weights=(1, 1, 1),
@@ -1153,6 +1186,7 @@ def rank_code_pairs(
             feature_weights,
             code_metric_score=code_metric_score,
             vector_backend=vector_backend,
+            vector_mode=vector_mode,
             multivector_bidirectional=multivector_bidirectional,
             similarity_function=similarity_function,
             levenshtein_weights=levenshtein_weights,

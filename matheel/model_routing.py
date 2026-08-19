@@ -8,16 +8,28 @@ _BACKEND_ALIASES = {
     "sentence_transformer": "sentence_transformers",
     "sentence_transformers": "sentence_transformers",
     "sbert": "sentence_transformers",
+    "pylate": "sentence_transformers",
+    "multivector": "sentence_transformers",
+    "late_interaction": "sentence_transformers",
+    "colbert": "sentence_transformers",
     "model2vec": "model2vec",
     "static": "model2vec",
     "static_vector": "model2vec",
-    "pylate": "multivector",
-    "multivector": "multivector",
-    "late_interaction": "multivector",
-    "colbert": "multivector",
     "static_hash": "static_hash",
 }
-_PUBLIC_VECTOR_BACKENDS = ("auto", "sentence_transformers", "model2vec", "multivector")
+_VECTOR_MODE_ALIASES = {
+    "auto": "auto",
+    "single": "single",
+    "single_vector": "single",
+    "sentence": "single",
+    "multivector": "multivector",
+    "multi_vector": "multivector",
+    "late_interaction": "multivector",
+    "pylate": "multivector",
+    "colbert": "multivector",
+}
+_PUBLIC_VECTOR_BACKENDS = ("auto", "sentence_transformers", "model2vec")
+_PUBLIC_VECTOR_MODES = ("auto", "single", "multivector")
 _DEPRECATED_VECTOR_BACKENDS = ("static_hash",)
 _HF_MODEL_INFO_CACHE = {}
 _HF_MODEL_INFO_CACHE_LOCK = RLock()
@@ -29,12 +41,25 @@ def available_vector_backends(include_deprecated=False):
     return _PUBLIC_VECTOR_BACKENDS
 
 
+def available_vector_modes():
+    return _PUBLIC_VECTOR_MODES
+
+
 def normalize_vector_backend_name(name):
     key = str(name or "auto").strip().lower()
     normalized = _BACKEND_ALIASES.get(key)
     if normalized is None:
         supported = ", ".join(available_vector_backends())
         raise ValueError(f"Unsupported vector backend: {name}. Supported backends: {supported}")
+    return normalized
+
+
+def normalize_vector_mode_name(name):
+    key = str(name or "auto").strip().lower()
+    normalized = _VECTOR_MODE_ALIASES.get(key)
+    if normalized is None:
+        supported = ", ".join(available_vector_modes())
+        raise ValueError(f"Unsupported vector mode: {name}. Supported modes: {supported}")
     return normalized
 
 
@@ -96,27 +121,19 @@ def infer_model_capabilities(model_name, model_info=None):
         or model_name_key.startswith("m2v-")
     )
 
-    if library_name in ("pylate",):
-        preferred_backend = "multivector"
-    elif library_name in ("model2vec",):
+    if library_name in ("model2vec",):
         preferred_backend = "model2vec"
-    elif library_name in ("sentence-transformers", "sentence_transformers"):
-        preferred_backend = "sentence_transformers"
-    elif has_pylate_tag or has_colbert_tag or "late-interaction" in tags:
-        preferred_backend = "multivector"
-    elif any(tag in ("sentence-transformers", "feature-extraction", "sentence-similarity") for tag in tags):
-        preferred_backend = "sentence_transformers"
     elif "model2vec" in tags:
         preferred_backend = "model2vec"
-    elif "pylate" in model_name_key or "colbert" in model_name_key:
-        preferred_backend = "multivector"
     elif "model2vec" in model_name_key or "/m2v" in model_name_key or model_name_key.startswith("m2v-"):
         preferred_backend = "model2vec"
     else:
         preferred_backend = "sentence_transformers"
+    preferred_vector_mode = "multivector" if supports_multivector else "single"
 
     return {
         "preferred_backend": preferred_backend,
+        "preferred_vector_mode": preferred_vector_mode,
         "supports_static": bool(supports_static),
         "supports_multivector": bool(supports_multivector),
     }
@@ -126,6 +143,10 @@ def infer_model_backend(model_name, model_info=None):
     return infer_model_capabilities(model_name, model_info=model_info)["preferred_backend"]
 
 
+def infer_model_vector_mode(model_name, model_info=None):
+    return infer_model_capabilities(model_name, model_info=model_info)["preferred_vector_mode"]
+
+
 def resolve_vector_backend(requested_backend, model_name=None, model_info=None):
     backend = normalize_vector_backend_name(requested_backend)
     if backend != "auto":
@@ -133,5 +154,32 @@ def resolve_vector_backend(requested_backend, model_name=None, model_info=None):
     return infer_model_backend(model_name, model_info=model_info)
 
 
-def backend_is_multivector(vector_backend):
-    return normalize_vector_backend_name(vector_backend) == "multivector"
+def resolve_vector_mode(
+    requested_vector_mode,
+    *,
+    requested_backend="auto",
+    resolved_backend=None,
+    model_name=None,
+    model_info=None,
+):
+    mode = normalize_vector_mode_name(requested_vector_mode)
+    if mode != "auto":
+        return mode
+    backend = resolved_backend
+    if backend is None:
+        backend = resolve_vector_backend(
+            requested_backend,
+            model_name=model_name,
+            model_info=model_info,
+        )
+    if backend in ("model2vec", "static_hash"):
+        return "single"
+    return infer_model_vector_mode(model_name, model_info=model_info)
+
+
+def backend_is_multivector(vector_backend, vector_mode="auto"):
+    mode = normalize_vector_mode_name(vector_mode)
+    if mode != "auto":
+        return mode == "multivector"
+    key = str(vector_backend or "auto").strip().lower()
+    return key in {"multivector", "pylate", "late_interaction", "colbert"}
