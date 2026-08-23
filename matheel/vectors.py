@@ -5,7 +5,11 @@ import zlib
 import numpy as np
 
 from .chunking import chunk_text
-from .model_routing import normalize_vector_backend_name
+from .model_routing import (
+    load_hf_model_info,
+    normalize_vector_backend_name,
+    resolve_vector_backend,
+)
 
 
 _STATIC_TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d+|[^\w\s]")
@@ -450,6 +454,12 @@ def load_vector_model(
     max_token_length=None,
 ):
     backend = normalize_vector_backend_name(vector_backend)
+    if backend == "auto":
+        backend = resolve_vector_backend(
+            backend,
+            model_name=model_name,
+            model_info=load_hf_model_info(model_name),
+        )
     if backend == "static_hash":
         return None
     if backend == "model2vec":
