@@ -261,6 +261,40 @@ def test_load_vector_model_requires_sentence_transformers_6(monkeypatch):
         vectors_module.load_vector_model("demo/model", vector_backend="multivector")
 
 
+def test_load_vector_model_auto_routes_multivector_from_model_info(monkeypatch):
+    model_info = SimpleNamespace(
+        library_name="sentence-transformers",
+        tags=["multi-vector"],
+        config={},
+    )
+    captured = {}
+    monkeypatch.setattr(vectors_module, "load_hf_model_info", lambda _: model_info)
+
+    def fake_loader(model_name, **kwargs):
+        captured.update(model_name=model_name, **kwargs)
+        return "model"
+
+    monkeypatch.setattr(
+        vectors_module,
+        "_load_multivector_model",
+        fake_loader,
+    )
+
+    model = vectors_module.load_vector_model(
+        "demo/native-model",
+        vector_backend="auto",
+        device="cpu",
+        max_token_length=128,
+    )
+
+    assert model == "model"
+    assert captured == {
+        "model_name": "demo/native-model",
+        "device": "cpu",
+        "max_token_length": 128,
+    }
+
+
 def test_load_vector_model_uses_multivector_encoder(monkeypatch):
     sentence_transformers = pytest.importorskip("sentence_transformers")
     calls = []
