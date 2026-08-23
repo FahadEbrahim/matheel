@@ -4,7 +4,7 @@ Matheel supports three public vector backends:
 
 - `sentence_transformers`
 - `model2vec`
-- `pylate`
+- `multivector`
 
 You can also use `vector_backend=auto` and let Matheel route based on Hugging Face metadata and tags.
 
@@ -42,15 +42,22 @@ Best when:
 - you want lighter-weight inference than dense transformer pooling in some setups
 - your selected Hugging Face model is explicitly a `model2vec` model
 
-### `pylate`
+### `multivector`
 
-Multivector late-interaction scoring via PyLate/ColBERT-style models.
+Token-level late-interaction scoring through Sentence Transformers 6
+`MultiVectorEncoder`. It loads native Sentence Transformers multi-vector models as
+well as existing PyLate and Stanford ColBERT checkpoints.
 
 Best when:
 
 - you want token- or chunk-level late interaction
 - you want higher-fidelity multivector matching
-- your selected Hugging Face model is tagged for `PyLate` or `ColBERT`
+- your selected Hugging Face model is tagged `multi-vector`, `PyLate`, or `ColBERT`
+
+Matheel batches inputs and chunks through `encode_query` or `encode_document`, then
+uses the upstream memory-bounded MeanMaxSim implementation. Retrieval evaluation
+always preserves query/document roles. `multivector_bidirectional=True` additionally
+averages both scoring directions for symmetric source-code comparisons.
 
 ## Auto Routing
 
@@ -58,7 +65,7 @@ Best when:
 
 - Sentence Transformers for dense models
 - model2vec for static models
-- PyLate for multivector models
+- Sentence Transformers `MultiVectorEncoder` for multivector models
 
 If metadata is unavailable, Matheel falls back to simple name/tag heuristics and finally defaults to Sentence Transformers.
 
@@ -106,7 +113,7 @@ These apply to Sentence Transformers single-vector scoring:
 - `mean_sqrt_len_tokens`
 - `weightedmean`
 
-`pooling_method` is ignored by `model2vec` and `pylate`.
+`pooling_method` is ignored by `model2vec` and `multivector`.
 
 ## Backend-Specific Parameters
 
@@ -137,3 +144,28 @@ score = calculate_similarity(
 )
 print(score)
 ```
+
+Multi-vector example:
+
+```python
+from matheel.similarity import calculate_similarity
+
+score = calculate_similarity(
+    "def add(a, b): return a + b",
+    "def total(x, y): return x + y",
+    model_name="lightonai/LateOn-Code-edge",
+    vector_backend="multivector",
+    multivector_bidirectional=True,
+    feature_weights={"semantic": 1.0},
+)
+print(score)
+```
+
+## Migrating from Matheel 0.5
+
+- Replace `vector_backend="pylate"` with `vector_backend="multivector"`.
+- Remove the standalone `pylate` package; install `matheel[semantic]` instead.
+- Existing PyLate and ColBERT model identifiers continue to work because Sentence
+  Transformers 6 converts those checkpoint formats when `MultiVectorEncoder` loads them.
+- The old `pylate` backend string remains a compatibility alias, but it is no longer
+  listed as a public backend.

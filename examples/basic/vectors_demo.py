@@ -34,6 +34,16 @@ def main():
     )
     print("Dense score:", round(score, 4))
 
+    multivector_score = calculate_similarity(
+        code_a,
+        code_b,
+        model_name="NeuML/pylate-bert-tiny",
+        vector_backend="multivector",
+        multivector_bidirectional=True,
+        feature_weights={"semantic": 1.0},
+    )
+    print("Multi-vector score:", round(multivector_score, 4))
+
 
 if __name__ == "__main__":
     main()

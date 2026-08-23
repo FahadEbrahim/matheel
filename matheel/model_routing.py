@@ -11,13 +11,16 @@ _BACKEND_ALIASES = {
     "model2vec": "model2vec",
     "static": "model2vec",
     "static_vector": "model2vec",
-    "pylate": "pylate",
-    "multivector": "pylate",
-    "late_interaction": "pylate",
-    "colbert": "pylate",
+    "pylate": "multivector",
+    "multivector": "multivector",
+    "multi-vector": "multivector",
+    "multi_vector": "multivector",
+    "late-interaction": "multivector",
+    "late_interaction": "multivector",
+    "colbert": "multivector",
     "static_hash": "static_hash",
 }
-_PUBLIC_VECTOR_BACKENDS = ("auto", "sentence_transformers", "model2vec", "pylate")
+_PUBLIC_VECTOR_BACKENDS = ("auto", "sentence_transformers", "model2vec", "multivector")
 _DEPRECATED_VECTOR_BACKENDS = ("static_hash",)
 _HF_MODEL_INFO_CACHE = {}
 _HF_MODEL_INFO_CACHE_LOCK = RLock()
@@ -71,21 +74,35 @@ def _tags_from_info(model_info):
     return tuple(str(tag).strip().lower() for tag in tags if str(tag).strip())
 
 
+def _architectures_from_info(model_info):
+    config = getattr(model_info, "config", None) or {}
+    if not isinstance(config, dict):
+        return ()
+    architectures = config.get("architectures") or ()
+    return tuple(str(name).strip().lower() for name in architectures if str(name).strip())
+
+
 def infer_model_capabilities(model_name, model_info=None):
     library_name = _library_name_from_info(model_info)
     tags = _tags_from_info(model_info)
+    architectures = _architectures_from_info(model_info)
     model_name_key = str(model_name or "").strip().lower()
     has_static_tag = "static-embeddings" in tags
     has_pylate_tag = "pylate" in tags
     has_colbert_tag = "colbert" in tags
+    has_multivector_tag = any(tag in tags for tag in ("multi-vector", "multi_vector", "multivector"))
+    has_colbert_architecture = any("colbert" in name for name in architectures)
 
     supports_multivector = (
         library_name in ("pylate",)
         or has_pylate_tag
         or has_colbert_tag
+        or has_multivector_tag
+        or has_colbert_architecture
         or "late-interaction" in tags
         or "pylate" in model_name_key
         or "colbert" in model_name_key
+        or "lateon" in model_name_key
     )
     supports_static = (
         library_name in ("model2vec",)
@@ -96,20 +113,16 @@ def infer_model_capabilities(model_name, model_info=None):
         or model_name_key.startswith("m2v-")
     )
 
-    if library_name in ("pylate",):
-        preferred_backend = "pylate"
-    elif library_name in ("model2vec",):
+    if library_name in ("model2vec",):
         preferred_backend = "model2vec"
+    elif supports_multivector:
+        preferred_backend = "multivector"
     elif library_name in ("sentence-transformers", "sentence_transformers"):
         preferred_backend = "sentence_transformers"
-    elif has_pylate_tag or has_colbert_tag or "late-interaction" in tags:
-        preferred_backend = "pylate"
     elif any(tag in ("sentence-transformers", "feature-extraction", "sentence-similarity") for tag in tags):
         preferred_backend = "sentence_transformers"
     elif "model2vec" in tags:
         preferred_backend = "model2vec"
-    elif "pylate" in model_name_key or "colbert" in model_name_key:
-        preferred_backend = "pylate"
     elif "model2vec" in model_name_key or "/m2v" in model_name_key or model_name_key.startswith("m2v-"):
         preferred_backend = "model2vec"
     else:
@@ -134,4 +147,4 @@ def resolve_vector_backend(requested_backend, model_name=None, model_info=None):
 
 
 def backend_is_multivector(vector_backend):
-    return normalize_vector_backend_name(vector_backend) == "pylate"
+    return normalize_vector_backend_name(vector_backend) == "multivector"

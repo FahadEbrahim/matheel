@@ -73,10 +73,9 @@ jobs:
             "numpy==2.0.0" \
             "tqdm==4.66.3" \
             "bert-score==0.3.13" \
-            "sentence-transformers==5.1.1" \
-            "pylate==1.4.0" \
+            "sentence-transformers==6.0.0" \
             "umap-learn==0.5.11"
-          python -m pip install -e ".[dev,metrics,pylate,visualization]"
+          python -m pip install -e ".[dev,metrics,sentence_transformers,visualization]"
           python -m pip check
 
       - name: Verify critical floors and optional imports
@@ -90,16 +89,14 @@ jobs:
               "numpy": "2.0.0",
               "tqdm": "4.66.3",
               "bert-score": "0.3.13",
-              "sentence-transformers": "5.1.1",
-              "pylate": "1.4.0",
+              "sentence-transformers": "6.0.0",
               "umap-learn": "0.5.11",
           }
           installed = {name: version(name) for name in expected}
           assert installed == expected, installed
 
           from bert_score import BERTScorer  # noqa: F401
-          import pylate  # noqa: F401
-          from sentence_transformers import SentenceTransformer  # noqa: F401
+          from sentence_transformers import MultiVectorEncoder, SentenceTransformer  # noqa: F401
           import umap  # noqa: F401
           PY
 

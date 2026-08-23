@@ -391,7 +391,33 @@ def _prepare_builtin_scoring_context(
             static_vector_dim=static_vector_dim,
             selected_pooling=selected_pooling,
         )
+    if backend_is_multivector(vector_backend):
+        _add_multivector_scores(
+            context,
+            prepared_texts,
+            query_ids=query_ids,
+            document_ids=document_ids,
+        )
     return context
+
+
+def _add_multivector_scores(context, prepared_texts, query_ids, document_ids):
+    left_role = bool(query_ids)
+    left_ids = query_ids if left_role else document_ids
+    left_texts = list(dict.fromkeys(prepared_texts[file_id] for file_id in sorted(left_ids)))
+    right_texts = list(
+        dict.fromkeys(prepared_texts[file_id] for file_id in sorted(document_ids))
+    )
+    scores = _similarity.multivector_similarity_matrix(
+        [context["embeddings"][(left_role, text)] for text in left_texts],
+        [context["embeddings"][(False, text)] for text in right_texts],
+        bidirectional=context["multivector_bidirectional"],
+    )
+    context["multivector_scores"] = {
+        (left_role, left_text, right_text): float(scores[left_index, right_index])
+        for left_index, left_text in enumerate(left_texts)
+        for right_index, right_text in enumerate(right_texts)
+    }
 
 
 def _add_semantic_embeddings(
@@ -442,14 +468,17 @@ def _score_builtin_pair(context, left_id, right_id, left_is_query=False):
         left_role = bool(left_is_query) if multivector else False
         embedding1 = context["embeddings"][(left_role, left_text)]
         embedding2 = context["embeddings"][(False, right_text)]
-        semantic_score = _similarity.semantic_similarity(
-            embedding1,
-            embedding2,
-            vector_backend=context["vector_backend"],
-            multivector_bidirectional=context["multivector_bidirectional"],
-            similarity_function=context["similarity_function"],
-            normalize_semantic_scores=context["normalize_semantic_scores"],
-        )
+        score_key = (left_role, left_text, right_text)
+        semantic_score = context.get("multivector_scores", {}).get(score_key)
+        if semantic_score is None:
+            semantic_score = _similarity.semantic_similarity(
+                embedding1,
+                embedding2,
+                vector_backend=context["vector_backend"],
+                multivector_bidirectional=context["multivector_bidirectional"],
+                similarity_function=context["similarity_function"],
+                normalize_semantic_scores=context["normalize_semantic_scores"],
+            )
         score += context["semantic_weight"] * float(semantic_score)
 
     if context["nonsemantic_weight"] > 0.0:

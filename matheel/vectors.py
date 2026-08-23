@@ -39,14 +39,6 @@ _POOLING_METHOD_ALIASES = {
     "weightedmean": "weightedmean",
     "weighted_mean": "weightedmean",
 }
-_POOLING_MODE_FLAGS = {
-    "cls": "pooling_mode_cls_token",
-    "max": "pooling_mode_max_tokens",
-    "mean": "pooling_mode_mean_tokens",
-    "mean_sqrt_len_tokens": "pooling_mode_mean_sqrt_len_tokens",
-    "weightedmean": "pooling_mode_weightedmean_tokens",
-    "lasttoken": "pooling_mode_lasttoken",
-}
 _MODEL_NAME_TOKEN_LENGTH_CACHE = {}
 _MODEL_NAME_TOKEN_LENGTH_CACHE_LOCK = RLock()
 
@@ -262,27 +254,30 @@ def configure_model_max_token_length(model, max_token_length=None):
         detected_max_token_length=detected,
     )
 
-    for attr_name in (
-        "document_length",
-        "query_length",
-        "max_seq_length",
-        "max_length",
-    ):
-        _lower_model_length_attribute(
-            model,
-            attr_name,
-            requested,
-            fallback_cap=fallback_cap,
-        )
-
-    tokenizer = getattr(model, "tokenizer", None)
-    if tokenizer is not None:
-        _lower_model_length_attribute(
-            tokenizer,
-            "model_max_length",
-            requested,
-            fallback_cap=fallback_cap,
-        )
+    targets = [model]
+    targets.extend((getattr(model, "_modules", None) or {}).values())
+    for target in targets:
+        for attr_name in (
+            "document_length",
+            "query_length",
+            "max_seq_length",
+            "max_length",
+        ):
+            _lower_model_length_attribute(
+                target,
+                attr_name,
+                requested,
+                fallback_cap=fallback_cap,
+            )
+        _lower_query_expansion(target, requested)
+        tokenizer = getattr(target, "tokenizer", None)
+        if tokenizer is not None:
+            _lower_model_length_attribute(
+                tokenizer,
+                "model_max_length",
+                requested,
+                fallback_cap=fallback_cap,
+            )
     return model
 
 
@@ -296,6 +291,21 @@ def _lower_model_length_attribute(target, attr_name, requested, fallback_cap=Non
     effective = min(requested, current_cap) if current_cap is not None else requested
     try:
         setattr(target, attr_name, effective)
+    except Exception:
+        pass
+
+
+def _lower_query_expansion(target, requested):
+    expansion = getattr(target, "query_expansion", None)
+    if not isinstance(expansion, dict):
+        return
+    current = _coerce_token_length(expansion.get("length"))
+    if current is None or current <= requested:
+        return
+    updated = dict(expansion)
+    updated["length"] = requested
+    try:
+        target.query_expansion = updated
     except Exception:
         pass
 
@@ -330,7 +340,7 @@ def build_static_hash_vectors(codes, dim=256, lowercase=True):
 
 def _find_sentence_transformer_pooling(model):
     try:
-        from sentence_transformers.models import Pooling
+        from sentence_transformers.sentence_transformer.modules import Pooling
     except ImportError:  # pragma: no cover - optional dependency during partial installs
         return None, None
 
@@ -341,10 +351,13 @@ def _find_sentence_transformer_pooling(model):
 
 
 def _detect_current_pooling_method(pooling_module):
-    for method_name, flag_name in _POOLING_MODE_FLAGS.items():
-        if getattr(pooling_module, flag_name, False):
-            return method_name
-    return None
+    pooling_mode = getattr(pooling_module, "pooling_mode", None)
+    if isinstance(pooling_mode, str):
+        return pooling_mode
+    modes = tuple(pooling_mode or ())
+    if len(modes) == 1:
+        return modes[0]
+    return modes or None
 
 
 def configure_sentence_transformer_pooling(model, pooling_method="mean"):
@@ -358,10 +371,14 @@ def configure_sentence_transformer_pooling(model, pooling_method="mean"):
     current_method = _detect_current_pooling_method(pooling_module)
     if current_method == selected_method:
         return model
+    if isinstance(current_method, tuple):
+        raise ValueError(
+            "Custom pooling_method is only supported for sentence-transformers models that use a single pooling mode."
+        )
 
-    word_dimension = int(getattr(pooling_module, "word_embedding_dimension", 0) or 0)
+    word_dimension = int(getattr(pooling_module, "embedding_dimension", 0) or 0)
     output_dimension = None
-    get_dimension = getattr(pooling_module, "get_sentence_embedding_dimension", None)
+    get_dimension = getattr(pooling_module, "get_embedding_dimension", None)
     if callable(get_dimension):
         output_dimension = int(get_dimension() or 0)
     if word_dimension <= 0:
@@ -371,7 +388,7 @@ def configure_sentence_transformer_pooling(model, pooling_method="mean"):
             "Custom pooling_method is only supported for sentence-transformers models that use a single pooling mode."
         )
 
-    from sentence_transformers.models import Pooling
+    from sentence_transformers.sentence_transformer.modules import Pooling
 
     model._modules[module_name] = Pooling(
         word_dimension,
@@ -409,29 +426,19 @@ def _load_model2vec_model(model_name, max_token_length=None):
     return configure_model_max_token_length(model, max_token_length=max_token_length)
 
 
-def _load_pylate_model(model_name, device="auto", max_token_length=None):
+def _load_multivector_model(model_name, device="auto", max_token_length=None):
     try:
-        from pylate import models as pylate_models
+        from sentence_transformers import MultiVectorEncoder
     except ImportError as exc:
-        raise ImportError("PyLate backend requires the optional 'pylate' package.") from exc
-
-    for attr_name in ("ColBERT", "SentenceTransformer", "LateInteractionModel"):
-        model_class = getattr(pylate_models, attr_name, None)
-        if model_class is None:
-            continue
-        if hasattr(model_class, "from_pretrained"):
-            try:
-                model = model_class.from_pretrained(model_name, device=device)
-            except TypeError:
-                model = model_class.from_pretrained(model_name)
-            return configure_model_max_token_length(model, max_token_length=max_token_length)
-        try:
-            model = model_class(model_name, device=device)
-        except TypeError:
-            model = model_class(model_name)
-        return configure_model_max_token_length(model, max_token_length=max_token_length)
-
-    raise ValueError("Installed PyLate package does not provide a supported model class.")
+        raise ImportError(
+            "Multi-vector scoring requires the optional 'sentence-transformers>=6' package."
+        ) from exc
+    model = MultiVectorEncoder(
+        model_name,
+        device=device,
+        similarity_fn_name="meanmaxsim",
+    )
+    return configure_model_max_token_length(model, max_token_length=max_token_length)
 
 
 def load_vector_model(
@@ -447,8 +454,12 @@ def load_vector_model(
         return None
     if backend == "model2vec":
         return _load_model2vec_model(model_name, max_token_length=max_token_length)
-    if backend == "pylate":
-        return _load_pylate_model(model_name, device=device, max_token_length=max_token_length)
+    if backend == "multivector":
+        return _load_multivector_model(
+            model_name,
+            device=device,
+            max_token_length=max_token_length,
+        )
     return _load_sentence_transformer_model(
         model_name,
         device=device,
@@ -541,47 +552,47 @@ def _encode_to_numpy(model, inputs):
     raise ValueError("The selected model does not provide an encode() method.")
 
 
-def _is_pylate_model(model):
-    if model is None:
-        return False
-    model_type = type(model)
-    return "pylate" in str(model_type.__module__).lower() or model_type.__name__.lower() == "colbert"
-
-
 def _encode_multivector_to_numpy(model, inputs, is_query=False):
-    if _is_pylate_model(model):
-        try:
-            return model.encode(inputs, convert_to_numpy=True, is_query=is_query)
-        except TypeError:
-            return model.encode(inputs, convert_to_numpy=True)
-    if hasattr(model, "encode_as_sequence"):
-        try:
-            vectors = model.encode_as_sequence(inputs, convert_to_numpy=True)
-        except TypeError:
-            vectors = model.encode_as_sequence(inputs)
-        return vectors
-    return _encode_to_numpy(model, inputs)
+    method_name = "encode_query" if is_query else "encode_document"
+    encoder = getattr(model, method_name, None)
+    if not callable(encoder):
+        raise ValueError(
+            "The selected multi-vector model must provide encode_query() and encode_document()."
+        )
+    vectors = encoder(
+        list(inputs),
+        convert_to_numpy=True,
+        normalize_embeddings=True,
+    )
+    if isinstance(vectors, list):
+        return [_ensure_2d_vectors(item) for item in vectors]
+    array = np.asarray(vectors, dtype=np.float32)
+    if array.ndim == 3:
+        return [_ensure_2d_vectors(item) for item in array]
+    if len(inputs) == 1:
+        return [_ensure_2d_vectors(array)]
+    raise ValueError("Multi-vector encoding returned an unexpected result shape.")
 
 
 def _ensure_2d_vectors(vectors):
-    array = np.asarray(vectors, dtype=float)
+    array = np.asarray(vectors, dtype=np.float32)
     if array.ndim == 1:
         return array.reshape(1, -1)
     return array
 
 
 def _stack_multivectors(vectors):
-    if isinstance(vectors, list):
+    if isinstance(vectors, (list, tuple)):
         matrices = []
         for item in vectors:
             matrix = _ensure_2d_vectors(item)
             if matrix.size:
                 matrices.append(matrix)
         if not matrices:
-            return np.zeros((0, 1), dtype=float)
+            return np.zeros((0, 1), dtype=np.float32)
         return np.vstack(matrices)
 
-    array = np.asarray(vectors, dtype=float)
+    array = np.asarray(vectors, dtype=np.float32)
     if array.ndim == 3:
         return array.reshape(-1, array.shape[-1])
     return _ensure_2d_vectors(array)
@@ -638,16 +649,16 @@ def build_multivector_embeddings(
     chunker_options=None,
     is_query=False,
 ):
-    embeddings_by_doc = []
-
+    inputs = []
+    document_slices = []
     for code in codes:
         method = (chunking_method or "none").strip().lower()
         use_full_document = method in ("none", "document")
 
         if use_full_document:
-            inputs = code or ""
+            document_inputs = [code or ""]
         else:
-            chunks = chunk_text(
+            document_inputs = chunk_text(
                 code,
                 method=method,
                 chunk_size=chunk_size,
@@ -656,71 +667,41 @@ def build_multivector_embeddings(
                 chunk_language=chunk_language,
                 chunker_options=chunker_options,
             )
-            inputs = chunks if len(chunks) > 1 else chunks[0]
-        chunk_embeddings = _encode_multivector_to_numpy(
-            model,
-            inputs,
-            is_query=bool(is_query),
+        start = len(inputs)
+        inputs.extend(document_inputs)
+        document_slices.append((start, len(inputs)))
+
+    encoded = _encode_multivector_to_numpy(model, inputs, is_query=bool(is_query))
+    return [_stack_multivectors(encoded[start:end]) for start, end in document_slices]
+
+
+def multivector_similarity_matrix(left_embeddings, right_embeddings=None, bidirectional=False):
+    from sentence_transformers.util import mean_maxsim
+
+    left = [_ensure_2d_vectors(item) for item in left_embeddings]
+    same_collection = right_embeddings is None
+    right = left if same_collection else [
+        _ensure_2d_vectors(item) for item in right_embeddings
+    ]
+    if not left or not right:
+        return np.zeros((len(left), len(right)), dtype=np.float32)
+
+    scores = mean_maxsim(left, right).detach().cpu().numpy()
+    if bidirectional:
+        reverse = (
+            scores.T
+            if same_collection
+            else mean_maxsim(right, left).detach().cpu().numpy().T
         )
-        chunk_embeddings = _stack_multivectors(chunk_embeddings)
-        embeddings_by_doc.append(chunk_embeddings)
-
-    return embeddings_by_doc
-
-
-def multivector_directional_maxsim(left, right):
-    left_vectors = _ensure_2d_vectors(left)
-    right_vectors = _ensure_2d_vectors(right)
-
-    if left_vectors.size == 0 or right_vectors.size == 0:
-        return 0.0
-
-    left_norms = np.linalg.norm(left_vectors, axis=1, keepdims=True)
-    right_norms = np.linalg.norm(right_vectors, axis=1, keepdims=True)
-    left_safe = np.where(left_norms > 0, left_vectors / np.maximum(left_norms, 1e-12), 0.0)
-    right_safe = np.where(right_norms > 0, right_vectors / np.maximum(right_norms, 1e-12), 0.0)
-
-    similarity_matrix = np.matmul(left_safe, right_safe.T)
-    best_matches = similarity_matrix.max(axis=1)
-    return float(np.clip(best_matches.mean(), -1.0, 1.0))
+        scores = (scores + reverse) * 0.5
+    return np.clip(np.asarray(scores, dtype=np.float32), -1.0, 1.0)
 
 
 def multivector_similarity(left, right, bidirectional=True, vector_backend=None):
-    if normalize_vector_backend_name(vector_backend or "pylate") == "pylate" and _pylate_scores_available():
-        return _pylate_multivector_similarity(left, right, bidirectional=bidirectional)
-
-    forward = multivector_directional_maxsim(left, right)
-    if not bidirectional:
-        return float(forward)
-    reverse = multivector_directional_maxsim(right, left)
-    return float((forward + reverse) * 0.5)
-
-
-def _pylate_scores_available():
-    try:
-        __import__("pylate.scores")
-    except ImportError:
-        return False
-    return True
-
-
-def _pylate_directional_score(left, right):
-    from pylate.scores import colbert_scores_pairwise
-
-    left_vectors = _ensure_2d_vectors(left)
-    right_vectors = _ensure_2d_vectors(right)
-    if left_vectors.size == 0 or right_vectors.size == 0:
-        return 0.0
-
-    raw_score = colbert_scores_pairwise([left_vectors], [right_vectors])[0]
-    raw_value = float(raw_score.item() if hasattr(raw_score, "item") else raw_score)
-    token_count = max(1, int(left_vectors.shape[0]))
-    return float(np.clip(raw_value / float(token_count), -1.0, 1.0))
-
-
-def _pylate_multivector_similarity(left, right, bidirectional=True):
-    forward = _pylate_directional_score(left, right)
-    if not bidirectional:
-        return forward
-    reverse = _pylate_directional_score(right, left)
-    return float((forward + reverse) * 0.5)
+    normalize_vector_backend_name(vector_backend or "multivector")
+    scores = multivector_similarity_matrix(
+        [left],
+        [right],
+        bidirectional=bidirectional,
+    )
+    return float(scores[0, 0])

@@ -1089,7 +1089,7 @@ def embedding_parameter_updates(vector_backend):
     if normalized in ("", "auto"):
         normalized = "sentence_transformers"
     return (
-        gr.update(visible=normalized != "pylate"),
+        gr.update(visible=normalized != "multivector"),
         gr.update(visible=normalized == "sentence_transformers"),
     )
 

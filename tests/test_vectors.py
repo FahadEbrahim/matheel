@@ -3,12 +3,14 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 
+import numpy as np
 import pytest
 
 import matheel.vectors as vectors_module
 from matheel.vectors import (
     available_pooling_methods,
     available_similarity_functions,
+    build_multivector_embeddings,
     build_static_hash_vector,
     configure_model_max_token_length,
     configure_sentence_transformer_pooling,
@@ -64,12 +66,12 @@ def test_single_vector_similarity_supports_all_supported_functions():
 
 
 def test_configure_sentence_transformer_pooling_replaces_single_pooling_mode():
-    sentence_transformers = pytest.importorskip("sentence_transformers")
-    pooling_class = sentence_transformers.models.Pooling
+    pytest.importorskip("sentence_transformers")
+    from sentence_transformers.sentence_transformer.modules import Pooling
 
     class DummyModel:
         def __init__(self):
-            self._modules = {"1": pooling_class(8)}
+            self._modules = {"1": Pooling(8)}
 
     model = DummyModel()
     configured = configure_sentence_transformer_pooling(model, pooling_method="max")
@@ -83,22 +85,17 @@ def test_configure_sentence_transformer_pooling_replaces_single_pooling_mode():
         "weightedmean",
     )
     assert configured is model
-    assert configured._modules["1"].pooling_mode_max_tokens is True
-    assert configured._modules["1"].pooling_mode_mean_tokens is False
+    assert configured._modules["1"].pooling_mode == "max"
 
 
 def test_configure_sentence_transformer_pooling_rejects_multi_mode_pooling():
-    sentence_transformers = pytest.importorskip("sentence_transformers")
-    pooling_class = sentence_transformers.models.Pooling
+    pytest.importorskip("sentence_transformers")
+    from sentence_transformers.sentence_transformer.modules import Pooling
 
     class DummyModel:
         def __init__(self):
             self._modules = {
-                "1": pooling_class(
-                    8,
-                    pooling_mode_cls_token=True,
-                    pooling_mode_mean_tokens=True,
-                )
+                "1": Pooling(8, pooling_mode=("cls", "mean"))
             }
 
     with pytest.raises(ValueError):
@@ -182,7 +179,7 @@ def test_configure_model_max_token_length_clamps_to_detected_limit():
     assert resolve_max_token_length(1024, detected_max_token_length=512) == 512
 
 
-def test_configure_model_max_token_length_updates_pylate_style_lengths():
+def test_configure_model_max_token_length_updates_multivector_lengths():
     class DummyModel:
         document_length = 180
         query_length = 32
@@ -197,7 +194,7 @@ def test_configure_model_max_token_length_updates_pylate_style_lengths():
     assert model.max_seq_length == 96
 
 
-def test_configure_model_max_token_length_caps_both_pylate_roles():
+def test_configure_model_max_token_length_caps_both_multivector_roles():
     class DummyModel:
         document_length = 180
         query_length = 32
@@ -211,7 +208,7 @@ def test_configure_model_max_token_length_caps_both_pylate_roles():
     assert model.max_seq_length == 24
 
 
-def test_configure_model_max_token_length_caps_each_pylate_role_independently():
+def test_configure_model_max_token_length_caps_each_multivector_role_independently():
     class DummyModel:
         document_length = 32
         query_length = 180
@@ -223,15 +220,100 @@ def test_configure_model_max_token_length_caps_each_pylate_role_independently():
     assert model.query_length == 96
 
 
-def test_load_vector_model_requires_pylate_package(monkeypatch):
+def test_configure_model_max_token_length_updates_nested_multivector_module():
+    class DummyTokenizer:
+        model_max_length = 180
+
+    class DummyTransformer:
+        document_length = 180
+        query_length = None
+        query_expansion = {"strategy": "fixed", "length": 32}
+        tokenizer = DummyTokenizer()
+
+    class DummyModel:
+        max_seq_length = 180
+
+        def __init__(self):
+            self._modules = {"0": DummyTransformer()}
+
+    model = DummyModel()
+    configure_model_max_token_length(model, max_token_length=24)
+
+    transformer = model._modules["0"]
+    assert transformer.document_length == 24
+    assert transformer.query_length == 24
+    assert transformer.query_expansion["length"] == 24
+    assert transformer.tokenizer.model_max_length == 24
+
+
+def test_load_vector_model_requires_sentence_transformers_6(monkeypatch):
     real_import = __import__
 
     def fake_import(name, *args, **kwargs):
-        if name == "pylate" or name.startswith("pylate."):
-            raise ImportError("blocked pylate import")
+        if name == "sentence_transformers" or name.startswith("sentence_transformers."):
+            raise ImportError("blocked sentence_transformers import")
         return real_import(name, *args, **kwargs)
 
     monkeypatch.setattr("builtins.__import__", fake_import)
 
-    with pytest.raises(ImportError, match="pylate"):
-        vectors_module.load_vector_model("demo/model", vector_backend="pylate")
+    with pytest.raises(ImportError, match="sentence-transformers>=6"):
+        vectors_module.load_vector_model("demo/model", vector_backend="multivector")
+
+
+def test_load_vector_model_uses_multivector_encoder(monkeypatch):
+    sentence_transformers = pytest.importorskip("sentence_transformers")
+    calls = []
+
+    class FakeMultiVectorEncoder:
+        def __init__(self, model_name, **kwargs):
+            calls.append((model_name, kwargs))
+
+    monkeypatch.setattr(
+        sentence_transformers,
+        "MultiVectorEncoder",
+        FakeMultiVectorEncoder,
+    )
+
+    model = vectors_module.load_vector_model(
+        "demo/model",
+        vector_backend="multivector",
+        device="cpu",
+    )
+
+    assert isinstance(model, FakeMultiVectorEncoder)
+    assert calls == [
+        (
+            "demo/model",
+            {"device": "cpu", "similarity_fn_name": "meanmaxsim"},
+        )
+    ]
+
+
+def test_build_multivector_embeddings_batches_documents_and_preserves_roles():
+    class FakeMultiVectorEncoder:
+        def __init__(self):
+            self.calls = []
+
+        def encode_query(self, inputs, **kwargs):
+            self.calls.append(("query", list(inputs), kwargs))
+            return [np.asarray([[1.0, 0.0]], dtype=np.float32) for _ in inputs]
+
+        def encode_document(self, inputs, **kwargs):
+            self.calls.append(("document", list(inputs), kwargs))
+            return [np.asarray([[0.0, 1.0]], dtype=np.float32) for _ in inputs]
+
+    model = FakeMultiVectorEncoder()
+    embeddings = build_multivector_embeddings(
+        model,
+        ["first", "second"],
+        is_query=True,
+    )
+
+    assert len(embeddings) == 2
+    assert model.calls == [
+        (
+            "query",
+            ["first", "second"],
+            {"convert_to_numpy": True, "normalize_embeddings": True},
+        )
+    ]

@@ -19,7 +19,6 @@ _PACKAGE_NAMES = (
     "model2vec",
     "numpy",
     "pandas",
-    "pylate",
     "rapidfuzz",
     "sentence-transformers",
     "tree-sitter-language-pack",
