@@ -104,6 +104,8 @@ jobs:
         run: |
           python -m pytest tests/test_preprocessing.py tests/test_visualization.py
           python -m pytest tests/test_cli.py -k cli_and_package_expose_version
+          python -m pytest tests/test_vectors.py tests/test_model_routing.py tests/test_similarity.py \
+            -k "multivector or pooling"
 
   codebleu-compatibility:
     name: CodeBLEU compatibility

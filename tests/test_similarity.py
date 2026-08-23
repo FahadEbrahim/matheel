@@ -898,6 +898,7 @@ def test_model2vec_embeddings_require_loaded_model():
 
 
 def test_calculate_similarity_supports_multivector_backend(monkeypatch):
+    pytest.importorskip("sentence_transformers")
     monkeypatch.setattr(
         similarity,
         "load_backend_model",

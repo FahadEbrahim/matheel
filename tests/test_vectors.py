@@ -30,6 +30,7 @@ def test_static_hash_vector_is_normalized_for_same_token_bag():
 
 
 def test_multivector_similarity_is_one_for_identical_vectors():
+    pytest.importorskip("sentence_transformers")
     left = [[1.0, 0.0], [0.0, 1.0]]
     right = [[1.0, 0.0], [0.0, 1.0]]
 
