@@ -25,14 +25,15 @@ pip install "matheel[all]"
 
 | Extra | Use it for |
 | --- | --- |
-| `matheel[semantic]` | Sentence Transformers, Model2Vec, and PyLate semantic scoring backends. |
+| `matheel[semantic]` | Sentence Transformers 6 dense/multi-vector and Model2Vec semantic scoring. |
 | `matheel[chunking]` | Chonkie chunkers for splitting code before embedding. |
 | `matheel[metrics]` | Optional code metric runtimes such as TSED and CodeBERTScore. |
 | `matheel[visualization]` | UMAP projection for dataset visualization. |
 | `matheel[gradio]` | Dependencies for running the Gradio web app from a repository checkout or the hosted Space. |
 | `matheel[all]` | All supported optional backends in one install. |
 
-Compatibility extras remain available for narrower installs: `sentence_transformers`, `model2vec`, `pylate`, and `chunking_code`.
+Compatibility extras remain available for narrower installs: `sentence_transformers`,
+`model2vec`, and `chunking_code`.
 
 Examples that use semantic weights assume `matheel[semantic]` or `matheel[all]` is installed. Optional installs can take some time because they may include model and ML runtime dependencies.
 

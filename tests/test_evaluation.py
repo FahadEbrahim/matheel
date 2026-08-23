@@ -246,48 +246,67 @@ def test_score_retrieval_dataset_uses_custom_scorer(tmp_path):
     assert scored["relevance"].sum() == 2.0
 
 
-def test_score_retrieval_dataset_uses_query_aware_pylate_embeddings(
+def test_score_retrieval_dataset_batches_query_aware_multivector_embeddings(
     tmp_path,
     monkeypatch,
 ):
     dataset = _write_tiny_retrieval_dataset(tmp_path / "retrieval")
     load_calls = []
     encode_calls = []
+    score_calls = []
 
-    class FakePyLateModel:
-        def encode(self, inputs, convert_to_numpy=True, is_query=False):
-            assert convert_to_numpy is True
-            encode_calls.append((str(inputs), bool(is_query)))
-            return np.asarray([[1.0, 0.0]], dtype=float)
+    class FakeMultiVectorModel:
+        def _encode(self, role, inputs, **kwargs):
+            assert kwargs == {
+                "convert_to_numpy": True,
+                "normalize_embeddings": True,
+            }
+            encode_calls.append((role, tuple(inputs)))
+            return [np.asarray([[1.0, 0.0]], dtype=np.float32) for _ in inputs]
 
-    FakePyLateModel.__module__ = "pylate.models"
+        def encode_query(self, inputs, **kwargs):
+            return self._encode("query", inputs, **kwargs)
+
+        def encode_document(self, inputs, **kwargs):
+            return self._encode("document", inputs, **kwargs)
 
     def fake_load(*args, **kwargs):
         load_calls.append((args, kwargs))
-        return FakePyLateModel()
+        return FakeMultiVectorModel()
 
     monkeypatch.setattr(evaluation_module._similarity, "load_backend_model", fake_load)
+
+    def fake_similarity_matrix(left, right, bidirectional=False):
+        score_calls.append((len(left), len(right), bidirectional))
+        return np.ones((len(left), len(right)), dtype=np.float32)
+
+    monkeypatch.setattr(
+        evaluation_module._similarity,
+        "multivector_similarity_matrix",
+        fake_similarity_matrix,
+    )
 
     scored = score_retrieval_dataset(
         dataset,
         similarity_options={
             "feature_weights": {"semantic": 1.0},
-            "vector_backend": "pylate",
+            "vector_backend": "multivector",
         },
     )
 
     assert len(scored) == 6
     assert len(load_calls) == 1
-    assert {text for text, is_query in encode_calls if is_query} == {
+    assert set(encode_calls[0][1]) == {
         "print(1)",
         "print(2)",
     }
-    assert {text for text, is_query in encode_calls if not is_query} == {
+    assert set(encode_calls[1][1]) == {
         "print(1)",
         "print(2)",
         "print(3)",
     }
-    assert len(encode_calls) == 5
+    assert [role for role, _ in encode_calls] == ["query", "document"]
+    assert score_calls == [(2, 3, False)]
 
 
 def test_evaluate_retrieval_dataset_returns_ranking_metrics(tmp_path):

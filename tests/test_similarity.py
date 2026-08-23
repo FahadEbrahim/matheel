@@ -13,6 +13,14 @@ class FakeModel:
             return np.asarray(_vectorize(inputs), dtype=float)
         return np.asarray([_vectorize(item) for item in inputs], dtype=float)
 
+    def encode_query(self, inputs, **kwargs):
+        _ = kwargs
+        return [np.asarray([_vectorize(item)], dtype=np.float32) for item in inputs]
+
+    def encode_document(self, inputs, **kwargs):
+        _ = kwargs
+        return [np.asarray([_vectorize(item)], dtype=np.float32) for item in inputs]
+
 
 def _vectorize(text):
     value = text or ""
@@ -890,6 +898,7 @@ def test_model2vec_embeddings_require_loaded_model():
 
 
 def test_calculate_similarity_supports_multivector_backend(monkeypatch):
+    pytest.importorskip("sentence_transformers")
     monkeypatch.setattr(
         similarity,
         "load_backend_model",
@@ -901,10 +910,51 @@ def test_calculate_similarity_supports_multivector_backend(monkeypatch):
         "def normalize(name):\n    return name.strip().lower()\n",
         model_name="fake",
         feature_weights={"semantic": 1.0},
-        vector_backend="pylate",
+        vector_backend="multivector",
     )
 
     assert score == pytest.approx(1.0)
+
+
+def test_rank_code_pairs_batches_multivector_scoring(monkeypatch):
+    score_calls = []
+    score_matrix = np.asarray(
+        [
+            [1.0, 0.2, 0.7],
+            [0.3, 1.0, 0.4],
+            [0.6, 0.5, 1.0],
+        ],
+        dtype=np.float32,
+    )
+
+    def fake_similarity_matrix(embeddings, bidirectional=False):
+        score_calls.append((len(embeddings), bidirectional))
+        return score_matrix
+
+    monkeypatch.setattr(
+        similarity,
+        "multivector_similarity_matrix",
+        fake_similarity_matrix,
+    )
+    monkeypatch.setattr(
+        similarity,
+        "semantic_similarity",
+        lambda *args, **kwargs: pytest.fail("pairwise fallback should not run"),
+    )
+
+    ranked = similarity.rank_code_pairs(
+        ["a", "b", "c"],
+        [np.eye(2, dtype=np.float32)] * 3,
+        {"semantic": 1.0},
+        vector_backend="multivector",
+    )
+
+    assert score_calls == [(3, False)]
+    assert [(i, j, score) for score, i, j in ranked] == [
+        (0, 2, pytest.approx(0.7)),
+        (1, 2, pytest.approx(0.4)),
+        (0, 1, pytest.approx(0.2)),
+    ]
 
 
 def test_calculate_similarity_normalizes_custom_feature_weights(monkeypatch):

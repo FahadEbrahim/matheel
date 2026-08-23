@@ -108,12 +108,14 @@ def test_real_model2vec_static_model_uses_code():
     )
 
 
-def test_real_pylate_multivector_model_uses_code():
-    pytest.importorskip("pylate")
+def test_real_sentence_transformers_multivector_model_uses_code():
+    sentence_transformers = pytest.importorskip("sentence_transformers")
+    if not hasattr(sentence_transformers, "MultiVectorEncoder"):
+        pytest.skip("sentence-transformers 6 is required")
     pytest.importorskip("chonkie")
     _assert_similar_code_scores_higher(
         _MULTIVECTOR_MODEL,
-        "pylate",
+        "multivector",
         chunking_method="chonkie_token",
         chunk_size=32,
         chunk_overlap=8,

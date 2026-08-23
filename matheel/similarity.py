@@ -38,6 +38,7 @@ from .vectors import (
     detect_model_max_token_length,
     encode_single_vectors,
     load_vector_model,
+    multivector_similarity_matrix,
     multivector_similarity,
     normalize_pooling_method_name,
     similarity_function_is_unbounded,
@@ -63,7 +64,7 @@ def _semantic_backend_dependency_error(vector_backend, exc):
     package_by_backend = {
         "sentence_transformers": "sentence-transformers",
         "model2vec": "model2vec",
-        "pylate": "pylate",
+        "multivector": "sentence-transformers",
     }
     package_name = package_by_backend.get(backend, backend)
     return ImportError(
@@ -229,7 +230,7 @@ def inspect_model_settings(
         "supports_custom_max_token_length": resolved_backend in (
             "sentence_transformers",
             "model2vec",
-            "pylate",
+            "multivector",
         ),
     }
 
@@ -900,6 +901,7 @@ def build_feature_scores(
     code_language=None,
     active_features=None,
     normalize_semantic_scores=False,
+    precomputed_semantic_score=None,
 ):
     requested_features = None
     if active_features is not None:
@@ -921,9 +923,16 @@ def build_feature_scores(
             code_language=code_language,
         )
 
-    feature_scores = {
-        "semantic": (
-            semantic_similarity(
+    semantic_score = 0.0
+    if (
+        (use_all_features or "semantic" in requested_features)
+        and embedding1 is not None
+        and embedding2 is not None
+    ):
+        semantic_score = (
+            float(precomputed_semantic_score)
+            if precomputed_semantic_score is not None
+            else semantic_similarity(
                 embedding1,
                 embedding2,
                 vector_backend=vector_backend,
@@ -931,11 +940,10 @@ def build_feature_scores(
                 similarity_function=similarity_function,
                 normalize_semantic_scores=normalize_semantic_scores,
             )
-            if (use_all_features or "semantic" in requested_features)
-            and embedding1 is not None
-            and embedding2 is not None
-            else 0.0
-        ),
+        )
+
+    feature_scores = {
+        "semantic": semantic_score,
         "levenshtein": (
             Levenshtein.normalized_similarity(code1, code2, weights=levenshtein_weights)
             if use_all_features or "levenshtein" in requested_features
@@ -995,6 +1003,7 @@ def combined_similarity_from_embeddings(
     lexical_tokenizer="raw",
     code_language=None,
     normalize_semantic_scores=False,
+    precomputed_semantic_score=None,
 ):
     validate_semantic_score_scale_options(
         feature_weights,
@@ -1024,6 +1033,7 @@ def combined_similarity_from_embeddings(
         code_language=code_language,
         active_features=active_features,
         normalize_semantic_scores=normalize_semantic_scores,
+        precomputed_semantic_score=precomputed_semantic_score,
     )
     return combine_weighted_scores(feature_scores, feature_weights)
 
@@ -1087,10 +1097,20 @@ def rank_code_pairs(
     results = []
     code_metric_name = (code_metric or "none").strip().lower()
     use_code_metric = code_metric_name not in ("none", "") and feature_weights.get("code_metric", 0.0) > 0.0
-    pair_count = len(codes) * (len(codes) - 1) // 2
+    pairs = list(combinations(range(len(codes)), 2))
+    pair_count = len(pairs)
+    semantic_score_matrix = None
+    if (
+        backend_is_multivector(vector_backend)
+        and float(feature_weights.get("semantic", 0.0)) > 0.0
+    ):
+        semantic_score_matrix = multivector_similarity_matrix(
+            embeddings,
+            bidirectional=multivector_bidirectional,
+        )
 
     pair_iter = progress_iter(
-        combinations(range(len(codes)), 2),
+        pairs,
         total=pair_count,
         desc="Compare pairs",
         unit="pair",
@@ -1163,6 +1183,11 @@ def rank_code_pairs(
             lexical_tokenizer=lexical_tokenizer,
             code_language=code_language,
             normalize_semantic_scores=normalize_semantic_scores,
+            precomputed_semantic_score=(
+                semantic_score_matrix[i, j]
+                if semantic_score_matrix is not None
+                else None
+            ),
         )
         results.append((score, i, j))
     return sorted(results, reverse=True)

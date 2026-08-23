@@ -9,23 +9,30 @@ from matheel.model_routing import (
     infer_model_backend,
     infer_model_capabilities,
     load_hf_model_info,
+    normalize_vector_backend_name,
     resolve_vector_backend,
 )
 
 
 class FakeModelInfo:
-    def __init__(self, library_name="", tags=None):
+    def __init__(self, library_name="", tags=None, config=None):
         self.library_name = library_name
         self.tags = list(tags or [])
+        self.config = dict(config or {})
 
 
 def test_available_vector_backends_hides_deprecated_static_hash():
-    assert available_vector_backends() == ("auto", "sentence_transformers", "model2vec", "pylate")
+    assert available_vector_backends() == (
+        "auto",
+        "sentence_transformers",
+        "model2vec",
+        "multivector",
+    )
     assert available_vector_backends(include_deprecated=True) == (
         "auto",
         "sentence_transformers",
         "model2vec",
-        "pylate",
+        "multivector",
         "static_hash",
     )
 
@@ -34,7 +41,7 @@ def test_infer_model_backend_prefers_library_name():
     assert infer_model_backend(
         "any/model",
         model_info=FakeModelInfo(library_name="PyLate", tags=["sentence-similarity"]),
-    ) == "pylate"
+    ) == "multivector"
 
     assert infer_model_backend(
         "any/model",
@@ -83,9 +90,33 @@ def test_colbert_tag_marks_model_as_multivector():
         model_info=FakeModelInfo(tags=["ColBERT", "sentence-similarity"]),
     )
 
-    assert capabilities["preferred_backend"] == "pylate"
+    assert capabilities["preferred_backend"] == "multivector"
     assert capabilities["supports_static"] is False
     assert capabilities["supports_multivector"] is True
+
+
+def test_native_multivector_tag_and_colbert_architecture_are_detected():
+    tagged = infer_model_capabilities(
+        "lightonai/LateOn",
+        model_info=FakeModelInfo(
+            library_name="sentence-transformers",
+            tags=["multi-vector"],
+        ),
+    )
+    architecture = infer_model_capabilities(
+        "vendor/model",
+        model_info=FakeModelInfo(
+            library_name="transformers",
+            config={"architectures": ["HF_ColBERT"]},
+        ),
+    )
+
+    assert tagged["preferred_backend"] == "multivector"
+    assert architecture["preferred_backend"] == "multivector"
+
+
+def test_pylate_backend_name_remains_a_multivector_compatibility_alias():
+    assert normalize_vector_backend_name("pylate") == "multivector"
 
 
 def test_hf_model_info_cache_is_shared_across_concurrent_loads(monkeypatch):
