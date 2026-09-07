@@ -391,7 +391,7 @@ def load_pair_dataset(dataset_root):
 def write_pair_dataset(dataset_root, files, pairs, metadata=None):
     root = _coerce_path(dataset_root)
     root.mkdir(parents=True, exist_ok=True)
-    files_manifest = _write_files_manifest(root, files)
+    files_manifest = _write_files_manifest(root, files, manifests=("pairs.csv",))
     pairs_frame = _coerce_frame(pairs, required_columns=("left_id", "right_id", "label"), frame_name="pairs")
     pairs_frame["left_id"] = pairs_frame["left_id"].map(lambda value: _normalize_id(value, "left_id"))
     pairs_frame["right_id"] = pairs_frame["right_id"].map(lambda value: _normalize_id(value, "right_id"))
@@ -473,7 +473,9 @@ def load_retrieval_dataset(dataset_root):
 def write_retrieval_dataset(dataset_root, files, queries, corpus, qrels, metadata=None):
     root = _coerce_path(dataset_root)
     root.mkdir(parents=True, exist_ok=True)
-    files_manifest = _write_files_manifest(root, files)
+    files_manifest = _write_files_manifest(
+        root, files, manifests=("queries.csv", "corpus.csv", "qrels.csv")
+    )
 
     queries_frame = _coerce_frame(queries, required_columns=("query_id", "file_id"), frame_name="queries")
     corpus_frame = _coerce_frame(corpus, required_columns=("document_id", "file_id"), frame_name="corpus")
@@ -792,6 +794,8 @@ def _output_suffix(row):
         value = row.get(column)
         if pd.notna(value) and str(value).strip():
             suffix = str(value).strip()
+            if any(character in suffix for character in ("/", "\\", "\0")):
+                raise ValueError("File suffix must not contain path separators or null bytes.")
             return suffix if suffix.startswith(".") else f".{suffix}"
     source_path = row.get("source_path")
     if pd.notna(source_path) and str(source_path).strip():
@@ -799,15 +803,30 @@ def _output_suffix(row):
     return ".txt"
 
 
-def _write_files_manifest(dataset_root, files):
+def _checked_dataset_output_path(dataset_root, relative_path):
+    path = Path(dataset_root) / relative_path
+    if path.is_symlink():
+        raise ValueError(f"Dataset output must not be a symlink: {relative_path}")
+    target = _resolve_dataset_file(dataset_root, str(relative_path))
+    if target.exists() and not target.is_file():
+        raise ValueError(f"Dataset output must be a file: {relative_path}")
+    return target
+
+
+def _write_files_manifest(dataset_root, files, *, manifests=()):
     files_frame = _coerce_frame(files, required_columns=("file_id",), frame_name="files")
     if "text" not in files_frame.columns and "source_path" not in files_frame.columns:
         raise ValueError("files must include either a text column or a source_path column.")
 
     files_dir = dataset_root / "files"
-    files_dir.mkdir(parents=True, exist_ok=True)
+    if files_dir.is_symlink():
+        raise ValueError("Dataset files directory must not be a symlink.")
+    for name in ("files.csv", "metadata.json", *manifests):
+        _checked_dataset_output_path(dataset_root, name)
     rows = []
+    writes = []
     seen_ids = set()
+    seen_paths = set()
     for row in files_frame.to_dict(orient="records"):
         file_id = _normalize_id(row.get("file_id"), "file_id")
         if file_id in seen_ids:
@@ -815,13 +834,16 @@ def _write_files_manifest(dataset_root, files):
         seen_ids.add(file_id)
 
         relative_path = Path("files") / f"{file_id}{_output_suffix(row)}"
-        output_path = dataset_root / relative_path
+        output_path = _checked_dataset_output_path(dataset_root, relative_path)
+        if output_path in seen_paths:
+            raise ValueError(f"File entries must have unique output paths: {relative_path}")
+        seen_paths.add(output_path)
         text = row.get("text")
         source_path = row.get("source_path")
         if pd.notna(text):
-            output_path.write_text(str(text), encoding="utf-8")
+            writes.append((output_path, str(text), None))
         elif pd.notna(source_path):
-            shutil.copyfile(os.fspath(source_path), output_path)
+            writes.append((output_path, None, os.fspath(source_path)))
         else:
             raise ValueError(f"File entry for {file_id} must include text or source_path.")
 
@@ -834,6 +856,13 @@ def _write_files_manifest(dataset_root, files):
         manifest["file_path"] = relative_path.as_posix()
         rows.append(manifest)
 
+    # Check every generated destination before replacing any existing content.
+    files_dir.mkdir(parents=True, exist_ok=True)
+    for output_path, text, source_path in writes:
+        if text is not None:
+            output_path.write_text(text, encoding="utf-8")
+        else:
+            shutil.copyfile(source_path, output_path)
     manifest_frame = pd.DataFrame(rows).sort_values(by="file_id", ignore_index=True)
     manifest_frame.to_csv(dataset_root / "files.csv", index=False)
     return manifest_frame
