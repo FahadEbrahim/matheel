@@ -22,3 +22,8 @@ The published site is <https://fahadebrahim.github.io/matheel/>.
 - [Contributing algorithms](contributing_algorithms.md)
 - [Contributing datasets](contributing_datasets.md)
 - [Development](development.md)
+
+## Planning
+
+- [September 2026 review](planning/review_2026_09_07.md)
+- [Next release vision (proposal)](planning/next_release_vision.md)

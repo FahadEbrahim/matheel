@@ -42,3 +42,4 @@ nav:
 exclude_docs: |
   README.md
   release_backlog.md
+  planning/
