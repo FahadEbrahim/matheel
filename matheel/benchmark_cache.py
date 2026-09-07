@@ -35,6 +35,12 @@ _PATH_KEYS = frozenset(
         "details_dir",
     }
 )
+# Legacy cache entries do not record dtypes. These columns are identifiers even
+# when every value happens to look numeric or like a pandas missing-value token.
+_RESULT_TEXT_COLUMNS = frozenset(
+    {"file_name_1", "file_name_2", "file_id", "left_id", "right_id",
+     "query_id", "document_id", "query_file_id", "document_file_id"}
+)
 
 
 def benchmark_dependency_versions(package_names=None):
@@ -91,7 +97,18 @@ def load_benchmark_cache_result(cache_dir, cache_key):
     if not paths["metadata"].exists() or not paths["results"].exists():
         return None
     metadata = json.loads(paths["metadata"].read_text(encoding="utf-8"))
-    results = pd.read_csv(paths["results"])
+    dtypes = metadata.get("result_dtypes") or {}
+    text_columns = _RESULT_TEXT_COLUMNS | {
+        column for column, dtype in dtypes.items() if dtype in {"object", "str", "string"}
+    }
+    results = pd.read_csv(
+        paths["results"],
+        converters={column: str for column in text_columns},
+        dtype={column: dtype for column, dtype in dtypes.items() if column not in text_columns},
+    )
+    for column, dtype in dtypes.items():
+        if column in text_columns and column in results:
+            results[column] = results[column].astype(dtype)
     results.attrs.update(metadata.get("result_attrs") or {})
     results.attrs["cache_status"] = "hit"
     results.attrs["cache_key"] = metadata.get("cache_key") or _validate_cache_key(cache_key)
@@ -111,6 +128,7 @@ def write_benchmark_cache_result(cache_dir, cache_key_payload, results, metadata
         "key_components": _json_safe(cache_key_payload.get("components", {}) if isinstance(cache_key_payload, dict) else {}),
         "metadata": _json_safe(metadata or {}),
         "result_attrs": _json_safe(getattr(results, "attrs", {})),
+        "result_dtypes": {str(column): str(dtype) for column, dtype in results.dtypes.items()},
     }
     paths["metadata"].write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
     return paths
