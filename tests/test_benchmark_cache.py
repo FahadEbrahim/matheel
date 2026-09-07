@@ -153,3 +153,35 @@ def test_benchmark_cache_and_reproducibility_sanitize_windows_paths():
     assert snapshot["run_configs"][0]["options"]["algorithm_path"] == "algo.py"
     assert "alice" not in json.dumps(payload)
     assert "alice" not in json.dumps(snapshot)
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_cache_preserves_string_identifiers_and_numeric_scores(tmp_path, legacy):
+    key = "a" * 64
+    frame = pd.DataFrame({
+        "file_name_1": ["001", "NA", ""],
+        "file_name_2": ["002", "NULL", "nan"],
+        "query_id": ["01", "02", "03"],
+        "similarity_score": [0.5, 0.7, float("nan")],
+    })
+    paths = write_benchmark_cache_result(tmp_path, key, frame)
+    if legacy:
+        payload = json.loads(paths["metadata"].read_text())
+        payload.pop("result_dtypes")
+        paths["metadata"].write_text(json.dumps(payload))
+    cached, _ = load_benchmark_cache_result(tmp_path, key)
+    pd.testing.assert_frame_equal(cached, frame)
+
+
+def test_cache_preserves_custom_text_metadata_and_empty_frame_dtypes(tmp_path):
+    frame = pd.DataFrame({
+        "submission": ["001", "NA"],
+        "language": pd.Series(["NULL", "python"], dtype="string"),
+        "similarity_score": [0.5, 0.7],
+        "label": [0, 1],
+    })
+    for data in (frame, frame.iloc[:0]):
+        key = "b" * 64
+        write_benchmark_cache_result(tmp_path, key, data)
+        cached, _ = load_benchmark_cache_result(tmp_path, key)
+        pd.testing.assert_frame_equal(cached, data)

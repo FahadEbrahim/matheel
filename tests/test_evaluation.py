@@ -530,3 +530,37 @@ def test_evaluate_retrieval_resamples_accepts_single_split_object():
     assert metrics["split"].tolist() == ["split_1"]
     assert metrics["query_count"].tolist() == [1]
     assert summary.loc[summary["metric"] == "ndcg_at_k", "count"].item() == 1
+
+
+def test_retrieval_resamples_include_qrels_only_queries():
+    results = pd.DataFrame([
+        {"query_id": "q1", "document_id": "d1", "similarity_score": 1.0},
+    ])
+    qrels = pd.DataFrame([
+        {"query_id": "q1", "document_id": "d1", "relevance": 1},
+        {"query_id": "q2", "document_id": "d2", "relevance": 1},
+    ])
+    full = retrieval_ranking_metrics(results, qrels=qrels, k=1)
+    metrics, _ = evaluate_retrieval_resamples(
+        results, single_split(2, train_size=0, shuffle=False), qrels=qrels, k=1,
+    )
+    assert metrics.iloc[0]["query_count"] == 2
+    assert metrics.iloc[0]["mean_average_precision"] == full["mean_average_precision"] == 0.5
+    folds, _ = evaluate_retrieval_resamples(
+        results, kfold_splits(2, n_splits=2, shuffle=False), qrels=qrels, k=1,
+    )
+    assert folds["mean_average_precision"].tolist() == [1.0, 0.0]
+    assert folds["result_count"].tolist() == [1, 0]
+    assert folds["query_count"].tolist() == [1, 1]
+
+
+def test_retrieval_resamples_accept_entirely_empty_results_and_custom_columns():
+    results = pd.DataFrame(columns=["query", "document", "score"])
+    qrels = pd.DataFrame([{"query": "q1", "document": "d1", "judgment": 1}])
+    metrics, _ = evaluate_retrieval_resamples(
+        results, single_split(1, train_size=0), qrels=qrels,
+        query_column="query", document_column="document",
+        score_column="score", relevance_column="judgment",
+    )
+    assert metrics.iloc[0]["query_count"] == 1
+    assert metrics.iloc[0]["mean_average_precision"] == 0.0

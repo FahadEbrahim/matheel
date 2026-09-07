@@ -647,25 +647,31 @@ def evaluate_retrieval_resamples(
     metric_columns=None,
     confidence=0.95,
 ):
+    """Evaluate splits indexed by sorted query IDs from results and explicit qrels.
+
+    Judged queries without returned results remain in the evaluation with zero
+    ranking scores, including folds made up entirely of such queries.
+    """
     frame = scored_results.copy() if isinstance(scored_results, pd.DataFrame) else pd.DataFrame(scored_results)
     if query_column not in frame.columns:
         raise ValueError(f"scored_results is missing required column: {query_column}")
-    query_ids = tuple(sorted(frame[query_column].astype(str).unique().tolist()))
     qrels_frame = qrels.copy() if isinstance(qrels, pd.DataFrame) else None
     if qrels is not None and qrels_frame is None:
         qrels_frame = pd.DataFrame(qrels)
+    query_ids = set(frame[query_column].astype(str))
+    if qrels_frame is not None:
+        for column in (query_column, document_column, relevance_column):
+            if column not in qrels_frame.columns:
+                raise ValueError(f"qrels is missing required column: {column}")
+        query_ids.update(qrels_frame[query_column].astype(str))
+    query_ids = tuple(sorted(query_ids))
 
     rows = []
     for split in _normalize_splits(splits):
         selected_queries = _selected_query_ids(query_ids, split)
         subset = frame[frame[query_column].astype(str).isin(selected_queries)].copy()
-        if subset.empty:
-            raise ValueError(f"Split {split.name!r} selected no retrieval results.")
-
         split_qrels = None
         if qrels_frame is not None:
-            if query_column not in qrels_frame.columns:
-                raise ValueError(f"qrels is missing required column: {query_column}")
             split_qrels = qrels_frame[qrels_frame[query_column].astype(str).isin(selected_queries)].copy()
 
         row = _split_metadata(split)
