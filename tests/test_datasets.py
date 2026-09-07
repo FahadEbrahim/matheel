@@ -1523,4 +1523,3 @@ def test_retrieval_dataset_rejects_symlinks_outside_dataset_root(tmp_path):
 
     report = validate_dataset_report(dataset_root, kind="retrieval")
     assert "unsafe_file_paths" in {issue["code"] for issue in report["issues"]}
-
