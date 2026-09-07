@@ -1307,6 +1307,7 @@ def merge_pair_datasets(datasets, dataset_names=None):
             old_id = str(file_row["file_id"])
             files.append(
                 {
+                    **file_row,
                     "file_id": _prefixed_id(dataset_name, old_id),
                     "text": texts[old_id],
                     "suffix": Path(str(file_row["file_path"])).suffix or ".txt",
@@ -1353,6 +1354,7 @@ def merge_retrieval_datasets(datasets, dataset_names=None):
             old_id = str(file_row["file_id"])
             files.append(
                 {
+                    **file_row,
                     "file_id": _prefixed_id(dataset_name, old_id),
                     "text": texts[old_id],
                     "suffix": Path(str(file_row["file_path"])).suffix or ".txt",

@@ -1492,3 +1492,35 @@ def test_retrieval_dataset_rejects_symlinks_outside_dataset_root(tmp_path):
 
     report = validate_dataset_report(dataset_root, kind="retrieval")
     assert "unsafe_file_paths" in {issue["code"] for issue in report["issues"]}
+
+
+@pytest.mark.parametrize("kind", ["pair", "retrieval"])
+def test_merge_datasets_preserves_file_language_and_grouping_metadata(tmp_path, kind):
+    sources = []
+    for index, language in enumerate(("python", "java")):
+        files = [{
+            "file_id": "a", "text": f"code {index}", "language": language,
+            "author": f"author-{index}", "problem_id": "shared-problem",
+        }]
+        if kind == "pair":
+            source = write_pair_dataset(
+                tmp_path / str(index), files, [{"left_id": "a", "right_id": "a", "label": 1}],
+            )
+        else:
+            source = write_retrieval_dataset(
+                tmp_path / str(index), files,
+                [{"query_id": "q", "file_id": "a"}],
+                [{"document_id": "d", "file_id": "a"}],
+                [{"query_id": "q", "document_id": "d", "relevance": 1}],
+            )
+        sources.append(source)
+    merger = datasets_module.merge_pair_datasets if kind == "pair" else datasets_module.merge_retrieval_datasets
+    merged = merger(sources, dataset_names=["first", "second"])
+    rows = merged.files.set_index("file_id")
+    assert rows.loc["first__a", "language"] == "python"
+    assert rows.loc["second__a", "language"] == "java"
+    assert rows.loc["first__a", "author"] == "author-0"
+    assert rows.loc["second__a", "author"] == "author-1"
+    assert rows["problem_id"].tolist() == ["shared-problem", "shared-problem"]
+    assert rows["original_file_id"].tolist() == ["a", "a"]
+    assert load_code_texts(merged) == {"first__a": "code 0", "second__a": "code 1"}
