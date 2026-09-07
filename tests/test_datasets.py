@@ -1523,3 +1523,69 @@ def test_retrieval_dataset_rejects_symlinks_outside_dataset_root(tmp_path):
 
     report = validate_dataset_report(dataset_root, kind="retrieval")
     assert "unsafe_file_paths" in {issue["code"] for issue in report["issues"]}
+
+
+def _write_output_safety_fixture(root, files, kind):
+    if kind == "pair":
+        return write_pair_dataset(root, files, [{"left_id": "a", "right_id": "a", "label": 1}])
+    return write_retrieval_dataset(
+        root, files,
+        [{"query_id": "q", "file_id": "a"}],
+        [{"document_id": "d", "file_id": "a"}],
+        [{"query_id": "q", "document_id": "d", "relevance": 1}],
+    )
+
+
+@pytest.mark.parametrize("kind,output", [
+    ("pair", "files/a.py"), ("retrieval", "files/a.py"),
+    ("pair", "files.csv"), ("pair", "metadata.json"), ("pair", "pairs.csv"),
+    ("retrieval", "queries.csv"), ("retrieval", "corpus.csv"), ("retrieval", "qrels.csv"),
+])
+def test_dataset_writer_rejects_output_symlinks_before_writing(tmp_path, kind, output):
+    root = tmp_path / "dataset"
+    (root / "files").mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.write_text("original", encoding="utf-8")
+    (root / output).symlink_to(outside)
+    with pytest.raises(ValueError, match="symlink"):
+        _write_output_safety_fixture(root, [{"file_id": "a", "text": "changed", "suffix": ".py"}], kind)
+    assert outside.read_text(encoding="utf-8") == "original"
+    if output != "files/a.py":
+        assert not (root / "files/a.py").exists()
+
+
+@pytest.mark.parametrize("kind", ["pair", "retrieval"])
+def test_dataset_writer_rejects_symlinked_files_directory(tmp_path, kind):
+    root = tmp_path / "dataset"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (root / "files").symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ValueError, match="symlink"):
+        _write_output_safety_fixture(root, [{"file_id": "a", "text": "changed"}], kind)
+    assert list(outside.iterdir()) == []
+
+
+@pytest.mark.parametrize("column", ["suffix", "extension"])
+@pytest.mark.parametrize("suffix", [".py/../../outside", r".py\..\outside", ".py\0"])
+def test_dataset_writer_rejects_unsafe_suffix_before_writing(tmp_path, column, suffix):
+    root = tmp_path / "dataset"
+    with pytest.raises(ValueError, match="suffix"):
+        _write_output_safety_fixture(root, [
+            {"file_id": "a", "text": "first", column: ".py"},
+            {"file_id": "b", "text": "second", column: suffix},
+        ], "pair")
+    assert not (root / "files/a.py").exists()
+
+
+def test_dataset_writer_rejects_colliding_paths_before_overwriting(tmp_path):
+    root = tmp_path / "dataset"
+    (root / "files").mkdir(parents=True)
+    target = root / "files/a.b.py"
+    target.write_text("original", encoding="utf-8")
+    with pytest.raises(ValueError, match="unique output paths"):
+        _write_output_safety_fixture(root, [
+            {"file_id": "a", "text": "first", "suffix": ".b.py"},
+            {"file_id": "a.b", "text": "second", "suffix": ".py"},
+        ], "pair")
+    assert target.read_text(encoding="utf-8") == "original"
