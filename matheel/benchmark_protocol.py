@@ -546,6 +546,15 @@ def merge_benchmark_results(protocol, results, output_dir=None, basename="benchm
     artifacts = write_leaderboard_artifacts(report, output_dir, basename=basename) if output_dir is not None else None
     return report, artifacts
 
+def _optional_result_text(value, field):
+    # Nullable string columns may turn JSON null into NaN/NA during validation.
+    if value is None or pd.api.types.is_scalar(value) and pd.isna(value):
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"Result {field} must be a string or null.")
+    return value
+
+
 def validate_benchmark_result(report_or_payload, protocol=None, *, score_artifact_dir=None):
     """Validate imported protocol results; this verifies consistency, not honest execution."""
     from .leaderboard import _aggregate_leaderboard, leaderboard_payload
@@ -604,18 +613,20 @@ def validate_benchmark_result(report_or_payload, protocol=None, *, score_artifac
         if row["task_type"] != row["domain"]:
             raise ValueError("Result dataset category must match its domain.")
         reason = method_exclusion_reason(configurations[row["algorithm_id"]], entry)
+        status = _optional_result_text(row.get("status"), "status")
+        reported_reason = _optional_result_text(row.get("not_applicable_reason"), "not_applicable_reason")
         if reason:
-            if (row.get("status") != "not_applicable" or row.get("not_applicable_reason") != reason
+            if (status != "not_applicable" or reported_reason != reason
                     or row["score"] is not None and not pd.isna(row["score"])
                     or row["sample_count"] != 0 or row["elapsed_seconds"] != 0 or has_error):
                 raise ValueError("Predeclared exclusions require unscored not_applicable rows with the original reason.")
-        elif row.get("status") == "not_applicable" or row.get("not_applicable_reason"):
+        elif status == "not_applicable" or reported_reason:
             raise ValueError("Not-applicable results require a predeclared method exclusion.")
-        elif row.get("status") not in {None, "completed", "failed"}:
+        elif status not in {None, "completed", "failed"}:
             raise ValueError("Invalid benchmark result status.")
-        elif row.get("status") == "failed" and (not has_error or row["score"] is not None and not pd.isna(row["score"])):
+        elif status == "failed" and (not has_error or row["score"] is not None and not pd.isna(row["score"])):
             raise ValueError("Failed rows require an error and a null score.")
-        elif row.get("status") == "completed" and has_error:
+        elif status == "completed" and has_error:
             raise ValueError("Completed rows cannot contain a runtime error.")
         count = float(row["sample_count"])
         if isinstance(row["sample_count"], bool) or not math.isfinite(count) or count < 0 or not count.is_integer():
@@ -672,7 +683,10 @@ def validate_benchmark_result(report_or_payload, protocol=None, *, score_artifac
             if pd.isna(left) or pd.isna(right) or not math.isclose(float(left), float(right), rel_tol=1e-10, abs_tol=1e-12):
                 raise ValueError("Result aggregate scores/ranks do not match per-dataset results.")
         for column in ("status", "not_applicable_reason"):
-            if column + "_expected" in row and row.get(column + "_actual") != row[column + "_expected"]:
-                raise ValueError("Result aggregate status does not match declared applicability and coverage.")
+            if column + "_expected" in row:
+                left = _optional_result_text(row[column + "_expected"], column)
+                right = _optional_result_text(row.get(column + "_actual"), column)
+                if left != right:
+                    raise ValueError("Result aggregate status does not match declared applicability and coverage.")
     return {"valid": True, "protocol_id": frozen["protocol_id"], "benchmark_id": frozen["benchmark_id"],
             "methods": int(rows["algorithm_id"].nunique()), "eligible_rows": int(expected["eligible"].sum())}
