@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import signal
 import subprocess
 import sys
 import time
@@ -25,6 +26,36 @@ from matheel.benchmark_protocol import (
     validate_benchmark_result,
 )
 from matheel.leaderboard import leaderboard_payload, normalize_leaderboard_manifest
+
+
+def worker_process_options(platform_name=None):
+    """Isolate each worker's process tree for bounded cleanup."""
+    platform_name = os.name if platform_name is None else platform_name
+    if platform_name == "posix":
+        return {"start_new_session": True}
+    if platform_name == "nt":
+        return {"creationflags": getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0x200)}
+    return {}
+
+
+def terminate_worker_tree(process, platform_name=None):
+    """Stop descendants too, including when a POSIX worker already exited."""
+    platform_name = os.name if platform_name is None else platform_name
+    if platform_name == "posix":
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    elif platform_name == "nt" and process.poll() is None:
+        completed = subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False,
+        )
+        if completed.returncode and process.poll() is None:
+            process.kill()
+    elif process.poll() is None:
+        process.kill()
+    process.wait()
 
 
 def normalized_methods(protocol, algorithms):
@@ -136,6 +167,7 @@ def run(manifest_path, methods_path, output_dir, workers=3, retry_failed=False):
                      "--protocol", str(protocol_path), "--method", str(method_path),
                      "--checkpoint", str(checkpoint), "--score-dir", str(score_dir)],
                     stdout=log, stderr=subprocess.STDOUT, env=environment,
+                    **worker_process_options(),
                 )
                 active.append((process, time.monotonic(), method, checkpoint, log))
                 print(f"Started: {method['name']} (budget {budget:g}s)", flush=True)
@@ -144,10 +176,11 @@ def run(manifest_path, methods_path, output_dir, workers=3, retry_failed=False):
                 elapsed = time.monotonic() - started
                 expired = elapsed >= budget and process.poll() is None
                 if expired:
-                    process.kill()
-                    process.wait()
+                    terminate_worker_tree(process)
                 if process.poll() is None:
                     continue
+                if not expired:
+                    terminate_worker_tree(process)
                 log.close()
                 error = "TimeoutError" if expired else (
                     f"WorkerExit{process.returncode}" if process.returncode else None)
@@ -170,9 +203,7 @@ def run(manifest_path, methods_path, output_dir, workers=3, retry_failed=False):
                 time.sleep(0.25)
     finally:
         for process, _, _, _, log in active:
-            if process.poll() is None:
-                process.kill()
-                process.wait()
+            terminate_worker_tree(process)
             log.close()
     # Stable method order makes resuming independent of process completion order.
     order = {method_configuration_id(method): index for index, method in enumerate(methods)}

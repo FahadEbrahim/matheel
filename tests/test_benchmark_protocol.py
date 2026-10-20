@@ -224,7 +224,8 @@ def test_benchmark_cli_round_trip(tmp_path):
 
 
 def test_pinned_model_executes_snapshot_but_records_portable_configuration(tmp_path, monkeypatch):
-    import huggingface_hub
+    import sys
+    from types import ModuleType
     import matheel.leaderboard as module
     model_path = tmp_path / "snapshot"
     model_path.mkdir()
@@ -232,7 +233,9 @@ def test_pinned_model_executes_snapshot_but_records_portable_configuration(tmp_p
     def snapshot_download(**options):
         seen.append(options)
         return str(model_path)
-    monkeypatch.setattr(huggingface_hub, "snapshot_download", snapshot_download)
+    hub = ModuleType("huggingface_hub")
+    hub.snapshot_download = snapshot_download
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hub)
     def score(manifest, dataset, algorithm):
         assert algorithm["similarity_options"]["model_name"] == str(model_path)
         return [module._leaderboard_row("pair", dataset, algorithm, metric, 0.75, 2) for metric in manifest["pair_metrics"]]
@@ -400,3 +403,37 @@ def test_retrieval_finite_scores_require_all_frozen_candidate_comparisons(tmp_pa
     payload["aggregate"] = json.loads(aggregate.to_json(orient="records"))
     with pytest.raises(ValueError, match="complete frozen"):
         validate_benchmark_result(payload)
+
+
+def test_content_fingerprint_preserves_exact_small_relevance_and_rejects_nonfinite(tmp_path):
+    from matheel.datasets import write_retrieval_dataset
+    root = tmp_path / "retrieval_precision"
+    write_retrieval_dataset(root, files=pd.DataFrame([
+        {"file_id": "q", "text": "query"}, {"file_id": "d", "text": "document"},
+    ]), queries=pd.DataFrame([{"query_id": "q1", "file_id": "q"}]),
+        corpus=pd.DataFrame([{"document_id": "d1", "file_id": "d"}]),
+        qrels=pd.DataFrame([{"query_id": "q1", "document_id": "d1", "relevance": 0.0}]))
+    zero = dataset_content_fingerprint(root, "retrieval")
+    qrels_path = root / "qrels.csv"
+    qrels_path.write_text("query_id,document_id,relevance\nq1,d1,1e-12\n")
+    small = dataset_content_fingerprint(root, "retrieval")
+    assert zero != small
+    qrels_path.write_text("query_id,document_id,relevance\nq1,d1,1.000000000001e-12\n")
+    assert small != dataset_content_fingerprint(root, "retrieval")
+    qrels_path.write_text("query_id,document_id,relevance\nq1,d1,nan\n")
+    with pytest.raises(ValueError, match="finite"):
+        dataset_content_fingerprint(root, "retrieval")
+
+
+def test_merge_preserves_supervised_execution_provenance_for_every_method(tmp_path):
+    from matheel.benchmark_protocol import merge_benchmark_results
+    protocol = freeze_benchmark_protocol(_manifest(_dataset(tmp_path / "data")))
+    first, _ = run_benchmark_protocol(protocol, _methods())
+    second, _ = run_benchmark_protocol(protocol, [{"name": "LCS", "feature_weights": {"lcs": 1}}])
+    first["metadata"]["supervised_execution"] = {"matheel_source_sha256": "a" * 64, "method_wall_seconds": 1.5}
+    second["metadata"]["supervised_execution"] = {"matheel_source_sha256": "a" * 64, "method_wall_seconds": 2.5}
+    merged, _ = merge_benchmark_results(protocol, [first, second])
+    executions = merged["metadata"]["supervised_executions"]
+    assert len(executions) == 2
+    assert {entry["method_wall_seconds"] for entry in executions} == {1.5, 2.5}
+    assert {entry["algorithm_id"] for entry in executions} == set(merged["metadata"]["method_configurations"])

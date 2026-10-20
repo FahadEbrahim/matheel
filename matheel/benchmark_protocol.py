@@ -97,7 +97,9 @@ def dataset_content_fingerprint(root, task_family):
     records = {}
     for name, frame in tables.items():
         # Column order and CSV formatting have no semantic effect; record order does.
-        records[name] = json.loads(frame.reindex(sorted(frame.columns), axis=1).to_json(orient="records", force_ascii=False))
+        # pandas.to_json rounds floats to ten decimal places by default. Preserve
+        # native finite values so distinct graded relevance never shares a hash.
+        records[name] = frame.reindex(sorted(frame.columns), axis=1).to_dict(orient="records")
     return {"sha256": _digest(records), "counts": {name: len(frame) for name, frame in tables.items()}}
 
 
@@ -501,6 +503,17 @@ def merge_benchmark_results(protocol, results, output_dir=None, basename="benchm
     for field in ("thresholds", "execution_failures", "score_artifacts"):
         metadata[field] = [item for payload in payloads for item in payload["metadata"].get(field, [])]
     metadata["execution_environments"] = [payload["metadata"].get("reproducibility", {}) for payload in payloads]
+    metadata["supervised_executions"] = []
+    for payload in payloads:
+        previous = payload["metadata"].get("supervised_executions")
+        if previous is not None:
+            metadata["supervised_executions"].extend(previous)
+        elif payload["metadata"].get("supervised_execution"):
+            metadata["supervised_executions"].extend(
+                {"algorithm_id": identity, **payload["metadata"]["supervised_execution"]}
+                for identity in payload["metadata"]["method_configurations"]
+            )
+    metadata.pop("supervised_execution", None)
     report = {
         "metadata": metadata, "manifest": manifest,
         "cards": {"datasets": payloads[0].get("cards", {}).get("datasets", []),
