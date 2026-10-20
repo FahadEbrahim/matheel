@@ -16,7 +16,7 @@ from .vectors import tokenize_for_static_vectors
 
 
 def _positive_limit(value):
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     try:
         numeric = int(value)
@@ -26,6 +26,8 @@ def _positive_limit(value):
 
 
 def _token_limit(model, tokenizer, requested, backend, is_query):
+    if isinstance(requested, bool):
+        raise ValueError("max_token_length must be a positive integer, not a boolean.")
     if backend == "static_hash":
         return None
     limits = []

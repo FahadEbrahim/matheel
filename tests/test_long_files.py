@@ -6,6 +6,7 @@ import pytest
 
 from matheel import long_files
 from matheel.long_files import compare_long_files, preflight_long_file
+from matheel.similarity import DEFAULT_MODEL_NAME
 
 
 class OffsetTokenizer:
@@ -156,6 +157,51 @@ def test_limit_too_small_for_required_special_tokens_is_rejected():
     with pytest.raises(ValueError, match="special tokens"):
         preflight_long_file("alpha", options={"vector_backend": "sentence_transformers", "max_token_length": 1},
                             tokenizer=OffsetTokenizer())
+
+
+@pytest.mark.parametrize("backend", ["sentence_transformers", "static_hash"])
+@pytest.mark.parametrize("maximum", [True, False])
+def test_boolean_token_caps_are_rejected_instead_of_becoming_integer_limits(backend, maximum):
+    with pytest.raises(ValueError, match="max_token_length.*boolean"):
+        preflight_long_file("text", options={"vector_backend": backend, "max_token_length": maximum})
+
+
+@pytest.mark.parametrize("backend", ["auto", "sentence_transformers"])
+def test_semantic_runs_without_model_name_inspect_and_record_the_existing_default(monkeypatch, backend):
+    inspected_models, scored_runs, routed_models = [], [], []
+
+    def inspect_model(model_name, **kwargs):
+        inspected_models.append((model_name, kwargs["vector_backend"]))
+        return SimpleNamespace(tokenizer=OffsetTokenizer())
+
+    def model_info(model_name):
+        routed_models.append(model_name)
+        return {"fixture": True}
+
+    def route_backend(_backend, *, model_name, model_info):
+        assert model_name == DEFAULT_MODEL_NAME and model_info == {"fixture": True}
+        return "sentence_transformers"
+
+    def score_pairs(_pairs, run):
+        scored_runs.append(run)
+        return {"comparison": 0.75}
+
+    monkeypatch.setattr(long_files, "load_backend_model", inspect_model)
+    monkeypatch.setattr(long_files, "load_hf_model_info", model_info)
+    monkeypatch.setattr(long_files, "resolve_vector_backend", route_backend)
+    monkeypatch.setattr(long_files, "score_experiment_pairs", score_pairs)
+    report, _ = compare_long_files("alpha beta", "beta gamma", [{
+        "run_name": "default_model", "options": {"feature_weights": {"semantic": 1},
+                                                   "vector_backend": backend},
+    }])
+
+    assert inspected_models == [(DEFAULT_MODEL_NAME, "sentence_transformers")]
+    assert routed_models == ([DEFAULT_MODEL_NAME] if backend == "auto" else [])
+    assert scored_runs[0]["options"]["model_name"] == DEFAULT_MODEL_NAME
+    assert report["runs"][0]["options"]["model_name"] == DEFAULT_MODEL_NAME
+    assert report["scores"][0]["status"] == "ok"
+    assert report["scores"][0]["similarity_score"] == 0.75
+    assert {row["model_name"] for row in report["preflight"][0]["files"].values()} == {DEFAULT_MODEL_NAME}
 
 
 @pytest.mark.parametrize("maximum", [-1, 1.5, True])
