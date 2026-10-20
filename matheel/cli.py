@@ -2069,3 +2069,8 @@ def _elapsed_summary_text(results):
     if algorithm:
         summary = f"{summary} | algorithm={algorithm.get('algorithm_name')}"
     return summary
+
+
+from .experiment_cli import register_experiment_commands  # noqa: E402
+
+register_experiment_commands(main)

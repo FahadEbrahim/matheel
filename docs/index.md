@@ -18,6 +18,7 @@ Matheel compares source code through a Python API, CLI, and Gradio app. Start wi
 | Remove comments or normalize identifiers | [Preprocessing](preprocessing.md) |
 | Understand what each scorer sees | [Tokenization and limits](tokenization.md) |
 | Split long files before embedding | [Chunking](chunking.md) |
+| Inspect truncation and compare chunk aggregation | [Long-file input coverage](long_files.md) |
 | Compare several configurations on one collection | [Comparison suites](comparison_suite.md) |
 
 ## Evaluate and Inspect Results
@@ -26,6 +27,7 @@ Matheel compares source code through a Python API, CLI, and Gradio app. Start wi
 | --- | --- |
 | Load pair/retrieval data and measure quality | [Datasets and evaluation](datasets.md) |
 | Interpret score ranges and select thresholds | [Scoring and calibration](scoring.md) |
+| Measure controlled formatting, renaming and content changes | [Robustness diagnostics](robustness.md) |
 | Run a small auditable experiment | [Reproducible benchmark](reproducible_benchmark.md) |
 | Freeze comparable plagiarism evaluations | [Versioned benchmark protocols](benchmark_protocol.md) |
 | Inspect the declared public plagiarism benchmark | [Plagiarism benchmark results](plagiarism_results.md) |
