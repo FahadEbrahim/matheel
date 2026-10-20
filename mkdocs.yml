@@ -31,6 +31,7 @@ nav:
       - Comparison suites: comparison_suite.md
   - Evaluate and benchmark:
       - Load and evaluate datasets: datasets.md
+      - Exact scoring and scalable retrieval: scalable_retrieval.md
       - Interpret and calibrate scores: scoring.md
       - Reproducible benchmark: reproducible_benchmark.md
       - Versioned plagiarism benchmarks: benchmark_protocol.md

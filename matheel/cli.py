@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import click
+from .retrieval_cli import register_retrieval_commands
 import pandas as pd
 
 from . import __version__
@@ -2072,4 +2073,5 @@ def _elapsed_summary_text(results):
     return summary
 
 
+register_retrieval_commands(main)
 register_analysis_commands(main)

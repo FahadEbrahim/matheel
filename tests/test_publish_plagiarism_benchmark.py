@@ -53,6 +53,10 @@ def test_publication_validates_completed_results_and_zips_only_indexed_scores(tm
     public = tmp_path / "public"
     assert (public / f"{BASENAME}.json").is_file()
     assert (public / "publication.json").is_file()
+    payload = json.loads((public / f"{BASENAME}.json").read_text())
+    for table in ("per_dataset", "aggregate"):
+        assert {row["status"] for row in payload[table]} == {"completed", "failed"}
+        assert all(row["not_applicable_reason"] is None for row in payload[table])
     assert not (public / "scores").exists()
     assert not (public / "checkpoints").exists()
     assert str(tmp_path) not in (public / f"{BASENAME}.json").read_text()

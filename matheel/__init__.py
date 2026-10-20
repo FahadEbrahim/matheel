@@ -130,6 +130,12 @@ from .evaluation import (
     score_retrieval_dataset,
 )
 from .feature_weights import available_default_features, default_feature_weights, normalize_feature_weights
+from .retrieval import (
+    candidate_recall_diagnostics,
+    evaluate_two_stage_retrieval_dataset,
+    score_two_stage_retrieval_dataset,
+    select_retrieval_candidates,
+)
 from .lexical import available_lexical_metrics, lexical_metric_metadata, score_lexical_metric
 from .leaderboard import (
     available_leaderboard_metrics,
@@ -207,6 +213,10 @@ from .similarity import (
 )
 
 __all__ = [
+    "candidate_recall_diagnostics",
+    "evaluate_two_stage_retrieval_dataset",
+    "score_two_stage_retrieval_dataset",
+    "select_retrieval_candidates",
     "__version__",
     "DEFAULT_BENCHMARK_ID",
     "dataset_content_fingerprint",
