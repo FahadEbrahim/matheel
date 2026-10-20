@@ -8,6 +8,20 @@ The Gradio app includes three leaderboard workflows:
 - **Build Leaderboard** runs selected algorithm presets over uploaded normalized dataset ZIPs, shows all registered dataset presets, applies task-specific metric defaults, and exports standard leaderboard artifacts.
 - **Inspect Artifacts** loads a leaderboard JSON or ZIP artifact and renders the aggregate table, per-dataset table, static report, and downloadable report bundle.
 
+## Versioned plagiarism benchmarks
+
+For comparable public methods-and-scores rankings, use the [frozen benchmark
+protocol workflow](benchmark_protocol.md). It records source revisions and content
+fingerprints, explicit split and threshold rules, full method configuration IDs,
+per-run elapsed time, and complete-coverage eligibility. Public comparisons require
+identical protocol IDs. Dataset category (currently **Plagiarism**) is distinct from
+the pair-classification or retrieval evaluation task; categories and tasks are
+ranked separately.
+
+The general manifest below remains available for custom experiments. It does not
+turn a custom run into an official frozen benchmark. The historical ready-made
+snapshot is labeled **Demo** and remains separate from versioned results.
+
 ## Ready-made Public Snapshot
 
 Open **Reports → Ready-made Leaderboard** to see rankings without uploading data or starting a benchmark run. The snapshot covers all six registered public dataset presets as seven task views: five pair-classification datasets plus SOCO14 and IRPlag retrieval views. It records eight algorithm presets. New presets added after generation appear in custom runs; regenerate the artifact to include them in the public snapshot.
@@ -101,7 +115,7 @@ matheel benchmark-registry compare benchmark_registry.json \
   --output benchmark_comparison.csv
 ```
 
-The registry stores sanitized leaderboard payloads and artifact filenames. It is intended for local experiment tracking and does not store absolute dataset paths or credentials.
+The registry stores sanitized leaderboard payloads and artifact filenames. It is intended for local experiment tracking and does not store absolute dataset paths or credentials. Versioned result artifacts are validated on import; comparisons reject different protocol IDs. Legacy comparisons also reject differing dataset coverage, metrics, or fingerprints.
 
 ## Runnable Example
 

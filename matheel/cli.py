@@ -987,6 +987,68 @@ def leaderboard_command(config_file, output_dir, basename, output_format):
     _echo_leaderboard_summary(report, artifacts, output_format)
 
 
+@main.group(name="benchmark")
+def benchmark_group():
+    """Freeze, evaluate, and validate versioned plagiarism benchmark protocols."""
+
+
+@benchmark_group.command(name="freeze")
+@click.argument("manifest_file", type=click.Path(exists=True, dir_okay=False))
+@click.option("--output", "output_path", required=True, type=click.Path(dir_okay=False))
+@click.option("--benchmark-id", default="Matheel-Plagiarism-v1", show_default=True)
+def benchmark_freeze_command(manifest_file, output_path, benchmark_id):
+    """Freeze local normalized data, source revisions, and evaluation policies."""
+    from .benchmark_protocol import freeze_benchmark_protocol
+
+    path = Path(manifest_file)
+    try:
+        protocol = freeze_benchmark_protocol(json.loads(path.read_text(encoding="utf-8")),
+                                             benchmark_id=benchmark_id, output_path=output_path, base_dir=path.parent)
+    except (ValueError, KeyError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _echo_json({"benchmark_id": protocol["benchmark_id"], "protocol_id": protocol["protocol_id"], "output": str(output_path)})
+
+
+@benchmark_group.command(name="evaluate")
+@click.argument("protocol_file", type=click.Path(exists=True, dir_okay=False))
+@click.argument("methods_file", type=click.Path(exists=True, dir_okay=False))
+@click.option("--output-dir", required=True, type=click.Path(file_okay=False))
+@click.option("--basename", default="benchmark", show_default=True)
+@click.option("--format", "output_format", type=click.Choice(("text", "json")), default="text")
+def benchmark_evaluate_command(protocol_file, methods_file, output_dir, basename, output_format):
+    """Evaluate an algorithms JSON list/object against a frozen protocol."""
+    from .benchmark_protocol import load_benchmark_protocol, run_benchmark_protocol
+    from .leaderboard import _resolve_relative_paths
+
+    try:
+        methods_path = Path(methods_file)
+        payload = json.loads(methods_path.read_text(encoding="utf-8"))
+        methods = payload.get("algorithms") if isinstance(payload, dict) else payload
+        if not isinstance(methods, list) or not methods:
+            raise ValueError("Methods file must contain a nonempty algorithms list.")
+        methods = [_resolve_relative_paths(item, base_dir=methods_path.parent) if isinstance(item, dict) else item for item in methods]
+        report, artifacts = run_benchmark_protocol(load_benchmark_protocol(protocol_file), methods, output_dir=output_dir, basename=basename)
+    except (ValueError, KeyError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _echo_leaderboard_summary(report, artifacts, output_format)
+
+
+@benchmark_group.command(name="validate")
+@click.argument("result_file", type=click.Path(exists=True, dir_okay=False))
+@click.option("--protocol", "protocol_file", type=click.Path(exists=True, dir_okay=False))
+def benchmark_validate_command(result_file, protocol_file):
+    """Check imported results against their frozen protocol and recomputed ranks."""
+    from .benchmark_protocol import load_benchmark_protocol, validate_benchmark_result
+
+    try:
+        payload = json.loads(Path(result_file).read_text(encoding="utf-8"))
+        protocol = load_benchmark_protocol(protocol_file) if protocol_file else None
+        result = validate_benchmark_result(payload, protocol=protocol)
+    except (ValueError, KeyError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _echo_json(result)
+
+
 @main.group(name="benchmark-registry")
 def benchmark_registry_group():
     """Track and compare exported leaderboard runs."""

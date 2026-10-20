@@ -574,3 +574,16 @@ def _write_algorithm_fixtures(tmp_path):
         encoding="utf-8",
     )
     return exact_path, inverse_path
+
+
+def test_leaderboard_infers_category_from_local_dataset_metadata(tmp_path):
+    root = _write_pair_fixture(tmp_path)
+    metadata_path = root / "metadata.json"
+    metadata = json.loads(metadata_path.read_text())
+    metadata["task_type"] = "code_clone"
+    metadata_path.write_text(json.dumps(metadata))
+    report, _ = run_leaderboard({"datasets": [{"name": "clones", "task": "pair", "path": str(root)}],
+                                 "algorithms": [{"name": "lexical", "feature_weights": {"levenshtein": 1}}]})
+    assert report["per_dataset"]["task_type"].eq("code_clone").all()
+    assert report["aggregate"]["domain"].eq("code_clone").all()
+    assert report["cards"]["datasets"][0]["task_type"] == "code_clone"

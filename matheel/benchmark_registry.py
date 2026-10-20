@@ -136,6 +136,18 @@ def compare_benchmark_runs(registry_path, run_ids=None):
             raise KeyError(f"Benchmark run not found: {', '.join(missing)}")
         runs.sort(key=lambda run: selected_ids.index(str(run.get("run_id"))))
 
+    protocol_ids = {run.get("metadata", {}).get("protocol_id") for run in runs}
+    if any(protocol_ids) and (None in protocol_ids or len(protocol_ids) != 1):
+        raise ValueError("Cannot compare runs with different benchmark protocols or legacy/unversioned runs.")
+    if any(protocol_ids):
+        from .benchmark_protocol import validate_benchmark_result
+        for run in runs:
+            validate_benchmark_result(run)
+    else:
+        signatures = {_legacy_coverage_signature(run) for run in runs}
+        if len(signatures) > 1:
+            raise ValueError("Cannot compare runs with different dataset coverage, task metrics, or dataset fingerprints.")
+
     frames = []
     for order, run in enumerate(runs):
         frame = pd.DataFrame(run.get("aggregate") or [])
@@ -152,6 +164,9 @@ def compare_benchmark_runs(registry_path, run_ids=None):
     combined = pd.concat(frames, ignore_index=True)
     combined["mean_score"] = pd.to_numeric(combined.get("mean_score"), errors="coerce")
     key_columns = ["task_family", "algorithm_name", "metric"]
+    if "algorithm_id" in combined and combined["algorithm_id"].notna().all():
+        key_columns = [column for column in ("domain", "task_family", "algorithm_id", "metric") if column in combined]
+    combined["comparison_identity"] = "configuration_id" if "algorithm_id" in key_columns else "legacy_display_name"
     baseline = (
         combined[combined["run_order"] == combined["run_order"].min()][key_columns + ["mean_score"]]
         .rename(columns={"mean_score": "baseline_mean_score"})
@@ -174,7 +189,18 @@ def _coerce_leaderboard_payload(report_or_path):
         payload = leaderboard_payload(report_or_path)
     if not _looks_like_payload(payload):
         raise ValueError("Expected a Matheel leaderboard report or JSON artifact.")
-    return _clean_json_object(_redact_credentials(payload))
+    payload = _clean_json_object(_redact_credentials(payload))
+    if payload.get("metadata", {}).get("protocol_id"):
+        from .benchmark_protocol import validate_benchmark_result
+        validate_benchmark_result(payload)
+    return payload
+
+
+def _legacy_coverage_signature(run):
+    rows = run.get("per_dataset") or []
+    coverage = sorted({(str(row.get("domain", "plagiarism")), str(row.get("task_family")), str(row.get("dataset_name")), str(row.get("metric")), str(row.get("dataset_fingerprint", ""))) for row in rows})
+    cards = sorted((str(card.get("name")), json.dumps(card.get("fingerprint", {}), sort_keys=True)) for card in (run.get("cards", {}).get("datasets") or []))
+    return json.dumps([coverage, cards], sort_keys=True)
 
 
 def _looks_like_payload(value):

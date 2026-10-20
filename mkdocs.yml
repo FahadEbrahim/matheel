@@ -33,6 +33,7 @@ nav:
       - Load and evaluate datasets: datasets.md
       - Interpret and calibrate scores: scoring.md
       - Reproducible benchmark: reproducible_benchmark.md
+      - Versioned plagiarism benchmarks: benchmark_protocol.md
       - Leaderboards and run registry: leaderboard.md
   - Inspect results:
       - Visualization: visualization.md

@@ -1589,3 +1589,229 @@ def test_dataset_writer_rejects_colliding_paths_before_overwriting(tmp_path):
             {"file_id": "a.b", "text": "second", "suffix": ".py"},
         ], "pair")
     assert target.read_text(encoding="utf-8") == "original"
+
+
+def _write_domain_fixture(root, task_type="plagiarism", kind="pair", **attributes):
+    metadata = {"name": "domain_fixture", "task_type": task_type, **attributes}
+    files = [{"file_id": "a", "text": "print(1)"}]
+    if kind == "pair":
+        return write_pair_dataset(root, files, [{"left_id": "a", "right_id": "a", "label": 1}], metadata)
+    return write_retrieval_dataset(
+        root, files, [{"query_id": "q", "file_id": "a"}],
+        [{"document_id": "d", "file_id": "a"}],
+        [{"query_id": "q", "document_id": "d", "relevance": 1}], metadata,
+    )
+
+
+def test_builtin_presets_declare_plagiarism_domain_independent_of_protocol():
+    public_presets = {"soco14", "irplag", "conplag", "ipca", "student_code_similarity", "criminal_minds"}
+    for name in public_presets:
+        assert get_dataset_preset(name)["task_type"] == "plagiarism"
+        assert datasets_module.dataset_preset_task_type(name) == "plagiarism"
+    assert public_presets.issubset(datasets_module.available_dataset_presets_by_task_type("plagiarism"))
+    assert datasets_module.available_dataset_presets_by_task_type("code_clone") == ()
+    assert datasets_module.dataset_preset_task_families("soco14") == ("retrieval",)
+
+
+@pytest.mark.parametrize("task_type", ["", "code clone", "../plagiarism", "retrieval", "pair", "pair_classification", 2])
+def test_dataset_domains_reject_invalid_or_protocol_identifiers_before_writing(tmp_path, task_type):
+    with pytest.raises(ValueError, match="task_type"):
+        _write_domain_fixture(tmp_path / "invalid", task_type)
+    assert not (tmp_path / "invalid").exists()
+
+
+@pytest.mark.parametrize("kind", ["pair", "retrieval"])
+def test_dataset_domains_support_future_categories_and_legacy_metadata(tmp_path, kind):
+    dataset = _write_domain_fixture(tmp_path / "dataset", "Code_Clone", kind=kind)
+    loader = load_pair_dataset if kind == "pair" else load_retrieval_dataset
+    assert loader(dataset.root).metadata["task_type"] == "code_clone"
+    assert datasets_module.dataset_task_type(dataset) == "code_clone"
+    metadata_path = dataset.root / "metadata.json"
+    metadata = json.loads(metadata_path.read_text())
+    metadata.pop("task_type")
+    metadata_path.write_text(json.dumps(metadata))
+    assert loader(dataset.root).metadata["task_type"] == "plagiarism"
+    assert datasets_module.dataset_task_type({}) == "plagiarism"
+
+
+@pytest.mark.parametrize("kind", ["pair", "retrieval"])
+def test_merges_preserve_domain_and_source_ground_truth_and_reject_mixed_domains(tmp_path, kind):
+    first = _write_domain_fixture(tmp_path / "first", "code_clone", kind=kind, granularity="function", ground_truth="synthetic clone fixture")
+    second = _write_domain_fixture(tmp_path / "second", "code_clone", kind=kind, granularity="function", ground_truth="another clone fixture")
+    merger = datasets_module.merge_pair_datasets if kind == "pair" else datasets_module.merge_retrieval_datasets
+    merged = merger([first, second], dataset_names=["first", "second"])
+    assert merged.metadata["task_type"] == "code_clone"
+    assert merged.metadata["granularity"] == "function"
+    assert "ground_truth" not in merged.metadata
+    assert merged.metadata["source_metadata"]["first"]["ground_truth"] == "synthetic clone fixture"
+    plagiarism = _write_domain_fixture(tmp_path / "plagiarism", kind=kind)
+    with pytest.raises(ValueError, match="different task_type domains"):
+        merger([first, plagiarism])
+
+
+def test_explicit_specs_cannot_relabel_presets_or_normalized_datasets(tmp_path):
+    dataset = _write_domain_fixture(tmp_path / "dataset")
+    with pytest.raises(ValueError, match="task_type conflict"):
+        load_pair_datasets({"identifier": dataset.root, "task_type": "code_clone"})
+    with pytest.raises(ValueError, match="task_type conflict"):
+        load_pair_datasets({"preset": "irplag", "task_type": "code_clone"})
+    with pytest.raises(ValueError, match="task_type conflict"):
+        adapt_pair_dataset(dataset.root, destination=tmp_path / "copy", task_type="code_clone")
+    assert not (tmp_path / "copy").exists()
+
+
+def test_registered_domains_are_discoverable_and_spec_metadata_is_preserved(tmp_path, monkeypatch):
+    monkeypatch.setattr(datasets_module, "_DATASET_PRESETS", dict(datasets_module._DATASET_PRESETS))
+    dataset = _write_domain_fixture(tmp_path / "dataset", "code_clone")
+    register_dataset_preset("unit_clone", {
+        "identifier": dataset.root, "task_type": "code_clone", "task_families": ["pair"],
+        "ground_truth": "synthetic fixture", "granularity": "function", "languages": ["python"],
+    })
+    assert "code_clone" in available_dataset_task_types()
+    assert datasets_module.available_dataset_presets_by_task_type("code_clone") == ("unit_clone",)
+    loaded = load_pair_datasets("unit_clone")
+    assert loaded.metadata["task_type"] == "code_clone"
+    assert loaded.metadata["ground_truth"] == "synthetic fixture"
+    assert loaded.metadata["granularity"] == "function"
+    assert loaded.metadata["languages"] == ["python"]
+
+
+@pytest.mark.parametrize("kind", ["pair", "retrieval"])
+def test_generic_adapters_preserve_explicit_domain_and_detect_option_conflicts(tmp_path, kind):
+    source = tmp_path / "source"
+    source.mkdir()
+    if kind == "pair":
+        pd.DataFrame([{"left_text": "x", "right_text": "y", "label": 0}]).to_csv(source / "pairs.csv", index=False)
+        loader, adapter = load_pair_datasets, "auto_pair_tabular"
+    else:
+        pd.DataFrame([{"query_text": "x", "document_text": "y", "relevance": 1}]).to_csv(source / "retrieval.csv", index=False)
+        loader, adapter = load_retrieval_datasets, "auto_retrieval_tabular"
+    spec = {"identifier": source, "adapter": adapter, "task_type": "code_clone"}
+    loaded = loader(spec)
+    assert loaded.metadata["task_type"] == "code_clone"
+    assert json.loads((loaded.root / "metadata.json").read_text())["task_type"] == "code_clone"
+    with pytest.raises(ValueError, match="task_type conflict"):
+        loader({**spec, "adapter_options": {"task_type": "plagiarism"}})
+
+
+def test_dataset_validation_reports_domain_and_rejects_protocol_as_domain(tmp_path):
+    dataset = _write_domain_fixture(tmp_path / "dataset", "code_clone")
+    assert validate_dataset_report(dataset.root)["task_type"] == "code_clone"
+    metadata_path = dataset.root / "metadata.json"
+    metadata = json.loads(metadata_path.read_text())
+    metadata["task_type"] = "retrieval"
+    metadata_path.write_text(json.dumps(metadata))
+    report = validate_dataset_report(dataset.root)
+    assert any(issue["code"] == "invalid_task_type" for issue in report["issues"])
+
+
+@pytest.mark.parametrize("adapter", ["auto_pair_tabular", "auto_retrieval_tabular", "irplag_pair", "irplag_retrieval", "soco14_retrieval"])
+def test_adapter_file_ids_and_fingerprints_do_not_depend_on_download_location(tmp_path, adapter):
+    from matheel.reproducibility import fingerprint_source
+
+    roots = []
+    for location in ("first_cache", "second_cache"):
+        source = tmp_path / location
+        source.mkdir()
+        if adapter.startswith("auto_"):
+            (source / "a.py").write_text("print(1)\n")
+            (source / "b.py").write_text("print(2)\n")
+            if adapter == "auto_pair_tabular":
+                rows = [{"left_path": "a.py", "right_path": "b.py", "label": 0}]
+                table = "pairs.csv"
+            else:
+                rows = [{"query_path": "a.py", "document_path": "b.py", "relevance": 1}]
+                table = "retrieval.csv"
+            pd.DataFrame(rows).to_csv(source / table, index=False)
+        elif adapter.startswith("irplag"):
+            case = source / "IR-Plag-Dataset" / "case-01"
+            for folder in ("original", "plagiarized", "non-plagiarized"):
+                (case / folder).mkdir(parents=True)
+                (case / folder / "Main.java").write_text(f"class {folder.replace('-', '')} {{}}\n")
+        else:
+            split = source / "fire14-source-code-test-dataset_unzipped" / "fire14-source-code-test-dataset"
+            (split / "c" / "A1").mkdir(parents=True)
+            (split / "c" / "A1" / "C10172").write_text("int main(){return 0;}\n")
+            (split / "soco14-test-c-update.qrel").write_text("C10172 C10172\n")
+        adapt = adapt_retrieval_dataset if "retrieval" in adapter else adapt_pair_dataset
+        roots.append(adapt(source, adapter=adapter, dataset_name="portable_fixture"))
+    assert fingerprint_source(roots[0])["sha256"] == fingerprint_source(roots[1])["sha256"]
+
+
+def test_metadata_downloads_have_a_bounded_timeout(monkeypatch):
+    timeouts = []
+
+    def fake_urlopen(request, *, timeout):
+        timeouts.append(timeout)
+        return io.BytesIO(b'{"id": 123}')
+
+    monkeypatch.setattr(datasets_module.urllib.request, "urlopen", fake_urlopen)
+    assert datasets_module._read_json_url("https://example.invalid/metadata") == {"id": 123}
+    assert datasets_module._read_json_url("https://example.invalid/metadata", timeout=10) == {"id": 123}
+    assert timeouts == [60, 10]
+
+
+def test_adapting_legacy_normalized_data_assigns_explicit_domain_without_modifying_source(tmp_path):
+    dataset = _write_domain_fixture(tmp_path / "legacy")
+    metadata_path = dataset.root / "metadata.json"
+    metadata = json.loads(metadata_path.read_text())
+    metadata.pop("task_type")
+    metadata_path.write_text(json.dumps(metadata))
+    adapted = adapt_pair_dataset(dataset.root, task_type="code_clone")
+    assert adapted != dataset.root
+    assert load_pair_dataset(adapted).metadata["task_type"] == "code_clone"
+    assert "task_type" not in json.loads(metadata_path.read_text())
+    with pytest.raises(ValueError, match="different destination"):
+        adapt_pair_dataset(dataset.root, task_type="code_clone", destination=dataset.root)
+
+
+def test_conplag_native_adapter_preserves_raw_pair_context(tmp_path):
+    versions = tmp_path / "raw" / "versions"
+    for pair, text in (("a_b", "raw a in first pair"), ("a_c", "raw a in second pair")):
+        directory = versions / "version_1" / pair
+        directory.mkdir(parents=True)
+        (directory / "a.java").write_text(text)
+        (directory / f"{pair[-1]}.java").write_text(pair[-1])
+    rewritten = versions / "bplag_version_1" / "a_b" / "a"
+    rewritten.mkdir(parents=True)
+    (rewritten / "a.java").write_text("rewritten")
+    pd.DataFrame([{"sub1": "a", "sub2": "b", "problem": 19, "verdict": 1},
+                  {"sub1": "a", "sub2": "c", "problem": 19, "verdict": 0}]).to_csv(versions / "labels.csv", index=False)
+    dataset = load_pair_dataset(adapt_pair_dataset(tmp_path / "raw", adapter="conplag_pair"))
+    assert len(dataset.pairs) == 2
+    assert len(dataset.files) == 4
+    assert "rewritten" not in load_code_texts(dataset).values()
+    assert {"raw a in first pair", "raw a in second pair"}.issubset(set(load_code_texts(dataset).values()))
+
+
+def test_ipca_native_adapter_preserves_course_groups_with_warm_extraction_cache(tmp_path):
+    root = tmp_path / "repository" / "ipca_extracted" / "IPC"
+    for course in ("ITC", "PF"):
+        directory = root / course
+        directory.mkdir(parents=True)
+        (directory / "A1-NP-Sol-1.txt").write_text(course + " original")
+        (directory / "A1-P-Sol-2.txt").write_text(course + " plagiarized")
+    first = load_pair_dataset(adapt_pair_dataset(root, adapter="ipca_pair"))
+    warm = load_pair_dataset(adapt_pair_dataset(tmp_path / "repository", adapter="ipca_pair"))
+    assert len(first.pairs) == len(warm.pairs) == 2
+    assert first.files["course"].tolist() == warm.files["course"].tolist()
+    assert set(warm.files["course"]) == {"ITC", "PF"}
+
+
+def test_soco_native_adapter_rejects_ambiguous_languages_and_supports_explicit_selection(tmp_path):
+    root = tmp_path / "fire14-source-code-test-dataset"
+    root.mkdir()
+    for language in ("c", "java"):
+        directory = root / language / "A1"
+        directory.mkdir(parents=True)
+        (directory / "A10001").write_text(language + " first")
+        (directory / "A10002").write_text(language + " second")
+        (root / f"soco14-test-{language}-update.qrel").write_text("A10001 A10002\n")
+    with pytest.raises(ValueError, match="overlapping identifiers"):
+        adapt_retrieval_dataset(root, adapter="soco14_retrieval")
+    for language in ("cpp", "java"):
+        dataset = load_retrieval_dataset(adapt_retrieval_dataset(root, adapter="soco14_retrieval", adapter_options={"language": language}))
+        assert len(dataset.qrels) == 1
+        assert dataset.metadata["languages"] == [language]
+        assert all(text.startswith("c " if language == "cpp" else "java ") for text in load_code_texts(dataset).values())
+    assert get_dataset_preset("soco14")["adapter_options"]["language"] == "cpp"
