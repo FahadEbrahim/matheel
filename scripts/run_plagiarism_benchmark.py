@@ -15,6 +15,7 @@ import subprocess
 import sys
 import time
 
+import matheel
 from matheel.benchmark_protocol import (
     failed_benchmark_result,
     freeze_benchmark_protocol,
@@ -95,9 +96,9 @@ def atomic_json(path, payload):
 
 
 def source_fingerprint():
-    root = Path(__file__).resolve().parents[1]
+    root = Path(matheel.__file__).resolve().parent
     digest = hashlib.sha256()
-    for path in sorted((root / "matheel").glob("*.py")):
+    for path in sorted(root.glob("*.py")):
         digest.update(path.name.encode())
         digest.update(b"\0")
         digest.update(path.read_bytes())

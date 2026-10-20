@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import pandas as pd
@@ -6,6 +7,29 @@ import pytest
 from matheel.benchmark_protocol import freeze_benchmark_protocol
 from matheel.datasets import write_pair_dataset
 from scripts.run_plagiarism_benchmark import normalized_methods, read_checkpoint, run
+
+
+def test_source_fingerprint_tracks_the_imported_package_instead_of_the_runner_checkout(tmp_path, monkeypatch):
+    from scripts import run_plagiarism_benchmark as runner
+
+    checkout = tmp_path / "checkout"
+    imported = tmp_path / "installed" / "matheel"
+    (checkout / "matheel").mkdir(parents=True)
+    imported.mkdir(parents=True)
+    (checkout / "matheel" / "__init__.py").write_text("checkout_source = True\n")
+    (imported / "__init__.py").write_text("installed_source = True\n")
+    (imported / "similarity.py").write_text("scorer_version = 1\n")
+    monkeypatch.setattr(runner, "__file__", str(checkout / "scripts" / "runner.py"))
+    monkeypatch.setattr(runner.matheel, "__file__", str(imported / "__init__.py"))
+
+    expected = hashlib.sha256(
+        b"__init__.py\0installed_source = True\nsimilarity.py\0scorer_version = 1\n"
+    ).hexdigest()
+    assert runner.source_fingerprint() == expected
+    (checkout / "matheel" / "__init__.py").write_text("checkout_source = False\n")
+    assert runner.source_fingerprint() == expected
+    (imported / "similarity.py").write_text("scorer_version = 2\n")
+    assert runner.source_fingerprint() != expected
 
 
 def _inputs(tmp_path):
