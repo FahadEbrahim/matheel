@@ -1,0 +1,1361 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Matheel-Plagiarism-v1 Details</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; color: #111827; background: #ffffff; }
+    header { padding: 24px 28px; border-bottom: 1px solid #d1d5db; background: #f9fafb; }
+    main { padding: 20px 28px 32px; }
+    h1 { font-size: 1.6rem; margin: 0 0 8px; }
+    h2 { font-size: 1.15rem; margin: 28px 0 10px; }
+    h3 { font-size: 1rem; margin: 0; }
+    .meta { color: #4b5563; margin: 0; }
+    details { border: 1px solid #d1d5db; border-radius: 8px; margin-bottom: 12px; background: #ffffff; }
+    summary { cursor: pointer; padding: 12px 14px; background: #f3f4f6; }
+    .detail-body { padding: 12px 14px; }
+    dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 12px; margin: 0 0 12px; }
+    dt { color: #4b5563; font-weight: 600; }
+    dd { margin: 0; overflow-wrap: anywhere; }
+    pre { white-space: pre-wrap; overflow-x: auto; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; margin-bottom: 12px; }
+    th, td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align: left; }
+    th { background: #f3f4f6; }
+    code { background: #f3f4f6; padding: 1px 4px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Matheel-Plagiarism-v1 Details</h1>
+    <p class="meta">schema=1; seed=7</p>
+  </header>
+  <main>
+    <section>
+      <h2>Dataset Details</h2>
+      <details><summary><h3>student_code_similarity_pair</h3></summary><div class="detail-body"><dl><dt>card_type</dt><dd>dataset</dd><dt>dataset_kind</dt><dd>pair_classification</dd><dt>granularity</dt><dd>file</dd><dt>ground_truth</dt><dd>Source cheating_dataset.csv manually curated simulated student-submission cheating/not-cheating labels.</dd><dt>license</dt><dd>MIT</dd><dt>name</dt><dd>student_code_similarity_pair</dd><dt>schema_version</dt><dd>1</dd><dt>source_url</dt><dd>https://www.kaggle.com/datasets/ehsankhani/student-code-similarity-and-plagiarism-labels</dd><dt>task_family</dt><dd>pair</dd><dt>task_type</dt><dd>plagiarism</dd></dl><pre><code>{
+  &quot;card_type&quot;: &quot;dataset&quot;,
+  &quot;counts&quot;: {
+    &quot;files&quot;: 174,
+    &quot;pairs&quot;: 293,
+    &quot;positive_pairs&quot;: 100
+  },
+  &quot;dataset_kind&quot;: &quot;pair_classification&quot;,
+  &quot;fingerprint&quot;: {
+    &quot;file_count&quot;: 177,
+    &quot;sha256&quot;: &quot;77df842fd93f1fcd2dc068080fdd07d2d006dab77594674f2f552360c92e0e9a&quot;,
+    &quot;source_type&quot;: &quot;directory&quot;,
+    &quot;total_bytes&quot;: 189486
+  },
+  &quot;granularity&quot;: &quot;file&quot;,
+  &quot;ground_truth&quot;: &quot;Source cheating_dataset.csv manually curated simulated student-submission cheating/not-cheating labels.&quot;,
+  &quot;languages&quot;: [
+    &quot;python&quot;
+  ],
+  &quot;license&quot;: &quot;MIT&quot;,
+  &quot;metadata&quot;: {
+    &quot;adapter&quot;: &quot;student_code_similarity_pair&quot;,
+    &quot;dataset_kind&quot;: &quot;pair_classification&quot;,
+    &quot;granularity&quot;: &quot;file&quot;,
+    &quot;ground_truth&quot;: &quot;Source cheating_dataset.csv manually curated simulated student-submission cheating/not-cheating labels.&quot;,
+    &quot;languages&quot;: [
+      &quot;python&quot;
+    ],
+    &quot;license&quot;: &quot;MIT&quot;,
+    &quot;name&quot;: &quot;student_code_similarity_pair&quot;,
+    &quot;source_checksum&quot;: [
+      &quot;sha256:d1d45a0408edfab016f080cc02e650a9f0e30127a39b1854933ebd34e2db97d0&quot;
+    ],
+    &quot;source_revision&quot;: &quot;kaggle:ehsankhani/student-code-similarity-and-plagiarism-labels:1&quot;,
+    &quot;source_url&quot;: &quot;https://www.kaggle.com/datasets/ehsankhani/student-code-similarity-and-plagiarism-labels&quot;,
+    &quot;task_type&quot;: &quot;plagiarism&quot;
+  },
+  &quot;name&quot;: &quot;student_code_similarity_pair&quot;,
+  &quot;schema_version&quot;: 1,
+  &quot;source&quot;: {
+    &quot;domain&quot;: &quot;plagiarism&quot;,
+    &quot;exclude_self_matches&quot;: false,
+    &quot;identifier&quot;: &quot;student_code_similarity_pair&quot;,
+    &quot;k&quot;: 10,
+    &quot;name&quot;: &quot;student_code_similarity_pair&quot;,
+    &quot;task_families&quot;: [
+      &quot;pair&quot;
+    ],
+    &quot;task_type&quot;: &quot;plagiarism&quot;,
+    &quot;threshold&quot;: 0.5
+  },
+  &quot;source_url&quot;: &quot;https://www.kaggle.com/datasets/ehsankhani/student-code-similarity-and-plagiarism-labels&quot;,
+  &quot;task_family&quot;: &quot;pair&quot;,
+  &quot;task_type&quot;: &quot;plagiarism&quot;
+}</code></pre></div></details>
+    </section>
+    <section>
+      <h2>Algorithm Details</h2>
+      <details><summary><h3>Winnowing</h3></summary><div class="detail-body"><dl><dt>algorithm_kind</dt><dd>builtin</dd><dt>card_type</dt><dd>algorithm</dd><dt>name</dt><dd>Winnowing</dd><dt>schema_version</dt><dd>1</dd></dl><pre><code>{
+  &quot;algorithm_kind&quot;: &quot;builtin&quot;,
+  &quot;algorithm_options&quot;: {},
+  &quot;algorithm_path_name&quot;: &quot;&quot;,
+  &quot;card_type&quot;: &quot;algorithm&quot;,
+  &quot;fingerprint&quot;: {},
+  &quot;name&quot;: &quot;Winnowing&quot;,
+  &quot;package&quot;: &quot;&quot;,
+  &quot;package_version&quot;: &quot;&quot;,
+  &quot;schema_version&quot;: 1,
+  &quot;similarity_options&quot;: {
+    &quot;code_metric&quot;: &quot;codebleu&quot;,
+    &quot;code_metric_weight&quot;: 0.0,
+    &quot;feature_weights&quot;: {
+      &quot;winnowing&quot;: 1.0
+    },
+    &quot;k&quot;: null,
+    &quot;threshold&quot;: null
+  }
+}</code></pre></div></details>
+<details><summary><h3>Levenshtein</h3></summary><div class="detail-body"><dl><dt>algorithm_kind</dt><dd>builtin</dd><dt>card_type</dt><dd>algorithm</dd><dt>name</dt><dd>Levenshtein</dd><dt>schema_version</dt><dd>1</dd></dl><pre><code>{
+  &quot;algorithm_kind&quot;: &quot;builtin&quot;,
+  &quot;algorithm_options&quot;: {},
+  &quot;algorithm_path_name&quot;: &quot;&quot;,
+  &quot;card_type&quot;: &quot;algorithm&quot;,
+  &quot;fingerprint&quot;: {},
+  &quot;name&quot;: &quot;Levenshtein&quot;,
+  &quot;package&quot;: &quot;&quot;,
+  &quot;package_version&quot;: &quot;&quot;,
+  &quot;schema_version&quot;: 1,
+  &quot;similarity_options&quot;: {
+    &quot;code_metric&quot;: &quot;codebleu&quot;,
+    &quot;code_metric_weight&quot;: 0.0,
+    &quot;feature_weights&quot;: {
+      &quot;levenshtein&quot;: 1.0
+    },
+    &quot;k&quot;: null,
+    &quot;threshold&quot;: null
+  }
+}</code></pre></div></details>
+<details><summary><h3>JPlag 6.3.0 average</h3></summary><div class="detail-body"><dl><dt>algorithm_kind</dt><dd>custom</dd><dt>algorithm_path_name</dt><dd>matheel.external_detectors.jplag</dd><dt>card_type</dt><dd>algorithm</dd><dt>name</dt><dd>JPlag 6.3.0 average</dd><dt>package</dt><dd>matheel</dd><dt>package_version</dt><dd>0.7.1</dd><dt>resolved_algorithm_name</dt><dd>matheel.external_detectors.jplag</dd><dt>schema_version</dt><dd>1</dd></dl><pre><code>{
+  &quot;algorithm_kind&quot;: &quot;custom&quot;,
+  &quot;algorithm_options&quot;: {
+    &quot;adapter_sha256&quot;: &quot;3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4&quot;,
+    &quot;artifact_sha256&quot;: &quot;5f2c21e8b88ed77134effcb3a5a3ab13d188f6a3e16d401387f7479e92db9aa2&quot;,
+    &quot;configuration&quot;: {
+      &quot;heap_mb&quot;: 1024,
+      &quot;language&quot;: &quot;python3&quot;,
+      &quot;max_comparisons&quot;: 125000,
+      &quot;max_files&quot;: 500,
+      &quot;max_output_bytes&quot;: 2000000,
+      &quot;max_result_bytes&quot;: 250000000,
+      &quot;max_source_bytes&quot;: 50000000,
+      &quot;min_tokens&quot;: 9,
+      &quot;normalize&quot;: false,
+      &quot;score_mode&quot;: &quot;average&quot;,
+      &quot;timeout_seconds&quot;: 120.0
+    },
+    &quot;corpus_policy&quot;: &quot;all_prepared_files_single_file_submissions&quot;,
+    &quot;detector&quot;: &quot;jplag&quot;,
+    &quot;runtime&quot;: {
+      &quot;executable_sha256&quot;: &quot;83c9c5310d044e7c4262432854eb1bc5f49763d7c1e9971777a646c91b96c06d&quot;,
+      &quot;modules_sha256&quot;: &quot;74e8a4881f09f0d56c3e27e0075f60534bc4d9a908f3d179586d6515f89f9825&quot;,
+      &quot;release_sha256&quot;: &quot;e5e50f3c36e9ce7ac50ccbc499c8299880e8fb8fee57bb3a7a2b890477ce8498&quot;,
+      &quot;version&quot;: &quot;openjdk version \&quot;25.0.4.1\&quot; 2026-08-18 LTS&quot;
+    },
+    &quot;self_matches&quot;: &quot;unsupported&quot;,
+    &quot;version&quot;: &quot;6.3.0&quot;
+  },
+  &quot;algorithm_path_name&quot;: &quot;matheel.external_detectors.jplag&quot;,
+  &quot;card_type&quot;: &quot;algorithm&quot;,
+  &quot;fingerprint&quot;: {
+    &quot;file_name&quot;: &quot;jplag.py&quot;,
+    &quot;sha256&quot;: &quot;4a831236bc6baf4e9020bef80dd6e6033ef7a9f3109103e55ab09dbf140861d6&quot;,
+    &quot;source_type&quot;: &quot;file&quot;,
+    &quot;total_bytes&quot;: 8210
+  },
+  &quot;name&quot;: &quot;JPlag 6.3.0 average&quot;,
+  &quot;package&quot;: &quot;matheel&quot;,
+  &quot;package_version&quot;: &quot;0.7.1&quot;,
+  &quot;resolved_algorithm_name&quot;: &quot;matheel.external_detectors.jplag&quot;,
+  &quot;schema_version&quot;: 1,
+  &quot;similarity_options&quot;: {
+    &quot;k&quot;: null,
+    &quot;preprocess_mode&quot;: &quot;none&quot;,
+    &quot;threshold&quot;: null
+  }
+}</code></pre></div></details>
+<details><summary><h3>Dolos 2.10.0</h3></summary><div class="detail-body"><dl><dt>algorithm_kind</dt><dd>custom</dd><dt>algorithm_path_name</dt><dd>matheel.external_detectors.dolos</dd><dt>card_type</dt><dd>algorithm</dd><dt>name</dt><dd>Dolos 2.10.0</dd><dt>package</dt><dd>matheel</dd><dt>package_version</dt><dd>0.7.1</dd><dt>resolved_algorithm_name</dt><dd>matheel.external_detectors.dolos</dd><dt>schema_version</dt><dd>1</dd></dl><pre><code>{
+  &quot;algorithm_kind&quot;: &quot;custom&quot;,
+  &quot;algorithm_options&quot;: {
+    &quot;adapter_sha256&quot;: &quot;3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4&quot;,
+    &quot;configuration&quot;: {
+      &quot;heap_mb&quot;: 1024,
+      &quot;include_comments&quot;: false,
+      &quot;kgram_length&quot;: 23,
+      &quot;kgrams_in_window&quot;: 17,
+      &quot;language&quot;: &quot;python&quot;,
+      &quot;max_comparisons&quot;: 125000,
+      &quot;max_files&quot;: 500,
+      &quot;max_fingerprint_count&quot;: 2147483647,
+      &quot;max_output_bytes&quot;: 2000000,
+      &quot;max_result_bytes&quot;: 100000000,
+      &quot;max_source_bytes&quot;: 50000000,
+      &quot;timeout_seconds&quot;: 120.0
+    },
+    &quot;corpus_policy&quot;: &quot;all_prepared_files_single_file_submissions&quot;,
+    &quot;detector&quot;: &quot;dolos&quot;,
+    &quot;installation_sha256&quot;: &quot;20c136bd5f23d9b0f901f7a08b52202571bfc5a06f034ec7d080a94cd252e89d&quot;,
+    &quot;lockfile_sha256&quot;: &quot;29f32c0af8eb8e824a9d22b5fd1c0335a8545ba275c76920e675a59a24d804bc&quot;,
+    &quot;npm_integrity&quot;: &quot;sha512-4Orj8kGOeBnAu9l2qLLXkU3udeLDFpIqUeMxMeMoMwKcmCpZq6qSHyfR+UZsgpUC7r6JlBZ+J/dOzobVYIea7g==&quot;,
+    &quot;runtime&quot;: {
+      &quot;executable_sha256&quot;: &quot;68f4d07ca49e0500cc135c7e0a445093e228e42e126ac22306d045f0a8c2636b&quot;,
+      &quot;version&quot;: &quot;v22.23.3&quot;
+    },
+    &quot;score_mode&quot;: &quot;symmetric_selected_fingerprint_coverage&quot;,
+    &quot;self_matches&quot;: &quot;unsupported&quot;,
+    &quot;version&quot;: &quot;2.10.0&quot;
+  },
+  &quot;algorithm_path_name&quot;: &quot;matheel.external_detectors.dolos&quot;,
+  &quot;card_type&quot;: &quot;algorithm&quot;,
+  &quot;fingerprint&quot;: {
+    &quot;file_name&quot;: &quot;dolos.py&quot;,
+    &quot;sha256&quot;: &quot;bea0ef03b270fd7b3e3e5c015a557fa071d05222121694c638dfac1b15692791&quot;,
+    &quot;source_type&quot;: &quot;file&quot;,
+    &quot;total_bytes&quot;: 9261
+  },
+  &quot;name&quot;: &quot;Dolos 2.10.0&quot;,
+  &quot;package&quot;: &quot;matheel&quot;,
+  &quot;package_version&quot;: &quot;0.7.1&quot;,
+  &quot;resolved_algorithm_name&quot;: &quot;matheel.external_detectors.dolos&quot;,
+  &quot;schema_version&quot;: 1,
+  &quot;similarity_options&quot;: {
+    &quot;k&quot;: null,
+    &quot;preprocess_mode&quot;: &quot;none&quot;,
+    &quot;threshold&quot;: null
+  }
+}</code></pre></div></details>
+    </section>
+    <section>
+      <h2>Aggregate Rows</h2>
+      <table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>algorithm_id</th>
+      <th>algorithm_name</th>
+      <th>benchmark_id</th>
+      <th>complete_coverage</th>
+      <th>coverage</th>
+      <th>dataset_count</th>
+      <th>domain</th>
+      <th>elapsed_seconds</th>
+      <th>eligible</th>
+      <th>expected_dataset_count</th>
+      <th>mean_score</th>
+      <th>median_score</th>
+      <th>metric</th>
+      <th>not_applicable_reason</th>
+      <th>protocol_id</th>
+      <th>rank</th>
+      <th>sample_count</th>
+      <th>status</th>
+      <th>task_family</th>
+      <th>task_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.672355</td>
+      <td>0.672355</td>
+      <td>accuracy</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.580205</td>
+      <td>0.580205</td>
+      <td>accuracy</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>accuracy</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>accuracy</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.714145</td>
+      <td>0.714145</td>
+      <td>auroc</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.540699</td>
+      <td>0.540699</td>
+      <td>auroc</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>auroc</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>auroc</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.560050</td>
+      <td>0.560050</td>
+      <td>average_precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.446964</td>
+      <td>0.446964</td>
+      <td>average_precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>average_precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>average_precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.607029</td>
+      <td>0.607029</td>
+      <td>f1</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.200000</td>
+      <td>0.200000</td>
+      <td>f1</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>f1</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>f1</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.600000</td>
+      <td>0.600000</td>
+      <td>precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.446009</td>
+      <td>0.446009</td>
+      <td>precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.950000</td>
+      <td>0.950000</td>
+      <td>recall</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>True</td>
+      <td>1.0</td>
+      <td>1</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>1</td>
+      <td>0.120000</td>
+      <td>0.120000</td>
+      <td>recall</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>recall</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>False</td>
+      <td>0.0</td>
+      <td>0</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>1</td>
+      <td>NaN</td>
+      <td>NaN</td>
+      <td>recall</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+  </tbody>
+</table>
+    </section>
+    <section>
+      <h2>Per-Dataset Rows</h2>
+      <table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th>algorithm_id</th>
+      <th>algorithm_kind</th>
+      <th>algorithm_name</th>
+      <th>benchmark_id</th>
+      <th>dataset_fingerprint</th>
+      <th>dataset_name</th>
+      <th>dataset_source</th>
+      <th>domain</th>
+      <th>elapsed_seconds</th>
+      <th>eligible</th>
+      <th>error</th>
+      <th>metric</th>
+      <th>not_applicable_reason</th>
+      <th>protocol_id</th>
+      <th>rank</th>
+      <th>sample_count</th>
+      <th>score</th>
+      <th>status</th>
+      <th>task_family</th>
+      <th>task_type</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>builtin</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>None</td>
+      <td>accuracy</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>0.672355</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>builtin</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>None</td>
+      <td>accuracy</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>0.580205</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>custom</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>accuracy</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>custom</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>accuracy</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>builtin</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>None</td>
+      <td>auroc</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>0.714145</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>builtin</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>None</td>
+      <td>auroc</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>0.540699</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>custom</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>auroc</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>custom</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>auroc</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>builtin</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>None</td>
+      <td>average_precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>0.560050</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>builtin</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>None</td>
+      <td>average_precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>0.446964</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>custom</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>average_precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>custom</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>average_precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>builtin</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>None</td>
+      <td>f1</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>0.607029</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>builtin</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>None</td>
+      <td>f1</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>0.200000</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>custom</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>f1</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>custom</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>f1</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>builtin</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>None</td>
+      <td>precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>0.600000</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>builtin</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>None</td>
+      <td>precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>0.446009</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>custom</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>custom</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>precision</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994</td>
+      <td>builtin</td>
+      <td>Levenshtein</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.059398</td>
+      <td>True</td>
+      <td>None</td>
+      <td>recall</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>1.0</td>
+      <td>293</td>
+      <td>0.950000</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090</td>
+      <td>builtin</td>
+      <td>Winnowing</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.098991</td>
+      <td>True</td>
+      <td>None</td>
+      <td>recall</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>2.0</td>
+      <td>293</td>
+      <td>0.120000</td>
+      <td>completed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155</td>
+      <td>custom</td>
+      <td>Dolos 2.10.0</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.561716</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>recall</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+    <tr>
+      <td>e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096</td>
+      <td>custom</td>
+      <td>JPlag 6.3.0 average</td>
+      <td>Matheel-Plagiarism-v1</td>
+      <td>8dc41fdba8e0a012d7abb98fc2bd876f9264f0ea5932aa908104597b2bfcbd70</td>
+      <td>student_code_similarity_pair</td>
+      <td>local</td>
+      <td>plagiarism</td>
+      <td>0.189517</td>
+      <td>False</td>
+      <td>DetectorError: Empty or non-text source files are unsupported; no scores were accepted.</td>
+      <td>recall</td>
+      <td>None</td>
+      <td>6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931</td>
+      <td>NaN</td>
+      <td>0</td>
+      <td>NaN</td>
+      <td>failed</td>
+      <td>pair</td>
+      <td>plagiarism</td>
+    </tr>
+  </tbody>
+</table>
+    </section>
+    <section>
+      <h2>Artifacts</h2>
+      <ul><li>aggregate_csv: <code>matheel_plagiarism_v1_aggregate.csv</code></li>
+<li>html: <code>matheel_plagiarism_v1.html</code></li>
+<li>json: <code>matheel_plagiarism_v1.json</code></li>
+<li>per_dataset_csv: <code>matheel_plagiarism_v1_per_dataset.csv</code></li>
+<li>reproducibility_json: <code>matheel_plagiarism_v1_reproducibility.json</code></li></ul>
+    </section>
+  </main>
+</body>
+</html>

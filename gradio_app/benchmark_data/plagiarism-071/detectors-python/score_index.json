@@ -1,0 +1,36 @@
+{
+  "benchmark_id": "Matheel-Plagiarism-v1",
+  "protocol_id": "6c066c1bcec8b1ffec717394fc2cd4f33c886e541f5805ddccf12126fa83e931",
+  "score_artifacts": [
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_c7679831f4ff2607d446_pair.csv",
+      "rows": 293,
+      "sha256": "80ba49040c9f264d7475fda8694a832dcbac801dd7d4ffa231965f0e060f97e2",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 293,
+      "sha256": "3d3ec0029f8ec5fbd10b802ccf22a00cf14b011c1883dc2b5d36f71cc6fd8445",
+      "task_family": "pair"
+    }
+  ]
+}

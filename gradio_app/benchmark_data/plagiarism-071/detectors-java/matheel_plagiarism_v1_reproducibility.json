@@ -1,0 +1,341 @@
+{
+  "created_utc": "2026-10-20T21:57:19.981758+00:00",
+  "packages": {
+    "apted": "1.0.3",
+    "bert-score": "0.3.13",
+    "chonkie": "1.6.5",
+    "gradio": "5.50.0",
+    "matheel": "0.7.1",
+    "model2vec": "0.10.0",
+    "numpy": "2.5.4",
+    "pandas": "2.3.3",
+    "rapidfuzz": "3.14.6",
+    "sentence-transformers": "6.1.0",
+    "tree-sitter-language-pack": "0.7.4",
+    "umap-learn": "0.5.12"
+  },
+  "platform": {
+    "machine": "arm64",
+    "release": "27.0.0",
+    "system": "Darwin"
+  },
+  "python": {
+    "implementation": "CPython",
+    "version": "3.12.12 (main, Oct  9 2025, 11:07:00) [Clang 17.0.0 (clang-1700.6.3.2)]"
+  },
+  "run_configs": [
+    {
+      "algorithms": [
+        {
+          "algorithm_options": {},
+          "algorithm_path": null,
+          "k": null,
+          "name": "Winnowing",
+          "similarity_options": {
+            "code_metric": "codebleu",
+            "code_metric_weight": 0.0,
+            "feature_weights": {
+              "winnowing": 1.0
+            }
+          },
+          "threshold": null
+        },
+        {
+          "algorithm_options": {},
+          "algorithm_path": null,
+          "k": null,
+          "name": "Levenshtein",
+          "similarity_options": {
+            "code_metric": "codebleu",
+            "code_metric_weight": 0.0,
+            "feature_weights": {
+              "levenshtein": 1.0
+            }
+          },
+          "threshold": null
+        },
+        {
+          "algorithm_options": {
+            "adapter_sha256": "3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4",
+            "artifact_sha256": "5f2c21e8b88ed77134effcb3a5a3ab13d188f6a3e16d401387f7479e92db9aa2",
+            "configuration": {
+              "heap_mb": 1024,
+              "language": "java",
+              "max_comparisons": 125000,
+              "max_files": 500,
+              "max_output_bytes": 2000000,
+              "max_result_bytes": 250000000,
+              "max_source_bytes": 50000000,
+              "min_tokens": 9,
+              "normalize": false,
+              "score_mode": "average",
+              "timeout_seconds": 120.0
+            },
+            "corpus_policy": "all_prepared_files_single_file_submissions",
+            "detector": "jplag",
+            "runtime": {
+              "executable_sha256": "83c9c5310d044e7c4262432854eb1bc5f49763d7c1e9971777a646c91b96c06d",
+              "modules_sha256": "74e8a4881f09f0d56c3e27e0075f60534bc4d9a908f3d179586d6515f89f9825",
+              "release_sha256": "e5e50f3c36e9ce7ac50ccbc499c8299880e8fb8fee57bb3a7a2b890477ce8498",
+              "version": "openjdk version \"25.0.4.1\" 2026-08-18 LTS"
+            },
+            "self_matches": "unsupported",
+            "version": "6.3.0"
+          },
+          "algorithm_path": "matheel.external_detectors.jplag",
+          "k": null,
+          "name": "JPlag 6.3.0 average",
+          "similarity_options": {
+            "preprocess_mode": "none"
+          },
+          "threshold": null
+        },
+        {
+          "algorithm_options": {
+            "adapter_sha256": "3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4",
+            "configuration": {
+              "heap_mb": 1024,
+              "include_comments": false,
+              "kgram_length": 23,
+              "kgrams_in_window": 17,
+              "language": "java",
+              "max_comparisons": 125000,
+              "max_files": 500,
+              "max_fingerprint_count": 2147483647,
+              "max_output_bytes": 2000000,
+              "max_result_bytes": 100000000,
+              "max_source_bytes": 50000000,
+              "timeout_seconds": 120.0
+            },
+            "corpus_policy": "all_prepared_files_single_file_submissions",
+            "detector": "dolos",
+            "installation_sha256": "20c136bd5f23d9b0f901f7a08b52202571bfc5a06f034ec7d080a94cd252e89d",
+            "lockfile_sha256": "29f32c0af8eb8e824a9d22b5fd1c0335a8545ba275c76920e675a59a24d804bc",
+            "npm_integrity": "sha512-4Orj8kGOeBnAu9l2qLLXkU3udeLDFpIqUeMxMeMoMwKcmCpZq6qSHyfR+UZsgpUC7r6JlBZ+J/dOzobVYIea7g==",
+            "runtime": {
+              "executable_sha256": "68f4d07ca49e0500cc135c7e0a445093e228e42e126ac22306d045f0a8c2636b",
+              "version": "v22.23.3"
+            },
+            "score_mode": "symmetric_selected_fingerprint_coverage",
+            "self_matches": "unsupported",
+            "version": "2.10.0"
+          },
+          "algorithm_path": "matheel.external_detectors.dolos",
+          "k": null,
+          "name": "Dolos 2.10.0",
+          "similarity_options": {
+            "preprocess_mode": "none"
+          },
+          "threshold": null
+        }
+      ],
+      "continue_on_error": true,
+      "datasets": [
+        {
+          "domain": "plagiarism",
+          "exclude_self_matches": false,
+          "k": 10,
+          "name": "irplag_pair",
+          "similarity_options": {
+            "code_language": "java"
+          },
+          "spec": {
+            "domain": "plagiarism",
+            "exclude_self_matches": false,
+            "identifier": "irplag_pair",
+            "k": 10,
+            "name": "irplag_pair",
+            "task_families": [
+              "pair"
+            ],
+            "task_type": "plagiarism",
+            "threshold": 0.5
+          },
+          "task_family": "pair",
+          "threshold": 0.5
+        },
+        {
+          "domain": "plagiarism",
+          "exclude_self_matches": false,
+          "k": 10,
+          "name": "irplag_retrieval",
+          "similarity_options": {
+            "code_language": "java"
+          },
+          "spec": {
+            "domain": "plagiarism",
+            "exclude_self_matches": false,
+            "identifier": "irplag_retrieval",
+            "k": 10,
+            "name": "irplag_retrieval",
+            "task_families": [
+              "retrieval"
+            ],
+            "task_type": "plagiarism",
+            "threshold": 0.5
+          },
+          "task_family": "retrieval",
+          "threshold": 0.5
+        },
+        {
+          "domain": "plagiarism",
+          "exclude_self_matches": false,
+          "k": 10,
+          "name": "criminal_minds_pair",
+          "similarity_options": {
+            "code_language": "java"
+          },
+          "spec": {
+            "domain": "plagiarism",
+            "exclude_self_matches": false,
+            "identifier": "criminal_minds_pair",
+            "k": 10,
+            "name": "criminal_minds_pair",
+            "task_families": [
+              "pair"
+            ],
+            "task_type": "plagiarism",
+            "threshold": 0.5
+          },
+          "task_family": "pair",
+          "threshold": 0.5
+        },
+        {
+          "domain": "plagiarism",
+          "exclude_self_matches": true,
+          "k": 10,
+          "name": "soco14_java_a1_judged_retrieval",
+          "similarity_options": {
+            "code_language": "java"
+          },
+          "spec": {
+            "domain": "plagiarism",
+            "exclude_self_matches": true,
+            "identifier": "soco14_java_a1_judged_retrieval",
+            "k": 10,
+            "name": "soco14_java_a1_judged_retrieval",
+            "task_families": [
+              "retrieval"
+            ],
+            "task_type": "plagiarism",
+            "threshold": 0.5
+          },
+          "task_family": "retrieval",
+          "threshold": 0.5
+        },
+        {
+          "domain": "plagiarism",
+          "exclude_self_matches": true,
+          "k": 10,
+          "name": "soco14_java_a2_judged_retrieval",
+          "similarity_options": {
+            "code_language": "java"
+          },
+          "spec": {
+            "domain": "plagiarism",
+            "exclude_self_matches": true,
+            "identifier": "soco14_java_a2_judged_retrieval",
+            "k": 10,
+            "name": "soco14_java_a2_judged_retrieval",
+            "task_families": [
+              "retrieval"
+            ],
+            "task_type": "plagiarism",
+            "threshold": 0.5
+          },
+          "task_family": "retrieval",
+          "threshold": 0.5
+        },
+        {
+          "domain": "plagiarism",
+          "exclude_self_matches": true,
+          "k": 10,
+          "name": "soco14_java_b1_judged_retrieval",
+          "similarity_options": {
+            "code_language": "java"
+          },
+          "spec": {
+            "domain": "plagiarism",
+            "exclude_self_matches": true,
+            "identifier": "soco14_java_b1_judged_retrieval",
+            "k": 10,
+            "name": "soco14_java_b1_judged_retrieval",
+            "task_families": [
+              "retrieval"
+            ],
+            "task_type": "plagiarism",
+            "threshold": 0.5
+          },
+          "task_family": "retrieval",
+          "threshold": 0.5
+        },
+        {
+          "domain": "plagiarism",
+          "exclude_self_matches": true,
+          "k": 10,
+          "name": "soco14_java_b2_judged_retrieval",
+          "similarity_options": {
+            "code_language": "java"
+          },
+          "spec": {
+            "domain": "plagiarism",
+            "exclude_self_matches": true,
+            "identifier": "soco14_java_b2_judged_retrieval",
+            "k": 10,
+            "name": "soco14_java_b2_judged_retrieval",
+            "task_families": [
+              "retrieval"
+            ],
+            "task_type": "plagiarism",
+            "threshold": 0.5
+          },
+          "task_family": "retrieval",
+          "threshold": 0.5
+        },
+        {
+          "domain": "plagiarism",
+          "exclude_self_matches": true,
+          "k": 10,
+          "name": "soco14_java_c2_judged_retrieval",
+          "similarity_options": {
+            "code_language": "java"
+          },
+          "spec": {
+            "domain": "plagiarism",
+            "exclude_self_matches": true,
+            "identifier": "soco14_java_c2_judged_retrieval",
+            "k": 10,
+            "name": "soco14_java_c2_judged_retrieval",
+            "task_families": [
+              "retrieval"
+            ],
+            "task_type": "plagiarism",
+            "threshold": 0.5
+          },
+          "task_family": "retrieval",
+          "threshold": 0.5
+        }
+      ],
+      "name": "Matheel-Plagiarism-v1",
+      "pair_metrics": [
+        "f1",
+        "precision",
+        "recall",
+        "accuracy",
+        "auroc",
+        "average_precision"
+      ],
+      "retrieval_metrics": [
+        "mean_average_precision",
+        "mean_reciprocal_rank",
+        "ndcg_at_k",
+        "precision_at_k",
+        "recall_at_k"
+      ],
+      "schema_version": 1,
+      "seed": 7,
+      "strict_coverage": true
+    }
+  ],
+  "schema_version": 1
+}

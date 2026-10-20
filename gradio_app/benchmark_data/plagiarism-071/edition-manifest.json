@@ -1,0 +1,169 @@
+{
+  "files": {
+    "all-methods/analysis.json": {
+      "bytes": 957186,
+      "sha256": "ec8bf461d76f87243c0c142c8f229d6b0a4e314c13cc5bf2fca3c30fc5af16b2"
+    },
+    "all-methods/matheel_plagiarism_v1.html": {
+      "bytes": 1908709,
+      "sha256": "9ffa7f1c90cbc86742c89cc3aa764582f36cb1844338c3bd5a0e3691bc95cab0"
+    },
+    "all-methods/matheel_plagiarism_v1.json": {
+      "bytes": 2766967,
+      "sha256": "ec227a43cb1f8da06eea71b0bea9ac5dbd2ae02d3c69289b5a344429eb84a64f"
+    },
+    "all-methods/matheel_plagiarism_v1_aggregate.csv": {
+      "bytes": 92985,
+      "sha256": "84a06d8448563980c09a1fb9ec21a48ee82d350daa9206847785786ec13f9422"
+    },
+    "all-methods/matheel_plagiarism_v1_details.html": {
+      "bytes": 1977822,
+      "sha256": "75b45210fb42d004ce7c3c0e43eb3a4e71f28c8148689cb21010163a37ace65f"
+    },
+    "all-methods/matheel_plagiarism_v1_per_dataset.csv": {
+      "bytes": 917645,
+      "sha256": "a46f57a935341c87e93c30afccd6add0ef8baa4db1570a75f15b53f0d2d99390"
+    },
+    "all-methods/matheel_plagiarism_v1_reproducibility.json": {
+      "bytes": 24667,
+      "sha256": "7ff3912bc017c1b85a8ac35b114fa02fd336d04398761f51fd350ede8f332a0f"
+    },
+    "all-methods/protocol.json": {
+      "bytes": 21721,
+      "sha256": "e325acb9a73900ef034d0288e512f1b23583732b642f443f5365ff9454c3d985"
+    },
+    "all-methods/publication.json": {
+      "bytes": 1239,
+      "sha256": "a54f1f6429ccf8dd1bdc1a1ddb710fc386f5206c5b8d142d91dad6f88ba42a90"
+    },
+    "all-methods/score_index.json": {
+      "bytes": 187800,
+      "sha256": "879b3074773c74d5e082c56d2fb5ba52f50cbf8662efb2c60c28e87058ec0ea8"
+    },
+    "detectors-cpp/analysis.json": {
+      "bytes": 39448,
+      "sha256": "7beb71a1da9dc1ce3c96ae90a02ca68f83bd9218af3c6275982adc0eb5261ec4"
+    },
+    "detectors-cpp/matheel_plagiarism_v1.html": {
+      "bytes": 121570,
+      "sha256": "380973ed02ce7cf78eb38d8e9c33d4e099185b99249307d5805eec8b8e18e5c6"
+    },
+    "detectors-cpp/matheel_plagiarism_v1.json": {
+      "bytes": 208372,
+      "sha256": "50eaef9e3804e3361357391fa43c4265f92880916eebb1abd19a6417981c24b2"
+    },
+    "detectors-cpp/matheel_plagiarism_v1_aggregate.csv": {
+      "bytes": 12761,
+      "sha256": "8765eb8146cdbb1b365d4561e695c5b12ae91146bd2b1f39c2d33e820c76b49c"
+    },
+    "detectors-cpp/matheel_plagiarism_v1_details.html": {
+      "bytes": 145477,
+      "sha256": "86d782b3d811b7d0e7171f337ce3eca30ab6063639eba5aa1dd2ee83256a368d"
+    },
+    "detectors-cpp/matheel_plagiarism_v1_per_dataset.csv": {
+      "bytes": 49747,
+      "sha256": "b5c4f860c0e53cd43194b3d7bf90372a602e9a45cb23ffdbd606a5ca56abf8a4"
+    },
+    "detectors-cpp/matheel_plagiarism_v1_reproducibility.json": {
+      "bytes": 9331,
+      "sha256": "6ff35424b2fb384816c4fa77b23f94d0637151c4f5e1b936ae265ebcb0f90220"
+    },
+    "detectors-cpp/protocol.json": {
+      "bytes": 9283,
+      "sha256": "55fc06a89cd41f586eb4fc56cc54f37fb173896bfdad8f9c46621ade7ba03351"
+    },
+    "detectors-cpp/publication.json": {
+      "bytes": 1237,
+      "sha256": "ef87e589df1785b9acab69e7ca854ac67b0293a4d4896d7ca20d666b964f893d"
+    },
+    "detectors-cpp/score_index.json": {
+      "bytes": 8005,
+      "sha256": "39dd7792757ef78767705dda2c1697271bd08d4ca011b13c0b38cac2ec365d81"
+    },
+    "detectors-java/analysis.json": {
+      "bytes": 77824,
+      "sha256": "f3979c73bdbfdbfbfa65ed2c845912f8414e63b6a953e167bb5598c58ea5f40e"
+    },
+    "detectors-java/matheel_plagiarism_v1.html": {
+      "bytes": 150518,
+      "sha256": "4f1b907831bd493394607cd33a2370399fea0a176c123ff3cad02751b1ae2f6f"
+    },
+    "detectors-java/matheel_plagiarism_v1.json": {
+      "bytes": 259426,
+      "sha256": "9e6751dd09952ef6f1b318e1c2c805bc69c132212b77a27e57ffe0d122cf8408"
+    },
+    "detectors-java/matheel_plagiarism_v1_aggregate.csv": {
+      "bytes": 12814,
+      "sha256": "759e67c769c68de2f52ecc691b9c6d09a23859376e8b73a1a67c91467a062945"
+    },
+    "detectors-java/matheel_plagiarism_v1_details.html": {
+      "bytes": 179699,
+      "sha256": "2e001233970745e8ec4062004c5e0b9c603615b324942334ebcb2fa2b1e135fc"
+    },
+    "detectors-java/matheel_plagiarism_v1_per_dataset.csv": {
+      "bytes": 63547,
+      "sha256": "6fa786c95cf68cc55a9480eda40fe6c0af120aa5080c91dd9f37ff77a6b14e9f"
+    },
+    "detectors-java/matheel_plagiarism_v1_reproducibility.json": {
+      "bytes": 10679,
+      "sha256": "cb42d1c8ef8a53db3e9ea0337997ee64f444a65fb634729c819a2c638796737f"
+    },
+    "detectors-java/protocol.json": {
+      "bytes": 11810,
+      "sha256": "500ee4f85e425aca0b4fb6564583a512b69242f6843f38c731c26026e1ed9aa9"
+    },
+    "detectors-java/publication.json": {
+      "bytes": 1238,
+      "sha256": "22c96550b4dce1a317760899b33141b8f0e84681891b8fc70d4e93b8db7252f6"
+    },
+    "detectors-java/score_index.json": {
+      "bytes": 15663,
+      "sha256": "e1853456ec26a5b409658959d393b817018b2cded2e011c6c2eca3f6fb537f46"
+    },
+    "detectors-python/analysis.json": {
+      "bytes": 7147,
+      "sha256": "19d524d7d5553f63a1577028c05b9ea48f4868e55fa5779c80fe1c2681293c5a"
+    },
+    "detectors-python/matheel_plagiarism_v1.html": {
+      "bytes": 36101,
+      "sha256": "142064126d21d3a019a4b010db5c790f9493ade028911101f53d60561af02963"
+    },
+    "detectors-python/matheel_plagiarism_v1.json": {
+      "bytes": 75134,
+      "sha256": "9c55de5a12125bda8ebdb1ae8b0249df9ac536906ad62512cde9d842f59962d9"
+    },
+    "detectors-python/matheel_plagiarism_v1_aggregate.csv": {
+      "bytes": 6747,
+      "sha256": "3d4fc3e7d00913ff740a859303d24cb97af4d90166f330606f10bfdc1cc5f294"
+    },
+    "detectors-python/matheel_plagiarism_v1_details.html": {
+      "bytes": 45457,
+      "sha256": "2ad82a47e7a1bf5f8d82d6a8c9534667e76f6be14486fcefb25bc992b9179459"
+    },
+    "detectors-python/matheel_plagiarism_v1_per_dataset.csv": {
+      "bytes": 9861,
+      "sha256": "f5aca06b716f13a185b6eccef5b01a46814ff493b5bdf370178961c60dd338ab"
+    },
+    "detectors-python/matheel_plagiarism_v1_reproducibility.json": {
+      "bytes": 5903,
+      "sha256": "de1fffea064f1a20e4d0aa45e3fb1abc6ea6d515498d327b9cabff77fc38b25f"
+    },
+    "detectors-python/protocol.json": {
+      "bytes": 2309,
+      "sha256": "6d0315ed8771d9e2131ee292290c69c7b3c7b26779735bec64eb29d9816fca8e"
+    },
+    "detectors-python/publication.json": {
+      "bytes": 1239,
+      "sha256": "386449fd8af75223af60abdd30c978b2488ca59c49903a7e77b6933e6102dc65"
+    },
+    "detectors-python/score_index.json": {
+      "bytes": 1159,
+      "sha256": "062193733a50282ccabe74b03bfb80e441499f92199ac4f08339eccc3310bd65"
+    },
+    "edition.json": {
+      "bytes": 133985,
+      "sha256": "2382dc7075f8823815d3bb95dd8d1452fe31b766e490e1fc8a9bd66f4bf23360"
+    }
+  },
+  "schema_version": 1
+}

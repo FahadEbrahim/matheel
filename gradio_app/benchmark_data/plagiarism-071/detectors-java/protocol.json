@@ -1,0 +1,298 @@
+{
+  "aggregation": "macro_mean_over_all_declared_datasets_per_domain_task_metric",
+  "benchmark_id": "Matheel-Plagiarism-v1",
+  "coverage_policy": "all_required_metrics_finite_on_every_declared_dataset",
+  "datasets": [
+    {
+      "content": {
+        "counts": {
+          "files": 467,
+          "pairs": 460
+        },
+        "sha256": "0460f56a3a07245b2598ac10db8374b610a1d54d9b7912473a53cbb8f6a6e889"
+      },
+      "domain": "plagiarism",
+      "expected_result_count": 460,
+      "k": 10,
+      "name": "irplag_pair",
+      "selection": {
+        "description": "All 460 original/submission labeled pairs. Retrieval uses all 355 positively judged submissions against seven originals; exclude 105 submissions with no positive qrel from ranking-only evaluation. Retain source labels including the disputed non-plagiarized submissions described in its README.",
+        "mode": "all_labeled_pairs"
+      },
+      "similarity_options": {
+        "code_language": "java"
+      },
+      "source_checksum": [
+        "sha256:288efbe08cc60837ae6509e49fd0285e7d22cb9b6e4dd6740d86229969fe9b8d"
+      ],
+      "source_revision": "f07e95120680b25f78659ed63cd6130fd05b2df8",
+      "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+      "split": "source_labeled_pairs",
+      "task_family": "pair"
+    },
+    {
+      "content": {
+        "counts": {
+          "corpus": 7,
+          "files": 467,
+          "qrels": 355,
+          "queries": 355
+        },
+        "sha256": "73d8d190a278898d18647419d8db135d943cbaa6ff41813f91db01600b7c5fea"
+      },
+      "domain": "plagiarism",
+      "expected_result_count": 2485,
+      "k": 10,
+      "name": "irplag_retrieval",
+      "selection": {
+        "candidate_policy": "all",
+        "candidate_pool": "all_seven_original_submissions",
+        "description": "All 460 original/submission labeled pairs. Retrieval uses all 355 positively judged submissions against seven originals; exclude 105 submissions with no positive qrel from ranking-only evaluation. Retain source labels including the disputed non-plagiarized submissions described in its README.",
+        "excluded_queries_without_positive_qrels": 105,
+        "mode": "all_positive_judged_queries",
+        "query_policy": "positive_judged"
+      },
+      "similarity_options": {
+        "code_language": "java"
+      },
+      "source_checksum": [
+        "sha256:288efbe08cc60837ae6509e49fd0285e7d22cb9b6e4dd6740d86229969fe9b8d"
+      ],
+      "source_revision": "f07e95120680b25f78659ed63cd6130fd05b2df8",
+      "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+      "split": "source_judged_retrieval",
+      "task_family": "retrieval"
+    },
+    {
+      "content": {
+        "counts": {
+          "files": 45,
+          "pairs": 350
+        },
+        "sha256": "6366e9c221894433d252ec25cf19d154d79c0a603f8edf1378eac40211da78ae"
+      },
+      "domain": "plagiarism",
+      "expected_result_count": 350,
+      "k": 10,
+      "name": "criminal_minds_pair",
+      "selection": {
+        "description": "All 350 adapter-derived original-to-plagiarized comparisons from ten original and 35 plagiarized submissions; concatenate Java files per submission in stable relative-path order.",
+        "mode": "all_labeled_pairs"
+      },
+      "similarity_options": {
+        "code_language": "java"
+      },
+      "source_checksum": [
+        "sha256:fa8a1541c2643a8c65bdb43ff3fd43e62a70cefa9d55fd74d20984e50066231f"
+      ],
+      "source_revision": "zenodo:19115559",
+      "source_url": "https://zenodo.org/records/19115559",
+      "split": "source_labeled_pairs",
+      "task_family": "pair"
+    },
+    {
+      "content": {
+        "counts": {
+          "corpus": 86,
+          "files": 86,
+          "qrels": 108,
+          "queries": 86
+        },
+        "sha256": "ed933e120e2430b7d39ce42e6b1cbe5c698af4272362c3f9bd1c6736ec33fdec"
+      },
+      "domain": "plagiarism",
+      "expected_result_count": 7310,
+      "k": 10,
+      "name": "soco14_java_a1_judged_retrieval",
+      "selection": {
+        "candidate_policy": "exclude_same_file",
+        "candidate_pool": "judged_endpoints_within_language_and_scenario",
+        "description": "Matheel judged-endpoint retrieval: separate C/C++ and Java, and six scenarios per language. Use all valid judged endpoints as queries and candidates within each nonempty language/scenario. Add reciprocal relevance because source pairs are undirected, exclude self matches, and record every qrel referencing an absent file. This is not the full-corpus SOCO competition protocol.",
+        "mode": "all_valid_judged_endpoints",
+        "query_policy": "positive_judged",
+        "scenario": "A1"
+      },
+      "similarity_options": {
+        "code_language": "java"
+      },
+      "source_checksum": [
+        "sha256:c34332f3a037584b24ab0a902485d8986ffe9a523045879cea9b18e58639fe1c"
+      ],
+      "source_revision": "zenodo:7433031",
+      "source_url": "https://zenodo.org/records/7433031",
+      "split": "source_judged_retrieval",
+      "task_family": "retrieval"
+    },
+    {
+      "content": {
+        "counts": {
+          "corpus": 75,
+          "files": 75,
+          "qrels": 94,
+          "queries": 75
+        },
+        "sha256": "d58d7e1954a0696d4895a6c38011e9f47c2b329ee600a5a2505933406006a9a7"
+      },
+      "domain": "plagiarism",
+      "expected_result_count": 5550,
+      "k": 10,
+      "name": "soco14_java_a2_judged_retrieval",
+      "selection": {
+        "candidate_policy": "exclude_same_file",
+        "candidate_pool": "judged_endpoints_within_language_and_scenario",
+        "description": "Matheel judged-endpoint retrieval: separate C/C++ and Java, and six scenarios per language. Use all valid judged endpoints as queries and candidates within each nonempty language/scenario. Add reciprocal relevance because source pairs are undirected, exclude self matches, and record every qrel referencing an absent file. This is not the full-corpus SOCO competition protocol.",
+        "mode": "all_valid_judged_endpoints",
+        "query_policy": "positive_judged",
+        "scenario": "A2"
+      },
+      "similarity_options": {
+        "code_language": "java"
+      },
+      "source_checksum": [
+        "sha256:c34332f3a037584b24ab0a902485d8986ffe9a523045879cea9b18e58639fe1c"
+      ],
+      "source_revision": "zenodo:7433031",
+      "source_url": "https://zenodo.org/records/7433031",
+      "split": "source_judged_retrieval",
+      "task_family": "retrieval"
+    },
+    {
+      "content": {
+        "counts": {
+          "corpus": 124,
+          "files": 124,
+          "qrels": 146,
+          "queries": 124
+        },
+        "sha256": "4ae0e552a57ef86ac4661f97d218d0b1992a079a045bb0b95d306ee7eb46129f"
+      },
+      "domain": "plagiarism",
+      "expected_result_count": 15252,
+      "k": 10,
+      "name": "soco14_java_b1_judged_retrieval",
+      "selection": {
+        "candidate_policy": "exclude_same_file",
+        "candidate_pool": "judged_endpoints_within_language_and_scenario",
+        "description": "Matheel judged-endpoint retrieval: separate C/C++ and Java, and six scenarios per language. Use all valid judged endpoints as queries and candidates within each nonempty language/scenario. Add reciprocal relevance because source pairs are undirected, exclude self matches, and record every qrel referencing an absent file. This is not the full-corpus SOCO competition protocol.",
+        "mode": "all_valid_judged_endpoints",
+        "query_policy": "positive_judged",
+        "scenario": "B1"
+      },
+      "similarity_options": {
+        "code_language": "java"
+      },
+      "source_checksum": [
+        "sha256:c34332f3a037584b24ab0a902485d8986ffe9a523045879cea9b18e58639fe1c"
+      ],
+      "source_revision": "zenodo:7433031",
+      "source_url": "https://zenodo.org/records/7433031",
+      "split": "source_judged_retrieval",
+      "task_family": "retrieval"
+    },
+    {
+      "content": {
+        "counts": {
+          "corpus": 56,
+          "files": 56,
+          "qrels": 62,
+          "queries": 56
+        },
+        "sha256": "8d393645ca4fb6185e1c5f27a0aaf2ee2611b0a85fbe78ddb9a8dea46174f088"
+      },
+      "domain": "plagiarism",
+      "expected_result_count": 3080,
+      "k": 10,
+      "name": "soco14_java_b2_judged_retrieval",
+      "selection": {
+        "candidate_policy": "exclude_same_file",
+        "candidate_pool": "judged_endpoints_within_language_and_scenario",
+        "description": "Matheel judged-endpoint retrieval: separate C/C++ and Java, and six scenarios per language. Use all valid judged endpoints as queries and candidates within each nonempty language/scenario. Add reciprocal relevance because source pairs are undirected, exclude self matches, and record every qrel referencing an absent file. This is not the full-corpus SOCO competition protocol.",
+        "mode": "all_valid_judged_endpoints",
+        "query_policy": "positive_judged",
+        "scenario": "B2"
+      },
+      "similarity_options": {
+        "code_language": "java"
+      },
+      "source_checksum": [
+        "sha256:c34332f3a037584b24ab0a902485d8986ffe9a523045879cea9b18e58639fe1c"
+      ],
+      "source_revision": "zenodo:7433031",
+      "source_url": "https://zenodo.org/records/7433031",
+      "split": "source_judged_retrieval",
+      "task_family": "retrieval"
+    },
+    {
+      "content": {
+        "counts": {
+          "corpus": 28,
+          "files": 28,
+          "qrels": 28,
+          "queries": 28
+        },
+        "sha256": "fcda384023d04ca1de1c3e1369e3ff477fbfc4a70222f481243c8c9960601fa9"
+      },
+      "domain": "plagiarism",
+      "expected_result_count": 756,
+      "k": 10,
+      "name": "soco14_java_c2_judged_retrieval",
+      "selection": {
+        "candidate_policy": "exclude_same_file",
+        "candidate_pool": "judged_endpoints_within_language_and_scenario",
+        "description": "Matheel judged-endpoint retrieval: separate C/C++ and Java, and six scenarios per language. Use all valid judged endpoints as queries and candidates within each nonempty language/scenario. Add reciprocal relevance because source pairs are undirected, exclude self matches, and record every qrel referencing an absent file. This is not the full-corpus SOCO competition protocol.",
+        "mode": "all_valid_judged_endpoints",
+        "query_policy": "positive_judged",
+        "scenario": "C2"
+      },
+      "similarity_options": {
+        "code_language": "java"
+      },
+      "source_checksum": [
+        "sha256:c34332f3a037584b24ab0a902485d8986ffe9a523045879cea9b18e58639fe1c"
+      ],
+      "source_revision": "zenodo:7433031",
+      "source_url": "https://zenodo.org/records/7433031",
+      "split": "source_judged_retrieval",
+      "task_family": "retrieval"
+    }
+  ],
+  "domain": "plagiarism",
+  "evaluation_rules": {
+    "aggregation_weighting": "equal_dataset_weight",
+    "average_precision_depth": "full_ranking",
+    "pair_decision": "score >= threshold",
+    "pair_positive_label": 1,
+    "retrieval_ties": "document_id_ascending",
+    "retrieval_unjudged_relevance": 0
+  },
+  "execution_policy": {
+    "max_method_seconds": 600.0
+  },
+  "pair_metrics": [
+    "f1",
+    "precision",
+    "recall",
+    "accuracy",
+    "auroc",
+    "average_precision"
+  ],
+  "protocol_id": "bdb53c74d85020bdd48b7d767d88ebc2aa3f1255a8db152df742d97c01ee167a",
+  "retrieval_metrics": [
+    "mean_average_precision",
+    "mean_reciprocal_rank",
+    "ndcg_at_k",
+    "precision_at_k",
+    "recall_at_k"
+  ],
+  "schema_version": 1,
+  "seed": 7,
+  "split_policy": {
+    "description": "Fixed source labels and explicit judged-pool task views; no learned threshold fitting, random sampling, or train/test claim.",
+    "group_fields": [],
+    "type": "provided_test"
+  },
+  "threshold_policy": {
+    "mode": "fixed",
+    "value": 0.5
+  }
+}
