@@ -10,6 +10,7 @@ from gradio_app.official_benchmark import (
     build_official_benchmark_view,
     load_official_benchmark_payload,
     update_official_benchmark_gradio,
+    update_published_benchmark_gradio,
 )
 from matheel.benchmark_protocol import freeze_benchmark_protocol, run_benchmark_protocol
 from matheel.datasets import write_pair_dataset, write_retrieval_dataset
@@ -189,3 +190,17 @@ def test_official_refresh_updates_controls_from_the_validated_artifact(published
     assert updates[2]["value"] == "mean_average_precision"
     assert not updates[4].empty
     assert updates[-1] == str(path)
+
+
+def test_edition_selector_uses_only_a_known_bundle_and_its_own_scope(published_benchmark, monkeypatch):
+    from gradio_app import official_benchmark
+
+    path, protocol = published_benchmark
+    monkeypatch.setitem(official_benchmark.PUBLISHED_BENCHMARK_EDITIONS, "fixture", ("Fixture", path))
+    updates = update_published_benchmark_gradio("fixture", "retrieval", "f1", "all")
+    assert updates[2]["value"] == "mean_average_precision"
+    assert updates[-1] == str(path)
+    assert updates[7]["protocol_id"] == protocol["protocol_id"]
+    assert "1800 seconds" in updates[0]
+    with pytest.raises(ValueError, match="published benchmark edition"):
+        update_published_benchmark_gradio(str(path), "pair", "f1", "all")

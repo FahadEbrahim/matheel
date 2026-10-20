@@ -36,14 +36,16 @@ try:
         OFFICIAL_BENCHMARK_PATH as OFFICIAL_BENCHMARK_PATH,
         build_official_benchmark_view,
         load_official_benchmark_payload as load_official_benchmark_payload,
-        update_official_benchmark_gradio,
+        published_benchmark_choices,
+        update_published_benchmark_gradio,
     )
 except ModuleNotFoundError:
     from official_benchmark import (
         OFFICIAL_BENCHMARK_PATH as OFFICIAL_BENCHMARK_PATH,
         build_official_benchmark_view,
         load_official_benchmark_payload as load_official_benchmark_payload,
-        update_official_benchmark_gradio,
+        published_benchmark_choices,
+        update_published_benchmark_gradio,
     )
 
 try:
@@ -5190,6 +5192,11 @@ with gr.Blocks(
                         "task and metric. Incomplete or failed methods remain unranked; their "
                         "coverage and errors remain visible in the result tables."
                     )
+                    official_edition = gr.Dropdown(
+                        choices=published_benchmark_choices(), value="v1",
+                        label="Published Benchmark Edition",
+                        info="Each edition has its own scope, runtime budget and fixed ranks. Compare methods within one edition.",
+                    )
                     official_summary = gr.HTML(
                         value=official_benchmark_initial["summary"], padding=False,
                     )
@@ -5250,9 +5257,9 @@ with gr.Blocks(
                         label="Official Benchmark Result JSON", interactive=False,
                     )
                     gr.on(
-                        [official_task.input, official_metric.input, official_method.input, official_refresh.click],
-                        update_official_benchmark_gradio,
-                        inputs=[official_task, official_metric, official_method],
+                        [official_edition.input, official_task.input, official_metric.input, official_method.input, official_refresh.click],
+                        update_published_benchmark_gradio,
+                        inputs=[official_edition, official_task, official_metric, official_method],
                         outputs=[
                             official_summary, official_task, official_metric, official_method,
                             official_aggregate, official_per_dataset, official_scope,
