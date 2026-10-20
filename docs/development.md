@@ -24,10 +24,10 @@ Run the Ruff lint check:
 python -m ruff check .
 ```
 
-Real-model integration tests are opt-in because they may need optional backends, cached model weights, or network access:
+Real integration tests are opt-in because they need optional backends, model weights, or local detector runtimes:
 
 ```bash
-python -m pytest -m integration
+python -m pytest -o addopts='' -m integration
 ```
 
 Install the full optional stack before running them locally:
@@ -36,7 +36,26 @@ Install the full optional stack before running them locally:
 python -m pip install -e ".[all,dev]"
 ```
 
-The `Real Model Integration Tests` GitHub Actions workflow runs weekly on Python 3.12 and can also be started manually on any supported Python version. It installs `matheel[all,dev]`, caches Hugging Face model files under `~/.cache/huggingface`, and runs `python -m pytest -m integration`. It is not part of default pull-request CI, so normal tests remain offline-friendly.
+The `Real Integration Tests` GitHub Actions workflow runs every Monday at 05:00 UTC on Python 3.12. Manual runs can select any supported Python version and either `all`, `models`, or `detectors`. The jobs run independently on Ubuntu 24.04, so model downloads do not delay detector checks. Normal pull-request CI remains offline.
+
+The model job installs `matheel[semantic,chunking,dev]` and CPU PyTorch. It first downloads three public models at immutable revisions listed in [`prepare_real_models.py`](https://github.com/FahadEbrahim/matheel/blob/main/scripts/ci/prepare_real_models.py), reusing `~/.cache/huggingface`. Tests then use those local snapshot paths with Hugging Face offline mode enabled. This covers the dense, static and multivector backends plus the real MiniLM long-file test. A missing model or backend fails CI rather than silently producing a skipped green run.
+
+The detector job installs only `matheel[dev]` and provisions JPlag 6.3.0, Temurin 25.0.4.1+1, Node 22.23.3 and Dolos 2.10.0 under the runner's temporary directory. [`setup_external_detectors.sh`](https://github.com/FahadEbrahim/matheel/blob/main/scripts/ci/setup_external_detectors.sh) checks pinned SHA256 values before extracting or executing downloads. Dolos uses the checked-in npm lockfile and its integrity entries; native parsers build from source with the pinned Node headers. Java and Node are not installed globally. Adapter calls retain their wall-time, heap, input, comparison, log and result limits described in [External detectors](external_detectors.md#reproducibility-and-failures).
+
+The model job has a 45-minute ceiling and the detector job a 25-minute ceiling, with shorter install, download and test-step limits. Each publishes JUnit results and source-free model/detector identities as artifacts for 14 days, including the installed Dolos/native-parser tree and runtime hashes. Exactly one detector skip is expected: Dolos has no directional JPlag score mode. Any other skip fails the job.
+
+To run the pinned detector setup on a Linux x86_64 development machine with Python, npm native build tools, curl and tar available:
+
+```bash
+python -m pip install -e ".[dev]"
+bash scripts/ci/setup_external_detectors.sh /tmp/matheel-ci-detectors /tmp/matheel-ci-detectors.env
+set -a
+. /tmp/matheel-ci-detectors.env
+set +a
+python -m pytest -o addopts='' -m integration tests/test_external_detectors_integration.py
+```
+
+Use a new destination directory for each setup. The script does not remove existing installations. The setup performs network downloads; detector execution itself stays local and does not upload source code.
 
 Pull-request CI also runs selected compatibility checks against the external `codebleu` package and builds the wheel and source distribution. The package job validates metadata, installs the wheel into a clean environment, imports Matheel, and exercises the CLI help command.
 
