@@ -27,3 +27,16 @@ def test_analysis_callback_clears_outputs_on_invalid_reference(tmp_path):
     assert "Upload scored" in outputs[0]
     assert all(frame.empty for frame in outputs[1:5])
     assert outputs[-1] is None
+
+
+def test_unexpected_callback_failure_returns_outputs_for_control_recovery(tmp_path, monkeypatch):
+    path = tmp_path / "scores.csv"
+    path.write_text("left_id,right_id,label,similarity_score\na,b,1,.9\n")
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("controlled analysis failure")
+
+    monkeypatch.setattr("gradio_app.result_analysis.analyze_scored_results", fail)
+    outputs = analyze_results_gradio(str(path), None, "pair", .5, 10, "", 25)
+    assert "controlled analysis failure" in outputs[0]
+    assert len(outputs) == 6 and outputs[-1] is None

@@ -17,6 +17,10 @@ from .calibration import precision_recall_curve, roc_curve
 from .evaluation import pair_classification_metrics, retrieval_ranking_metrics
 
 
+_DERIVED_COLUMNS = {"reference_score", "reference_rank", "score_delta", "decision_disagreement",
+                    "threshold_distance", "outcome", "pair_occurrence", "score_row_index", "rank"}
+
+
 def _enrich_from_dataset(frame, task, dataset_root):
     from .datasets import load_code_texts, load_pair_dataset, load_retrieval_dataset
 
@@ -70,6 +74,11 @@ def _frame(rows):
 
 def _prepare(rows, task, score_column):
     frame = _frame(rows)
+    if score_column in _DERIVED_COLUMNS:
+        raise ValueError("score_column must not use a reserved analysis-derived column name.")
+    # Exported errors can be analyzed again. Derived fields always describe the
+    # current comparison, never inherited values or merge-generated _x/_y names.
+    frame = frame.drop(columns=list(_DERIVED_COLUMNS), errors="ignore")
     frame["score_row_index"] = np.arange(len(frame))
     task = ("retrieval" if "query_id" in frame else "pair") if task == "auto" else task
     if task not in {"pair", "retrieval"}:

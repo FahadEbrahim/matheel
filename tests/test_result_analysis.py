@@ -53,6 +53,13 @@ def test_reference_cannot_change_candidate_universe_or_ground_truth(pairs):
         analyze_scored_results(pairs)
 
 
+def test_previously_exported_paired_errors_can_be_analyzed_again(pairs):
+    first = analyze_scored_results(pairs, reference_rows=pairs, rounds=5)
+    second = analyze_scored_results(pd.DataFrame(first["errors"]), reference_rows=pairs, rounds=5)
+    assert first["metrics"] == second["metrics"]
+    assert all(row["score_delta"] == 0 for row in second["errors"])
+
+
 def test_single_class_has_no_fabricated_auroc(pairs):
     pairs["label"] = 1
     report = analyze_scored_results(pairs, rounds=10)
@@ -93,6 +100,9 @@ def test_retrieval_uncertainty_resamples_queries_and_includes_missed_top_k():
     assert len(report["per_query"]) == 2
     assert metrics["mean_average_precision"]["delta_ci_upper"] == 0
     assert "relevant_below_k" in {row["outcome"] for row in report["errors"]}
+    repeated = analyze_scored_results(pd.DataFrame(report["errors"]), reference_rows=frame,
+                                      rounds=30, k=1)
+    assert repeated["metrics"] == report["metrics"]
 
 
 def test_exports_escape_html_and_do_not_contain_source_code(pairs, tmp_path):

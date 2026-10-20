@@ -40,7 +40,10 @@ def analyze_results_gradio(scores, reference, task, threshold, k, group_column, 
         return (summary, pd.DataFrame(report["metrics"]).round(6), pd.DataFrame(report["errors"]).head(1000).round(6),
                 pd.DataFrame(report["slices"]).round(6), pd.DataFrame(report["per_query"]).round(6),
                 [str(path) for path in artifacts.values()])
-    except (OSError, ValueError, TypeError) as exc:
+    except Exception as exc:
+        # This is the UI boundary: every failure returns outputs so the event's
+        # final control updates can restore interactivity. The Python API keeps
+        # its normal typed exceptions for callers and tests.
         return (summary_panel_html("Result analysis", [("Details", str(exc))], variant="error"),
                 empty, empty, empty, empty, None)
 
