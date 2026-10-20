@@ -1,5 +1,7 @@
 """Explicit opt-in validation with already cached real model weights."""
 
+import os
+
 import pytest
 
 from matheel.long_files import compare_long_files
@@ -11,10 +13,12 @@ def test_cached_minilm_raw_truncation_and_chunked_tail_coverage(tmp_path):
     pytest.importorskip("chonkie")
     from huggingface_hub import snapshot_download
 
-    try:
-        model_path = snapshot_download("sentence-transformers/all-MiniLM-L6-v2", local_files_only=True)
-    except OSError as exc:
-        pytest.skip(f"MiniLM weights are not already cached: {exc}")
+    model_path = os.environ.get("MATHEEL_MINILM_MODEL")
+    if model_path is None:
+        try:
+            model_path = snapshot_download("sentence-transformers/all-MiniLM-L6-v2", local_files_only=True)
+        except OSError as exc:
+            pytest.skip(f"MiniLM weights are not already cached: {exc}")
     common = ("def common(values):\n    total = 0\n    for value in values:\n"
               "        total += value\n    return total\n") * 4
     left = common + "alpha = [1, 2, 3]\n" * 40

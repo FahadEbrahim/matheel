@@ -123,7 +123,7 @@ Real local verification used JPlag 6.3.0 with Temurin 25.0.4.1 and Dolos 2.10.0 
 To repeat the optional integration tests, set `MATHEEL_JPLAG_JAR`, `MATHEEL_JAVA`, `MATHEEL_DOLOS_PREFIX` and `MATHEEL_NODE`, then run:
 
 ```bash
-pytest tests/test_external_detectors_integration.py -m integration
+python -m pytest -o addopts='' -m integration tests/test_external_detectors_integration.py
 ```
 
 Ordinary unit tests use offline fixtures. Integration tests skip when local tool paths are absent and never install or download tools.

@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from matheel.similarity import calculate_similarity
@@ -34,9 +36,9 @@ def is_prime(value):
     return True
 """.strip()
 
-_DENSE_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-_STATIC_MODEL = "Jarbas/m2v-256-paraphrase-multilingual-MiniLM-L12-v2"
-_MULTIVECTOR_MODEL = "NeuML/pylate-bert-tiny"
+_DENSE_MODEL = os.environ.get("MATHEEL_MINILM_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+_STATIC_MODEL = os.environ.get("MATHEEL_STATIC_MODEL", "Jarbas/m2v-256-paraphrase-multilingual-MiniLM-L12-v2")
+_MULTIVECTOR_MODEL = os.environ.get("MATHEEL_MULTIVECTOR_MODEL", "NeuML/pylate-bert-tiny")
 _SKIP_ERROR_MARKERS = (
     "couldn't connect",
     "failed to establish",
