@@ -1,0 +1,23 @@
+{
+  "artifacts": {
+    "matheel_plagiarism_v1.html": "24eb4ab710a011b633cef762f3cd203c9d85dc5afc6d363c84252083e58eb7d8",
+    "matheel_plagiarism_v1.json": "4c91f50e688211d6dbca2dc96bcc0bb01057351dcbe11e48d678463bc6418e44",
+    "matheel_plagiarism_v1_aggregate.csv": "93e30256954ce069e7f539fad3b7d32880af30b6d825ba8b68e8728ae1afe9f5",
+    "matheel_plagiarism_v1_details.html": "2884a120ac9f39d2db250ba6d12ac002035a53de0d73daf91e0c5e49d2cb383f",
+    "matheel_plagiarism_v1_per_dataset.csv": "1ab32656d0795f11cc8842a6a465d93b911749f0ef6b809d3bae95a165a00ba9",
+    "matheel_plagiarism_v1_reproducibility.json": "44a453841c7f6f47a396df22d16f69b18a5467b07da8f25d5d3af29a52678330",
+    "protocol.json": "913dc48df198dfb5308224aec60fe41451bbf36a0da83ba1c4ac903ddc4c8181",
+    "score_index.json": "bf56be3ef8e902cb04b4ed6dd80559167e52c46f6f789331b81310bd1abc97f3"
+  },
+  "benchmark_id": "Matheel-Plagiarism-v1",
+  "declared_methods": 29,
+  "eligible_rows": 264,
+  "methods": 29,
+  "protocol_id": "8ccc4f217ff16693d99024e959945dfc5c5e9ec403c1890712c778c3b5875692",
+  "score_files": 384,
+  "score_zip": {
+    "filename": "matheel-plagiarism-v1-scores.zip",
+    "sha256": "5d55316558aa94f5cce2bad20ac20b8d0bf357b9d5caa5b055cceb5d5748c149"
+  },
+  "valid": true
+}

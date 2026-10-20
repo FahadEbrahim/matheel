@@ -114,6 +114,12 @@ def test_official_results_validate_without_original_data_and_show_frozen_scope(p
     assert view["task"] == "pair"
     assert view["metric"] == "f1"
     assert set(view["aggregate"]["task_family"]) == {"pair"}
+    assert view["aggregate"].columns[:5].tolist() == [
+        "rank", "algorithm_name", "mean_score", "coverage", "eligible",
+    ]
+    assert view["per_dataset"].columns[:5].tolist() == [
+        "dataset_name", "rank", "algorithm_name", "score", "eligible",
+    ]
     assert set(view["scope"]["Category"]) == {"Plagiarism"}
     assert set(view["scope"]["Evaluation Task"]) == {"Pair classification", "Retrieval"}
     assert set(view["scope"]["Source Revision"]) == {"a" * 40}

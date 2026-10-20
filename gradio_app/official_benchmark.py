@@ -165,6 +165,16 @@ def build_official_benchmark_view(
         na_position="last",
         ignore_index=True,
     )
+    # Put methods and their scores in the initial viewport. Portable JSON uses
+    # sorted keys, which otherwise leaves long identity hashes before results.
+    aggregate_first = ["rank", "algorithm_name", "mean_score", "coverage", "eligible"]
+    dataset_first = ["dataset_name", "rank", "algorithm_name", "score", "eligible"]
+    aggregate = aggregate[
+        aggregate_first + [column for column in aggregate if column not in aggregate_first]
+    ]
+    per_dataset = per_dataset[
+        dataset_first + [column for column in per_dataset if column not in dataset_first]
+    ]
     threshold_policy = protocol.get("threshold_policy") or {}
     threshold = (
         f"Fixed at {threshold_policy.get('value')}"

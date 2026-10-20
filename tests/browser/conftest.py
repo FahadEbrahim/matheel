@@ -170,10 +170,22 @@ def dataset_callback_barriers(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def gradio_server(browser_artifacts_dir, official_benchmark_json, dataset_callback_barriers):
+def gradio_server(browser_artifacts_dir, dataset_callback_barriers, request):
+    canonical = getattr(request, "param", None) == "canonical"
+    if canonical:
+        official_benchmark_json = (
+            REPOSITORY_ROOT / "gradio_app" / "benchmark_data" / "plagiarism-v1"
+            / "matheel_plagiarism_v1.json"
+        )
+        if not official_benchmark_json.is_file():
+            pytest.skip("Canonical official benchmark results have not been published yet")
+    else:
+        official_benchmark_json = request.getfixturevalue("official_benchmark_json")
     port = _unused_local_port()
     url = f"http://127.0.0.1:{port}/"
-    log_path = browser_artifacts_dir / "gradio-server.log"
+    log_path = browser_artifacts_dir / (
+        "gradio-server-canonical.log" if canonical else "gradio-server.log"
+    )
     environment = os.environ.copy()
     environment.update(
         {
@@ -238,9 +250,59 @@ def gradio_config(gradio_server):
         return json.load(response)
 
 
+def _expected_gradio_queue_close_abort(event, queue_trace):
+    # This exact Gradio 5.50 client closes its SSE reader by aborting it after
+    # close_stream, then reports its own intentional abort through onerror.
+    # Restrict the exception to that stack and a fully successful same-page queue.
+    origin = r"http://(?:127\.0\.0\.1|localhost|\[::1\]):\d+"
+    stack = (
+        r"console\.error: AbortError: signal is aborted without reason\n"
+        rf"    at ye \((?P<origin>{origin})/assets/index-DputZZxm\.js:4:1346\)\n"
+        r"    at Zt\.a\.onmessage \((?P=origin)/assets/index-DputZZxm\.js:4:841\)\n"
+        r"    at (?P=origin)/assets/index-DputZZxm\.js:4:2505"
+    )
+    if not re.fullmatch(stack, event):
+        return False
+    joins = queue_trace.get("joins", [])
+    queue_events = queue_trace.get("events", [])
+    if not joins or not any(item.get("msg") == "close_stream" for item in queue_events):
+        return False
+    completed = [item for item in queue_events if item.get("msg") == "process_completed"]
+    completions = {item.get("event_id"): item.get("success") for item in completed}
+    return all(
+        join.get("event_id") and completions.get(join["event_id"]) is True for join in joins
+    ) and all(item.get("success") is True for item in completed)
+
+
+def _classify_browser_diagnostics(events, console_errors, queue_traces):
+    fatal = [event for event in events if event.startswith("pageerror:")]
+    informational = []
+    for current_page, event in console_errors:
+        if _expected_gradio_queue_close_abort(event, queue_traces.get(current_page, {})):
+            informational.append(f"expected-cleanup: Gradio 5.50 normal queue close; {event}")
+        else:
+            fatal.append(event)
+    for trace in queue_traces.values():
+        completed = [
+            item for item in trace.get("events", []) if item.get("msg") == "process_completed"
+        ]
+        completed_ids = {item.get("event_id") for item in completed}
+        fatal.extend(
+            f"queue-error: {json.dumps(item)}" for item in completed
+            if item.get("success") is not True
+        )
+        fatal.extend(
+            f"queue-incomplete: {join.get('event_id')}"
+            for join in trace.get("joins", [])
+            if not join.get("event_id") or join["event_id"] not in completed_ids
+        )
+    return fatal, informational
+
+
 @pytest.fixture
 def gradio_page(page, request, gradio_server, browser_artifacts_dir):
     events = []
+    console_errors = []
     unexpected_external_traffic = []
     local_hosts = {"127.0.0.1", "localhost", "::1"}
     offline_stubs = {
@@ -338,9 +400,15 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
         };
     })();""")
     def record_page(current_page):
+        def record_console(message):
+            event = f"console.{message.type}: {message.text}"
+            events.append(event)
+            if message.type == "error":
+                console_errors.append((current_page, event))
+
         current_page.route("**/*", route_request)
         current_page.route_web_socket("**/*", route_web_socket)
-        current_page.on("console", lambda message: events.append(f"console.{message.type}: {message.text}"))
+        current_page.on("console", record_console)
         current_page.on("pageerror", lambda error: events.append(f"pageerror: {error}"))
         current_page.on(
             "response",
@@ -373,24 +441,35 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
             for phase in ("setup", "call", "teardown")
         ]
         report_failed = any(report is not None and report.failed for report in reports)
-        fatal_events = [
-            event
-            for event in events
-            if event.startswith("console.error:") or event.startswith("pageerror:")
-        ]
+        queue_traces = {}
+        observation_errors = []
         if setup_succeeded:
             for current_page in page.context.pages:
                 if current_page.is_closed():
                     continue
-                queue_failures = current_page.evaluate("""() => (window.__matheelQueueEvents || []).filter(
-                    event => event.msg === "process_completed" && event.success === false
-                )""")
-                fatal_events.extend(f"queue-error: {json.dumps(event)}" for event in queue_failures)
+                try:
+                    current_page.wait_for_function("""() => (window.__matheelQueueJoins || []).every(
+                        join => (window.__matheelQueueEvents || []).some(event =>
+                            event.event_id === join.event_id && event.msg === "process_completed"
+                        )
+                    )""", timeout=15_000)
+                except Exception as exc:
+                    observation_errors.append(f"queue-observation-error: {exc}")
+                queue_traces[current_page] = current_page.evaluate(
+                    "({joins: window.__matheelQueueJoins, events: window.__matheelQueueEvents})"
+                )
+        fatal_events, informational = _classify_browser_diagnostics(
+            events, console_errors, queue_traces,
+        )
+        fatal_events.extend(observation_errors)
+        events.extend(informational)
+        events.extend(observation_errors)
         should_persist = (
             not setup_succeeded
             or report_failed
             or fatal_events
             or unexpected_external_traffic
+            or informational
         )
         if should_persist:
             safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", request.node.nodeid).strip("_")
