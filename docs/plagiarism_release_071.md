@@ -11,7 +11,7 @@ The 0.7.1 results use the existing plagiarism datasets and methods with the rele
 | C++ detectors | 6 | JPlag, Dolos, Levenshtein, Winnowing | 600 seconds | 1 |
 | Python detectors | 1 | JPlag, Dolos, Levenshtein, Winnowing | 600 seconds | 1 |
 
-The all-method edition retains every prepared row, source label, candidate pool, metric, fixed threshold (0.5) and retrieval cutoff (10) from v1. Its 180-second budget applies to a complete method across all 16 views. The original edition allowed 1,800 seconds. This deliberate resource change creates a different protocol ID, so changes in eligibility cannot be interpreted solely as scorer improvements. Concurrent workers each use one CPU thread; observed times include preparation and contend for hardware.
+The all-method edition retains every prepared row, source label, candidate pool, metric, fixed threshold (0.5) and retrieval cutoff (10) from v1. Its 180-second budget applies to a complete method across all 16 views. The original edition allowed 1,800 seconds. This deliberate resource change creates a different protocol ID, so changes in eligibility cannot be interpreted solely as scorer improvements. Numeric-library thread environment limits are set to one per worker; native detector runtimes retain their upstream parallelism. Observed times include preparation and contend for hardware.
 
 Detector tracks use the same complete prepared view for every compared method. All prepared files enter each native detector's corpus, including files that are not judged queries. A detector prepares the corpus once per view and must supply every required score. These are language-specific plagiarism comparisons, separate from the all-method multilingual ranking.
 
