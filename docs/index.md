@@ -32,6 +32,8 @@ Matheel compares source code through a Python API, CLI, and Gradio app. Start wi
 | Inspect the declared public plagiarism benchmark | [Plagiarism benchmark results](plagiarism_results.md) |
 | Rank methods and track exported runs | [Leaderboards and run registry](leaderboard.md) |
 | Explore dataset maps and matched code regions | [Visualization and pair explanations](visualization.md) |
+| Inspect errors, disagreements and grouped uncertainty | [Result analysis](result_analysis.md) |
+| Reproduce results and prepare a benchmark contribution | [Workflow recipes](benchmark_workflows.md) |
 
 ## Extend and Contribute
 

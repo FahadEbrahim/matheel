@@ -8,6 +8,7 @@ import pandas as pd
 
 from . import __version__
 from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
+from .analysis_cli import register_analysis_commands
 from .benchmark_registry import compare_benchmark_runs, list_benchmark_runs, register_benchmark_run
 from .calibration import write_calibration_report_artifacts, write_threshold_tuning_report_artifacts
 from .comparison_suite import load_run_configs, run_comparison_suite
@@ -2073,3 +2074,4 @@ def _elapsed_summary_text(results):
 
 
 register_retrieval_commands(main)
+register_analysis_commands(main)
