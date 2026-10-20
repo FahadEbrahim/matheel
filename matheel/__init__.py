@@ -115,6 +115,7 @@ from .evaluation import (
     score_retrieval_dataset,
 )
 from .feature_weights import available_default_features, default_feature_weights, normalize_feature_weights
+from .lexical import available_lexical_metrics, lexical_metric_metadata, score_lexical_metric
 from .leaderboard import (
     available_leaderboard_metrics,
     leaderboard_html,
@@ -204,6 +205,7 @@ __all__ = [
     "available_leaderboard_metrics",
     "available_leaderboard_algorithm_presets",
     "available_lexical_tokenizers",
+    "available_lexical_metrics",
     "available_pooling_methods",
     "available_pair_explanation_segment_modes",
     "available_projection_methods",
@@ -260,6 +262,7 @@ __all__ = [
     "leaderboard_algorithm_preset_configs",
     "leaderboard_html",
     "leaderboard_payload",
+    "lexical_metric_metadata",
     "list_benchmark_runs",
     "load_code_texts",
     "load_benchmark_cache_result",
@@ -304,6 +307,7 @@ __all__ = [
     "score_source_pairs_with_algorithm",
     "score_retrieval_dataset",
     "score_code_metric_pair",
+    "score_lexical_metric",
     "resolve_dataset_source",
     "detect_default_device",
     "similarity_function_score_range",

@@ -5,7 +5,7 @@ Matheel scores are useful for ranking pairs inside one run. They are not automat
 Different algorithms expose different evidence:
 
 - embedding backends compare vector geometry
-- Levenshtein and Jaro-Winkler compare string similarity
+- RapidFuzz distance and fuzzy-ratio features compare strings or whitespace-separated words
 - Winnowing and GST compare token overlap
 - code metrics compare code-specific structure, tokens, or model alignments
 
@@ -22,8 +22,8 @@ Use `feature_score_range(...)` when you need the documented range in code.
 | `semantic` with `euclidean` | negative distance to `0.0` | `0.0` means identical vectors; farther vectors are more negative. |
 | `semantic` with `manhattan` | negative distance to `0.0` | `0.0` means identical vectors; farther vectors are more negative. |
 | normalized semantic scores | `0.0` to `1.0` | Enable `normalize_semantic_scores=True` before blending raw `dot`, `euclidean`, or `manhattan` scores with other metrics. |
-| `levenshtein` | `0.0` to `1.0` | Normalized edit-distance similarity. |
-| `jaro_winkler` | `0.0` to `1.0` | String similarity with prefix weighting. |
+| RapidFuzz distance features | `0.0` to `1.0` | Normalized similarity, including `levenshtein`, `lcs`, and `jaro_winkler`. |
+| `rapidfuzz_*` fuzzy ratios | `0.0` to `1.0` | Upstream `0`–`100` ratios divided by `100`; each scorer retains its own matching and empty-input behavior. |
 | `winnowing` | `0.0` to `1.0` | Fingerprint overlap. |
 | `gst` | `0.0` to `1.0` | Covered-token overlap from greedy string tiling. |
 | `code_metric` | usually `0.0` to `1.0` | Depends on the selected code metric. Built-in CodeBLEU, CrystalBLEU, RUBY, TSED, and CodeBERTScore paths are intended to be bounded. |

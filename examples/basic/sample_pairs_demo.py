@@ -1,3 +1,5 @@
+"""Rank the generated Java sample archive using an offline lexical blend."""
+
 import sys
 from pathlib import Path
 
@@ -10,12 +12,11 @@ from sample_data import sample_archive_path  # noqa: E402
 def main():
     results = get_sim_list(
         sample_archive_path(),
-        model_name="huggingface/CodeBERTa-small-v1",
         threshold=0.2,
         number_results=10,
         feature_weights={
-            "semantic": 0.7,
-            "levenshtein": 0.3,
+            "lcs": 0.5,
+            "rapidfuzz_ratio": 0.5,
         },
     )
     print(results.head().round(4))

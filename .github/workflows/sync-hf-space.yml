@@ -42,10 +42,10 @@ jobs:
       - name: Verify Gradio app version references
         run: python scripts/sync_gradio_app_version.py --check
 
-      - name: Check pinned Matheel release on PyPI
+      - name: Check pinned Matheel release and package source on PyPI
         id: pinned-release
         timeout-minutes: 12
-        run: python scripts/check_pinned_matheel_release.py
+        run: python scripts/check_pinned_matheel_release.py --check-source
 
       - name: Sync Gradio app to Hugging Face Space
         if: steps.pinned-release.outputs.should_sync_space == 'true'

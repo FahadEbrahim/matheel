@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from matheel import similarity
+from matheel.lexical import available_lexical_metrics, score_lexical_metric
 
 
 class FakeModel:
@@ -34,6 +35,111 @@ def _vectorize(text):
 def test_lexical_tokenizer_choices_are_exported():
     assert similarity.available_lexical_tokenizers() == ("raw", "parser")
     assert similarity.normalize_lexical_tokenizer("tree-sitter") == "parser"
+
+
+@pytest.mark.parametrize("name", available_lexical_metrics())
+def test_calculate_similarity_supports_each_lexical_metric_without_a_model(name, monkeypatch):
+    monkeypatch.setattr(
+        similarity,
+        "load_backend_model",
+        lambda *args, **kwargs: pytest.fail("lexical metrics must not load embedding models"),
+    )
+    monkeypatch.setattr(
+        similarity,
+        "tokenize_for_lexical_matching",
+        lambda *args, **kwargs: pytest.fail("string metrics must not tokenize source code"),
+    )
+    left, right = "def alpha(x): return x + 1", "def beta(x): return 1 + x"
+
+    actual = similarity.calculate_similarity(left, right, feature_weights={name: 1.0})
+
+    assert actual == pytest.approx(score_lexical_metric(name, left, right))
+
+
+def test_calculate_similarity_combines_new_metrics_with_normalized_weights():
+    left, right = "return alpha + beta", "return beta + alpha"
+    actual = similarity.calculate_similarity(
+        left, right, feature_weights={"lcs": 3.0, "rapidfuzz_token_sort_ratio": 1.0}
+    )
+
+    assert actual == pytest.approx(
+        0.75 * score_lexical_metric("lcs", left, right)
+        + 0.25 * score_lexical_metric("rapidfuzz_token_sort_ratio", left, right)
+    )
+
+
+def test_build_feature_scores_only_evaluates_active_unsupplied_metrics(monkeypatch):
+    calls = []
+
+    def score_metric(name, *args, **kwargs):
+        calls.append(name)
+        return 0.25
+
+    monkeypatch.setattr(similarity, "score_lexical_metric", score_metric)
+    monkeypatch.setattr(
+        similarity,
+        "tokenize_for_lexical_matching",
+        lambda *args, **kwargs: pytest.fail("precomputed token metrics must not retokenize"),
+    )
+    scores = similarity.build_feature_scores(
+        "left",
+        "right",
+        None,
+        None,
+        active_features={"lcs", "rapidfuzz_ratio", "winnowing", "gst"},
+        extra_feature_scores={"rapidfuzz_ratio": 0.75, "winnowing": 0.5, "gst": 1.0},
+    )
+
+    assert calls == ["lcs"]
+    assert scores["lcs"] == 0.25
+    assert scores["rapidfuzz_ratio"] == 0.75
+    assert scores["winnowing"] == 0.5
+    assert scores["gst"] == 1.0
+
+
+def test_build_feature_scores_default_preserves_existing_string_metrics(monkeypatch):
+    calls = []
+
+    def score_metric(name, *args, **kwargs):
+        calls.append(name)
+        return 0.25
+
+    monkeypatch.setattr(similarity, "score_lexical_metric", score_metric)
+    similarity.build_feature_scores(
+        "left", "right", None, None, extra_feature_scores={"winnowing": 0.0, "gst": 0.0}
+    )
+
+    assert calls == ["levenshtein", "jaro_winkler"]
+
+
+def test_build_feature_scores_uses_registry_order_for_active_metrics(monkeypatch):
+    calls = []
+
+    def score_metric(name, *args, **kwargs):
+        calls.append(name)
+        return 0.25
+
+    monkeypatch.setattr(similarity, "score_lexical_metric", score_metric)
+    scores = similarity.build_feature_scores(
+        "left", "right", None, None,
+        active_features={"rapidfuzz_ratio", "lcs", "damerau_levenshtein"},
+    )
+
+    assert calls == ["damerau_levenshtein", "lcs", "rapidfuzz_ratio"]
+    assert list(scores)[-3:] == calls
+
+
+@pytest.mark.parametrize("name", ["lcs", "damerau_levenshtein", "rapidfuzz_partial_ratio"])
+def test_directory_scoring_uses_new_lexical_metrics(tmp_path, name):
+    left, right = "return alpha + beta", "return beta + alpha"
+    (tmp_path / "left.py").write_text(left, encoding="utf-8")
+    (tmp_path / "right.py").write_text(right, encoding="utf-8")
+
+    results = similarity.get_sim_list(tmp_path, feature_weights={name: 1.0})
+
+    assert len(results) == 1
+    assert results.iloc[0]["similarity_score"] == round(score_lexical_metric(name, left, right), 4)
+    assert results.attrs["feature_set"] == name
 
 
 def test_get_sim_list_uses_preprocessed_code(tmp_path, monkeypatch):

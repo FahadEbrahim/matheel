@@ -80,8 +80,10 @@ Use synthetic layouts that mirror the expected file structure:
 - Run:
 
 ```bash
-uv run python -m pytest -q
-uv run python -m ruff check .
-uv run python -m mkdocs build --strict
+python -m pytest -q
+python -m ruff check .
+python -m mkdocs build --strict
 git diff --check
 ```
+
+See [Development](development.md) for the development and documentation dependency installs.

@@ -40,6 +40,17 @@ The `Real Model Integration Tests` GitHub Actions workflow runs weekly on Python
 
 Pull-request CI also runs selected compatibility checks against the external `codebleu` package and builds the wheel and source distribution. The package job validates metadata, installs the wheel into a clean environment, imports Matheel, and exercises the CLI help command.
 
+## Documentation Checks
+
+Install the docs dependencies separately from the package development extra, then build with the same strict checks as CI:
+
+```bash
+python -m pip install -r docs/requirements.txt
+python -m mkdocs build --strict
+```
+
+Use `python -m mkdocs serve` for a local preview. Navigation is grouped by user task in `mkdocs.yml`; the [documentation index](index.md) provides the same entry points. Keep page filenames stable when changing categories, and update links and examples when changing public options.
+
 ## Gradio Checks
 
 The default development install does not include Gradio, so Gradio-specific tests skip when its optional dependencies are unavailable. Install the Gradio and development extras to run the same focused checks as pull-request CI:
@@ -76,6 +87,10 @@ When preparing release or packaging changes, build the package and check the dis
 python -m build
 python -m twine check dist/*
 ```
+
+## Deferred Dependency Migrations
+
+Some upper bounds are deliberate: [Gradio 6 support](https://github.com/FahadEbrahim/matheel/issues/284) requires replacing or upgrading the model-search component, and the [parser/Chonkie migration](https://github.com/FahadEbrahim/matheel/issues/285) changes parser loading and first-use downloads. Keep these migrations separate from routine compatible dependency upgrades.
 
 ## Cache Safety
 

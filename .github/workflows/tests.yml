@@ -72,6 +72,7 @@ jobs:
             "pandas==2.2.2" \
             "numpy==2.0.0" \
             "tqdm==4.66.3" \
+            "rapidfuzz==3.1.0" \
             "bert-score==0.3.13" \
             "sentence-transformers==6.1.0" \
             "umap-learn==0.5.12"
@@ -88,6 +89,7 @@ jobs:
               "pandas": "2.2.2",
               "numpy": "2.0.0",
               "tqdm": "4.66.3",
+              "rapidfuzz": "3.1.0",
               "bert-score": "0.3.13",
               "sentence-transformers": "6.1.0",
               "umap-learn": "0.5.12",
@@ -103,6 +105,7 @@ jobs:
       - name: Run offline floor regressions
         run: |
           python -m pytest tests/test_preprocessing.py tests/test_visualization.py
+          python -m pytest tests/test_lexical.py tests/test_feature_weights.py
           python -m pytest tests/test_cli.py -k cli_and_package_expose_version
           python -m pytest tests/test_vectors.py tests/test_model_routing.py tests/test_similarity.py \
             -k "multivector or pooling"

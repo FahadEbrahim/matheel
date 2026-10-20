@@ -7,7 +7,6 @@ from itertools import combinations
 
 import numpy as np
 import pandas as pd
-from rapidfuzz.distance import JaroWinkler, Levenshtein
 
 from .code_metrics import (
     parse_component_weights,
@@ -21,6 +20,7 @@ from .code_metrics import (
 )
 from .chunking import available_chunk_aggregations, available_chunking_methods, chunk_text
 from .feature_weights import combine_weighted_scores, resolve_feature_weights
+from .lexical import available_lexical_metrics, score_lexical_metric
 from .model_routing import (
     backend_is_multivector,
     load_hf_model_info,
@@ -956,20 +956,8 @@ def build_feature_scores(
 
     feature_scores = {
         "semantic": semantic_score,
-        "levenshtein": (
-            Levenshtein.normalized_similarity(code1, code2, weights=levenshtein_weights)
-            if needs_feature("levenshtein")
-            else 0.0
-        ),
-        "jaro_winkler": (
-            JaroWinkler.normalized_similarity(
-                code1,
-                code2,
-                prefix_weight=jaro_winkler_prefix_weight,
-            )
-            if needs_feature("jaro_winkler")
-            else 0.0
-        ),
+        "levenshtein": 0.0,
+        "jaro_winkler": 0.0,
         "winnowing": (
             winnowing_similarity_from_tokens(
                 lexical_tokens1,
@@ -991,6 +979,20 @@ def build_feature_scores(
         ),
         "code_metric": float(code_metric_score),
     }
+    # Preserve the helper's original work when callers omit active_features.
+    # Additional string metrics are opt-in, including expensive partial scorers.
+    lexical_features = ("levenshtein", "jaro_winkler") if requested_features is None else (
+        name for name in available_lexical_metrics() if name in requested_features
+    )
+    for name in lexical_features:
+        if needs_feature(name):
+            feature_scores[name] = score_lexical_metric(
+                name,
+                code1,
+                code2,
+                levenshtein_weights=levenshtein_weights,
+                jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
+            )
     feature_scores.update(supplied_scores)
     return feature_scores
 

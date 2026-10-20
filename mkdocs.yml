@@ -15,30 +15,32 @@ theme:
   highlightjs: true
 
 nav:
-  - Getting Started:
-      - Home: index.md
-      - Usage: usage.md
+  - Getting started:
+      - Overview: index.md
+      - Install and quick start: usage.md
       - Gradio app: gradio.md
-  - Scoring:
-      - Preprocessing: preprocessing.md
-      - Tokenization and limits: tokenization.md
-      - Chunking: chunking.md
-      - Vectors and routing: vectors.md
-      - Lexical metrics and baselines: lexical.md
-      - Code metrics: code_metrics.md
-  - Evaluation:
-      - Scoring and calibration: scoring.md
-      - Datasets and evaluation: datasets.md
+  - Compare code:
+      - Choose similarity metrics: choosing_metrics.md
+      - Lexical metrics: lexical.md
+      - Embeddings and routing: vectors.md
+      - Code-aware metrics: code_metrics.md
+      - Prepare code:
+          - Preprocessing: preprocessing.md
+          - Tokenization and limits: tokenization.md
+          - Chunking: chunking.md
+      - Comparison suites: comparison_suite.md
+  - Evaluate and benchmark:
+      - Load and evaluate datasets: datasets.md
+      - Interpret and calibrate scores: scoring.md
+      - Reproducible benchmark: reproducible_benchmark.md
+      - Leaderboards and run registry: leaderboard.md
+  - Inspect results:
       - Visualization: visualization.md
-      - Leaderboard: leaderboard.md
-      - Reproducible benchmark demo: reproducible_benchmark.md
+  - Extend and contribute:
       - Custom algorithms: customization.md
-      - Comparison suite: comparison_suite.md
-  - Project:
       - Contributing algorithms: contributing_algorithms.md
       - Contributing datasets: contributing_datasets.md
       - Development: development.md
 
 exclude_docs: |
   README.md
-  release_backlog.md

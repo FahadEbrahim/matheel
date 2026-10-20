@@ -1,6 +1,9 @@
+"""Compare all RapidFuzz scorers and blend lexical features without a model."""
+
 import sys
 from pathlib import Path
 
+from matheel.lexical import available_lexical_metrics, score_lexical_metric
 from matheel.similarity import calculate_similarity
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -12,52 +15,29 @@ def main():
 
     print(f"Comparing Code A ({CODE_A_NAME}) with Code B ({CODE_B_NAME})")
 
-    levenshtein_only = calculate_similarity(
-        code_a,
-        code_b,
-        model_name="huggingface/CodeBERTa-small-v1",
-        vector_backend="sentence_transformers",
-        feature_weights={"levenshtein": 1.0},
-    )
-    jaro_only = calculate_similarity(
-        code_a,
-        code_b,
-        model_name="huggingface/CodeBERTa-small-v1",
-        vector_backend="sentence_transformers",
-        feature_weights={"jaro_winkler": 1.0},
-    )
-    winnowing_only = calculate_similarity(
-        code_a,
-        code_b,
-        feature_weights={"winnowing": 1.0},
-        winnowing_kgram=3,
-        winnowing_window=2,
-    )
-    gst_only = calculate_similarity(
-        code_a,
-        code_b,
-        feature_weights={"gst": 1.0},
-        gst_min_match_length=2,
-    )
+    print("\nRaw-text scores (0 to 1):")
+    for name in available_lexical_metrics():
+        score = score_lexical_metric(name, code_a, code_b)
+        print(f"{name:36} {score:.4f}")
+
+    # calculate_similarity supports the same names as weighted features and
+    # can apply source-code preprocessing before scoring.
     blended = calculate_similarity(
         code_a,
         code_b,
-        model_name="huggingface/CodeBERTa-small-v1",
-        vector_backend="sentence_transformers",
+        preprocess_mode="basic",
+        code_language="java",
         feature_weights={
-            "semantic": 0.35,
-            "levenshtein": 0.3,
-            "jaro_winkler": 0.15,
+            "lcs": 0.4,
+            "rapidfuzz_ratio": 0.4,
             "winnowing": 0.1,
             "gst": 0.1,
         },
+        winnowing_kgram=3,
+        winnowing_window=2,
+        gst_min_match_length=2,
     )
-
-    print("Levenshtein only:", round(levenshtein_only, 4))
-    print("Jaro-Winkler only:", round(jaro_only, 4))
-    print("Winnowing only:", round(winnowing_only, 4))
-    print("GST only:", round(gst_only, 4))
-    print("Blended:", round(blended, 4))
+    print("\nPreprocessed LCS/RapidFuzz/fingerprint blend:", round(blended, 4))
 
 
 if __name__ == "__main__":

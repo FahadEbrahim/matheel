@@ -36,6 +36,7 @@ def main():
             chunk_overlap=0,
             max_chunks=3,
             chunk_language="java",
+            chunker_options={"tokenizer": "character"},
         )
     except ImportError as exc:
         print("Code chunking skipped:", exc)

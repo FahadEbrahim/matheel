@@ -39,6 +39,8 @@ from matheel.evaluation import (
     evaluate_retrieval_dataset,
     evaluate_retrieval_resamples,
 )
+from matheel.feature_weights import normalize_feature_weights
+from matheel.lexical import available_lexical_metrics, lexical_metric_metadata
 from matheel.leaderboard import (
     available_leaderboard_metrics,
     run_leaderboard,
@@ -116,14 +118,22 @@ TEMP_WORKSPACE_PREFIXES = (
     "matheel-scored-pair-explanation-",
     "matheel-leaderboard-",
 )
-FEATURE_UI_CHOICES = [
-    "Embedding",
-    "Levenshtein",
-    "Jaro-Winkler",
-    "Winnowing",
-    "GST",
-    "Code Metric",
-]
+FEATURE_UI_KEY_MAP = {
+    "Embedding": "semantic",
+    "Levenshtein": "levenshtein",
+    "Jaro-Winkler": "jaro_winkler",
+    "Winnowing": "winnowing",
+    "GST": "gst",
+    "Code Metric": "code_metric",
+}
+ADDITIONAL_LEXICAL_METRICS = tuple(
+    name for name in available_lexical_metrics() if name not in FEATURE_UI_KEY_MAP.values()
+)
+FEATURE_UI_KEY_MAP.update(
+    {lexical_metric_metadata(name)["label"]: name for name in ADDITIONAL_LEXICAL_METRICS}
+)
+FEATURE_UI_CHOICES = list(FEATURE_UI_KEY_MAP)
+LEXICAL_WEIGHT_COLUMNS = ["Metric", "Weight"]
 DEFAULT_FEATURE_SELECTION = ["Embedding", "Levenshtein"]
 
 
@@ -166,19 +176,7 @@ def _metric_preset_from_leaderboard_preset(name):
     preset = get_leaderboard_algorithm_preset(name)
     options = dict(preset["similarity_options"])
     weights = dict(options.get("feature_weights") or {})
-    features = []
-    if weights.get("semantic", 0.0) > 0:
-        features.append("Embedding")
-    if weights.get("levenshtein", 0.0) > 0:
-        features.append("Levenshtein")
-    if weights.get("jaro_winkler", 0.0) > 0:
-        features.append("Jaro-Winkler")
-    if weights.get("winnowing", 0.0) > 0:
-        features.append("Winnowing")
-    if weights.get("gst", 0.0) > 0:
-        features.append("GST")
-    if weights.get("code_metric", 0.0) > 0:
-        features.append("Code Metric")
+    features = [label for label, key in FEATURE_UI_KEY_MAP.items() if weights.get(key, 0.0) > 0]
     return {
         "features": features or list(DEFAULT_FEATURE_SELECTION),
         "weights": weights,
@@ -273,13 +271,7 @@ def gradio_progress_callback(progress):
     return callback
 
 
-SUITE_FEATURE_NAME_MAP = {
-    "Embedding": "embedding",
-    "Levenshtein": "levenshtein",
-    "Jaro-Winkler": "jaro_winkler",
-    "Winnowing": "winnowing",
-    "GST": "gst",
-}
+SUITE_FEATURE_NAME_MAP = {**FEATURE_UI_KEY_MAP, "Embedding": "embedding"}
 DEFAULT_UI_FEATURE_WEIGHTS = {
     "semantic": 0.7,
     "levenshtein": 0.3,
@@ -769,57 +761,124 @@ def build_feature_weights(
     gst_weight,
     code_metric,
     code_metric_weight,
+    extra_feature_weights=None,
 ):
-    weights = {}
-    fallback_names = []
-
-    if not any(
-        (
-            use_semantic,
-            use_levenshtein,
-            use_jaro_winkler,
-            use_winnowing,
-            use_gst,
-            (code_metric or "none") != "none",
+    weights = {
+        name: value
+        for name, enabled, value in (
+            ("semantic", use_semantic, semantic_weight),
+            ("levenshtein", use_levenshtein, levenshtein_weight),
+            ("jaro_winkler", use_jaro_winkler, jaro_winkler_weight),
+            ("winnowing", use_winnowing, winnowing_weight),
+            ("gst", use_gst, gst_weight),
+            ("code_metric", (code_metric or "none") != "none", code_metric_weight),
         )
-    ):
+        if enabled
+    }
+    weights.update(extra_feature_weights or {})
+    if not weights:
         raise gr.Error("Select at least one active metric.")
-
-    if use_semantic:
-        weights["semantic"] = max(0.0, float(semantic_weight))
-        fallback_names.append("semantic")
-    if use_levenshtein:
-        weights["levenshtein"] = max(0.0, float(levenshtein_weight))
-        fallback_names.append("levenshtein")
-    if use_jaro_winkler:
-        weights["jaro_winkler"] = max(0.0, float(jaro_winkler_weight))
-        fallback_names.append("jaro_winkler")
-    if use_winnowing:
-        weights["winnowing"] = max(0.0, float(winnowing_weight))
-        fallback_names.append("winnowing")
-    if use_gst:
-        weights["gst"] = max(0.0, float(gst_weight))
-        fallback_names.append("gst")
-
-    if (code_metric or "none") != "none":
-        weights["code_metric"] = max(0.0, float(code_metric_weight))
-        fallback_names.append("code_metric")
-
-    return normalize_feature_weights_map(weights, fallback_names=fallback_names)
+    return normalize_feature_weights_map(weights)
 
 
 def normalize_feature_weights_map(weights, fallback_names=None):
-    filtered = {name: float(value) for name, value in (weights or {}).items() if float(value) > 0}
+    try:
+        normalized = normalize_feature_weights(weights)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise gr.Error(str(exc)) from exc
+    filtered = {name: value for name, value in normalized.items() if value > 0}
     if not filtered:
-        fallback = [name for name in (fallback_names or []) if name]
-        if fallback:
-            raise gr.Error("At least one selected metric must have a positive weight.")
-        return {"semantic": 1.0}
+        raise gr.Error("At least one selected metric must have a positive weight.")
+    return filtered
 
-    total = sum(filtered.values())
-    if abs(total - 1.0) > 0.02:
-        raise gr.Error("Active metric weights must sum to 1.")
-    return {name: value / total for name, value in filtered.items()}
+
+def parse_additional_lexical_weights(rows, selected_names=None):
+    if rows is None or (isinstance(rows, str) and not rows.strip()):
+        return {}
+    if isinstance(rows, str):
+        try:
+            rows = json.loads(rows)
+        except json.JSONDecodeError as exc:
+            raise gr.Error("Additional lexical weights must contain valid JSON.") from exc
+    if isinstance(rows, pd.DataFrame):
+        entries = rows.itertuples(index=False, name=None)
+    elif isinstance(rows, dict):
+        entries = rows.items()
+    elif isinstance(rows, (list, tuple)):
+        entries = rows
+    else:
+        raise gr.Error("Additional lexical weights must be a table or metric-to-weight mapping.")
+    weights = {}
+    for entry in entries:
+        if not isinstance(entry, (list, tuple)) or len(entry) != 2:
+            raise gr.Error("Additional lexical weights need Metric and Weight columns.")
+        label, value = entry
+        if not str(label or "").strip() and value in (None, ""):
+            continue
+        name = FEATURE_UI_KEY_MAP.get(str(label), str(label))
+        if name not in ADDITIONAL_LEXICAL_METRICS:
+            raise gr.Error(f"Unknown additional lexical metric: {label}.")
+        if selected_names is not None and name not in selected_names:
+            continue
+        if name in weights:
+            raise gr.Error(f"Duplicate additional lexical metric: {label}.")
+        try:
+            weight = float(value)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise gr.Error(f"{label} weight must be a finite non-negative number.") from exc
+        if not math.isfinite(weight) or weight < 0:
+            raise gr.Error(f"{label} weight must be a finite non-negative number.")
+        weights[name] = weight
+    return weights
+
+
+def additional_lexical_weights_frame(selected_features, rows=None):
+    selected = set(selected_features or [])
+    selected_names = {FEATURE_UI_KEY_MAP[label] for label in selected if label in FEATURE_UI_KEY_MAP}
+    weights = parse_additional_lexical_weights(rows, selected_names=selected_names)
+    return pd.DataFrame(
+        [
+            [label, weights.get(name, 1.0)]
+            for label, name in FEATURE_UI_KEY_MAP.items()
+            if label in selected and name in ADDITIONAL_LEXICAL_METRICS
+        ],
+        columns=LEXICAL_WEIGHT_COLUMNS,
+    )
+
+
+def update_additional_lexical_weights(selected_features, rows):
+    frame = additional_lexical_weights_frame(selected_features, rows)
+    return gr.update(value=frame, visible=not frame.empty)
+
+
+def selected_feature_weights(
+    selected_features,
+    semantic_weight,
+    levenshtein_weight,
+    jaro_winkler_weight,
+    winnowing_weight,
+    gst_weight,
+    code_metric,
+    code_metric_weight,
+    lexical_weights=None,
+):
+    selected = set(selected_features or [])
+    selected_names = {FEATURE_UI_KEY_MAP[label] for label in selected if label in FEATURE_UI_KEY_MAP}
+    extras = parse_additional_lexical_weights(lexical_weights, selected_names=selected_names)
+    active_extras = {
+        name: extras.get(name, 1.0)
+        for label, name in FEATURE_UI_KEY_MAP.items()
+        if label in selected and name in ADDITIONAL_LEXICAL_METRICS
+    }
+    return build_feature_weights(
+        "Embedding" in selected, semantic_weight,
+        "Levenshtein" in selected, levenshtein_weight,
+        "Jaro-Winkler" in selected, jaro_winkler_weight,
+        "Winnowing" in selected, winnowing_weight,
+        "GST" in selected, gst_weight,
+        code_metric if "Code Metric" in selected else "none", code_metric_weight,
+        extra_feature_weights=active_extras,
+    )
 
 
 def parse_weight_values_text(raw_text, expected_count, label):
@@ -1055,6 +1114,10 @@ def metric_preset_options(preset_name):
     weights = dict(preset["weights"])
     return {
         "features": list(preset["features"]),
+        "feature_weights": weights,
+        "lexical_weights": {
+            name: weight for name, weight in weights.items() if name in ADDITIONAL_LEXICAL_METRICS
+        },
         "semantic_weight": float(weights.get("semantic", 0.0)),
         "levenshtein_weight": float(weights.get("levenshtein", 0.0)),
         "jaro_winkler_weight": float(weights.get("jaro_winkler", 0.0)),
@@ -1081,6 +1144,7 @@ def apply_metric_preset_gradio(preset_name):
         gr.update(value=options["code_metric"]),
         gr.update(value=options["code_metric_weight"]),
         *section_updates,
+        update_additional_lexical_weights(features, options["lexical_weights"]),
     )
 
 
@@ -1173,6 +1237,7 @@ SUITE_COLUMNS = [
     "lexical_tokenizer",
     "threshold",
     "number_results",
+    "lexical_weights",
 ]
 
 
@@ -1186,7 +1251,11 @@ def normalize_suite_rows_frame(rows):
     if isinstance(rows, pd.DataFrame):
         frame = rows.copy()
     else:
-        frame = pd.DataFrame(rows, columns=SUITE_COLUMNS)
+        frame = pd.DataFrame(rows)
+        if isinstance(frame.columns, pd.RangeIndex):
+            if len(frame.columns) > len(SUITE_COLUMNS):
+                raise gr.Error("Saved suite rows contain too many columns.")
+            frame.columns = SUITE_COLUMNS[:len(frame.columns)]
     for column in SUITE_COLUMNS:
         if column not in frame.columns:
             frame[column] = ""
@@ -1204,14 +1273,15 @@ def suite_rows_to_configs(rows):
         run_name = str(row.get("run_name", "")).strip() or f"run_{index + 1}"
         code_metric = str(row.get("code_metric", "none") or "none").strip() or "none"
         raw_feature_weights = {
-            "semantic": max(0.0, float(row.get("semantic_weight") or 0)),
-            "levenshtein": max(0.0, float(row.get("levenshtein_weight") or 0)),
-            "jaro_winkler": max(0.0, float(row.get("jaro_winkler_weight") or 0)),
-            "winnowing": max(0.0, float(row.get("winnowing_weight") or 0)),
-            "gst": max(0.0, float(row.get("gst_weight") or 0)),
+            "semantic": float(row.get("semantic_weight") or 0),
+            "levenshtein": float(row.get("levenshtein_weight") or 0),
+            "jaro_winkler": float(row.get("jaro_winkler_weight") or 0),
+            "winnowing": float(row.get("winnowing_weight") or 0),
+            "gst": float(row.get("gst_weight") or 0),
         }
-        code_metric_weight = max(0.0, float(row.get("code_metric_weight") or 0))
-        if code_metric != "none" and code_metric_weight > 0:
+        raw_feature_weights.update(parse_additional_lexical_weights(row.get("lexical_weights")))
+        code_metric_weight = float(row.get("code_metric_weight") or 0)
+        if code_metric != "none":
             raw_feature_weights["code_metric"] = code_metric_weight
         feature_weights = normalize_feature_weights_map(raw_feature_weights)
 
@@ -1435,6 +1505,7 @@ def build_suite_run_row_data(
     chunker_options,
     threshold,
     number_results,
+    lexical_weights=None,
 ):
     selected = set(selected_features or [])
     selected_steps = set(selected_preparation or [])
@@ -1504,19 +1575,16 @@ def build_suite_run_row_data(
         normalized_codebertscore_max_length,
     )
 
-    feature_weights = build_feature_weights(
-        "Embedding" in selected,
+    feature_weights = selected_feature_weights(
+        selected_features,
         semantic_weight,
-        "Levenshtein" in selected,
         levenshtein_weight,
-        "Jaro-Winkler" in selected,
         jaro_winkler_weight,
-        "Winnowing" in selected,
         winnowing_weight,
-        "GST" in selected,
         gst_weight,
         normalized_code_metric,
         code_metric_weight,
+        lexical_weights,
     )
 
     row = {
@@ -1550,6 +1618,10 @@ def build_suite_run_row_data(
         "codebertscore_model": normalized_codebertscore_model,
         "codebertscore_max_length": max(0, normalized_codebertscore_max_length),
         "semantic_weight": feature_weights.get("semantic", 0.0),
+        "lexical_weights": json.dumps({
+            name: weight for name, weight in feature_weights.items()
+            if name in ADDITIONAL_LEXICAL_METRICS
+        }, sort_keys=True),
         "levenshtein_weight": feature_weights.get("levenshtein", 0.0),
         "levenshtein_weights": normalized_levenshtein_weights,
         "jaro_winkler_weight": feature_weights.get("jaro_winkler", 0.0),
@@ -1612,6 +1684,7 @@ def append_suite_run_gradio(
     chunker_options,
     threshold,
     number_results,
+    lexical_weights=None,
 ):
     row = build_suite_run_row_data(
         rows,
@@ -1656,6 +1729,7 @@ def append_suite_run_gradio(
         chunker_options,
         threshold,
         number_results,
+        lexical_weights,
     )
 
     frame = normalize_suite_rows_frame(rows)
@@ -1762,11 +1836,23 @@ def unique_suite_detail_filenames(run_names):
     filenames = []
     for run_name in run_names:
         detail_stem = slugify_run_name(run_name) or "run"
-        candidate = detail_stem
-        suffix = 2
-        while candidate.casefold() in used_names:
-            candidate = f"{detail_stem}_{suffix}"
-            suffix += 1
+        stem_bytes = detail_stem.encode("utf-8")
+        digest = hashlib.sha256(str(run_name).encode("utf-8")).hexdigest()[:12]
+        suffix = ""
+        index = 1
+        while True:
+            # Leave room below common 255-byte component limits, including
+            # the extension and a collision suffix, without changing run names.
+            byte_budget = 200 - len(suffix.encode("utf-8"))
+            if len(stem_bytes) > byte_budget:
+                prefix = stem_bytes[:byte_budget - len(digest) - 1].decode("utf-8", errors="ignore")
+                candidate = f"{prefix}_{digest}{suffix}"
+            else:
+                candidate = f"{detail_stem}{suffix}"
+            if candidate.casefold() not in used_names:
+                break
+            index += 1
+            suffix = f"_{index}"
         used_names.add(candidate.casefold())
         filenames.append(f"{candidate}.csv")
     return filenames
@@ -1818,6 +1904,7 @@ def run_suite_gradio(
     threshold,
     number_results,
     progress=gr.Progress(track_tqdm=True),
+    lexical_weights=None,
 ):
     saved_frame = normalize_suite_rows_frame(run_sheet_rows)
     if zipped_file is None:
@@ -1880,6 +1967,7 @@ def run_suite_gradio(
             chunker_options,
             threshold,
             number_results,
+            lexical_weights,
         )
         execution_frame = pd.DataFrame([row], columns=SUITE_COLUMNS)
         status_html = profile_status_html(
@@ -2987,15 +3075,7 @@ def dataset_similarity_options(
     lexical_tokenizer="raw",
 ):
     preset = metric_preset_options(preset_name)
-    feature_weights = {
-        "semantic": preset["semantic_weight"],
-        "levenshtein": preset["levenshtein_weight"],
-        "jaro_winkler": preset["jaro_winkler_weight"],
-        "winnowing": preset["winnowing_weight"],
-        "gst": preset["gst_weight"],
-    }
-    if "Code Metric" in preset["features"]:
-        feature_weights["code_metric"] = preset["code_metric_weight"]
+    feature_weights = preset["feature_weights"]
 
     code_metric = preset["code_metric"] if "Code Metric" in preset["features"] else "none"
     return {
@@ -4049,15 +4129,14 @@ def calculate_similarity_gradio(
     chunk_language,
     chunker_options,
     progress=gr.Progress(track_tqdm=True),
+    lexical_weights=None,
 ):
     if not str(code1 or "").strip() or not str(code2 or "").strip():
         raise gr.Error("Paste both snippets before running pairwise comparison.")
 
     selected = set(selected_features or [])
     selected_steps = set(selected_preparation or [])
-    use_semantic = "Embedding" in selected
     use_levenshtein = "Levenshtein" in selected
-    use_jaro_winkler = "Jaro-Winkler" in selected
     use_winnowing = "Winnowing" in selected
     use_gst = "GST" in selected
     use_code_metric = "Code Metric" in selected
@@ -4100,19 +4179,16 @@ def calculate_similarity_gradio(
         codebertscore_max_length,
     )
 
-    feature_weights = build_feature_weights(
-        use_semantic,
+    feature_weights = selected_feature_weights(
+        selected_features,
         semantic_weight,
-        use_levenshtein,
         levenshtein_weight,
-        use_jaro_winkler,
         jaro_winkler_weight,
-        use_winnowing,
         winnowing_weight,
-        use_gst,
         gst_weight,
         effective_code_metric,
         effective_code_metric_weight,
+        lexical_weights,
     )
     start_time = perf_counter()
     score = calculate_similarity(
@@ -4201,6 +4277,7 @@ def get_sim_list_gradio(
     threshold,
     number_results,
     progress=gr.Progress(track_tqdm=True),
+    lexical_weights=None,
 ):
     if zipped_file is None:
         return empty_summary_html(), pd.DataFrame(
@@ -4209,9 +4286,7 @@ def get_sim_list_gradio(
 
     selected = set(selected_features or [])
     selected_steps = set(selected_preparation or [])
-    use_semantic = "Embedding" in selected
     use_levenshtein = "Levenshtein" in selected
-    use_jaro_winkler = "Jaro-Winkler" in selected
     use_winnowing = "Winnowing" in selected
     use_gst = "GST" in selected
     use_code_metric = "Code Metric" in selected
@@ -4254,19 +4329,16 @@ def get_sim_list_gradio(
         codebertscore_max_length,
     )
 
-    feature_weights = build_feature_weights(
-        use_semantic,
+    feature_weights = selected_feature_weights(
+        selected_features,
         semantic_weight,
-        use_levenshtein,
         levenshtein_weight,
-        use_jaro_winkler,
         jaro_winkler_weight,
-        use_winnowing,
         winnowing_weight,
-        use_gst,
         gst_weight,
         effective_code_metric,
         effective_code_metric_weight,
+        lexical_weights,
     )
     results = get_sim_list(
         zipped_file,
@@ -4383,6 +4455,7 @@ class ScoringControls(NamedTuple):
     lexical_tokenizer: object
     code: CodeMetricControls
     preparation: PreparationControls
+    lexical_weights: object
 
     def handler_inputs(self):
         """Return the stable Pair/Collection/Suite scoring argument order."""
@@ -4629,6 +4702,19 @@ def build_scoring_controls():
             value=DEFAULT_FEATURE_SELECTION,
             label="Active Metrics",
         )
+        gr.Markdown("Weights are relative and normalized automatically across selected metrics.")
+        lexical_weights = gr.Dataframe(
+            value=pd.DataFrame(columns=LEXICAL_WEIGHT_COLUMNS),
+            headers=LEXICAL_WEIGHT_COLUMNS,
+            datatype=["str", "number"],
+            label="Additional lexical weights",
+            row_count=(0, "fixed"),
+            col_count=(2, "fixed"),
+            static_columns=[0],
+            interactive=True,
+            visible=False,
+            max_height=300,
+        )
         model = build_model_routing_controls()
         with gr.Group(visible=True) as levenshtein_group:
             levenshtein_weight = gr.Slider(
@@ -4700,6 +4786,7 @@ def build_scoring_controls():
         lexical_tokenizer,
         code,
         preparation,
+        lexical_weights,
     )
 
 
@@ -4716,6 +4803,12 @@ def wire_scoring_controls(controls):
             controls.gst_group,
             controls.code.group,
         ],
+    )
+    controls.features.change(
+        update_additional_lexical_weights,
+        inputs=[controls.features, controls.lexical_weights],
+        outputs=controls.lexical_weights,
+        api_name=False,
     )
     controls.metric_preset.change(
         apply_metric_preset_gradio,
@@ -4735,6 +4828,7 @@ def wire_scoring_controls(controls):
             controls.winnowing_group,
             controls.gst_group,
             controls.code.group,
+            controls.lexical_weights,
         ],
     )
     controls.preparation.selected.change(
@@ -4827,6 +4921,7 @@ with gr.Blocks(
                     pair_code1,
                     pair_code2,
                     *pair_controls.handler_inputs(),
+                    pair_controls.lexical_weights,
                 ],
                 outputs=pair_output,
             )
@@ -4876,6 +4971,7 @@ with gr.Blocks(
                     *collection_controls.handler_inputs(),
                     collection_threshold,
                     collection_number_results,
+                    collection_controls.lexical_weights,
                 ],
                 outputs=[collection_summary, collection_output],
             )
@@ -4981,6 +5077,7 @@ with gr.Blocks(
                     *suite_controls.handler_inputs(),
                     suite_threshold,
                     suite_number_results,
+                    suite_controls.lexical_weights,
                 ],
                 outputs=[suite_runs_state, suite_runs_overview, suite_status, suite_run_name_input],
             )
@@ -4998,6 +5095,7 @@ with gr.Blocks(
                     *suite_controls.handler_inputs(),
                     suite_threshold,
                     suite_number_results,
+                    suite_controls.lexical_weights,
                 ],
                 outputs=[
                     suite_summary,
@@ -5769,10 +5867,10 @@ with gr.Blocks(
             ) as reports_tabs:
                 with gr.Tab("Ready-made Leaderboard", id="ready-made-leaderboard"):
                     gr.Markdown(
-                        "Scores are precomputed across every registered public dataset preset and "
-                        "every built-in algorithm preset. The snapshot uses deterministic samples "
-                        "and the offline `static_hash` vector backend; use Build Leaderboard for a "
-                        "full-corpus or custom run."
+                        "This saved snapshot records the datasets and algorithm presets available "
+                        "when it was generated. Its coverage table lists the recorded runs. "
+                        "It uses deterministic samples and the offline `static_hash` vector backend; "
+                        "use Build Leaderboard to evaluate current presets or a full-corpus run."
                     )
                     ready_made_summary = gr.HTML(value=ready_made_initial[0], padding=False)
                     with gr.Accordion("Explore rankings", open=True):

@@ -1,6 +1,6 @@
 # Visualization
 
-Matheel can export dataset-level embedding maps for normalized pair and retrieval datasets. The first visualization path uses dependency-free static hash embeddings by default, then projects documents to two dimensions with UMAP when `umap-learn` is installed. If UMAP is unavailable and `method=auto`, Matheel uses deterministic PCA.
+Matheel can export dataset-level embedding maps for normalized pair and retrieval datasets. Dataset maps use static hash embeddings by default, without a model download, then projects documents to two dimensions with UMAP when `umap-learn` is installed. If UMAP is unavailable and `method=auto`, Matheel uses deterministic PCA.
 
 Install the optional UMAP backend when you want UMAP projections:
 

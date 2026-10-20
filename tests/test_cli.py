@@ -25,6 +25,19 @@ def test_cli_and_package_expose_version():
     assert matheel.__version__ == version("matheel")
 
 
+def test_metrics_command_lists_normalized_lexical_metrics():
+    result = CliRunner().invoke(main, ["metrics"])
+
+    assert result.exit_code == 0
+    metrics = json.loads(result.output)
+    assert tuple(item["name"] for item in metrics) == matheel.available_lexical_metrics()
+    assert {item["family"] for item in metrics} == {"distance", "fuzz"}
+    assert all(item["score_range"] == [0.0, 1.0] for item in metrics)
+    assert next(item for item in metrics if item["name"] == "lcs")["label"] == (
+        "Longest Common Subsequence (LCS)"
+    )
+
+
 def test_visualize_dataset_command_writes_artifacts(tmp_path):
     dataset_root = tmp_path / "pairs"
     write_pair_dataset(

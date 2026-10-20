@@ -31,6 +31,7 @@ from .datasets import (
 from .dataset_validation import write_dataset_validation_report
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .leaderboard import load_leaderboard_manifest, run_leaderboard
+from .lexical import available_lexical_metrics, lexical_metric_metadata
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
 from .similarity import (
     DEFAULT_MODEL_NAME,
@@ -60,6 +61,12 @@ from .visualization import (
 def main():
     """Matheel CLI - Compute Code Similarity"""
     pass
+
+
+@main.command(name="metrics")
+def metrics_command():
+    """List available string similarities and their feature-weight names as JSON."""
+    click.echo(json.dumps([lexical_metric_metadata(name) for name in available_lexical_metrics()], indent=2))
 
 
 @main.command(name="init-custom-algorithm")

@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 
 from matheel.datasets import available_dataset_presets, write_pair_dataset, write_retrieval_dataset
+from matheel.lexical import available_lexical_metrics, lexical_metric_metadata
 
 
 pytest.importorskip("gradio")
@@ -694,6 +695,151 @@ def test_build_feature_weights_ignores_code_metric_weight_when_metric_is_inactiv
     assert weights == {"semantic": 1.0}
 
 
+def test_gradio_exposes_every_lexical_metric_and_preserves_relative_weights():
+    assert {
+        lexical_metric_metadata(name)["label"] for name in available_lexical_metrics()
+    }.issubset(gradio_app.FEATURE_UI_CHOICES)
+    label = lexical_metric_metadata("lcs")["label"]
+
+    weights = gradio_app.selected_feature_weights(
+        ["Levenshtein", label], 0.0, 3.0, 0.0, 0.0, 0.0, "none", 0.0,
+        pd.DataFrame([[label, 1.0]], columns=["Metric", "Weight"]),
+    )
+
+    assert weights == {"levenshtein": 0.75, "lcs": 0.25}
+
+
+@pytest.mark.parametrize("weight", [-1.0, float("nan"), float("inf"), "not a number"])
+def test_additional_lexical_weights_reject_invalid_values(weight):
+    with pytest.raises(gradio_app.gr.Error, match="finite non-negative"):
+        gradio_app.parse_additional_lexical_weights({"lcs": weight})
+
+
+def test_weight_normalization_handles_overflow_and_rejects_all_zero():
+    assert gradio_app.normalize_feature_weights_map(
+        {"lcs": 1e308, "levenshtein": 1e308}
+    ) == {"lcs": 0.5, "levenshtein": 0.5}
+    with pytest.raises(gradio_app.gr.Error, match="positive weight"):
+        gradio_app.normalize_feature_weights_map({"lcs": 0.0})
+    with pytest.raises(gradio_app.gr.Error, match="non-negative"):
+        gradio_app.normalize_feature_weights_map({"lcs": -1.0})
+
+
+def test_additional_lexical_weight_table_retains_selected_weights_and_defaults_new_rows():
+    label = lexical_metric_metadata("lcs")["label"]
+    ratio_label = lexical_metric_metadata("rapidfuzz_ratio")["label"]
+    frame = gradio_app.additional_lexical_weights_frame(
+        [label, ratio_label], {"lcs": 2.5, "osa": 7.0}
+    )
+
+    assert gradio_app.parse_additional_lexical_weights(frame) == {"lcs": 2.5, "rapidfuzz_ratio": 1.0}
+    assert gradio_app.additional_lexical_weights_frame(["Levenshtein"]).empty
+    assert gradio_app.update_additional_lexical_weights([], frame)["visible"] is False
+
+
+def test_suite_roundtrips_additional_weights_and_loads_old_positional_rows():
+    label = lexical_metric_metadata("lcs")["label"]
+    row = _build_suite_row(
+        selected_features=["Levenshtein", label],
+        levenshtein_weight=3.0,
+        lexical_weights={"lcs": 1.0},
+    )
+
+    assert json.loads(row["lexical_weights"]) == {"lcs": 0.25}
+    options = gradio_app.suite_rows_to_configs([row])[0]["options"]
+    assert options["feature_weights"] == {"levenshtein": 0.75, "lcs": 0.25}
+    old_row = _build_suite_row()
+    old_values = [[old_row[column] for column in gradio_app.SUITE_COLUMNS[:-1]]]
+    assert gradio_app.suite_rows_to_configs(old_values)[0]["options"]["feature_weights"] == {
+        "levenshtein": 1.0
+    }
+
+
+def _scoring_handler_kwargs():
+    parameters = list(inspect.signature(gradio_app.calculate_similarity_gradio).parameters)[2:]
+    return {
+        name: component.value
+        for name, component in zip(parameters, gradio_app.pair_controls.handler_inputs())
+    }
+
+
+def test_pair_api_runs_lcs_with_legacy_inputs_and_appended_weights():
+    options = _scoring_handler_kwargs()
+    options["selected_features"] = [lexical_metric_metadata("lcs")["label"]]
+
+    summary = gradio_app.calculate_similarity_gradio(
+        "abcdef", "ace", **options, progress=None, lexical_weights={"lcs": 2.0}
+    )
+
+    assert "0.5000" in summary
+    assert list(inspect.signature(gradio_app.calculate_similarity_gradio).parameters)[-2:] == [
+        "progress", "lexical_weights"
+    ]
+
+
+def test_collection_api_runs_new_metric_with_appended_weights(tmp_path):
+    archive_path = tmp_path / "codes.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("a.py", "abcdef")
+        archive.writestr("b.py", "ace")
+    options = _scoring_handler_kwargs()
+    options["selected_features"] = [lexical_metric_metadata("lcs")["label"]]
+
+    _, results = gradio_app.get_sim_list_gradio(
+        archive_path, **options, threshold=0.0, number_results=10,
+        progress=None, lexical_weights={"lcs": 1.0},
+    )
+
+    assert results.iloc[0]["similarity_score"] == 0.5
+
+
+def test_suite_api_saves_and_executes_new_metrics(tmp_path):
+    options = _scoring_handler_kwargs()
+    options["selected_features"] = [lexical_metric_metadata("lcs")["label"]]
+    saved_rows, _, _, _ = gradio_app.append_suite_run_gradio(
+        gradio_app.empty_suite_rows(), "lcs_test", **options,
+        threshold=0.0, number_results=10, lexical_weights={"lcs": 4.0},
+    )
+    assert gradio_app.suite_rows_to_configs(saved_rows)[0]["options"]["feature_weights"] == {"lcs": 1.0}
+    archive_path = tmp_path / "codes.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("a.py", "abcdef")
+        archive.writestr("b.py", "ace")
+    result = gradio_app.run_suite_gradio(
+        archive_path, gradio_app.empty_suite_rows(), "csv", "lcs_test", **options,
+        threshold=0.0, number_results=10, progress=None, lexical_weights={"lcs": 4.0},
+    )
+
+    assert result[3].iloc[0]["similarity_score"] == 0.5
+    exported_configs = json.loads(Path(result[7]).read_text(encoding="utf-8"))
+    assert exported_configs[0]["options"]["feature_weights"] == {"lcs": 1.0}
+
+
+def test_metric_presets_retain_new_weights_for_dataset_scoring():
+    preset_name = lexical_metric_metadata("lcs")["label"]
+    preset = gradio_app.metric_preset_options(preset_name)
+    assert preset["lexical_weights"] == {"lcs": 1.0}
+    assert preset["features"] == [preset_name]
+    updates = gradio_app.apply_metric_preset_gradio(preset_name)
+    assert gradio_app.parse_additional_lexical_weights(updates[-1]["value"]) == {"lcs": 1.0}
+    assert gradio_app.dataset_similarity_options(
+        preset_name, gradio_app.DEFAULT_MODEL, "auto", "cpu", "none", "python"
+    )["feature_weights"] == {"lcs": 1.0}
+
+
+def test_scoring_actions_append_weight_table_without_changing_existing_control_order():
+    config = gradio_app.demo.get_config_file()
+    for api_name in (
+        "calculate_similarity_gradio", "get_sim_list_gradio", "append_suite_run_gradio", "run_suite_gradio"
+    ):
+        dependency = next(item for item in config["dependencies"] if item["api_name"] == api_name)
+        table_id = dependency["inputs"][-1]
+        component = next(item for item in config["components"] if item["id"] == table_id)
+        assert component["type"] == "dataframe"
+        assert component["props"]["label"] == "Additional lexical weights"
+        assert component["props"]["static_columns"] == [0]
+
+
 def test_status_html_helpers_escape_dynamic_values():
     profile_html = gradio_app.profile_status_html('<script>alert("x")</script>')
 
@@ -995,6 +1141,50 @@ def test_suite_detail_filenames_are_unique_after_slugification():
         "run.csv",
     ]
     assert len({name.casefold() for name in filenames}) == len(filenames)
+
+
+def test_suite_detail_filenames_bound_long_unicode_names_and_collision_suffixes(tmp_path):
+    long_name = "metric_" * 100
+    unicode_name = "指標🚀metric_" * 100
+    run_names = ["short", long_name, long_name, unicode_name, unicode_name + "other"]
+
+    filenames = gradio_app.unique_suite_detail_filenames(run_names)
+
+    assert filenames[0] == "short.csv"
+    assert filenames == gradio_app.unique_suite_detail_filenames(run_names)
+    assert len({name.casefold() for name in filenames}) == len(run_names)
+    assert all(len(name.encode("utf-8")) <= 204 for name in filenames)
+    for filename in filenames:
+        (tmp_path / filename).write_text("score\n1.0\n", encoding="utf-8")
+
+
+def test_suite_exports_all_string_metrics_with_full_generated_display_name(tmp_path):
+    options = _scoring_handler_kwargs()
+    options["selected_features"] = [
+        lexical_metric_metadata(name)["label"] for name in available_lexical_metrics()
+    ]
+    options["levenshtein_weight"] = 1.0
+    options["jaro_winkler_weight"] = 1.0
+    archive_path = tmp_path / "codes.zip"
+    with zipfile.ZipFile(archive_path, "w") as archive:
+        archive.writestr("a.py", "abcdef")
+        archive.writestr("b.py", "ace")
+
+    outputs = gradio_app.run_suite_gradio(
+        archive_path, gradio_app.empty_suite_rows(), "csv", "", **options,
+        threshold=0.0, number_results=10, progress=None,
+        lexical_weights={name: 1.0 for name in gradio_app.ADDITIONAL_LEXICAL_METRICS},
+    )
+
+    config = json.loads(Path(outputs[7]).read_text(encoding="utf-8"))[0]
+    assert len(config["run_name"]) > 255
+    assert outputs[1].iloc[0]["run_name"] == config["run_name"]
+    assert set(config["options"]["feature_weights"]) == set(available_lexical_metrics())
+    with zipfile.ZipFile(outputs[6]) as archive:
+        assert len(archive.namelist()) == 1
+        filename = archive.namelist()[0]
+        assert len(filename.encode("utf-8")) <= 204
+        assert len(pd.read_csv(archive.open(filename))) == 1
 
 
 def _zip_directory(source_root, zip_path):
@@ -1557,7 +1747,7 @@ def test_ready_leaderboard_registered_datasets_frame_lists_all_presets():
     assert "Sampling Default" in frame.columns
 
 
-def test_ready_made_leaderboard_covers_all_presets_and_algorithms():
+def test_ready_made_leaderboard_records_historical_preset_coverage():
     payload = gradio_app.load_ready_made_leaderboard_payload()
     report = gradio_app._leaderboard_report_from_payload(payload)
     profile = report["metadata"]["benchmark_profile"]
@@ -1572,11 +1762,11 @@ def test_ready_made_leaderboard_covers_all_presets_and_algorithms():
         "student_code_similarity",
     }
     assert set(profile["dataset_presets"]).issubset(set(available_dataset_presets()))
-    assert set(profile["algorithm_presets"]) == set(gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES)
+    assert set(profile["algorithm_presets"]).issubset(gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES)
     assert profile["dataset_task_count"] == 7
     assert len(coverage) == 7
     assert set(report["per_dataset"]["algorithm_name"]) == set(
-        gradio_app.READY_LEADERBOARD_ALGORITHM_CHOICES
+        profile["algorithm_presets"]
     )
     assert set(report["aggregate"]["task_family"]) == {"pair", "retrieval"}
     assert tuple(report["metadata"]["pair_metrics"]) == (
