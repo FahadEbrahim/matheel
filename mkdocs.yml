@@ -34,6 +34,7 @@ nav:
       - Interpret and calibrate scores: scoring.md
       - Reproducible benchmark: reproducible_benchmark.md
       - Versioned plagiarism benchmarks: benchmark_protocol.md
+      - Plagiarism benchmark results: plagiarism_results.md
       - Leaderboards and run registry: leaderboard.md
   - Inspect results:
       - Visualization: visualization.md

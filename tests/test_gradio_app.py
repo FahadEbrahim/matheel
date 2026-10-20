@@ -2330,6 +2330,20 @@ def test_later_scoring_option_reset_does_not_discard_upload_validation(monkeypat
     assert generation["evaluation"] == 1
 
 
+@pytest.mark.parametrize("validation_state", [None, "validated upload/task"])
+def test_scoring_reset_preserves_validation_guidance_until_validation_passes(validation_state):
+    generation = {}
+    outputs = gradio_app.reset_dataset_results(generation, event_revision=10, validation_state=validation_state)
+    assert outputs[0] is None
+    assert outputs[1]["visible"] is False
+    assert outputs[6] is None
+    assert generation["evaluation"] == 1
+    if validation_state is None:
+        assert outputs[15] == gradio_app.gr.skip()
+    else:
+        assert "Settings changed" in outputs[15]
+
+
 def test_late_same_upload_notification_keeps_active_work_generation(monkeypatch):
     generation = {"evaluation": 3, "threshold": 2, "explanation": 1}
     monkeypatch.setattr(gradio_app, "dataset_upload_identity", lambda *args: "current identity")

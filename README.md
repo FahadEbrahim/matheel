@@ -65,6 +65,7 @@ See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semanti
 
 - Documentation: [fahadebrahim.github.io/matheel](https://fahadebrahim.github.io/matheel/)
 - Choosing metrics: [similarity guide](https://fahadebrahim.github.io/matheel/choosing_metrics/)
+- Public plagiarism benchmark: [definition and reproduction recipe](benchmarks/plagiarism-v1/README.md), [results and scope](docs/plagiarism_results.md)
 - Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
 - Core workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/01_core_workflows.ipynb)
 - Dataset workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)

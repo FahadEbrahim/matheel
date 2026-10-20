@@ -592,6 +592,20 @@ def _wait_for_dataset_action_completion(page, config, action, previous_joins):
     }""", arg={"ids": list(chain_ids), "start": previous_joins}, timeout=30_000)
 
 
+def _dispatch_component_event_and_wait(page, config, component_id, event):
+    dependency = next(item for item in config["dependencies"] if [component_id, event] in item["targets"])
+    before = page.evaluate("window.__matheelQueueJoins.length")
+    page.evaluate("""({id, event}) => window.__matheelGradioTargets.at(-1).dispatchEvent(new CustomEvent("gradio", {
+        detail: {id, event, data: null}, bubbles: true
+    }))""", {"id": component_id, "event": event})
+    page.wait_for_function("""({index, start}) => window.__matheelQueueJoins.slice(start).some(
+        join => join.fn_index === index && window.__matheelQueueEvents.some(
+            event => event.event_id === join.event_id && event.msg === 'process_completed' && event.success
+        )
+    )""", arg={"index": dependency["id"], "start": before})
+    page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+
+
 @pytest.mark.parametrize("reset", ["upload", "task", "metric"])
 def test_completed_old_evaluation_cannot_restore_results_after_dataset_reset(
     gradio_page, gradio_config, normalized_dataset_zip, invalid_dataset_zip,
@@ -616,6 +630,12 @@ def test_completed_old_evaluation_cannot_restore_results_after_dataset_reset(
             task = _visible_component(page, gradio_config, label="Task", component_type="radio")
             task.get_by_role("radio", name="Retrieval", exact=True).check()
             _wait_until(lambda: run.is_disabled())
+            # Gradio can emit input when the previously hidden retrieval
+            # slider mounts. Force that event after reset instead of relying
+            # on platform-specific mounting timing observed in CI.
+            slider_id = next(component["id"] for component in gradio_config["components"]
+                             if component.get("props", {}).get("label") == "Retrieval k")
+            _dispatch_component_event_and_wait(page, gradio_config, slider_id, "input")
         else:
             _select_dropdown(page, gradio_config, "Metric Preset", "Jaro-Winkler")
         status_id = _button_dependency(gradio_config, "Run Dataset Evaluation")["outputs"][7]

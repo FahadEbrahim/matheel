@@ -2,6 +2,13 @@
 
 This directory records the pinned source recipe for Matheel's plagiarism track. `sources.json` contains immutable GitHub commit IDs, versioned archive URLs, exact archive sizes and SHA-256 hashes, published Zenodo MD5 checksums, and dataset provenance. It contains no source submissions.
 
+Use Python 3.10–3.13 and install this checkout with its semantic backends before
+running the scripts. The installed Matheel version is part of method identity:
+
+```bash
+python -m pip install -e ".[semantic]"
+```
+
 Prepare inputs in a cache outside this repository:
 
 ```bash
@@ -78,3 +85,36 @@ is embedded in the portable result JSON so individual predictions can be audited
 Keep `protocol.local.json`, checkpoint method files, logs, and downloaded source
 code private to the local run directory. `protocol.json` is the portable frozen
 definition.
+
+## Validate and publish completed results
+
+Public results are maintained in one canonical directory,
+[`gradio_app/benchmark_data/plagiarism-v1/`](../../gradio_app/benchmark_data/plagiarism-v1/),
+so the repository and hosted Space use the same artifact. The result filename is
+`matheel_plagiarism_v1.json`; matching CSV, HTML, detail, reproducibility, frozen
+protocol, and score-index files accompany it. The directory is populated only
+when the complete supervised run passes publication validation.
+
+```bash
+python scripts/publish_plagiarism_benchmark.py \
+  --results-dir "$HOME/.cache/matheel/plagiarism-v1/results" \
+  --score-zip "$HOME/.cache/matheel/plagiarism-v1/matheel-plagiarism-v1-scores.zip"
+```
+
+The helper checks the frozen protocol, all 29 declared methods, per-method source
+fingerprints and wall times, complete finite-score candidate coverage, score CSV
+hashes and permitted columns, matching report CSVs, and absence of machine-local
+paths. Explicit timeout results are retained as unranked rows. No output is
+changed if validation fails or the final merged result does not exist. The score
+ZIP includes only indexed score files plus their index and portable protocol;
+unindexed partial files, source submissions, logs, and checkpoints are excluded.
+Keep this ZIP outside the repository and attach it to the GitHub release.
+
+The [results guide](../../docs/plagiarism_results.md) records the publication status,
+benchmark scope, and how to interpret the rankings. Offline declaration and
+publication tests need no downloaded datasets or models:
+
+```bash
+python -m pytest -q tests/test_plagiarism_benchmark_declarations.py \
+  tests/test_publish_plagiarism_benchmark.py
+```

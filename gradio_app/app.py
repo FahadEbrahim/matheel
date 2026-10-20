@@ -2976,11 +2976,12 @@ def dataset_admission_js(input_count):
     }""" % (input_count - 1, input_count)
 
 
-_DATASET_RESET_REVISION_JS = """(...values) => {
-    window.__matheelDatasetRevision = (window.__matheelDatasetRevision || 0) + 1;
-    values[1] = window.__matheelDatasetRevision;
-    return values.slice(0, 2);
-}"""
+def dataset_reset_revision_js(input_count):
+    return """(...values) => {
+        window.__matheelDatasetRevision = (window.__matheelDatasetRevision || 0) + 1;
+        values[1] = window.__matheelDatasetRevision;
+        return values.slice(0, %d);
+    }""" % input_count
 
 
 def _dataset_journey_latest_revision(generation_state, stage):
@@ -3195,7 +3196,7 @@ def explain_scored_pair_journey_gradio(
     )
 
 
-def reset_dataset_results(generation_state=None, event_revision=None):
+def reset_dataset_results(generation_state=None, event_revision=None, validation_state=True):
     """Clear evaluation and every dependent stage after a scoring option changes."""
     if not invalidate_dataset_journey(generation_state, event_revision=event_revision):
         return tuple(gr.skip() for _ in range(20))
@@ -3225,7 +3226,10 @@ def reset_dataset_results(generation_state=None, event_revision=None):
         gr.update(value=pd.DataFrame(), visible=False),
         gr.update(value="", visible=False),
         None,
-        dataset_journey_status_html(3, "Settings changed. Run evaluation to refresh every result."),
+        # Newly visible Gradio sliders can emit input after a task reset. Keep
+        # its validation guidance until this upload/task has passed validation.
+        dataset_journey_status_html(3, "Settings changed. Run evaluation to refresh every result.")
+        if validation_state else gr.skip(),
         gr.update(visible=False),
         gr.update(visible=False),
         gr.update(visible=False),
@@ -4954,10 +4958,10 @@ with gr.Blocks(
             ):
                 component.input(
                     reset_dataset_results,
-                    inputs=[dataset_journey_generation, dataset_event_revision],
+                    inputs=[dataset_journey_generation, dataset_event_revision, dataset_validation_state],
                     outputs=dataset_result_reset_outputs,
                     show_api=False,
-                    js=_DATASET_RESET_REVISION_JS,
+                    js=dataset_reset_revision_js(3),
                     concurrency_id="dataset-journey-commit",
                     concurrency_limit=1,
                 )
@@ -4973,7 +4977,7 @@ with gr.Blocks(
                     dataset_journey_status,
                 ],
                 show_api=False,
-                js=_DATASET_RESET_REVISION_JS,
+                js=dataset_reset_revision_js(2),
                 concurrency_id="dataset-journey-commit",
                 concurrency_limit=1,
             )
@@ -4996,7 +5000,7 @@ with gr.Blocks(
                         dataset_journey_status,
                     ],
                     show_api=False,
-                    js=_DATASET_RESET_REVISION_JS,
+                    js=dataset_reset_revision_js(2),
                     concurrency_id="dataset-journey-commit",
                     concurrency_limit=1,
                 )
