@@ -1,5 +1,6 @@
 import json
 import math
+from bisect import bisect_left, bisect_right
 from html import escape
 from pathlib import Path
 
@@ -240,13 +241,19 @@ def evaluate_threshold(
         else:
             true_negative += 1
 
+    return _threshold_metrics(
+        threshold, true_positive, false_positive, true_negative, false_negative
+    )
+
+
+def _threshold_metrics(threshold, true_positive, false_positive, true_negative, false_negative):
     predicted_positive_count = true_positive + false_positive
     actual_positive_count = true_positive + false_negative
     precision = true_positive / predicted_positive_count if predicted_positive_count else 0.0
     recall = true_positive / actual_positive_count if actual_positive_count else 0.0
     f1_denom = precision + recall
     f1 = (2.0 * precision * recall / f1_denom) if f1_denom else 0.0
-    total = len(pairs)
+    total = true_positive + false_positive + true_negative + false_negative
     accuracy = (true_positive + true_negative) / float(total)
 
     return {
@@ -262,6 +269,39 @@ def evaluate_threshold(
         "f1": f1,
         "accuracy": accuracy,
     }
+
+
+def _evaluate_thresholds(pairs, thresholds, greater_is_match=True):
+    # Prefix counts let every threshold reuse the same sorted labeled scores.
+    # bisect preserves the inclusive >= / <= boundaries, including tied scores.
+    ordered = sorted(pairs, key=lambda pair: pair[0])
+    scores = [score for score, _ in ordered]
+    positive_prefix = [0]
+    for _, is_positive in ordered:
+        positive_prefix.append(positive_prefix[-1] + int(is_positive))
+    positive_count = positive_prefix[-1]
+    negative_count = len(ordered) - positive_count
+    rows = []
+    for value in thresholds:
+        threshold = _finite_score(value)
+        if greater_is_match:
+            index = bisect_left(scores, threshold)
+            false_negative = positive_prefix[index]
+            true_negative = index - false_negative
+            true_positive = positive_count - false_negative
+            false_positive = negative_count - true_negative
+        else:
+            index = bisect_right(scores, threshold)
+            true_positive = positive_prefix[index]
+            false_positive = index - true_positive
+            false_negative = positive_count - true_positive
+            true_negative = negative_count - false_positive
+        rows.append(
+            _threshold_metrics(
+                threshold, true_positive, false_positive, true_negative, false_negative
+            )
+        )
+    return rows
 
 
 def calibration_curve(
@@ -283,15 +323,7 @@ def calibration_curve(
     selected_thresholds = thresholds
     if selected_thresholds is None:
         selected_thresholds = _threshold_candidates([score for score, _ in pairs])
-    return [
-        evaluate_threshold(
-            pairs,
-            threshold=threshold,
-            positive_label=True,
-            greater_is_match=greater_is_match,
-        )
-        for threshold in selected_thresholds
-    ]
+    return _evaluate_thresholds(pairs, selected_thresholds, greater_is_match=greater_is_match)
 
 
 def threshold_sweep(
@@ -344,19 +376,12 @@ def roc_curve(
             greater_is_match=greater_is_match,
         )
 
-    rows = []
-    for threshold in selected_thresholds:
-        row = evaluate_threshold(
-            pairs,
-            threshold=threshold,
-            positive_label=True,
-            greater_is_match=greater_is_match,
-        )
+    rows = _evaluate_thresholds(pairs, selected_thresholds, greater_is_match=greater_is_match)
+    for row in rows:
         row["true_positive_rate"] = row["recall"]
         row["false_positive_rate"] = row["false_positive"] / float(negative_count)
         row["positive_count"] = positive_count
         row["negative_count"] = negative_count
-        rows.append(row)
 
     frame = pd.DataFrame(rows)
     frame.attrs["curve_type"] = "roc"
@@ -391,18 +416,11 @@ def precision_recall_curve(
             greater_is_match=greater_is_match,
         )
 
-    rows = []
-    for threshold in selected_thresholds:
-        row = evaluate_threshold(
-            pairs,
-            threshold=threshold,
-            positive_label=True,
-            greater_is_match=greater_is_match,
-        )
+    rows = _evaluate_thresholds(pairs, selected_thresholds, greater_is_match=greater_is_match)
+    for row in rows:
         row["predicted_positive"] = row["true_positive"] + row["false_positive"]
         row["positive_count"] = positive_count
         row["negative_count"] = negative_count
-        rows.append(row)
 
     frame = pd.DataFrame(rows)
     frame.attrs["curve_type"] = "precision_recall"
@@ -463,6 +481,7 @@ def calibration_report(
     greater_is_match=True,
     optimize="f1",
 ):
+    thresholds = tuple(thresholds) if thresholds is not None else None
     pairs = _coerce_score_label_pairs(
         scores,
         labels=labels,
@@ -533,6 +552,7 @@ def threshold_tuning_report(
     greater_is_match=True,
     optimize="f1",
 ):
+    thresholds = tuple(thresholds) if thresholds is not None else None
     pairs = _coerce_score_label_pairs(
         scores,
         labels=labels,

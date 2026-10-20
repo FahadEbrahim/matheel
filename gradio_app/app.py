@@ -3598,10 +3598,10 @@ def reset_dataset_explanation_stage():
 def reset_dataset_upload_journey():
     """Invalidate validation and downstream stages after upload/task changes."""
     return (
-        None,
         empty_dataset_validation_summary_html(),
         pd.DataFrame(columns=["Severity", "Code", "Message", "Count"]),
         "",
+        None,
         None,
         gr.update(interactive=False),
         dataset_journey_status_html(1, "Upload a dataset, choose its task, then validate it."),
@@ -5353,20 +5353,6 @@ with gr.Blocks(
                 inputs=dataset_task,
                 outputs=[dataset_pair_group, dataset_retrieval_group],
             )
-            dataset_validate.click(
-                validate_dataset_journey_gradio,
-                inputs=[dataset_file, dataset_task],
-                outputs=[
-                    dataset_validation_summary,
-                    dataset_validation_issues,
-                    dataset_validation_report,
-                    dataset_validation_artifacts,
-                    dataset_validation_state,
-                    dataset_run,
-                    dataset_journey_status,
-                ],
-                api_name=False,
-            )
             dataset_run.click(
                 evaluate_dataset_journey_gradio,
                 inputs=[
@@ -5471,11 +5457,11 @@ with gr.Blocks(
             )
 
             dataset_upload_reset_outputs = [
-                dataset_validation_state,
                 dataset_validation_summary,
                 dataset_validation_issues,
                 dataset_validation_report,
                 dataset_validation_artifacts,
+                dataset_validation_state,
                 dataset_run,
                 dataset_journey_status,
                 dataset_scored_state,
@@ -5498,15 +5484,43 @@ with gr.Blocks(
                 dataset_pair_explanation_actions,
                 dataset_next_actions,
             ]
-            dataset_file.change(
-                reset_dataset_upload_journey,
+
+            def update_dataset_upload_journey(
+                uploaded_file,
+                task_label,
+                event: gr.EventData,
+                progress=gr.Progress(track_tqdm=True),
+            ):
+                if event.target is dataset_validate:
+                    try:
+                        outputs = validate_dataset_journey_gradio(
+                            uploaded_file, task_label, progress=progress
+                        )
+                    except gr.Error as error:
+                        # Always return data for expected input errors so Gradio
+                        # drains the latest event queued behind this validation.
+                        outputs = list(reset_dataset_upload_journey())
+                        outputs[0] = status_panel_html(
+                            "Dataset Validation", error.message, variant="error"
+                        )
+                        outputs[6] = dataset_journey_status_html(2, error.message, variant="error")
+                    return dict(
+                        zip(dataset_upload_reset_outputs[: len(outputs)], outputs, strict=True)
+                    )
+                return dict(
+                    zip(dataset_upload_reset_outputs, reset_dataset_upload_journey(), strict=True)
+                )
+
+            # One listener serializes upload/task resets and validation. Independent
+            # listeners can deliver a queued reset after validation has completed.
+            gr.on(
+                [dataset_file.change, dataset_task.change, dataset_validate.click],
+                update_dataset_upload_journey,
+                inputs=[dataset_file, dataset_task],
                 outputs=dataset_upload_reset_outputs,
-                show_api=False,
-            )
-            dataset_task.change(
-                reset_dataset_upload_journey,
-                outputs=dataset_upload_reset_outputs,
-                show_api=False,
+                api_name=False,
+                trigger_mode="always_last",
+                concurrency_limit=1,
             )
 
             dataset_result_reset_outputs = [

@@ -98,6 +98,11 @@ def normalize_feature_weights(feature_weights):
 
     if total <= 0:
         return {name: 0.0 for name in validated}
+    if not math.isfinite(total):
+        # Finite weights can overflow when added. Scaling preserves their ratios.
+        largest = max(validated.values())
+        validated = {name: value / largest for name, value in validated.items()}
+        total = sum(validated.values())
     return {name: value / total for name, value in validated.items()}
 
 

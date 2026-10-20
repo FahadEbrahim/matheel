@@ -103,6 +103,47 @@ def test_calibration_curve_accepts_explicit_thresholds():
     assert curve[1]["false_positive"] == 0
 
 
+@pytest.mark.parametrize("greater_is_match", [True, False])
+def test_threshold_curves_preserve_ties_boundaries_and_requested_order(greater_is_match):
+    pairs = [(0.1, "no"), (0.5, "yes"), (0.5, "no"), (0.9, "yes")]
+    thresholds = [1.0, 0.5, 0.0, 0.9, 0.5, 0.1]
+    expected = [
+        evaluate_threshold(
+            pairs,
+            threshold=threshold,
+            positive_label="yes",
+            greater_is_match=greater_is_match,
+        )
+        for threshold in thresholds
+    ]
+
+    assert calibration_curve(
+        pairs,
+        thresholds=iter(thresholds),
+        positive_label="yes",
+        greater_is_match=greater_is_match,
+    ) == expected
+    for curve_function in (roc_curve, precision_recall_curve):
+        curve = curve_function(
+            pairs,
+            thresholds=iter(thresholds),
+            positive_label="yes",
+            greater_is_match=greater_is_match,
+        )
+        assert curve[list(expected[0])].to_dict(orient="records") == expected
+
+
+@pytest.mark.parametrize("report_function", [calibration_report, threshold_tuning_report])
+def test_reports_reuse_generator_thresholds_for_sweep_and_optimization(report_function):
+    pairs = [(0.9, True), (0.1, False)]
+
+    report = report_function(pairs, thresholds=(value for value in (0.2, 0.5, 0.8)))
+
+    assert report["threshold_sweep"]["threshold"].tolist() == [0.2, 0.5, 0.8]
+    assert report["summary"]["optimized_threshold"]["candidate_count"] == 3
+    assert report["summary"]["optimized_threshold"]["threshold"] == 0.8
+
+
 def test_threshold_sweep_returns_dataframe_with_confusion_counts():
     frame = threshold_sweep(
         pd.DataFrame(

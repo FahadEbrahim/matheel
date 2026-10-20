@@ -698,6 +698,10 @@ def winnowing_similarity_from_tokens(tokens1, tokens2, kgram_size=5, window_size
         kgram_size=kgram_size,
         window_size=window_size,
     )
+    return _winnowing_similarity_from_fingerprints(fingerprints1, fingerprints2)
+
+
+def _winnowing_similarity_from_fingerprints(fingerprints1, fingerprints2):
     union = fingerprints1 | fingerprints2
     if not union:
         return 1.0
@@ -907,8 +911,16 @@ def build_feature_scores(
     if active_features is not None:
         requested_features = {str(name) for name in active_features}
 
-    use_all_features = requested_features is None
-    needs_token_features = use_all_features or "winnowing" in requested_features or "gst" in requested_features
+    supplied_scores = {
+        str(name): float(value) for name, value in (extra_feature_scores or {}).items()
+    }
+
+    def needs_feature(name):
+        return (
+            requested_features is None or name in requested_features
+        ) and name not in supplied_scores
+
+    needs_token_features = needs_feature("winnowing") or needs_feature("gst")
     lexical_tokens1 = None
     lexical_tokens2 = None
     if needs_token_features:
@@ -925,7 +937,7 @@ def build_feature_scores(
 
     semantic_score = 0.0
     if (
-        (use_all_features or "semantic" in requested_features)
+        needs_feature("semantic")
         and embedding1 is not None
         and embedding2 is not None
     ):
@@ -946,7 +958,7 @@ def build_feature_scores(
         "semantic": semantic_score,
         "levenshtein": (
             Levenshtein.normalized_similarity(code1, code2, weights=levenshtein_weights)
-            if use_all_features or "levenshtein" in requested_features
+            if needs_feature("levenshtein")
             else 0.0
         ),
         "jaro_winkler": (
@@ -955,7 +967,7 @@ def build_feature_scores(
                 code2,
                 prefix_weight=jaro_winkler_prefix_weight,
             )
-            if use_all_features or "jaro_winkler" in requested_features
+            if needs_feature("jaro_winkler")
             else 0.0
         ),
         "winnowing": (
@@ -965,7 +977,7 @@ def build_feature_scores(
                 kgram_size=winnowing_kgram,
                 window_size=winnowing_window,
             )
-            if use_all_features or "winnowing" in requested_features
+            if needs_feature("winnowing")
             else 0.0
         ),
         "gst": (
@@ -974,13 +986,12 @@ def build_feature_scores(
                 lexical_tokens2,
                 min_match_length=gst_min_match_length,
             )
-            if use_all_features or "gst" in requested_features
+            if needs_feature("gst")
             else 0.0
         ),
         "code_metric": float(code_metric_score),
     }
-    for name, value in (extra_feature_scores or {}).items():
-        feature_scores[str(name)] = float(value)
+    feature_scores.update(supplied_scores)
     return feature_scores
 
 
@@ -1097,8 +1108,30 @@ def rank_code_pairs(
     results = []
     code_metric_name = (code_metric or "none").strip().lower()
     use_code_metric = code_metric_name not in ("none", "") and feature_weights.get("code_metric", 0.0) > 0.0
-    pairs = list(combinations(range(len(codes)), 2))
-    pair_count = len(pairs)
+    pairs = combinations(range(len(codes)), 2)
+    pair_count = len(codes) * (len(codes) - 1) // 2
+    use_winnowing = float(feature_weights.get("winnowing", 0.0)) > 0.0
+    use_gst = float(feature_weights.get("gst", 0.0)) > 0.0
+    lexical_tokens = None
+    winnowing_fingerprints = None
+    if pair_count and (use_winnowing or use_gst):
+        lexical_tokens = [
+            tokenize_for_lexical_matching(
+                code,
+                lexical_tokenizer=lexical_tokenizer,
+                code_language=code_language,
+            )
+            for code in codes
+        ]
+        if use_winnowing:
+            winnowing_fingerprints = [
+                _winnowing_fingerprints(
+                    tokens,
+                    kgram_size=winnowing_kgram,
+                    window_size=winnowing_window,
+                )
+                for tokens in lexical_tokens
+            ]
     semantic_score_matrix = None
     if (
         backend_is_multivector(vector_backend)
@@ -1119,6 +1152,17 @@ def rank_code_pairs(
         stage="compare_pairs",
     )
     for i, j in pair_iter:
+        lexical_scores = {}
+        if use_winnowing:
+            lexical_scores["winnowing"] = _winnowing_similarity_from_fingerprints(
+                winnowing_fingerprints[i], winnowing_fingerprints[j]
+            )
+        if use_gst:
+            lexical_scores["gst"] = gst_similarity_from_tokens(
+                lexical_tokens[i],
+                lexical_tokens[j],
+                min_match_length=gst_min_match_length,
+            )
         code_metric_score = 0.0
         if use_code_metric:
             code_metric_score = score_code_metric_pair(
@@ -1174,6 +1218,7 @@ def rank_code_pairs(
             code_metric_score=code_metric_score,
             vector_backend=vector_backend,
             multivector_bidirectional=multivector_bidirectional,
+            extra_feature_scores=lexical_scores,
             similarity_function=similarity_function,
             levenshtein_weights=levenshtein_weights,
             jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
