@@ -9,6 +9,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, required=True)
+    parser.add_argument("--official-benchmark", type=Path)
     args = parser.parse_args()
 
     os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
@@ -18,6 +19,12 @@ def main():
 
     repository_root = Path(__file__).resolve().parents[2]
     sys.path.insert(0, os.fspath(repository_root))
+    if args.official_benchmark is not None:
+        from gradio_app import official_benchmark
+
+        # Exercise the real validator/view with a tiny frozen fixture, keeping
+        # browser tests independent of the published benchmark's size/models.
+        official_benchmark.OFFICIAL_BENCHMARK_PATH = args.official_benchmark.resolve()
     app_path = repository_root / "gradio_app" / "app.py"
     spec = importlib.util.spec_from_file_location("matheel_browser_gradio_app", app_path)
     if spec is None or spec.loader is None:

@@ -117,7 +117,55 @@ def _stop_process(process):
 
 
 @pytest.fixture(scope="session")
-def gradio_server(browser_artifacts_dir):
+def official_benchmark_json(tmp_path_factory):
+    import pandas as pd
+
+    from matheel.benchmark_protocol import freeze_benchmark_protocol, run_benchmark_protocol
+    from matheel.datasets import write_pair_dataset, write_retrieval_dataset
+
+    root = tmp_path_factory.mktemp("browser-official-benchmark")
+    files = pd.DataFrame([
+        {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+        {"file_id": "b", "text": "print(1)", "suffix": ".py"},
+        {"file_id": "c", "text": "unrelated long program", "suffix": ".py"},
+    ])
+    write_pair_dataset(root / "pairs", files=files, pairs=pd.DataFrame([
+        {"left_id": "a", "right_id": "b", "label": 1},
+        {"left_id": "a", "right_id": "c", "label": 0},
+    ]), metadata={"task_type": "plagiarism"})
+    write_retrieval_dataset(
+        root / "retrieval", files=files,
+        queries=pd.DataFrame([{"query_id": "q", "file_id": "a"}]),
+        corpus=pd.DataFrame([
+            {"document_id": "positive", "file_id": "b"},
+            {"document_id": "negative", "file_id": "c"},
+        ]),
+        qrels=pd.DataFrame([{"query_id": "q", "document_id": "positive", "relevance": 1}]),
+        metadata={"task_type": "plagiarism"},
+    )
+    broken = root / "unsupported.py"
+    broken.write_text('def score_pair(code_a, code_b):\n    raise RuntimeError("unsupported browser fixture")\n')
+    protocol = freeze_benchmark_protocol({
+        "domain": "plagiarism", "pair_metrics": ["f1", "auroc"],
+        "retrieval_metrics": ["mean_average_precision", "ndcg_at_k"],
+        "datasets": [
+            {"name": name, "task": task, "path": str(root / name),
+             "source_url": "https://example.org/versioned-data", "source_revision": "a" * 40,
+             "split": "test"}
+            for name, task in (("pairs", "pair"), ("retrieval", "retrieval"))
+        ],
+    })
+    _, artifacts = run_benchmark_protocol(
+        protocol,
+        [{"name": "Levenshtein", "feature_weights": {"levenshtein": 1}},
+         {"name": "Unsupported", "algorithm_path": str(broken)}],
+        output_dir=root / "published", basename="matheel_plagiarism_v1",
+    )
+    return artifacts["json"]
+
+
+@pytest.fixture(scope="session")
+def gradio_server(browser_artifacts_dir, official_benchmark_json):
     port = _unused_local_port()
     url = f"http://127.0.0.1:{port}/"
     log_path = browser_artifacts_dir / "gradio-server.log"
@@ -140,6 +188,8 @@ def gradio_server(browser_artifacts_dir):
                 os.fspath(Path(__file__).with_name("serve_gradio.py")),
                 "--port",
                 str(port),
+                "--official-benchmark",
+                os.fspath(official_benchmark_json),
             ],
             cwd=REPOSITORY_ROOT,
             env=environment,
@@ -236,6 +286,49 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
 
     page.route("**/*", route_request)
     page.route_web_socket("**/*", route_web_socket)
+    # Observe actual queue completion rather than treating a POST response or
+    # a transient frontend pending flag as evidence that outputs were applied.
+    # Cloned response bodies leave Gradio's own streams and errors untouched.
+    page.add_init_script("""(() => {
+        window.__matheelQueueJoins = [];
+        window.__matheelQueueEvents = [];
+        window.__matheelGradioTargets = [];
+        const originalListen = EventTarget.prototype.addEventListener;
+        EventTarget.prototype.addEventListener = function(type) {
+            if (type === "gradio") window.__matheelGradioTargets.push(this);
+            return originalListen.apply(this, arguments);
+        };
+        const originalFetch = window.fetch;
+        window.fetch = async function(input, init) {
+            const response = await originalFetch.apply(this, arguments);
+            const url = typeof input === "string" ? input : input.url || String(input);
+            if (url.includes("/gradio_api/queue/join")) {
+                const request = JSON.parse(init?.body || "{}");
+                response.clone().json().then(result => {
+                    window.__matheelQueueJoins.push({...request, ...result});
+                }).catch(() => {});
+            } else if (url.includes("/gradio_api/queue/data") && response.body) {
+                (async () => {
+                    const reader = response.clone().body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = "";
+                    while (true) {
+                        const {done, value} = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, {stream: true});
+                        const lines = buffer.split("\\n");
+                        buffer = lines.pop();
+                        for (const line of lines) {
+                            if (line.startsWith("data: ")) {
+                                window.__matheelQueueEvents.push(JSON.parse(line.slice(6)));
+                            }
+                        }
+                    }
+                })().catch(() => {});
+            }
+            return response;
+        };
+    })();""")
     page.on("console", lambda message: events.append(f"console.{message.type}: {message.text}"))
     page.on("pageerror", lambda error: events.append(f"pageerror: {error}"))
     page.on(
@@ -271,6 +364,11 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
             for event in events
             if event.startswith("console.error:") or event.startswith("pageerror:")
         ]
+        if setup_succeeded:
+            queue_failures = page.evaluate("""() => (window.__matheelQueueEvents || []).filter(
+                event => event.msg === "process_completed" && event.success === false
+            )""")
+            fatal_events.extend(f"queue-error: {json.dumps(event)}" for event in queue_failures)
         should_persist = (
             not setup_succeeded
             or report_failed
@@ -279,6 +377,13 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
         )
         if should_persist:
             safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", request.node.nodeid).strip("_")
+            try:
+                queue_trace = page.evaluate("({joins: window.__matheelQueueJoins, events: window.__matheelQueueEvents})")
+                (browser_artifacts_dir / f"{safe_name}-queue.json").write_text(
+                    json.dumps(queue_trace, indent=2), encoding="utf-8"
+                )
+            except Exception as exc:
+                events.append(f"queue-trace-error: {exc}")
             try:
                 page.screenshot(path=browser_artifacts_dir / f"{safe_name}.png", full_page=True)
             except Exception as exc:

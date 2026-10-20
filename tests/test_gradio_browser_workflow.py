@@ -14,6 +14,15 @@ CONFTST_SPEC.loader.exec_module(BROWSER_CONFTEST)
 
 
 class SetupFailingPage:
+    def __init__(self):
+        self.init_scripts = []
+
+    def add_init_script(self, script):
+        self.init_scripts.append(script)
+
+    def evaluate(self, _script):
+        return {"joins": [], "events": []}
+
     def route(self, *_args):
         return None
 
@@ -62,3 +71,5 @@ def test_gradio_page_persists_diagnostics_when_setup_fails(tmp_path):
     assert "fixture-error: RuntimeError: synthetic page setup failure" in logs[0].read_text(
         encoding="utf-8"
     )
+    assert any("__matheelQueueEvents" in script for script in page.init_scripts)
+    assert len(list(tmp_path.glob("*-queue.json"))) == 1
