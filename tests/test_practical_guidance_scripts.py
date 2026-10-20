@@ -19,6 +19,7 @@ SPEC.loader.exec_module(RUNNER)
 
 
 def test_plan_cannot_silently_drop_a_retrieval_view_or_duplicate_it():
+    assert str(RUNNER.DEFAULT_CPU_LOCK) == "/private/tmp/matheel-071-benchmark-cpu.lock"
     manifest = {"datasets": [{"name": "a", "task": "retrieval"},
                              {"name": "b", "task": "retrieval"},
                              {"name": "pairs", "task": "pair"}]}
@@ -118,3 +119,23 @@ def test_diagnostic_selection_is_label_blind_and_public_export_omits_submission(
     assert failed["scores"][0]["status"] == "error"
     assert "PRIVATE_ERROR_SOURCE" not in json.dumps(failed)
     assert "/private/tmp" not in json.dumps(failed)
+
+
+def test_bounded_worker_deadline_stops_its_child_process_tree(tmp_path):
+    worker = tmp_path / "worker.py"
+    pid_file = tmp_path / "child.pid"
+    worker.write_text(
+        "import json, pathlib, subprocess, sys, time\n"
+        "payload = json.load(sys.stdin)\n"
+        "child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
+        "pathlib.Path(payload['pid_file']).write_text(str(child.pid))\n"
+        "time.sleep(60)\n"
+    )
+    status, reason = RUNNER.run_bounded_worker(worker, {"pid_file": str(pid_file)}, 2)
+    assert status == "timeout"
+    assert "budget exceeded" in reason
+    child = int(pid_file.read_text())
+    state = subprocess.run(["ps", "-p", str(child), "-o", "stat="],
+                           capture_output=True, text=True).stdout.strip()
+    # An exited orphan can briefly await init's reap; it must not keep running.
+    assert not state or state.startswith("Z")

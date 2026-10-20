@@ -133,6 +133,7 @@ HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
     --manifest prepared/prepared-manifest.json \
     --plan benchmarks/configuration-guidance/plagiarism-071/plan.json \
     --source-root ../matheel-0.7.1 --release-wheel dist/matheel-0.7.1-py3-none-any.whl \
+    --cpu-lock /private/tmp/matheel-071-benchmark-cpu.lock \
     --output-dir benchmark_outputs/configuration-guidance-071
 ```
 

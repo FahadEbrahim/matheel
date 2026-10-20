@@ -7,6 +7,7 @@ submission text or source file locators. Run from the repository root.
 """
 
 import argparse
+from datetime import datetime, timezone
 import fcntl
 import hashlib
 import importlib.metadata
@@ -15,6 +16,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import signal
 import subprocess
 import sys
 import tempfile
@@ -24,6 +26,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_ROOT = ROOT
+DEFAULT_CPU_LOCK = Path("/private/tmp/matheel-071-benchmark-cpu.lock")
 SCORE_COLUMNS = ["query_id", "document_id", "query_file_id", "document_file_id",
                  "candidate_score", "candidate_rank", "relevance", "similarity_score"]
 
@@ -45,6 +48,35 @@ def write_artifact_manifest(root):
                   for path in sorted(root.rglob("*"))
                   if path.is_file() and path.name != "artifact-manifest.json"},
     })
+
+
+def utc_now():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def run_bounded_worker(script, payload, seconds):
+    """Isolate the complete worker process tree and clean it up on every exit."""
+    with tempfile.TemporaryFile() as error_output:
+        process = subprocess.Popen(
+            [sys.executable, str(script), "--worker"], stdin=subprocess.PIPE,
+            stdout=subprocess.DEVNULL, stderr=error_output, start_new_session=True,
+        )
+        timed_out = False
+        try:
+            process.communicate(input=json.dumps(payload).encode(), timeout=seconds)
+        except subprocess.TimeoutExpired:
+            timed_out = True
+        finally:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            process.wait()
+        if timed_out:
+            return "timeout", "Predeclared wall-clock budget exceeded."
+        if process.returncode:
+            return "failed", f"Worker exit code {process.returncode}"
+        return "complete", None
 
 
 def package_inventory():
@@ -86,7 +118,8 @@ def environment_snapshot():
             "executed_source_version": re.search(r'(?m)^version = "([^"]+)"',
                                                  (SOURCE_ROOT / "pyproject.toml").read_text()).group(1),
             "thread_limits": {key: os.environ.get(key) for key in
-                              ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")}}
+                              ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
+                               "VECLIB_MAXIMUM_THREADS", "TOKENIZERS_PARALLELISM")}}
 
 
 def verify_source(ref):
@@ -226,22 +259,31 @@ def run(args):
     write_json(args.output_dir / "plan.json", plan)
     provenance = {name: input_inventory(load_retrieval_dataset(datasets[name]["path"]))
                   for name in plan["datasets"]}
-    write_json(args.output_dir / "provenance.json", {
+    execution = {
         "source_ref": plan["source_ref"], "package_files_sha256": inventory,
         "release_wheel": wheel,
         "plan_sha256": sha256(args.plan.read_bytes()),
         "manifest_sha256": sha256(args.manifest.read_bytes()),
         "runner_files_sha256": runner, "datasets": provenance,
         "runner_git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
-        "environment": environment_snapshot(),
         "interpretation": "Single timed observation on existing declared judged views; no dataset relabeling, best-method selection, or official rank change.",
-    })
+    }
     rows = []
     # Serialize CPU measurements with other local benchmark work. Reproduction
     # can use any writable lock path; it is not part of the scientific protocol.
     with args.cpu_lock.open("a") as lock:
         print("Waiting for the shared CPU measurement slot.", flush=True)
+        waiting = perf_counter()
+        wait_started = utc_now()
         fcntl.flock(lock, fcntl.LOCK_EX)
+        execution["measurement_coordination"] = {
+            "exclusive_cpu_lock": True, "lock_name": args.cpu_lock.name,
+            "wait_started_utc": wait_started, "lock_acquired_utc": utc_now(),
+            "wait_seconds": perf_counter() - waiting,
+        }
+        execution["environment"] = environment_snapshot()
+        write_json(args.output_dir / "provenance.json", execution)
+        print("Acquired the shared CPU measurement slot.", flush=True)
         for name in plan["datasets"]:
             dataset = datasets[name]
             for preset in plan["presets"]:
@@ -256,23 +298,9 @@ def run(args):
                            "similarity_options": dataset.get("similarity_options", {}),
                            "exclude_self_matches": dataset.get("selection", {}).get("candidate_policy") == "exclude_same_file"}
                 started = perf_counter()
-                with tempfile.TemporaryFile() as error_output:
-                    try:
-                        completed = subprocess.run(
-                            [sys.executable, str(Path(__file__).resolve()), "--worker"],
-                            input=json.dumps(payload).encode(), stdout=subprocess.DEVNULL,
-                            stderr=error_output, timeout=plan["seconds_per_view"], check=False,
-                        )
-                        if completed.returncode:
-                            # Native/backend stderr can contain local source paths;
-                            # only the failure code is exported publicly.
-                            result = {"status": "failed", "reason": f"Worker exit code {completed.returncode}",
-                                      "metrics": None}
-                        else:
-                            result = json.loads((destination / "result.json").read_text())
-                    except subprocess.TimeoutExpired:
-                        result = {"status": "timeout", "reason": "Predeclared wall-clock budget exceeded.",
-                                  "metrics": None}
+                status, reason = run_bounded_worker(Path(__file__).resolve(), payload, plan["seconds_per_view"])
+                result = (json.loads((destination / "result.json").read_text()) if status == "complete"
+                          else {"status": status, "reason": reason, "metrics": None})
                 row = {"dataset": name, "preset": preset["name"],
                        "deadline_seconds": plan["seconds_per_view"],
                        "wall_seconds": perf_counter() - started, **result}
@@ -285,6 +313,8 @@ def run(args):
                 rows.append(row)
                 write_json(args.output_dir / "results.json", {"schema_version": 1, "rows": rows})
                 print(f"{name} {preset['name']}: {row['status']} ({row['wall_seconds']:.2f}s)", flush=True)
+        execution["measurement_coordination"]["measurements_finished_utc"] = utc_now()
+        write_json(args.output_dir / "provenance.json", execution)
     import pandas as pd
 
     pd.DataFrame([{**{key: row[key] for key in ("dataset", "preset", "status", "wall_seconds", "deadline_seconds")},
@@ -304,7 +334,7 @@ def main():
                         help="Exact released checkout used for package imports.")
     parser.add_argument("--release-wheel", type=Path,
                         help="Published wheel whose recursive Python inventory must match.")
-    parser.add_argument("--cpu-lock", type=Path, default=Path(tempfile.gettempdir()) / "matheel-071-benchmark-cpu.lock")
+    parser.add_argument("--cpu-lock", type=Path, default=DEFAULT_CPU_LOCK)
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.worker:

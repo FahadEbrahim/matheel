@@ -169,6 +169,7 @@ OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
     --manifest prepared/prepared-manifest.json \
     --plan benchmarks/retrieval-presets/plagiarism-071/plan.json \
     --source-root ../matheel-0.7.1 --release-wheel dist/matheel-0.7.1-py3-none-any.whl \
+    --cpu-lock /private/tmp/matheel-071-benchmark-cpu.lock \
     --output-dir benchmark_outputs/retrieval-071
 ```
 
@@ -182,6 +183,10 @@ diagnostics, input/configuration identities and an environment snapshot. Timeout
 retain null quality metrics and remain timeouts. They cannot become N/A after
 execution. The exhaustive control also exports grouped uncertainty and its
 relevant results below rank ten through the error-analysis API.
+The recorded macOS runs use the explicit shared lock above; on another POSIX
+machine, choose one writable absolute lock path and use it for every benchmark
+process. Provenance records wait/acquisition/finish timestamps after acquisition.
+Deadline cleanup stops each worker's complete process group.
 
 `scoring_seconds` times scoring and metric computation; `wall_seconds` also includes
 worker startup, validation, exports and the control's error analysis. Stage times

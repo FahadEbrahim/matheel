@@ -13,18 +13,19 @@ import json
 from pathlib import Path
 import subprocess
 import sys
-import tempfile
 from time import perf_counter
 
 if __package__:
     from scripts.validate_retrieval_presets import (
-        ROOT, environment_snapshot, package_inventory, runner_inventory, set_source_root,
-        sha256, verify_source, wheel_proof, write_artifact_manifest, write_json,
+        DEFAULT_CPU_LOCK, ROOT, environment_snapshot, package_inventory, run_bounded_worker,
+        runner_inventory, set_source_root, sha256, utc_now, verify_source, wheel_proof,
+        write_artifact_manifest, write_json,
     )
 else:
     from validate_retrieval_presets import (
-        ROOT, environment_snapshot, package_inventory, runner_inventory, set_source_root,
-        sha256, verify_source, wheel_proof, write_artifact_manifest, write_json,
+        DEFAULT_CPU_LOCK, ROOT, environment_snapshot, package_inventory, run_bounded_worker,
+        runner_inventory, set_source_root, sha256, utc_now, verify_source, wheel_proof,
+        write_artifact_manifest, write_json,
     )
 
 
@@ -181,7 +182,7 @@ def main():
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--source-root", type=Path, default=ROOT)
     parser.add_argument("--release-wheel", type=Path)
-    parser.add_argument("--cpu-lock", type=Path, default=Path(tempfile.gettempdir()) / "matheel-071-benchmark-cpu.lock")
+    parser.add_argument("--cpu-lock", type=Path, default=DEFAULT_CPU_LOCK)
     parser.add_argument("--worker", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.worker:
@@ -207,21 +208,30 @@ def main():
 
     inputs = pair_inventory(load_pair_dataset(dataset["path"]))
     write_json(args.output_dir / "plan.json", plan)
-    write_json(args.output_dir / "provenance.json", {
+    execution = {
         "source_ref": plan["source_ref"], "package_files_sha256": inventory,
         "release_wheel": wheel,
         "plan_sha256": sha256(args.plan.read_bytes()), "manifest_sha256": sha256(args.manifest.read_bytes()),
         "runner_files_sha256": runner,
         "runner_git_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
         "input_inventory": inputs,
-        "environment": environment_snapshot(),
         "model_id": plan["model_id"], "model_revision": plan["model_revision"],
         "interpretation": "Existing labels preserved; controlled diagnostics describe these inputs only. No universal preset selection or threshold fitting.",
-    })
+    }
     rows = []
     with args.cpu_lock.open("a") as lock:
         print("Waiting for the shared CPU measurement slot.", flush=True)
+        waiting = perf_counter()
+        wait_started = utc_now()
         fcntl.flock(lock, fcntl.LOCK_EX)
+        execution["measurement_coordination"] = {
+            "exclusive_cpu_lock": True, "lock_name": args.cpu_lock.name,
+            "wait_started_utc": wait_started, "lock_acquired_utc": utc_now(),
+            "wait_seconds": perf_counter() - waiting,
+        }
+        execution["environment"] = environment_snapshot()
+        write_json(args.output_dir / "provenance.json", execution)
+        print("Acquired the shared CPU measurement slot.", flush=True)
         for kind in ("pairs", "robustness", "long_files"):
             destination = args.output_dir / kind
             destination.mkdir()
@@ -230,15 +240,7 @@ def main():
                        "source_root": str(args.source_root.resolve()),
                        "runner_inventory": runner, "output_dir": str(destination)}
             started = perf_counter()
-            with tempfile.TemporaryFile() as error_output:
-                try:
-                    done = subprocess.run([sys.executable, str(Path(__file__).resolve()), "--worker"],
-                                          input=json.dumps(payload).encode(), stdout=subprocess.DEVNULL,
-                                          stderr=error_output, timeout=plan["seconds_per_workflow"], check=False)
-                    status = "complete" if done.returncode == 0 else "failed"
-                    reason = None if status == "complete" else f"Worker exit code {done.returncode}"
-                except subprocess.TimeoutExpired:
-                    status, reason = "timeout", "Predeclared wall-clock budget exceeded."
+            status, reason = run_bounded_worker(Path(__file__).resolve(), payload, plan["seconds_per_workflow"])
             if status == "complete":
                 result = json.loads((destination / "result.json").read_text())
                 # The APIs preserve errors as null-score rows. Do not promote a
@@ -260,6 +262,8 @@ def main():
                          "deadline_seconds": plan["seconds_per_workflow"]})
             write_json(args.output_dir / "results.json", rows)
             print(f"{kind}: {status} ({rows[-1]['wall_seconds']:.2f}s)", flush=True)
+        execution["measurement_coordination"]["measurements_finished_utc"] = utc_now()
+        write_json(args.output_dir / "provenance.json", execution)
     write_artifact_manifest(args.output_dir)
     if any(row["status"] != "complete" for row in rows):
         raise SystemExit("At least one diagnostic workflow failed or exceeded its declared budget.")

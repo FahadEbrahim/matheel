@@ -14,6 +14,7 @@ python scripts/validate_retrieval_presets.py \
   --manifest prepared/prepared-manifest.json \
   --plan benchmarks/retrieval-presets/plagiarism-071/plan.json \
   --source-root ../matheel-0.7.1 --release-wheel dist/matheel-0.7.1-py3-none-any.whl \
+  --cpu-lock /private/tmp/matheel-071-benchmark-cpu.lock \
   --output-dir benchmark_outputs/retrieval-071
 ```
 
