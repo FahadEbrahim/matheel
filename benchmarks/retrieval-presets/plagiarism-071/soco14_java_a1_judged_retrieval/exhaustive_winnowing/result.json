@@ -1,0 +1,18 @@
+{
+  "analysis_and_export_seconds": 0.3244053750022431,
+  "candidate_queries": [],
+  "metrics": {
+    "exhaustive_comparisons": 7310,
+    "k": 10,
+    "mean_average_precision": 1.0,
+    "mean_reciprocal_rank": 1.0,
+    "ndcg_at_k": 1.0,
+    "precision_at_k": 0.12558139534883722,
+    "query_count": 86,
+    "recall_at_k": 1.0,
+    "relevant_count": 108,
+    "result_count": 7310
+  },
+  "scoring_seconds": 0.21949366699845996,
+  "status": "complete"
+}

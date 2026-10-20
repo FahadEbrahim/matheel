@@ -154,6 +154,14 @@ fixed in advance for diagnosis; it is not fitted to these inputs or recommended
 as a deployment decision boundary. Confidence intervals are conditional on the
 existing source-sharing groups and labels.
 
+In the recorded 293-pair comparison, raw Levenshtein's F1 at 0.5 was 0.6070 and
+basic Levenshtein's was 0.5436, while their AP point estimates were 0.5600 and
+0.5695 respectively. These are observed values at one fixed threshold; inspect
+the paired intervals and disagreement rows before drawing a conclusion. On the
+declared supplied source, raw Winnowing fell from 1.0 to 0.570850 after
+AST-preserving formatting, while basic Levenshtein stayed at 1.0 after added
+comments. Raw fingerprint settings do not guarantee formatting invariance.
+
 Use the partial-copy and shared-starter cases to expose score behavior, with the
 recorded transformation as the explanation. A higher score after adding common
 material does not establish plagiarism. Neither these six fixtures nor one

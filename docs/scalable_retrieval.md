@@ -188,6 +188,19 @@ machine, choose one writable absolute lock path and use it for every benchmark
 process. Provenance records wait/acquisition/finish timestamps after acquisition.
 Deadline cleanup stops each worker's complete process group.
 
+The recorded run retained all 77 cells: 76 completed and Partial Ratio timed out
+on Java A1 at 45 seconds. GST top 5 completed all eleven views, with a maximum
+scoring time of 33.05 seconds. Exhaustive Winnowing's maximum was 0.49 seconds;
+its MAP ranged from 0.9530 to 1.0 over the eleven views. These single-observation
+times describe the recorded hardware and input pools.
+
+Winnowing top 5 and top 10 both missed a judged positive on C++ A1 (macro
+candidate recall 0.992063); they retained all positives in the other ten views.
+On IRPlag, Levenshtein's final MAP decreased from 0.929953 at N=5 to 0.924842
+at N=10 while candidate recall stayed 1.0. Keep the full cheap scorer as a control:
+candidate coverage and final ordering answer different questions. Per-view
+results and a verified complete evidence ZIP are linked from the experiment.
+
 `scoring_seconds` times scoring and metric computation; `wall_seconds` also includes
 worker startup, validation, exports and the control's error analysis. Stage times
 include the stage's representation preparation. These are single observations on

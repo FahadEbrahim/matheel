@@ -1,0 +1,89 @@
+{
+  "analysis_and_export_seconds": 0.004986791995179374,
+  "candidate_queries": [
+    {
+      "candidate_count": 1,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C10035",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 1,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C10049",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 1,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C10097",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 1,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C10102",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 1,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C10148",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 1,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C10172",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 1,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C10226",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 1,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C10278",
+      "retained_positives": 1
+    }
+  ],
+  "metrics": {
+    "candidate_count": 1,
+    "candidate_recall": 1.0,
+    "candidate_recall_micro": 1.0,
+    "exclude_self_matches": true,
+    "first_stage_comparisons": 56,
+    "first_stage_seconds": 0.008895958002540283,
+    "full_comparison_count": 56,
+    "k": 10,
+    "mean_average_precision": 1.0,
+    "mean_reciprocal_rank": 1.0,
+    "ndcg_at_k": 1.0,
+    "positive_judgments": 8,
+    "precision_at_k": 0.1,
+    "queries_with_positive_judgments": 8,
+    "queries_without_positive_judgments": 0,
+    "query_count": 8,
+    "recall_at_k": 1.0,
+    "relevant_count": 8,
+    "reranker_comparisons": 8,
+    "reranker_seconds": 0.0014654170008725487,
+    "result_count": 8,
+    "retained_positive_judgments": 8,
+    "retrieval_mode": "two_stage",
+    "selected_candidate_count": 8
+  },
+  "scoring_seconds": 0.018155208003008738,
+  "status": "complete"
+}

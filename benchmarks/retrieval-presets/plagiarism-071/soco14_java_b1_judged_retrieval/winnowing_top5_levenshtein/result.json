@@ -1,0 +1,901 @@
+{
+  "analysis_and_export_seconds": 0.022742749999451917,
+  "candidate_queries": [
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10017",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10069",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10078",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10079",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10084",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10128",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10135",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10228",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10229",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10253",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10277",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10287",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10352",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10365",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10381",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10411",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10437",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10465",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10501",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10507",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10555",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10659",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10692",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10709",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10725",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10735",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10750",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10751",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10806",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10822",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10833",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10841",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10852",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10901",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10910",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10942",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B10972",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B10976",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11012",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11013",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B11061",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B11074",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B11075",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11126",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11145",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B11151",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11160",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11174",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11206",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11217",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11328",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11329",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11378",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B11404",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11426",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11449",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11450",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11469",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11481",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11487",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11488",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11574",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11575",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11626",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11632",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11646",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11755",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11779",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11788",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11843",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11845",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11858",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11889",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11898",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11899",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B11995",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12090",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12120",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B12184",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12249",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12272",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12296",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12300",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12364",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12367",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B12411",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12419",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12437",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12456",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12465",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12502",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B12517",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12521",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12523",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12563",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12605",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12606",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12653",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12675",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12687",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12720",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12851",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12852",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B12929",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B12952",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B12955",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B12956",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13011",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13027",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13029",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13035",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13042",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13078",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 2,
+      "query_id": "B13081",
+      "retained_positives": 2
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13113",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13135",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13149",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13172",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13184",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13209",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13228",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13237",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13240",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 5,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "B13257",
+      "retained_positives": 1
+    }
+  ],
+  "metrics": {
+    "candidate_count": 5,
+    "candidate_recall": 1.0,
+    "candidate_recall_micro": 1.0,
+    "exclude_self_matches": true,
+    "first_stage_comparisons": 15252,
+    "first_stage_seconds": 0.3180455420006183,
+    "full_comparison_count": 15252,
+    "k": 10,
+    "mean_average_precision": 0.9858870967741935,
+    "mean_reciprocal_rank": 0.9858870967741935,
+    "ndcg_at_k": 0.9894559360098089,
+    "positive_judgments": 146,
+    "precision_at_k": 0.11774193548387098,
+    "queries_with_positive_judgments": 124,
+    "queries_without_positive_judgments": 0,
+    "query_count": 124,
+    "recall_at_k": 1.0,
+    "relevant_count": 146,
+    "reranker_comparisons": 620,
+    "reranker_seconds": 0.1010034579958301,
+    "result_count": 620,
+    "retained_positive_judgments": 146,
+    "retrieval_mode": "two_stage",
+    "selected_candidate_count": 620
+  },
+  "scoring_seconds": 0.7127838749947841,
+  "status": "complete"
+}

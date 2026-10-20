@@ -150,3 +150,12 @@ evaluating the intended workload, check effective coverage, and compare detectio
 metrics on that workload separately. Full input visibility alone does not make a
 semantic representation accurate, and these controlled comparisons do not select
 a universal aggregation strategy.
+
+For the recorded pair, raw MiniLM truncated both files and tokenizer offsets
+mapped 30.8%/30.1% of their prepared bytes into retained inputs. Unlimited mean/max
+chunks had zero truncated chunks and selected all prepared bytes; their mapped
+spans were 78.2%/75.9%, with whitespace outside token offsets excluded from the
+calculation. `first` used mapped spans of 15.0%/16.5% despite encoding six/five
+chunks. Its similarity (0.9186) exceeded raw input's (0.9014), illustrating why
+a higher similarity score cannot select an aggregation strategy without
+evaluation metrics. Full per-run coverage and scores are in the linked evidence.

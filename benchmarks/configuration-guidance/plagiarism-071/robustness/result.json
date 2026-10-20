@@ -1,0 +1,744 @@
+{
+  "controlled_fixtures": {
+    "cases": [
+      {
+        "case_id": "497d1700501fa862b6ddade373ee5e894ec24e0bb522b33e029f89b88c1bc1d2",
+        "provenance": {
+          "parameters": {},
+          "relation": "controlled diagnostic; no dataset labels inferred",
+          "seed": 17,
+          "source_sha256": {
+            "baseline_candidate": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "baseline_reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "candidate": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520"
+          },
+          "validation": {
+            "assertions": "sum/range examples",
+            "kind": "fixed_fixture_assertions"
+          }
+        },
+        "transformation": "identity"
+      },
+      {
+        "case_id": "4ee75ec71de2f62bb7aa3c11300318d07f85ec450269a8755f031827c4b049e5",
+        "provenance": {
+          "parameters": {},
+          "relation": "controlled diagnostic; no dataset labels inferred",
+          "seed": 17,
+          "source_sha256": {
+            "baseline_candidate": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "baseline_reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "candidate": "169aebcf4e9af181818090ae5c4b0579ada588c2674772aa92968848c9acc975",
+            "reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520"
+          },
+          "validation": {
+            "kind": "python_ast_equal",
+            "scope": "AST equality; source introspection and line numbers can differ"
+          }
+        },
+        "transformation": "formatting"
+      },
+      {
+        "case_id": "48f1ca3504694402d5b9fb54863e23dc4a2d5ab3096006519b884d823b6aeb72",
+        "provenance": {
+          "parameters": {},
+          "relation": "controlled diagnostic; no dataset labels inferred",
+          "seed": 17,
+          "source_sha256": {
+            "baseline_candidate": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "baseline_reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "candidate": "a76d675f1980d0720d0c26ea63d9e14576f668c5987bb232cd61ab3ecf12e479",
+            "reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520"
+          },
+          "validation": {
+            "kind": "python_ast_equal",
+            "scope": "AST equality; source introspection and line numbers can differ"
+          }
+        },
+        "transformation": "comments"
+      },
+      {
+        "case_id": "7b730f77950c0ec34fd4a46ccb9a612cbaad88be97a28bc3c2e260fca5da5372",
+        "provenance": {
+          "parameters": {
+            "identifier_map": {
+              "total": "aggregate_547339",
+              "value": "element_547339"
+            }
+          },
+          "relation": "controlled diagnostic; no dataset labels inferred",
+          "seed": 17,
+          "source_sha256": {
+            "baseline_candidate": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "baseline_reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "candidate": "13a974d59c161bd64c16e8a9e211bb1d6c81c4d49c309e78366210a69f2a7415",
+            "reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520"
+          },
+          "validation": {
+            "assertions": "sum_positive and range_width: empty, mixed-sign, repeated-value fixtures",
+            "kind": "caller_fixture_assertions",
+            "scope": "Only the declared fixtures; not a general semantic proof"
+          }
+        },
+        "transformation": "identifier_renaming"
+      },
+      {
+        "case_id": "8ca1288cb692e80162690ac636c9115583758dd3eff81c9820ab36fb2adfbb12",
+        "provenance": {
+          "parameters": {
+            "copied_source_fraction": 0.6292134831460674,
+            "copied_source_sha256": "add0cba1efdbbd35504decfc3287852eade2d58db0af23ad444b23fcbd88b8df",
+            "copied_utf8_bytes": 168,
+            "description": "Append one verbatim function from reference to a different controlled program"
+          },
+          "relation": "controlled diagnostic; no dataset labels inferred",
+          "seed": 17,
+          "source_sha256": {
+            "baseline_candidate": "07f01e69fac749b9f14558aa8ac2969c1393acce6ba1234a5ed4031d73b1c648",
+            "baseline_reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "candidate": "3a26913f6af5750918052057d2d341094f5e5dab169b1eb9df044ba026ca2b75",
+            "reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520"
+          },
+          "validation": {
+            "assertions": "count_even/sum_positive examples",
+            "kind": "fixed_fixture_assertions"
+          }
+        },
+        "transformation": "partial_copy"
+      },
+      {
+        "case_id": "05dacb5b824f56555b6bdf805018177abba0dce20605ce22d340bd6563ca426c",
+        "provenance": {
+          "parameters": {
+            "description": "Prepend the same provided helper to both otherwise distinct fixtures",
+            "starter_sha256": "3f3d222f8d790b59413966d8aff2afd41f1dd0b06092fb4006e84fcbdfe5b7b9",
+            "starter_utf8_bytes": 134
+          },
+          "relation": "controlled diagnostic; no dataset labels inferred",
+          "seed": 17,
+          "source_sha256": {
+            "baseline_candidate": "07f01e69fac749b9f14558aa8ac2969c1393acce6ba1234a5ed4031d73b1c648",
+            "baseline_reference": "f705a5c3a2b433d7bc0dceee5e6bc7a02dcd99c0b3de33d3e4cd898df4f08520",
+            "candidate": "8c1a3b0cfc38d71cfa34f7a2e659f4658cb344eff54656b1d3aaa02b0c1e4d7e",
+            "reference": "fb99fb97106f23b6d7e896d6d4038458e6f6fa8858dbbba6db4baf1b79065625"
+          },
+          "validation": {
+            "assertions": "Original program and shared helper behavior fixtures",
+            "kind": "fixed_fixture_assertions"
+          }
+        },
+        "transformation": "shared_starter_code"
+      }
+    ],
+    "diagnostic_only": true,
+    "experiment_id": "8e572007638c44804dee1c38e9c3a92032b97eab954a8229f33bc470ac164326",
+    "experiment_type": "robustness",
+    "implementation": {
+      "__init__.py": "2832bbbcda45228c75a309c1778146ad1216927a708de5617c6ab757ce3f32a0",
+      "_experiments.py": "23177aedcf955f0e0b26fc1ece6b7657abf9698a6a45d6d1b0509a98ee68292c",
+      "_path_utils.py": "19155967775189861e4b0050e21845c7993d6d4b0e5ece868758430f106e3621",
+      "_progress.py": "eed2a890ca01e54c9b14754c3f328cddae06f45c8a82fa2e19e279108311a992",
+      "_run_metadata.py": "3518aeb1159c10f49ea4ecf98e83db9267d83a8eb87a1c3502b40f20105179f9",
+      "algorithms.py": "b700fbcb870ffbf8d0d3ff89b1c6e50668870af72fdabacc01b5e9aed842fbce",
+      "analysis_cli.py": "b8e85b9e7b27be67dc5a0fa34defa9fb691b011abb8f07302cb5f322c8b60aad",
+      "benchmark_analysis.py": "6381be864da750d98e60ea9df1a2811f12d8ac1a466084a429702356d7a75feb",
+      "benchmark_cache.py": "c83b7e2fd6d562e14ed2e1126e9546373d9f3ee9e9e4331601810a5dd528e828",
+      "benchmark_cards.py": "1d2675edd0d0ca2953ecc4e1dd14d0f3b1b067f5f0dabe05f6488a157eda24a1",
+      "benchmark_protocol.py": "ff567dbeb8968e7e4d3d3f1d610b2e0d6cdb2f8d9925c82456c7b5571873e2ea",
+      "benchmark_registry.py": "b8356a5585034c51a65568474929a7ce763f095bfe463e9d7156c44b0844778c",
+      "calibration.py": "3cb1577cdde68b2081e95371bf2c05aad97615222e7c2669800739878f2f5c79",
+      "chunking.py": "c14d18b5baba1e57306e653a3ee6068925498f5a92b0ec6d9e3067e2710dc0f9",
+      "cli.py": "14b1793fe93c84e7989cc955e3373db14e65524e12452360e7afa30cd4fc17f7",
+      "code_metrics.py": "dd0b1fff8f4344374d85d6ce432ec48a8b66a4d496c481e9f4a061d171736ce5",
+      "comparison_suite.py": "f513115d243a2cd348557d1b0ac3b4b41b6bb1d7c5641d8a5815a143003d64b8",
+      "custom_templates.py": "a95cea5e64fe234fb22c6ab45b232f18548df4843b36c87b554b31714eb751e1",
+      "dataset_validation.py": "fe984954a0d302b89eb73bbfb4a033fc88e3a9ac4e25bc06003cac9a839da9ce",
+      "datasets.py": "1489828cffef2ab48874e326f37460ae83eea57c51a64611d4c440cd42abd3da",
+      "evaluation.py": "23297cb6d0a212a8b4215f358bb3a38d04d1dc1cb08025edc64f0a035f1ddb7f",
+      "experiment_cli.py": "bf028575c9d82097f9a7933ec544ec135d8cba624e918deeda742b47e2e0c64f",
+      "feature_weights.py": "e006c0b61c735e3d7471e20696f5458fd1f29e8d678a4517f39e3ed2dd94a2ce",
+      "leaderboard.py": "401dd4eb760ee9a544a9091863aae048ad211aa38416436202acde1f909044d6",
+      "leaderboard_presets.py": "f7a46cbb722486356df0e55dc5a06fb7d6a4ba1198b743a0aaee55bd00b3f5d1",
+      "lexical.py": "cefd08c4e825547bb7709631ee8b676ad7a3f2948bab52d2e264daf1c3473d0c",
+      "long_files.py": "56fe5c58110e291fed2d5dd472d06d1b6c85861cd281c541bba5090180c3cd28",
+      "model_routing.py": "88220fe86e73155491c828bc6a401d2ee6c4cf30a512d1aa2c518efbf055bd57",
+      "native_codebleu.py": "620b38aac9c5ee0ebc649cbab003b47052a08ddd3bc6bb7dab2c0d6933ecaa61",
+      "preprocessing.py": "6fdcb9def866fb540f37db73b49c3fcbc3233d432a60448fb9ce5e86698f7dda",
+      "reports.py": "05de992f3ef7cedfe1052b133b6d1c8a87c813a164d6eee70fd70489046f9257",
+      "reproducibility.py": "38c274777136092e828ab134c7e43a6545702c208bae33250cb19d261fd4deab",
+      "resampling.py": "b06a1637cc7526f66f542b23c59b05d64f353f4547ed9c65528e193a2e14eb3c",
+      "result_analysis.py": "76500892afb6300f4e609ae4c7e2d19fa8de1fb095eda73c339f60293e6c55bc",
+      "retrieval.py": "4cd02f13480f13f52886c3670f16c8569b7ebbff01b7b2fa2535a35db5699018",
+      "retrieval_cli.py": "ae371eefcc01312ed3ec8b79104bd7a600abd7a469308b7d3e0d5ded1822c4b7",
+      "robustness.py": "ab820bb27eae93b762bbb4634bb337d7cfec423cebec7b42d399443e660cc8cf",
+      "scoring_config.py": "cddf9ef33d7b8608f156b3194043fe631ba8628989a770196db88f9e33f18072",
+      "similarity.py": "1d647c0e867771bde16ef6083307bc0899b7cb0c97994b27ad1167ad6c992726",
+      "task_eligibility.py": "8bf6ac54e05e89da658af6dd858a54da074f5a57f4ae95cbba03d89f2ed8ed0b",
+      "vectors.py": "a60f3afd160f9653f152953dc54e069e698fcbd28d276f2c4a05832fc0a7b91e",
+      "visualization.py": "5f6f90ee453d1ba2d800a74f1517a06f86204b485572b439e1339628d01e1859"
+    },
+    "interpretation": "Score changes on controlled fixtures, not plagiarism classifications.",
+    "runs": [
+      {
+        "options": {
+          "code_language": "python",
+          "feature_weights": {
+            "levenshtein": 1.0
+          },
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "number_results": 10,
+          "threshold": 0.0
+        },
+        "run_name": "raw_levenshtein"
+      },
+      {
+        "options": {
+          "code_language": "python",
+          "feature_weights": {
+            "levenshtein": 1.0
+          },
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "number_results": 10,
+          "preprocess_mode": "basic",
+          "threshold": 0.0
+        },
+        "run_name": "basic_levenshtein"
+      },
+      {
+        "options": {
+          "code_language": "python",
+          "feature_weights": {
+            "lcs": 1.0
+          },
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "number_results": 10,
+          "threshold": 0.0
+        },
+        "run_name": "raw_lcs"
+      },
+      {
+        "options": {
+          "code_language": "python",
+          "feature_weights": {
+            "winnowing": 1.0
+          },
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "number_results": 10,
+          "threshold": 0.0
+        },
+        "run_name": "raw_winnowing"
+      }
+    ],
+    "schema_version": 1,
+    "scores": [
+      {
+        "baseline_score": 1.0,
+        "case_id": "497d1700501fa862b6ddade373ee5e894ec24e0bb522b33e029f89b88c1bc1d2",
+        "error": null,
+        "run_id": "bdef7ac5144e16fa6111d8f3e8aaec80dd93343bc503d53d3e041ec5388157c8",
+        "run_name": "raw_levenshtein",
+        "score_delta": 0.0,
+        "status": "ok",
+        "transformation": "identity",
+        "transformed_score": 1.0
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "4ee75ec71de2f62bb7aa3c11300318d07f85ec450269a8755f031827c4b049e5",
+        "error": null,
+        "run_id": "bdef7ac5144e16fa6111d8f3e8aaec80dd93343bc503d53d3e041ec5388157c8",
+        "run_name": "raw_levenshtein",
+        "score_delta": -0.03345724907063197,
+        "status": "ok",
+        "transformation": "formatting",
+        "transformed_score": 0.966542750929368
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "48f1ca3504694402d5b9fb54863e23dc4a2d5ab3096006519b884d823b6aeb72",
+        "error": null,
+        "run_id": "bdef7ac5144e16fa6111d8f3e8aaec80dd93343bc503d53d3e041ec5388157c8",
+        "run_name": "raw_levenshtein",
+        "score_delta": -0.18153846153846154,
+        "status": "ok",
+        "transformation": "comments",
+        "transformed_score": 0.8184615384615385
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "7b730f77950c0ec34fd4a46ccb9a612cbaad88be97a28bc3c2e260fca5da5372",
+        "error": null,
+        "run_id": "bdef7ac5144e16fa6111d8f3e8aaec80dd93343bc503d53d3e041ec5388157c8",
+        "run_name": "raw_levenshtein",
+        "score_delta": -0.27963525835866254,
+        "status": "ok",
+        "transformation": "identifier_renaming",
+        "transformed_score": 0.7203647416413375
+      },
+      {
+        "baseline_score": 0.3533834586466166,
+        "case_id": "8ca1288cb692e80162690ac636c9115583758dd3eff81c9820ab36fb2adfbb12",
+        "error": null,
+        "run_id": "bdef7ac5144e16fa6111d8f3e8aaec80dd93343bc503d53d3e041ec5388157c8",
+        "run_name": "raw_levenshtein",
+        "score_delta": -0.0033834586466165995,
+        "status": "ok",
+        "transformation": "partial_copy",
+        "transformed_score": 0.35
+      },
+      {
+        "baseline_score": 0.3533834586466166,
+        "case_id": "05dacb5b824f56555b6bdf805018177abba0dce20605ce22d340bd6563ca426c",
+        "error": null,
+        "run_id": "bdef7ac5144e16fa6111d8f3e8aaec80dd93343bc503d53d3e041ec5388157c8",
+        "run_name": "raw_levenshtein",
+        "score_delta": 0.21661654135338348,
+        "status": "ok",
+        "transformation": "shared_starter_code",
+        "transformed_score": 0.5700000000000001
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "497d1700501fa862b6ddade373ee5e894ec24e0bb522b33e029f89b88c1bc1d2",
+        "error": null,
+        "run_id": "8cfcc07e695b2ccda333831d39ef2dce249432d828f4662bd07fc311c914fdcc",
+        "run_name": "basic_levenshtein",
+        "score_delta": 0.0,
+        "status": "ok",
+        "transformation": "identity",
+        "transformed_score": 1.0
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "4ee75ec71de2f62bb7aa3c11300318d07f85ec450269a8755f031827c4b049e5",
+        "error": null,
+        "run_id": "8cfcc07e695b2ccda333831d39ef2dce249432d828f4662bd07fc311c914fdcc",
+        "run_name": "basic_levenshtein",
+        "score_delta": -0.04166666666666663,
+        "status": "ok",
+        "transformation": "formatting",
+        "transformed_score": 0.9583333333333334
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "48f1ca3504694402d5b9fb54863e23dc4a2d5ab3096006519b884d823b6aeb72",
+        "error": null,
+        "run_id": "8cfcc07e695b2ccda333831d39ef2dce249432d828f4662bd07fc311c914fdcc",
+        "run_name": "basic_levenshtein",
+        "score_delta": 0.0,
+        "status": "ok",
+        "transformation": "comments",
+        "transformed_score": 1.0
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "7b730f77950c0ec34fd4a46ccb9a612cbaad88be97a28bc3c2e260fca5da5372",
+        "error": null,
+        "run_id": "8cfcc07e695b2ccda333831d39ef2dce249432d828f4662bd07fc311c914fdcc",
+        "run_name": "basic_levenshtein",
+        "score_delta": -0.33333333333333326,
+        "status": "ok",
+        "transformation": "identifier_renaming",
+        "transformed_score": 0.6666666666666667
+      },
+      {
+        "baseline_score": 0.3004694835680751,
+        "case_id": "8ca1288cb692e80162690ac636c9115583758dd3eff81c9820ab36fb2adfbb12",
+        "error": null,
+        "run_id": "8cfcc07e695b2ccda333831d39ef2dce249432d828f4662bd07fc311c914fdcc",
+        "run_name": "basic_levenshtein",
+        "score_delta": -0.027742210840802417,
+        "status": "ok",
+        "transformation": "partial_copy",
+        "transformed_score": 0.2727272727272727
+      },
+      {
+        "baseline_score": 0.3004694835680751,
+        "case_id": "05dacb5b824f56555b6bdf805018177abba0dce20605ce22d340bd6563ca426c",
+        "error": null,
+        "run_id": "8cfcc07e695b2ccda333831d39ef2dce249432d828f4662bd07fc311c914fdcc",
+        "run_name": "basic_levenshtein",
+        "score_delta": 0.16738765928906774,
+        "status": "ok",
+        "transformation": "shared_starter_code",
+        "transformed_score": 0.46785714285714286
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "497d1700501fa862b6ddade373ee5e894ec24e0bb522b33e029f89b88c1bc1d2",
+        "error": null,
+        "run_id": "9d068ac033c7ffa23ac9dec9625582771dbff65200fefd50eb629c67bf0dd73a",
+        "run_name": "raw_lcs",
+        "score_delta": 0.0,
+        "status": "ok",
+        "transformation": "identity",
+        "transformed_score": 1.0
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "4ee75ec71de2f62bb7aa3c11300318d07f85ec450269a8755f031827c4b049e5",
+        "error": null,
+        "run_id": "9d068ac033c7ffa23ac9dec9625582771dbff65200fefd50eb629c67bf0dd73a",
+        "run_name": "raw_lcs",
+        "score_delta": -0.022304832713754608,
+        "status": "ok",
+        "transformation": "formatting",
+        "transformed_score": 0.9776951672862454
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "48f1ca3504694402d5b9fb54863e23dc4a2d5ab3096006519b884d823b6aeb72",
+        "error": null,
+        "run_id": "9d068ac033c7ffa23ac9dec9625582771dbff65200fefd50eb629c67bf0dd73a",
+        "run_name": "raw_lcs",
+        "score_delta": -0.18153846153846154,
+        "status": "ok",
+        "transformation": "comments",
+        "transformed_score": 0.8184615384615385
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "7b730f77950c0ec34fd4a46ccb9a612cbaad88be97a28bc3c2e260fca5da5372",
+        "error": null,
+        "run_id": "9d068ac033c7ffa23ac9dec9625582771dbff65200fefd50eb629c67bf0dd73a",
+        "run_name": "raw_lcs",
+        "score_delta": -0.2644376899696048,
+        "status": "ok",
+        "transformation": "identifier_renaming",
+        "transformed_score": 0.7355623100303952
+      },
+      {
+        "baseline_score": 0.37593984962406013,
+        "case_id": "8ca1288cb692e80162690ac636c9115583758dd3eff81c9820ab36fb2adfbb12",
+        "error": null,
+        "run_id": "9d068ac033c7ffa23ac9dec9625582771dbff65200fefd50eb629c67bf0dd73a",
+        "run_name": "raw_lcs",
+        "score_delta": 0.1807268170426065,
+        "status": "ok",
+        "transformation": "partial_copy",
+        "transformed_score": 0.5566666666666666
+      },
+      {
+        "baseline_score": 0.37593984962406013,
+        "case_id": "05dacb5b824f56555b6bdf805018177abba0dce20605ce22d340bd6563ca426c",
+        "error": null,
+        "run_id": "9d068ac033c7ffa23ac9dec9625582771dbff65200fefd50eb629c67bf0dd73a",
+        "run_name": "raw_lcs",
+        "score_delta": 0.20906015037593983,
+        "status": "ok",
+        "transformation": "shared_starter_code",
+        "transformed_score": 0.585
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "497d1700501fa862b6ddade373ee5e894ec24e0bb522b33e029f89b88c1bc1d2",
+        "error": null,
+        "run_id": "51d2c4c70095f231dbfa87f9ab63c96df721b6c0d23d23c517dda817032e93a5",
+        "run_name": "raw_winnowing",
+        "score_delta": 0.0,
+        "status": "ok",
+        "transformation": "identity",
+        "transformed_score": 1.0
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "4ee75ec71de2f62bb7aa3c11300318d07f85ec450269a8755f031827c4b049e5",
+        "error": null,
+        "run_id": "51d2c4c70095f231dbfa87f9ab63c96df721b6c0d23d23c517dda817032e93a5",
+        "run_name": "raw_winnowing",
+        "score_delta": 0.0,
+        "status": "ok",
+        "transformation": "formatting",
+        "transformed_score": 1.0
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "48f1ca3504694402d5b9fb54863e23dc4a2d5ab3096006519b884d823b6aeb72",
+        "error": null,
+        "run_id": "51d2c4c70095f231dbfa87f9ab63c96df721b6c0d23d23c517dda817032e93a5",
+        "run_name": "raw_winnowing",
+        "score_delta": -0.17391304347826086,
+        "status": "ok",
+        "transformation": "comments",
+        "transformed_score": 0.8260869565217391
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "7b730f77950c0ec34fd4a46ccb9a612cbaad88be97a28bc3c2e260fca5da5372",
+        "error": null,
+        "run_id": "51d2c4c70095f231dbfa87f9ab63c96df721b6c0d23d23c517dda817032e93a5",
+        "run_name": "raw_winnowing",
+        "score_delta": -0.6428571428571428,
+        "status": "ok",
+        "transformation": "identifier_renaming",
+        "transformed_score": 0.35714285714285715
+      },
+      {
+        "baseline_score": 0.0,
+        "case_id": "8ca1288cb692e80162690ac636c9115583758dd3eff81c9820ab36fb2adfbb12",
+        "error": null,
+        "run_id": "51d2c4c70095f231dbfa87f9ab63c96df721b6c0d23d23c517dda817032e93a5",
+        "run_name": "raw_winnowing",
+        "score_delta": 0.39285714285714285,
+        "status": "ok",
+        "transformation": "partial_copy",
+        "transformed_score": 0.39285714285714285
+      },
+      {
+        "baseline_score": 0.0,
+        "case_id": "05dacb5b824f56555b6bdf805018177abba0dce20605ce22d340bd6563ca426c",
+        "error": null,
+        "run_id": "51d2c4c70095f231dbfa87f9ab63c96df721b6c0d23d23c517dda817032e93a5",
+        "run_name": "raw_winnowing",
+        "score_delta": 0.275,
+        "status": "ok",
+        "transformation": "shared_starter_code",
+        "transformed_score": 0.275
+      }
+    ]
+  },
+  "source_input": {
+    "dataset": "student_code_similarity_pair",
+    "left_id": "right_8007c9aa2f279a9c",
+    "left_sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+    "left_utf8_bytes": 2390,
+    "right_id": "right_65fb6b7dea3d5a69",
+    "right_sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383",
+    "right_utf8_bytes": 2167,
+    "row_index": 102
+  },
+  "status": "complete",
+  "supplied_source": {
+    "cases": [
+      {
+        "case_id": "cb756d72727c7cc12b7c123423b373f0e64ee2042907ca1d83f554b63aae6d58",
+        "provenance": {
+          "parameters": {},
+          "relation": "controlled diagnostic; no dataset labels inferred",
+          "seed": 17,
+          "source_sha256": {
+            "baseline_candidate": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+            "baseline_reference": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+            "candidate": "e7fd19fb2b7a5cf2761273411fb74097a7e89e3c38f11ff472c500577b1fb7eb",
+            "reference": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74"
+          },
+          "validation": {
+            "kind": "python_ast_equal",
+            "scope": "AST equality; source introspection and line numbers can differ"
+          }
+        },
+        "transformation": "formatting"
+      },
+      {
+        "case_id": "7cb766e405f1ca3f353fbc7453d64e95a00a05afdf2d9897c379c9f1315ff528",
+        "provenance": {
+          "parameters": {},
+          "relation": "controlled diagnostic; no dataset labels inferred",
+          "seed": 17,
+          "source_sha256": {
+            "baseline_candidate": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+            "baseline_reference": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+            "candidate": "10bd6b06b446b8c392b57ec51700ad7ff71b855ba6df6faf35fc333f5af78ac8",
+            "reference": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74"
+          },
+          "validation": {
+            "kind": "python_ast_equal",
+            "scope": "AST equality; source introspection and line numbers can differ"
+          }
+        },
+        "transformation": "comments"
+      }
+    ],
+    "diagnostic_only": true,
+    "experiment_id": "5eace4bd7a419ee2b92bfd67ebe216ebaab490426a444af47457b31c5c99b2f5",
+    "experiment_type": "robustness",
+    "implementation": {
+      "__init__.py": "2832bbbcda45228c75a309c1778146ad1216927a708de5617c6ab757ce3f32a0",
+      "_experiments.py": "23177aedcf955f0e0b26fc1ece6b7657abf9698a6a45d6d1b0509a98ee68292c",
+      "_path_utils.py": "19155967775189861e4b0050e21845c7993d6d4b0e5ece868758430f106e3621",
+      "_progress.py": "eed2a890ca01e54c9b14754c3f328cddae06f45c8a82fa2e19e279108311a992",
+      "_run_metadata.py": "3518aeb1159c10f49ea4ecf98e83db9267d83a8eb87a1c3502b40f20105179f9",
+      "algorithms.py": "b700fbcb870ffbf8d0d3ff89b1c6e50668870af72fdabacc01b5e9aed842fbce",
+      "analysis_cli.py": "b8e85b9e7b27be67dc5a0fa34defa9fb691b011abb8f07302cb5f322c8b60aad",
+      "benchmark_analysis.py": "6381be864da750d98e60ea9df1a2811f12d8ac1a466084a429702356d7a75feb",
+      "benchmark_cache.py": "c83b7e2fd6d562e14ed2e1126e9546373d9f3ee9e9e4331601810a5dd528e828",
+      "benchmark_cards.py": "1d2675edd0d0ca2953ecc4e1dd14d0f3b1b067f5f0dabe05f6488a157eda24a1",
+      "benchmark_protocol.py": "ff567dbeb8968e7e4d3d3f1d610b2e0d6cdb2f8d9925c82456c7b5571873e2ea",
+      "benchmark_registry.py": "b8356a5585034c51a65568474929a7ce763f095bfe463e9d7156c44b0844778c",
+      "calibration.py": "3cb1577cdde68b2081e95371bf2c05aad97615222e7c2669800739878f2f5c79",
+      "chunking.py": "c14d18b5baba1e57306e653a3ee6068925498f5a92b0ec6d9e3067e2710dc0f9",
+      "cli.py": "14b1793fe93c84e7989cc955e3373db14e65524e12452360e7afa30cd4fc17f7",
+      "code_metrics.py": "dd0b1fff8f4344374d85d6ce432ec48a8b66a4d496c481e9f4a061d171736ce5",
+      "comparison_suite.py": "f513115d243a2cd348557d1b0ac3b4b41b6bb1d7c5641d8a5815a143003d64b8",
+      "custom_templates.py": "a95cea5e64fe234fb22c6ab45b232f18548df4843b36c87b554b31714eb751e1",
+      "dataset_validation.py": "fe984954a0d302b89eb73bbfb4a033fc88e3a9ac4e25bc06003cac9a839da9ce",
+      "datasets.py": "1489828cffef2ab48874e326f37460ae83eea57c51a64611d4c440cd42abd3da",
+      "evaluation.py": "23297cb6d0a212a8b4215f358bb3a38d04d1dc1cb08025edc64f0a035f1ddb7f",
+      "experiment_cli.py": "bf028575c9d82097f9a7933ec544ec135d8cba624e918deeda742b47e2e0c64f",
+      "feature_weights.py": "e006c0b61c735e3d7471e20696f5458fd1f29e8d678a4517f39e3ed2dd94a2ce",
+      "leaderboard.py": "401dd4eb760ee9a544a9091863aae048ad211aa38416436202acde1f909044d6",
+      "leaderboard_presets.py": "f7a46cbb722486356df0e55dc5a06fb7d6a4ba1198b743a0aaee55bd00b3f5d1",
+      "lexical.py": "cefd08c4e825547bb7709631ee8b676ad7a3f2948bab52d2e264daf1c3473d0c",
+      "long_files.py": "56fe5c58110e291fed2d5dd472d06d1b6c85861cd281c541bba5090180c3cd28",
+      "model_routing.py": "88220fe86e73155491c828bc6a401d2ee6c4cf30a512d1aa2c518efbf055bd57",
+      "native_codebleu.py": "620b38aac9c5ee0ebc649cbab003b47052a08ddd3bc6bb7dab2c0d6933ecaa61",
+      "preprocessing.py": "6fdcb9def866fb540f37db73b49c3fcbc3233d432a60448fb9ce5e86698f7dda",
+      "reports.py": "05de992f3ef7cedfe1052b133b6d1c8a87c813a164d6eee70fd70489046f9257",
+      "reproducibility.py": "38c274777136092e828ab134c7e43a6545702c208bae33250cb19d261fd4deab",
+      "resampling.py": "b06a1637cc7526f66f542b23c59b05d64f353f4547ed9c65528e193a2e14eb3c",
+      "result_analysis.py": "76500892afb6300f4e609ae4c7e2d19fa8de1fb095eda73c339f60293e6c55bc",
+      "retrieval.py": "4cd02f13480f13f52886c3670f16c8569b7ebbff01b7b2fa2535a35db5699018",
+      "retrieval_cli.py": "ae371eefcc01312ed3ec8b79104bd7a600abd7a469308b7d3e0d5ded1822c4b7",
+      "robustness.py": "ab820bb27eae93b762bbb4634bb337d7cfec423cebec7b42d399443e660cc8cf",
+      "scoring_config.py": "cddf9ef33d7b8608f156b3194043fe631ba8628989a770196db88f9e33f18072",
+      "similarity.py": "1d647c0e867771bde16ef6083307bc0899b7cb0c97994b27ad1167ad6c992726",
+      "task_eligibility.py": "8bf6ac54e05e89da658af6dd858a54da074f5a57f4ae95cbba03d89f2ed8ed0b",
+      "vectors.py": "a60f3afd160f9653f152953dc54e069e698fcbd28d276f2c4a05832fc0a7b91e",
+      "visualization.py": "5f6f90ee453d1ba2d800a74f1517a06f86204b485572b439e1339628d01e1859"
+    },
+    "interpretation": "Score changes on controlled fixtures, not plagiarism classifications.",
+    "runs": [
+      {
+        "options": {
+          "code_language": "python",
+          "feature_weights": {
+            "levenshtein": 1.0
+          },
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "number_results": 10,
+          "threshold": 0.0
+        },
+        "run_name": "raw_levenshtein"
+      },
+      {
+        "options": {
+          "code_language": "python",
+          "feature_weights": {
+            "levenshtein": 1.0
+          },
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "number_results": 10,
+          "preprocess_mode": "basic",
+          "threshold": 0.0
+        },
+        "run_name": "basic_levenshtein"
+      },
+      {
+        "options": {
+          "code_language": "python",
+          "feature_weights": {
+            "lcs": 1.0
+          },
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "number_results": 10,
+          "threshold": 0.0
+        },
+        "run_name": "raw_lcs"
+      },
+      {
+        "options": {
+          "code_language": "python",
+          "feature_weights": {
+            "winnowing": 1.0
+          },
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "number_results": 10,
+          "threshold": 0.0
+        },
+        "run_name": "raw_winnowing"
+      }
+    ],
+    "schema_version": 1,
+    "scores": [
+      {
+        "baseline_score": 1.0,
+        "case_id": "cb756d72727c7cc12b7c123423b373f0e64ee2042907ca1d83f554b63aae6d58",
+        "error": null,
+        "run_id": "bdef7ac5144e16fa6111d8f3e8aaec80dd93343bc503d53d3e041ec5388157c8",
+        "run_name": "raw_levenshtein",
+        "score_delta": -0.01841774801172036,
+        "status": "ok",
+        "transformation": "formatting",
+        "transformed_score": 0.9815822519882796
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "7cb766e405f1ca3f353fbc7453d64e95a00a05afdf2d9897c379c9f1315ff528",
+        "error": null,
+        "run_id": "bdef7ac5144e16fa6111d8f3e8aaec80dd93343bc503d53d3e041ec5388157c8",
+        "run_name": "raw_levenshtein",
+        "score_delta": -0.02410130718954251,
+        "status": "ok",
+        "transformation": "comments",
+        "transformed_score": 0.9758986928104575
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "cb756d72727c7cc12b7c123423b373f0e64ee2042907ca1d83f554b63aae6d58",
+        "error": null,
+        "run_id": "8cfcc07e695b2ccda333831d39ef2dce249432d828f4662bd07fc311c914fdcc",
+        "run_name": "basic_levenshtein",
+        "score_delta": -0.014612761811982455,
+        "status": "ok",
+        "transformation": "formatting",
+        "transformed_score": 0.9853872381880175
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "7cb766e405f1ca3f353fbc7453d64e95a00a05afdf2d9897c379c9f1315ff528",
+        "error": null,
+        "run_id": "8cfcc07e695b2ccda333831d39ef2dce249432d828f4662bd07fc311c914fdcc",
+        "run_name": "basic_levenshtein",
+        "score_delta": 0.0,
+        "status": "ok",
+        "transformation": "comments",
+        "transformed_score": 1.0
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "cb756d72727c7cc12b7c123423b373f0e64ee2042907ca1d83f554b63aae6d58",
+        "error": null,
+        "run_id": "9d068ac033c7ffa23ac9dec9625582771dbff65200fefd50eb629c67bf0dd73a",
+        "run_name": "raw_lcs",
+        "score_delta": -0.016743407283382195,
+        "status": "ok",
+        "transformation": "formatting",
+        "transformed_score": 0.9832565927166178
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "7cb766e405f1ca3f353fbc7453d64e95a00a05afdf2d9897c379c9f1315ff528",
+        "error": null,
+        "run_id": "9d068ac033c7ffa23ac9dec9625582771dbff65200fefd50eb629c67bf0dd73a",
+        "run_name": "raw_lcs",
+        "score_delta": -0.02410130718954251,
+        "status": "ok",
+        "transformation": "comments",
+        "transformed_score": 0.9758986928104575
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "cb756d72727c7cc12b7c123423b373f0e64ee2042907ca1d83f554b63aae6d58",
+        "error": null,
+        "run_id": "51d2c4c70095f231dbfa87f9ab63c96df721b6c0d23d23c517dda817032e93a5",
+        "run_name": "raw_winnowing",
+        "score_delta": -0.42914979757085026,
+        "status": "ok",
+        "transformation": "formatting",
+        "transformed_score": 0.5708502024291497
+      },
+      {
+        "baseline_score": 1.0,
+        "case_id": "7cb766e405f1ca3f353fbc7453d64e95a00a05afdf2d9897c379c9f1315ff528",
+        "error": null,
+        "run_id": "51d2c4c70095f231dbfa87f9ab63c96df721b6c0d23d23c517dda817032e93a5",
+        "run_name": "raw_winnowing",
+        "score_delta": -0.03015075376884424,
+        "status": "ok",
+        "transformation": "comments",
+        "transformed_score": 0.9698492462311558
+      }
+    ]
+  }
+}
