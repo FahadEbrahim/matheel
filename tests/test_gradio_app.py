@@ -2,7 +2,10 @@ import importlib.util
 import inspect
 import json
 import os
+import shutil
 import socket
+import subprocess
+import sys
 import zipfile
 from pathlib import Path
 from urllib.request import urlopen
@@ -34,6 +37,7 @@ EXPECTED_GRADIO_TABS = (
     "Dataset Map",
     "Pair Explanation",
     "Reports",
+    "Official Benchmark",
     "Ready-made Leaderboard",
     "Build Leaderboard",
     "Inspect Artifacts",
@@ -317,7 +321,7 @@ def test_dataset_validation_and_upload_resets_share_one_serial_listener():
 
     assert len(dependencies) == 1
     assert set(map(tuple, dependencies[0]["targets"])) == targets
-    assert dependencies[0]["trigger_mode"] == "always_last"
+    assert dependencies[0]["trigger_mode"] == "multiple"
     assert gradio_app.demo.fns[dependencies[0]["id"]].concurrency_limit == 1
 
 
@@ -344,7 +348,8 @@ def test_dataset_upload_event_dispatch_keeps_validation_and_reset_outputs_aligne
     assert validated[gradio_app.dataset_validation_summary] == "validated summary"
     assert validated[gradio_app.dataset_validation_state] == "identity"
     assert validated[gradio_app.dataset_run] == "enabled"
-    assert len(validated) == 7
+    assert len(validated) == 8
+    assert validated[gradio_app.dataset_latest_revision] == 0
 
     for target in (gradio_app.dataset_file, gradio_app.dataset_task):
         reset = gradio_app.update_dataset_upload_journey(
@@ -358,6 +363,35 @@ def test_dataset_upload_event_dispatch_keeps_validation_and_reset_outputs_aligne
         assert reset[gradio_app.dataset_run]["interactive"] is False
         assert reset[gradio_app.dataset_scored_state] is None
         assert reset[gradio_app.dataset_summary]["visible"] is False
+
+
+def test_late_reset_keeps_validation_for_the_same_upload_and_task(monkeypatch):
+    monkeypatch.setattr(gradio_app, "dataset_upload_identity", lambda *args: "current-identity")
+    event = gradio_app.gr.EventData(gradio_app.dataset_file, None)
+    assert gradio_app.update_dataset_upload_journey(
+        "dataset.zip", "Pair Classification", event,
+        validation_state="current-identity", progress=None,
+    ) == {gradio_app.dataset_latest_revision: 0}
+    reset = gradio_app.update_dataset_upload_journey(
+        "dataset.zip", "Pair Classification", event,
+        validation_state="older-identity", progress=None,
+    )
+    assert reset[gradio_app.dataset_validation_state] is None
+    assert reset[gradio_app.dataset_run]["interactive"] is False
+
+
+@pytest.mark.parametrize("target_name", ["dataset_file", "dataset_task", "dataset_validate"])
+def test_older_client_revision_cannot_replace_a_newer_dataset_event(target_name, monkeypatch):
+    def stale_validation(*args, **kwargs):
+        raise AssertionError("A superseded validation must not execute")
+
+    monkeypatch.setattr(gradio_app, "validate_dataset_journey_gradio", stale_validation)
+    event = gradio_app.gr.EventData(getattr(gradio_app, target_name), None)
+    assert gradio_app.update_dataset_upload_journey(
+        None, "Pair Classification", event,
+        validation_state={"sha256": "new upload", "task": "pair"},
+        event_revision=1, latest_revision=2, progress=None,
+    ) == gradio_app.gr.skip()
 
 
 def test_dataset_validation_input_error_returns_data_and_clears_stale_results(monkeypatch):
@@ -793,6 +827,42 @@ def test_collection_api_runs_new_metric_with_appended_weights(tmp_path):
     assert results.iloc[0]["similarity_score"] == 0.5
 
 
+def test_pair_collection_and_saved_suite_share_effective_scoring_options(monkeypatch):
+    captured = {}
+
+    def pair(*args, **kwargs):
+        captured["pair"] = kwargs
+        return 0.5
+
+    def collection(*args, **kwargs):
+        captured["collection"] = kwargs
+        return pd.DataFrame(columns=["file_name_1", "file_name_2", "similarity_score"])
+
+    monkeypatch.setattr(gradio_app, "calculate_similarity", pair)
+    monkeypatch.setattr(gradio_app, "get_sim_list", collection)
+    controls = _scoring_handler_kwargs()
+    controls.update(
+        selected_features=["Levenshtein", "Code Metric", lexical_metric_metadata("lcs")["label"]],
+        levenshtein_weight=2.0, code_metric="tsed", code_metric_weight=3.0,
+        levenshtein_weights="1,2,3", tsed_costs="0,2,3", runtime_device="cpu",
+        lexical_weights={"lcs": 5.0},
+    )
+    gradio_app.calculate_similarity_gradio("left", "right", **controls, progress=None)
+    gradio_app.get_sim_list_gradio("collection.zip", **controls, threshold=0.2, number_results=10, progress=None)
+    row = _build_suite_row(**controls, threshold=0.2, number_results=10)
+    saved = gradio_app.suite_rows_to_configs([row])[0]["options"]
+
+    pair_options = {key: value for key, value in captured["pair"].items() if key != "progress_callback"}
+    collection_options = {
+        key: value for key, value in captured["collection"].items()
+        if key not in ("progress_callback", "threshold", "number_results")
+    }
+    saved_options = {key: value for key, value in saved.items() if key not in ("threshold", "number_results")}
+    assert pair_options == collection_options == saved_options
+    assert pair_options["feature_weights"] == {"levenshtein": 0.2, "code_metric": 0.3, "lcs": 0.5}
+    assert pair_options["tsed_delete_cost"] == 0
+
+
 def test_suite_api_saves_and_executes_new_metrics(tmp_path):
     options = _scoring_handler_kwargs()
     options["selected_features"] = [lexical_metric_metadata("lcs")["label"]]
@@ -838,6 +908,36 @@ def test_scoring_actions_append_weight_table_without_changing_existing_control_o
         assert component["type"] == "dataframe"
         assert component["props"]["label"] == "Additional lexical weights"
         assert component["props"]["static_columns"] == [0]
+
+
+def test_flat_space_checkout_imports_extracted_helpers(tmp_path):
+    for name in ("app.py", "html_utils.py", "presentation.py", "theme.py", "control_types.py", "official_benchmark.py"):
+        shutil.copyfile(APP_PATH.parent / name, tmp_path / name)
+    (tmp_path / "assets").mkdir()
+    shutil.copyfile(
+        APP_PATH.parent / "assets" / "ready_leaderboard.json",
+        tmp_path / "assets" / "ready_leaderboard.json",
+    )
+    script = """
+import importlib.abc
+import runpy
+import sys
+class FlatSpace(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "gradio_app" or fullname.startswith("gradio_app."):
+            raise ModuleNotFoundError("Flat Space has no gradio_app package", name=fullname)
+sys.meta_path.insert(0, FlatSpace())
+app = runpy.run_path("app.py", run_name="matheel_space_smoke")
+assert app["ScoringControls"].__module__ == "control_types"
+assert app["summary_panel_html"].__module__ == "presentation"
+assert app["demo"].get_config_file()["mode"] == "blocks"
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script], cwd=tmp_path,
+        env={**os.environ, "GRADIO_ANALYTICS_ENABLED": "False"},
+        text=True, capture_output=True, timeout=30,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_status_html_helpers_escape_dynamic_values():
@@ -1745,6 +1845,113 @@ def test_ready_leaderboard_registered_datasets_frame_lists_all_presets():
     assert set(frame["Preset"]) == set(available_dataset_presets())
     assert "Evaluation Metrics" in frame.columns
     assert "Sampling Default" in frame.columns
+    assert set(frame["Category"]) == {"Plagiarism"}
+
+
+def test_leaderboard_filters_keep_plagiarism_and_clone_categories_separate():
+    rows = [
+        {"task_type": category, "task_family": "pair", "dataset_name": category,
+         "algorithm_name": "same method", "metric": "f1", "score": score,
+         "sample_count": 10, "dataset_source": "test", "rank": 1}
+        for category, score in (("plagiarism", 0.2), ("code_clone", 0.9))
+    ]
+    report = gradio_app._leaderboard_report_from_payload({
+        "metadata": {}, "per_dataset": rows, "aggregate": [],
+    })
+    aggregate, per_dataset = gradio_app._filter_ready_made_leaderboard_report(
+        report, "pair", "f1", gradio_app.READY_LEADERBOARD_ALL_DATASETS,
+        gradio_app.READY_LEADERBOARD_ALL_ALGORITHMS, gradio_app.READY_LEADERBOARD_ALL_SOURCES,
+    )
+
+    assert len(aggregate) == 2
+    assert set(aggregate["mean_score"]) == {0.2, 0.9}
+    assert set(aggregate["rank"]) == {1}
+    assert len(per_dataset) == 2
+    filtered, rows = gradio_app._filter_ready_made_leaderboard_report(
+        report, "pair", "f1", gradio_app.READY_LEADERBOARD_ALL_DATASETS,
+        gradio_app.READY_LEADERBOARD_ALL_ALGORITHMS, gradio_app.READY_LEADERBOARD_ALL_SOURCES,
+        dataset_category="plagiarism",
+    )
+    assert filtered.iloc[0]["mean_score"] == 0.2
+    assert set(rows["task_type"]) == {"plagiarism"}
+
+
+def test_legacy_demo_leaderboard_is_labeled_plagiarism_and_demo():
+    report = gradio_app._leaderboard_report_from_payload(
+        gradio_app.load_ready_made_leaderboard_payload()
+    )
+    assert set(report["per_dataset"]["task_type"]) == {"plagiarism"}
+    assert set(gradio_app.ready_made_leaderboard_coverage_frame(report)["Category"]) == {"Plagiarism"}
+    assert "Demo" in gradio_app.ready_made_leaderboard_summary_html(report)
+    assert "Dataset Category" in {
+        component.get("props", {}).get("label")
+        for component in gradio_app.demo.get_config_file()["components"]
+    }
+
+
+def test_leaderboard_filter_preserves_benchmark_protocol_identity():
+    rows = [
+        {"task_type": "plagiarism", "domain": "plagiarism", "task_family": "pair",
+         "benchmark_id": "Matheel-Plagiarism-v1", "protocol_id": protocol,
+         "dataset_name": "dataset", "algorithm_name": "method", "metric": "f1",
+         "score": score, "sample_count": 10, "dataset_source": "test", "rank": 1}
+        for protocol, score in (("protocol-a", 0.2), ("protocol-b", 0.9))
+    ]
+    report = gradio_app._leaderboard_report_from_payload({
+        "metadata": {}, "per_dataset": rows, "aggregate": [],
+        "benchmark": {"benchmark_id": "Matheel-Plagiarism-v1"},
+    })
+    aggregate, _ = gradio_app._filter_ready_made_leaderboard_report(
+        report, "pair", "f1", gradio_app.READY_LEADERBOARD_ALL_DATASETS,
+        gradio_app.READY_LEADERBOARD_ALL_ALGORITHMS, gradio_app.READY_LEADERBOARD_ALL_SOURCES,
+    )
+
+    assert report["benchmark"]["benchmark_id"] == "Matheel-Plagiarism-v1"
+    assert set(aggregate["protocol_id"]) == {"protocol-a", "protocol-b"}
+    assert set(aggregate["mean_score"]) == {0.2, 0.9}
+    assert set(aggregate["domain"]) == {"plagiarism"}
+
+
+def test_official_leaderboard_filter_preserves_coverage_and_unranked_methods():
+    rows = [
+        {"task_type": "plagiarism", "task_family": "pair", "dataset_name": dataset,
+         "dataset_source": "test", "algorithm_name": method, "algorithm_id": identity,
+         "metric": "f1", "score": score, "sample_count": 10, "rank": None}
+        for method, identity, scores in (
+            ("Partial", "method-a", (1.0, None)),
+            ("Complete", "method-b", (0.8, 0.8)),
+            ("Failed", "method-c", (None, None)),
+        )
+        for dataset, score in zip(("dataset-a", "dataset-b"), scores)
+    ]
+    aggregates = [
+        {"task_type": "plagiarism", "task_family": "pair", "algorithm_name": method,
+         "algorithm_id": identity, "metric": "f1", "mean_score": score,
+         "median_score": score, "rank": rank, "eligible": eligible, "coverage": coverage,
+         "dataset_count": count, "expected_dataset_count": 2, "sample_count": 20}
+        for method, identity, score, rank, eligible, coverage, count in (
+            ("Partial", "method-a", None, None, False, 0.5, 1),
+            ("Complete", "method-b", 0.8, 1, True, 1.0, 2),
+            ("Failed", "method-c", None, None, False, 0.0, 0),
+        )
+    ]
+    report = gradio_app._leaderboard_report_from_payload({
+        "metadata": {"strict_coverage": True}, "per_dataset": rows, "aggregate": aggregates,
+    })
+    aggregate, details = gradio_app._filter_ready_made_leaderboard_report(
+        report, "pair", "f1", "dataset-a",
+        gradio_app.READY_LEADERBOARD_ALL_ALGORITHMS, gradio_app.READY_LEADERBOARD_ALL_SOURCES,
+    )
+    ranked = aggregate.set_index("algorithm_id")
+    assert pd.isna(ranked.loc["method-a", "mean_score"])
+    assert pd.isna(ranked.loc["method-a", "rank"])
+    assert pd.isna(ranked.loc["method-c", "rank"])
+    assert ranked.loc["method-b", "rank"] == 1
+    assert ranked.loc["method-a", "coverage"] == 0.5
+    assert ranked.loc["method-a", "expected_dataset_count"] == 2
+    assert ranked.loc["method-a", "eligible"] == False  # noqa: E712
+    assert set(details["dataset_name"]) == {"dataset-a"}
+    assert aggregate["ranking_scope"].str.startswith("Full benchmark").all()
 
 
 def test_ready_made_leaderboard_records_historical_preset_coverage():

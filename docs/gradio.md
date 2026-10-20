@@ -53,13 +53,26 @@ All [RapidFuzz string metrics](lexical.md), including **Longest Common Subsequen
 | **Suites** | Run multiple saved comparison configurations over the same collection. |
 | **Datasets** | Validate normalized dataset ZIPs, evaluate scores, tune thresholds, and export reports. |
 | **Explain** | Generate dataset maps or explain matched regions in a code pair. |
-| **Reports** | Open the public leaderboard snapshot, build a custom leaderboard, or inspect exported JSON/ZIP artifacts. |
+| **Reports** | Inspect the versioned plagiarism benchmark, open the sampled demo, build a custom leaderboard, or inspect exported JSON/ZIP artifacts. |
 
 The top banner shows the recommended path from a quick comparison through evaluation and reporting. Each workflow states what it produces, while advanced preparation options remain collapsed until needed. On wider screens, the configuration panel stays available while results grow.
 
 Collection and dataset uploads are ZIP-first. Keep source paths relative inside the archive, and use normalized dataset ZIPs for evaluation, explanation, and leaderboard tasks. Download generated artifacts if you need to retain them after the session ends.
 
-The first **Reports** subtab is a ready-made sampled leaderboard covering the dataset presets, algorithm presets, and evaluation metrics recorded at generation time. Newly registered algorithms require a custom run or regenerated snapshot. It loads from a committed JSON artifact, so viewing it does not download datasets or run models. Pair rankings initially use F1 and retrieval rankings use Mean Average Precision, both sorted from highest to lowest. Filter by task, metric, dataset, algorithm, or source, and use the table filter for any visible column. Each table has explicit sort-column and direction controls for reliable ascending or descending sorting. Dataset and source filters recompute the aggregate ranking over the selected subset. The summary shows the sampling limits, seed, backend, and generation date; use **Build Leaderboard** for full-corpus or custom settings.
+The first **Reports** subtab, **Official Benchmark**, reads the validated
+`Matheel-Plagiarism-v1` result bundle. It shows the benchmark and protocol IDs,
+frozen dataset scope and sources, full method configurations, coverage, and
+separate pair/retrieval rankings. Failed or incomplete methods remain unranked.
+Filtering a method or metric preserves the published ranks. Viewing results
+does not download source datasets or run models. A missing bundle shows a pending
+status; an invalid bundle shows an error with empty rankings.
+
+The **Demo** subtab retains the historical sampled leaderboard and its recorded
+presets, metrics, sampling limits, seed, backend, and generation date. Its dataset
+and source filters recompute the demo average over the selected subset. Official
+artifacts inspected elsewhere retain their complete benchmark coverage and ranks
+when detail filters change. Use **Build Leaderboard** for a custom experiment;
+newly registered methods need a new run before their scores can appear.
 
 ## Troubleshooting
 

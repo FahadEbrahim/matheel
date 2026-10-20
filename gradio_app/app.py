@@ -7,7 +7,6 @@ import tempfile
 import time
 import zipfile
 from pathlib import Path
-from typing import NamedTuple
 
 mpl_config_dir = os.path.join(tempfile.gettempdir(), "matheel-mpl")
 os.makedirs(mpl_config_dir, exist_ok=True)
@@ -18,9 +17,80 @@ import pandas as pd
 from gradio_huggingfacehub_search import HuggingfaceHubSearch
 
 try:
-    from gradio_app.html_utils import escape_html
+    from gradio_app.html_utils import escape_html as escape_html
 except ModuleNotFoundError:
-    from html_utils import escape_html
+    from html_utils import escape_html as escape_html
+
+try:
+    from gradio_app.control_types import (
+        CodeMetricControls, ModelRoutingControls, PreparationControls, ScoringControls,
+    )
+except ModuleNotFoundError:
+    from control_types import (
+        CodeMetricControls, ModelRoutingControls, PreparationControls, ScoringControls,
+    )
+
+try:
+    from gradio_app.official_benchmark import (
+        OFFICIAL_BENCHMARK_PATH as OFFICIAL_BENCHMARK_PATH,
+        build_official_benchmark_view,
+        load_official_benchmark_payload as load_official_benchmark_payload,
+        update_official_benchmark_gradio,
+    )
+except ModuleNotFoundError:
+    from official_benchmark import (
+        OFFICIAL_BENCHMARK_PATH as OFFICIAL_BENCHMARK_PATH,
+        build_official_benchmark_view,
+        load_official_benchmark_payload as load_official_benchmark_payload,
+        update_official_benchmark_gradio,
+    )
+
+try:
+    from gradio_app.theme import APP_CSS, APP_JS
+    from gradio_app.presentation import (
+        app_header_html,
+        empty_dataset_map_summary_html,
+        empty_dataset_validation_summary_html,
+        empty_leaderboard_inspection_summary_html,
+        empty_pair_explanation_summary_html,
+        empty_pair_summary_html,
+        empty_ready_leaderboard_summary_html,
+        empty_summary_html,
+        empty_threshold_tuning_summary_html,
+        format_elapsed_seconds,
+        model_status_html,
+        profile_status_html,
+        results_summary_html,
+        score_band_label,
+        score_card_html,
+        score_interpretation as score_interpretation,
+        status_panel_html,
+        summary_panel_html,
+        workflow_intro_html,
+    )
+except ModuleNotFoundError:
+    from theme import APP_CSS, APP_JS
+    from presentation import (
+        app_header_html,
+        empty_dataset_map_summary_html,
+        empty_dataset_validation_summary_html,
+        empty_leaderboard_inspection_summary_html,
+        empty_pair_explanation_summary_html,
+        empty_pair_summary_html,
+        empty_ready_leaderboard_summary_html,
+        empty_summary_html,
+        empty_threshold_tuning_summary_html,
+        format_elapsed_seconds,
+        model_status_html,
+        profile_status_html,
+        results_summary_html,
+        score_band_label,
+        score_card_html,
+        score_interpretation as score_interpretation,
+        status_panel_html,
+        summary_panel_html,
+        workflow_intro_html,
+    )
 
 from matheel.chunking import available_chunk_aggregations, available_chunking_methods
 from matheel.calibration import write_threshold_tuning_report_artifacts
@@ -30,6 +100,8 @@ from matheel.dataset_validation import write_dataset_validation_report
 from matheel.datasets import (
     available_dataset_presets,
     get_dataset_preset,
+    dataset_preset_task_type,
+    dataset_task_type,
     load_pair_dataset,
     load_retrieval_dataset,
 )
@@ -55,6 +127,7 @@ from matheel.preprocessing import available_preprocess_modes
 from matheel.reports import benchmark_report_html
 from matheel.reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
 from matheel.resampling import kfold_splits
+from matheel.scoring_config import ScoringConfig, format_numeric_values
 from matheel._run_metadata import elapsed_seconds_between, perf_counter
 from matheel.similarity import (
     DEFAULT_MODEL_NAME,
@@ -204,6 +277,7 @@ READY_LEADERBOARD_TASK_CHOICES = tuple(READY_LEADERBOARD_DEFAULT_METRICS)
 READY_LEADERBOARD_ALL_DATASETS = "All datasets"
 READY_LEADERBOARD_ALL_ALGORITHMS = "All algorithms"
 READY_LEADERBOARD_ALL_SOURCES = "All sources"
+READY_LEADERBOARD_ALL_CATEGORIES = "All categories"
 READY_LEADERBOARD_AGGREGATE_SORT_COLUMNS = (
     "mean_score",
     "median_score",
@@ -280,472 +354,6 @@ DEFAULT_UI_FEATURE_WEIGHTS = {
     "gst": 0.1,
     "code_metric": 0.2,
 }
-APP_CSS = """
-.gradio-container {
-    width: 100%;
-    min-width: 0;
-    max-width: 1480px;
-    margin: 0 auto;
-    padding: 0 18px 48px;
-    box-sizing: border-box;
-    overflow-x: clip;
-}
-
-.matheel-hero {
-    position: relative;
-    overflow: hidden;
-    margin: 6px 0 18px;
-    padding: clamp(24px, 4vw, 42px);
-    border: 1px solid rgba(148, 210, 196, 0.24);
-    border-radius: 22px;
-    background:
-        radial-gradient(circle at 92% 10%, rgba(45, 212, 191, 0.22), transparent 34%),
-        linear-gradient(135deg, #0f172a 0%, #123a42 58%, #0f4c4b 100%);
-    color: #f8fafc;
-    box-shadow: 0 22px 54px rgba(15, 23, 42, 0.18);
-}
-
-.matheel-hero-topline,
-.matheel-workflow-kicker {
-    margin: 0 0 10px;
-    color: #99f6e4;
-    font-size: 0.76rem;
-    font-weight: 750;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-}
-
-.matheel-hero h1 {
-    margin: 0;
-    color: #ffffff;
-    font-size: clamp(2rem, 5vw, 3.75rem);
-    line-height: 1;
-    letter-spacing: -0.045em;
-}
-
-.matheel-hero-copy {
-    max-width: 760px;
-    margin: 14px 0 22px;
-    color: #dbeafe;
-    font-size: clamp(1rem, 2vw, 1.16rem);
-    line-height: 1.65;
-}
-
-.matheel-journey {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-}
-
-.matheel-journey-step {
-    min-width: 0;
-    padding: 12px 14px;
-    border: 1px solid rgba(226, 232, 240, 0.14);
-    border-radius: 14px;
-    background: rgba(15, 23, 42, 0.28);
-    color: #e2e8f0;
-    line-height: 1.35;
-}
-
-.matheel-journey-step span {
-    display: block;
-    margin-bottom: 4px;
-    color: #5eead4;
-    font-size: 0.7rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-#matheel-workflows {
-    gap: 14px;
-    min-width: 0;
-}
-
-#matheel-workflows > .tab-wrapper {
-    position: sticky;
-    top: 8px;
-    z-index: 20;
-}
-
-#matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] {
-    max-width: 100%;
-    padding: 6px;
-    border: 1px solid var(--border-color-primary);
-    border-radius: 14px;
-    background: color-mix(in srgb, var(--background-fill-primary) 92%, transparent);
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.1);
-    backdrop-filter: blur(14px);
-}
-
-#matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] button {
-    min-height: 42px;
-    border-radius: 10px;
-    font-weight: 700;
-}
-
-.matheel-workflow-intro {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(220px, 0.42fr);
-    gap: 18px;
-    align-items: center;
-    margin: 4px 0 16px;
-    padding: 18px 20px;
-    border: 1px solid var(--border-color-primary);
-    border-radius: 16px;
-    background: linear-gradient(135deg, var(--block-background-fill), var(--background-fill-secondary));
-}
-
-.matheel-workflow-intro h2 {
-    margin: 0 0 6px;
-    font-size: clamp(1.2rem, 2.5vw, 1.55rem);
-    letter-spacing: -0.02em;
-}
-
-.matheel-workflow-intro p {
-    margin: 0;
-    color: var(--body-text-color-subdued);
-    line-height: 1.55;
-}
-
-.matheel-workflow-kicker {
-    color: var(--color-accent, #0f766e);
-}
-
-.matheel-workflow-outcome {
-    padding: 12px 14px;
-    border-left: 3px solid var(--color-accent, #0f766e);
-    border-radius: 10px;
-    background: var(--background-fill-primary);
-    color: var(--body-text-color);
-    font-size: 0.9rem;
-    line-height: 1.5;
-}
-
-.matheel-workflow-outcome strong {
-    display: block;
-    margin-bottom: 2px;
-}
-
-.matheel-workflow-grid {
-    align-items: flex-start;
-    gap: 18px;
-}
-
-#dataset-setup-column {
-    order: 1;
-}
-
-#dataset-results-column {
-    order: 2;
-}
-
-.matheel-results-panel,
-.matheel-control-panel {
-    min-width: 0;
-    max-width: 100%;
-}
-
-.matheel-control-panel {
-    padding: 14px;
-    border: 1px solid var(--border-color-primary);
-    border-radius: 16px;
-    background: var(--block-background-fill);
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
-}
-
-.matheel-control-panel > .form,
-.matheel-control-panel > .block {
-    margin-bottom: 10px;
-}
-
-.matheel-control-panel .wrap {
-    border-radius: 12px;
-}
-
-.matheel-subtabs > .tab-wrapper > .tab-container {
-    margin-bottom: 14px;
-    padding: 4px;
-    border-radius: 12px;
-    background: var(--background-fill-secondary);
-}
-
-.matheel-summary,
-.matheel-status {
-    border: 1px solid #d6d9df;
-    border-left: 4px solid #2a7f62;
-    border-radius: 8px;
-    background: #fbfbf8;
-    padding: 10px 12px;
-    margin: 0 0 12px;
-}
-
-.matheel-status {
-    background: #f6faf7;
-}
-
-.matheel-empty {
-    border-left-color: #8a6f24;
-    background: #fffaf0;
-}
-
-.matheel-error {
-    border-left-color: #b42318;
-    background: #fff5f5;
-}
-
-.matheel-summary-title {
-    display: block;
-    margin-bottom: 8px;
-    color: #1f2328;
-}
-
-.matheel-summary-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 8px 12px;
-}
-
-.matheel-summary-item {
-    min-width: 0;
-}
-
-.matheel-summary-label {
-    display: block;
-    color: #5f6773;
-    font-size: 0.78rem;
-    line-height: 1.2;
-}
-
-.matheel-summary-value {
-    display: block;
-    color: #1f2328;
-    font-weight: 600;
-    overflow-wrap: anywhere;
-}
-
-.matheel-table {
-    font-size: 0.92rem;
-}
-
-button.primary {
-    box-shadow: 0 8px 20px rgba(13, 148, 136, 0.18);
-}
-
-@media (min-width: 980px) {
-    .matheel-control-panel {
-        position: sticky;
-        top: 76px;
-        max-height: calc(100vh - 92px);
-        overflow-y: auto;
-        overscroll-behavior: contain;
-    }
-}
-
-@media (max-width: 860px) {
-    .gradio-container {
-        padding: 0 8px 32px;
-    }
-
-    .matheel-journey {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .matheel-workflow-intro {
-        grid-template-columns: 1fr;
-    }
-
-    #matheel-workflows > .tab-wrapper {
-        position: static;
-        height: auto !important;
-        align-items: stretch !important;
-    }
-
-    #matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] {
-        position: static !important;
-        display: grid !important;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 4px;
-        height: auto !important;
-        overflow: visible !important;
-    }
-
-    #matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] button {
-        width: 100% !important;
-        min-width: 0;
-        justify-content: center;
-    }
-
-    .matheel-workflow-grid {
-        flex-direction: column;
-        flex-wrap: nowrap;
-    }
-
-    .matheel-workflow-grid > .column {
-        width: 100%;
-        min-width: 0;
-        flex: 1 1 auto;
-    }
-}
-
-@media (max-width: 520px) {
-    .matheel-hero {
-        padding: 22px 18px;
-        border-radius: 16px;
-    }
-
-    .matheel-journey {
-        grid-template-columns: 1fr;
-    }
-
-    #matheel-workflows > .tab-wrapper > .tab-container[role="tablist"] {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-}
-"""
-
-APP_JS = """
-() => {
-    let animationFrame = null;
-
-    const syncOverflowMenus = () => {
-        document.querySelectorAll(".overflow-menu").forEach((overflowMenu) => {
-            const trigger = overflowMenu.querySelector(":scope > button");
-            const adjacentDropdown = trigger?.nextElementSibling;
-            const dropdown =
-                overflowMenu.querySelector(":scope > .overflow-dropdown") ||
-                (adjacentDropdown?.classList.contains("overflow-dropdown")
-                    ? adjacentDropdown
-                    : overflowMenu.parentElement?.querySelector(".overflow-dropdown") ||
-                      overflowMenu.closest(".tab-wrapper")?.querySelector(".overflow-dropdown"));
-            if (!trigger) {
-                return;
-            }
-
-            trigger.setAttribute("aria-label", "More workflow tabs");
-            trigger.setAttribute("aria-haspopup", "menu");
-            trigger.setAttribute(
-                "aria-expanded",
-                String(Boolean(dropdown && !dropdown.classList.contains("hide"))),
-            );
-
-            if (dropdown) {
-                dropdown.setAttribute("role", "menu");
-                dropdown.querySelectorAll("button").forEach((item) => {
-                    item.setAttribute("role", "menuitem");
-                });
-            }
-        });
-    };
-
-    const scheduleSync = () => {
-        if (animationFrame !== null) {
-            window.cancelAnimationFrame(animationFrame);
-        }
-        animationFrame = window.requestAnimationFrame(syncOverflowMenus);
-    };
-
-    syncOverflowMenus();
-    const observer = new MutationObserver(scheduleSync);
-    observer.observe(document.body, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ["class", "hidden", "aria-hidden"],
-    });
-    window.addEventListener("resize", scheduleSync);
-}
-"""
-
-
-def app_header_html():
-    return (
-        '<section class="matheel-hero">'
-        '<p class="matheel-hero-topline">Source-code similarity workspace</p>'
-        "<h1>Matheel</h1>"
-        '<p class="matheel-hero-copy">Move from a quick code comparison to reproducible '
-        "dataset evaluation, explanations, and shareable reports without changing tools.</p>"
-        '<div class="matheel-journey" aria-label="Recommended workflow">'
-        '<div class="matheel-journey-step"><span>01 · Compare</span>Start with two snippets</div>'
-        '<div class="matheel-journey-step"><span>02 · Scale</span>Rank a collection or suite</div>'
-        '<div class="matheel-journey-step"><span>03 · Evaluate</span>Validate on known datasets</div>'
-        '<div class="matheel-journey-step"><span>04 · Explain</span>Export evidence and reports</div>'
-        "</div></section>"
-    )
-
-
-def workflow_intro_html(kicker, title, description, outcome):
-    return (
-        '<section class="matheel-workflow-intro">'
-        '<div><p class="matheel-workflow-kicker">'
-        f"{escape_html(kicker)}</p><h2>{escape_html(title)}</h2>"
-        f"<p>{escape_html(description)}</p></div>"
-        '<div class="matheel-workflow-outcome"><strong>What you get</strong>'
-        f"{escape_html(outcome)}</div></section>"
-    )
-
-
-def summary_panel_html(title, items, variant="summary"):
-    escaped_title = escape_html(title)
-    classes = ["matheel-summary"]
-    if variant and variant != "summary":
-        classes.append(f"matheel-{variant}")
-    rendered_items = []
-    for label, value in items:
-        rendered_items.append(
-            '<span class="matheel-summary-item">'
-            f'<span class="matheel-summary-label">{escape_html(label)}</span>'
-            f'<span class="matheel-summary-value">{escape_html(value)}</span>'
-            "</span>"
-        )
-    return (
-        f'<div class="{" ".join(classes)}">'
-        f'<strong class="matheel-summary-title">{escaped_title}</strong>'
-        f'<div class="matheel-summary-grid">{"".join(rendered_items)}</div>'
-        "</div>"
-    )
-
-
-def status_panel_html(label, message, variant="status"):
-    classes = ["matheel-status"]
-    if variant and variant != "status":
-        classes.append(f"matheel-{variant}")
-    return (
-        f'<div class="{" ".join(classes)}">'
-        f"<strong>{escape_html(label)}:</strong> {escape_html(message)}"
-        "</div>"
-    )
-
-
-def format_elapsed_seconds(value):
-    return f"{float(value):.3f}s"
-
-
-def score_interpretation(score, threshold=None):
-    numeric_score = float(score)
-    if numeric_score >= 0.85:
-        label = "Very High"
-        guidance = "Review this pair first."
-    elif numeric_score >= 0.65:
-        label = "High"
-        guidance = "Likely worth manual review."
-    elif numeric_score >= 0.35:
-        label = "Moderate"
-        guidance = "Use supporting evidence before deciding."
-    else:
-        label = "Low"
-        guidance = "Usually lower priority."
-
-    if threshold is not None:
-        decision = "Meets threshold" if numeric_score >= float(threshold) else "Below threshold"
-        guidance = f"{decision}. {guidance}"
-    return label, guidance
-
-
-def score_band_label(score, threshold=None):
-    label, guidance = score_interpretation(score, threshold=threshold)
-    return f"{label}: {guidance}"
 
 
 def build_feature_weights(
@@ -1042,33 +650,6 @@ def sync_codebertscore_model_settings_gradio(model_name, codebertscore_max_lengt
     return gr.update(minimum=0, maximum=detected, value=selected)
 
 
-def profile_status_html(message):
-    return status_panel_html("Status", message)
-
-
-def model_status_html(settings=None, error_message=None):
-    if error_message:
-        return status_panel_html("Model", error_message, variant="error")
-
-    if not settings:
-        return ""
-
-    backend = settings.get("resolved_vector_backend", "auto")
-    detected = int(settings.get("detected_max_token_length") or 0)
-    configured = settings.get("configured_max_token_length")
-    active = int(configured or detected or 0)
-    device = settings.get("runtime_device", "auto")
-    return summary_panel_html(
-        "Model Settings",
-        [
-            ("Backend", backend),
-            ("Detected Tokens", str(detected)),
-            ("Active Tokens", str(active)),
-            ("Device", device),
-        ],
-    )
-
-
 def update_feature_sections(selected_features):
     selected = set(selected_features or [])
     return (
@@ -1262,122 +843,63 @@ def normalize_suite_rows_frame(rows):
     return frame[SUITE_COLUMNS]
 
 
-def suite_rows_to_configs(rows):
-    frame = normalize_suite_rows_frame(rows)
-    if frame.empty:
-        return []
+def _validated_scoring_options(values, **overrides):
+    try:
+        options = ScoringConfig.from_mapping(values, **overrides).as_options()
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise gr.Error(str(exc)) from exc
+    if options["code_metric"] == "codebertscore":
+        model, length, _ = resolve_codebertscore_model_length(
+            options["codebertscore_model"], options["codebertscore_max_length"]
+        )
+        options.update(codebertscore_model=model, codebertscore_max_length=length)
+    return options
 
-    frame = frame.fillna("")
+
+def _scoring_options_from_controls(values):
+    """Translate the legacy public control arguments at one UI boundary."""
+    weights = selected_feature_weights(
+        *(values[name] for name in (
+            "selected_features", "semantic_weight", "levenshtein_weight",
+            "jaro_winkler_weight", "winnowing_weight", "gst_weight", "code_metric",
+            "code_metric_weight", "lexical_weights",
+        ))
+    )
+    preparation = set(values.get("selected_preparation") or [])
+    return _validated_scoring_options(
+        values,
+        feature_weights=weights,
+        preprocess_mode=values["preprocess_mode"] if "Preprocessing" in preparation else "none",
+        chunking_method=values["chunking_method"] if "Chunking" in preparation else "none",
+    )
+
+
+def suite_rows_to_configs(rows):
+    frame = normalize_suite_rows_frame(rows).fillna("")
     configs = []
     for index, row in frame.iterrows():
-        run_name = str(row.get("run_name", "")).strip() or f"run_{index + 1}"
-        code_metric = str(row.get("code_metric", "none") or "none").strip() or "none"
-        raw_feature_weights = {
-            "semantic": float(row.get("semantic_weight") or 0),
-            "levenshtein": float(row.get("levenshtein_weight") or 0),
-            "jaro_winkler": float(row.get("jaro_winkler_weight") or 0),
-            "winnowing": float(row.get("winnowing_weight") or 0),
-            "gst": float(row.get("gst_weight") or 0),
+        values = row.to_dict()
+        weights = {
+            name: float(values.get(f"{name}_weight") or 0)
+            for name in ("semantic", "levenshtein", "jaro_winkler", "winnowing", "gst")
         }
-        raw_feature_weights.update(parse_additional_lexical_weights(row.get("lexical_weights")))
-        code_metric_weight = float(row.get("code_metric_weight") or 0)
-        if code_metric != "none":
-            raw_feature_weights["code_metric"] = code_metric_weight
-        feature_weights = normalize_feature_weights_map(raw_feature_weights)
-
-        effective_levenshtein_weights = "1,1,1"
-        if feature_weights.get("levenshtein", 0.0) > 0:
-            effective_levenshtein_weights, _ = validate_levenshtein_weights_text(
-                row.get("levenshtein_weights") or "1,1,1"
-            )
-        effective_winnowing_kgram = 5
-        effective_winnowing_window = 4
-        if feature_weights.get("winnowing", 0.0) > 0:
-            effective_winnowing_kgram = validate_positive_int_value(
-                row.get("winnowing_kgram") or 5,
-                "Winnowing k-gram size",
-            )
-            effective_winnowing_window = validate_positive_int_value(
-                row.get("winnowing_window") or 4,
-                "Winnowing window size",
-            )
-        effective_gst_min_match_length = 5
-        if feature_weights.get("gst", 0.0) > 0:
-            effective_gst_min_match_length = validate_positive_int_value(
-                row.get("gst_min_match_length") or 5,
-                "GST minimum match length",
-            )
-
-        effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
-        if code_metric.startswith("codebleu") and feature_weights.get("code_metric", 0.0) > 0:
-            effective_codebleu_component_weights = validate_codebleu_component_weights_text(
-                row.get("codebleu_component_weights") or "0.25,0.25,0.25,0.25"
-            )
-        ruby_mode = str(row.get("ruby_mode") or DEFAULT_RUBY_MODE).strip() or DEFAULT_RUBY_MODE
-        ruby_graph_timeout_seconds = float(
-            resolve_numeric_value(row.get("ruby_graph_timeout_seconds"), DEFAULT_RUBY_GRAPH_TIMEOUT)
+        weights.update(parse_additional_lexical_weights(values.get("lexical_weights")))
+        if str(values.get("code_metric") or "none") != "none":
+            weights["code_metric"] = float(values.get("code_metric_weight") or 0)
+        # Older saved tables may predate optional controls. Empty cells use the
+        # configuration defaults; explicit zero remains meaningful.
+        options = _validated_scoring_options(
+            {key: value for key, value in values.items() if value != ""},
+            feature_weights=weights,
         )
-        tsed_costs = str(row.get("tsed_costs") or DEFAULT_TSED_COSTS).strip() or DEFAULT_TSED_COSTS
-        codebertscore_model = (
-            str(row.get("codebertscore_model") or DEFAULT_CODEBERTSCORE_MODEL).strip()
-            or DEFAULT_CODEBERTSCORE_MODEL
+        options.update(
+            threshold=max(0.0, float(resolve_numeric_value(values.get("threshold"), 0.35))),
+            number_results=validate_positive_int_value(values.get("number_results") or 50, "Number of results"),
         )
-        codebertscore_max_length = int(
-            float(row.get("codebertscore_max_length") or DEFAULT_CODEBERTSCORE_MAX_LENGTH)
-        )
-        metric_kwargs = resolve_metric_kwargs(
-            code_metric,
-            ruby_mode,
-            ruby_graph_timeout_seconds,
-            tsed_costs,
-            codebertscore_model,
-            codebertscore_max_length,
-        )
-
-        options = {
-            "model_name": str(row.get("model_name") or DEFAULT_MODEL).strip() or DEFAULT_MODEL,
-            "vector_backend": str(row.get("vector_backend") or "auto").strip() or "auto",
-            "similarity_function": str(row.get("similarity_function") or "cosine").strip()
-            or "cosine",
-            "pooling_method": str(row.get("pooling_method") or "mean").strip() or "mean",
-            "max_token_length": max(8, int(float(row.get("max_token_length") or 256))),
-            "device": str(row.get("runtime_device") or "auto").strip() or "auto",
-            "preprocess_mode": str(row.get("preprocess_mode") or "none").strip() or "none",
-            "chunking_method": str(row.get("chunking_method") or "none").strip() or "none",
-            "chunk_size": max(10, int(float(row.get("chunk_size") or 120))),
-            "chunk_overlap": max(0, int(float(row.get("chunk_overlap") or 0))),
-            "max_chunks": max(0, int(float(row.get("max_chunks") or 0))),
-            "chunk_aggregation": str(row.get("chunk_aggregation") or "mean").strip() or "mean",
-            "chunk_language": str(row.get("chunk_language") or "text").strip() or "text",
-            "chunker_options": str(row.get("chunker_options") or "").strip(),
-            "code_metric": code_metric,
-            "code_metric_weight": feature_weights.get("code_metric", 0.0),
-            "code_language": str(row.get("code_language") or "python").strip() or "python",
-            "codebleu_component_weights": effective_codebleu_component_weights,
-            "crystalbleu_max_order": max(1, int(float(row.get("crystalbleu_max_order") or 4))),
-            "crystalbleu_trivial_ngram_count": max(
-                0,
-                int(float(resolve_numeric_value(row.get("crystalbleu_trivial_ngram_count"), 50))),
-            ),
-            "ruby_mode": ruby_mode,
-            "ruby_graph_timeout_seconds": ruby_graph_timeout_seconds,
-            "codebertscore_model": codebertscore_model,
-            "codebertscore_max_length": codebertscore_max_length,
-            "levenshtein_weights": effective_levenshtein_weights,
-            "jaro_winkler_prefix_weight": max(
-                0.0,
-                min(0.25, float(resolve_numeric_value(row.get("jaro_winkler_prefix_weight"), 0.1))),
-            ),
-            "winnowing_kgram": effective_winnowing_kgram,
-            "winnowing_window": effective_winnowing_window,
-            "gst_min_match_length": effective_gst_min_match_length,
-            "lexical_tokenizer": str(row.get("lexical_tokenizer") or "raw").strip() or "raw",
-            "threshold": max(0.0, float(resolve_numeric_value(row.get("threshold"), 0.35))),
-            "number_results": max(1, int(float(row.get("number_results") or 50))),
-            "feature_weights": feature_weights,
-        }
-        options.update(metric_kwargs)
-        configs.append({"run_name": run_name, "options": options})
+        configs.append({
+            "run_name": str(values.get("run_name") or "").strip() or f"run_{index + 1}",
+            "options": options,
+        })
     return configs
 
 
@@ -1507,137 +1029,34 @@ def build_suite_run_row_data(
     number_results,
     lexical_weights=None,
 ):
-    selected = set(selected_features or [])
-    selected_steps = set(selected_preparation or [])
+    options = _scoring_options_from_controls(locals())
     requested_run_name = str(run_name or "").strip() or default_suite_run_name(
-        rows,
-        selected_features,
-        selected_preparation,
-        model_name,
-        vector_backend,
-        similarity_function,
-        pooling_method,
-        code_metric,
-        preprocess_mode,
-        chunking_method,
+        rows, selected_features, selected_preparation, model_name, vector_backend,
+        similarity_function, pooling_method, code_metric, preprocess_mode, chunking_method,
     )
-    normalized_run_name = ensure_unique_suite_run_name(requested_run_name, rows)
-    normalized_code_metric = code_metric if "Code Metric" in selected else "none"
-    normalized_levenshtein_weights = "1,1,1"
-    if "Levenshtein" in selected:
-        _, normalized_levenshtein_weights = validate_levenshtein_weights_text(levenshtein_weights)
-    normalized_winnowing_kgram = 5
-    normalized_winnowing_window = 4
-    if "Winnowing" in selected:
-        normalized_winnowing_kgram = validate_positive_int_value(
-            winnowing_kgram,
-            "Winnowing k-gram size",
-        )
-        normalized_winnowing_window = validate_positive_int_value(
-            winnowing_window,
-            "Winnowing window size",
-        )
-    normalized_gst_min_match_length = 5
-    if "GST" in selected:
-        normalized_gst_min_match_length = validate_positive_int_value(
-            gst_min_match_length,
-            "GST minimum match length",
-        )
-
-    normalized_codebleu_weights = "0.25,0.25,0.25,0.25"
-    if normalized_code_metric.startswith("codebleu"):
-        normalized_codebleu_weights = validate_codebleu_component_weights_text(
-            codebleu_component_weights
-        )
-    normalized_ruby_mode = str(ruby_mode or DEFAULT_RUBY_MODE).strip().lower() or DEFAULT_RUBY_MODE
-    normalized_ruby_timeout = float(
-        resolve_numeric_value(ruby_graph_timeout_seconds, DEFAULT_RUBY_GRAPH_TIMEOUT)
-    )
-    normalized_tsed_costs_raw = str(tsed_costs or DEFAULT_TSED_COSTS).strip() or DEFAULT_TSED_COSTS
-    if normalized_code_metric == "tsed":
-        _, normalized_tsed_costs = validate_tsed_costs_text(normalized_tsed_costs_raw)
-    else:
-        normalized_tsed_costs = normalized_tsed_costs_raw
-    normalized_codebertscore_model = (
-        str(codebertscore_model or DEFAULT_CODEBERTSCORE_MODEL).strip()
-        or DEFAULT_CODEBERTSCORE_MODEL
-    )
-    normalized_codebertscore_max_length = int(
-        float(codebertscore_max_length or DEFAULT_CODEBERTSCORE_MAX_LENGTH)
-    )
-
-    resolve_metric_kwargs(
-        normalized_code_metric,
-        normalized_ruby_mode,
-        normalized_ruby_timeout,
-        normalized_tsed_costs,
-        normalized_codebertscore_model,
-        normalized_codebertscore_max_length,
-    )
-
-    feature_weights = selected_feature_weights(
-        selected_features,
-        semantic_weight,
-        levenshtein_weight,
-        jaro_winkler_weight,
-        winnowing_weight,
-        gst_weight,
-        normalized_code_metric,
-        code_metric_weight,
-        lexical_weights,
-    )
-
-    row = {
-        "run_name": normalized_run_name,
-        "model_name": str(model_name or DEFAULT_MODEL).strip() or DEFAULT_MODEL,
-        "vector_backend": str(vector_backend or "auto").strip() or "auto",
-        "similarity_function": str(similarity_function or "cosine").strip() or "cosine",
-        "pooling_method": str(pooling_method or "mean").strip() or "mean",
-        "max_token_length": max(8, int(float(max_token_length or 256))),
-        "runtime_device": str(runtime_device or "auto").strip() or "auto",
-        "preprocess_mode": preprocess_mode if "Preprocessing" in selected_steps else "none",
-        "chunking_method": chunking_method if "Chunking" in selected_steps else "none",
-        "chunk_size": max(10, int(float(chunk_size or 120))),
-        "chunk_overlap": max(0, int(float(chunk_overlap or 0))),
-        "max_chunks": max(0, int(float(max_chunks or 0))),
-        "chunk_aggregation": str(chunk_aggregation or "mean").strip() or "mean",
-        "chunk_language": str(chunk_language or "text").strip() or "text",
-        "chunker_options": str(chunker_options or "").strip(),
-        "code_metric": normalized_code_metric,
-        "code_metric_weight": feature_weights.get("code_metric", 0.0),
-        "code_language": str(code_language or "python").strip() or "python",
-        "codebleu_component_weights": normalized_codebleu_weights,
-        "crystalbleu_max_order": max(1, int(float(crystalbleu_max_order or 4))),
-        "crystalbleu_trivial_ngram_count": max(
-            0,
-            int(float(resolve_numeric_value(crystalbleu_trivial_ngram_count, 50))),
+    weights = options["feature_weights"]
+    row = {column: options.get(column, "") for column in SUITE_COLUMNS}
+    row.update(
+        run_name=ensure_unique_suite_run_name(requested_run_name, rows),
+        runtime_device=options["device"],
+        threshold=max(0.0, float(resolve_numeric_value(threshold, 0.35))),
+        number_results=validate_positive_int_value(number_results or 50, "Number of results"),
+        levenshtein_weights=format_numeric_values(options["levenshtein_weights"]),
+        tsed_costs=format_numeric_values(
+            options.get(name, 1.0)
+            for name in ("tsed_delete_cost", "tsed_insert_cost", "tsed_rename_cost")
         ),
-        "ruby_mode": normalized_ruby_mode,
-        "ruby_graph_timeout_seconds": normalized_ruby_timeout,
-        "tsed_costs": normalized_tsed_costs,
-        "codebertscore_model": normalized_codebertscore_model,
-        "codebertscore_max_length": max(0, normalized_codebertscore_max_length),
-        "semantic_weight": feature_weights.get("semantic", 0.0),
-        "lexical_weights": json.dumps({
-            name: weight for name, weight in feature_weights.items()
-            if name in ADDITIONAL_LEXICAL_METRICS
+        ruby_mode=options.get("ruby_mode", DEFAULT_RUBY_MODE),
+        ruby_graph_timeout_seconds=options.get("ruby_graph_timeout_seconds", DEFAULT_RUBY_GRAPH_TIMEOUT),
+        codebertscore_model=options.get("codebertscore_model", DEFAULT_CODEBERTSCORE_MODEL),
+        codebertscore_max_length=options.get("codebertscore_max_length", DEFAULT_CODEBERTSCORE_MAX_LENGTH),
+        lexical_weights=json.dumps({
+            name: weight for name, weight in weights.items() if name in ADDITIONAL_LEXICAL_METRICS
         }, sort_keys=True),
-        "levenshtein_weight": feature_weights.get("levenshtein", 0.0),
-        "levenshtein_weights": normalized_levenshtein_weights,
-        "jaro_winkler_weight": feature_weights.get("jaro_winkler", 0.0),
-        "jaro_winkler_prefix_weight": max(
-            0.0,
-            min(0.25, float(resolve_numeric_value(jaro_winkler_prefix_weight, 0.1))),
-        ),
-        "winnowing_weight": feature_weights.get("winnowing", 0.0),
-        "winnowing_kgram": normalized_winnowing_kgram,
-        "winnowing_window": normalized_winnowing_window,
-        "gst_weight": feature_weights.get("gst", 0.0),
-        "gst_min_match_length": normalized_gst_min_match_length,
-        "lexical_tokenizer": str(lexical_tokenizer or "raw").strip() or "raw",
-        "threshold": max(0.0, float(resolve_numeric_value(threshold, 0.35))),
-        "number_results": max(1, int(float(number_results or 50))),
-    }
+    )
+    row.update({f"{name}_weight": weights.get(name, 0.0) for name in (
+        "semantic", "levenshtein", "jaro_winkler", "winnowing", "gst", "code_metric",
+    )})
     return row
 
 
@@ -2070,54 +1489,6 @@ def _dataset_kind_from_task_label(task_label):
     return "retrieval" if str(task_label or "").startswith("Retrieval") else "pair"
 
 
-def empty_dataset_map_summary_html():
-    return summary_panel_html(
-        "Dataset Map",
-        [("Status", "No map generated"), ("Artifacts", "None")],
-        variant="empty",
-    )
-
-
-def empty_pair_explanation_summary_html():
-    return summary_panel_html(
-        "Pair Explanation",
-        [("Status", "No explanation generated"), ("Artifacts", "None")],
-        variant="empty",
-    )
-
-
-def empty_leaderboard_inspection_summary_html():
-    return summary_panel_html(
-        "Leaderboard Inspection",
-        [("Status", "No artifact loaded"), ("Artifacts", "None")],
-        variant="empty",
-    )
-
-
-def empty_ready_leaderboard_summary_html():
-    return summary_panel_html(
-        "Ready Leaderboard",
-        [("Status", "No leaderboard run"), ("Artifacts", "None")],
-        variant="empty",
-    )
-
-
-def empty_dataset_validation_summary_html():
-    return summary_panel_html(
-        "Dataset Validation",
-        [("Status", "No dataset checked"), ("Artifacts", "None")],
-        variant="empty",
-    )
-
-
-def empty_threshold_tuning_summary_html():
-    return summary_panel_html(
-        "Threshold Tuning",
-        [("Status", "No pair scores available"), ("Artifacts", "None")],
-        variant="empty",
-    )
-
-
 def ready_leaderboard_registered_datasets_frame():
     rows = []
     for preset_name in available_dataset_presets():
@@ -2136,6 +1507,7 @@ def ready_leaderboard_registered_datasets_frame():
         rows.append(
             {
                 "Preset": preset_name,
+                "Category": dataset_preset_task_type(preset_name).replace("_", " ").title(),
                 "Tasks": ", ".join(tasks),
                 "Source": preset.get("source", ""),
                 "Identifier": preset.get("identifier", ""),
@@ -2147,6 +1519,7 @@ def ready_leaderboard_registered_datasets_frame():
         rows,
         columns=[
             "Preset",
+            "Category",
             "Tasks",
             "Source",
             "Identifier",
@@ -2379,15 +1752,30 @@ def _leaderboard_report_from_payload(payload):
     metadata = dict(payload.get("metadata") or {})
     manifest = payload.get("manifest") if isinstance(payload.get("manifest"), dict) else {}
     cards = payload.get("cards") if isinstance(payload.get("cards"), dict) else {}
+    dataset_cards = list(cards.get("datasets") or [])
+    categories = {
+        (card.get("name"), card.get("task_family")): dataset_task_type(card)
+        for card in dataset_cards
+    }
+    per_dataset = []
+    for original in payload.get("per_dataset") or []:
+        row = dict(original)
+        row["task_type"] = row.get("task_type") or row.get("domain") or categories.get(
+            (row.get("dataset_name"), row.get("task_family")), "plagiarism"
+        )
+        per_dataset.append(row)
+    aggregate = []
+    for original in payload.get("aggregate") or []:
+        row = dict(original)
+        row["task_type"] = row.get("task_type") or row.get("domain") or "plagiarism"
+        aggregate.append(row)
     return {
         "metadata": metadata,
         "manifest": manifest,
-        "cards": {
-            "datasets": list(cards.get("datasets") or []),
-            "algorithms": list(cards.get("algorithms") or []),
-        },
-        "per_dataset": pd.DataFrame(payload.get("per_dataset") or []),
-        "aggregate": pd.DataFrame(payload.get("aggregate") or []),
+        "benchmark": payload.get("benchmark") if isinstance(payload.get("benchmark"), dict) else {},
+        "cards": {"datasets": dataset_cards, "algorithms": list(cards.get("algorithms") or [])},
+        "per_dataset": pd.DataFrame(per_dataset),
+        "aggregate": pd.DataFrame(aggregate),
     }
 
 
@@ -2419,6 +1807,11 @@ def ready_made_leaderboard_summary_html(report):
     return summary_panel_html(
         "Ready-made Leaderboard",
         [
+            ("Result Status", "Demo — sampled data"),
+            ("Category", ", ".join(
+                value.replace("_", " ").title()
+                for value in _ready_made_unique_values(report["per_dataset"], "task_type")
+            )),
             ("Dataset Presets", str(len(dataset_presets))),
             (
                 "Task Views",
@@ -2447,6 +1840,7 @@ def ready_made_leaderboard_coverage_frame(report):
             {
                 "Dataset": card.get("name", ""),
                 "Preset": source.get("preset") or metadata.get("source_preset", ""),
+                "Category": dataset_task_type(card).replace("_", " ").title(),
                 "Task": card.get("task_family", ""),
                 "Sample": sample,
                 "Source": source.get("source", ""),
@@ -2455,7 +1849,7 @@ def ready_made_leaderboard_coverage_frame(report):
         )
     return pd.DataFrame(
         rows,
-        columns=["Dataset", "Preset", "Task", "Sample", "Source", "License"],
+        columns=["Dataset", "Preset", "Category", "Task", "Sample", "Source", "License"],
     )
 
 
@@ -2470,6 +1864,10 @@ def _ready_made_unique_values(frame, column):
     if not isinstance(frame, pd.DataFrame) or column not in frame:
         return []
     return sorted({str(value) for value in frame[column].dropna().tolist() if str(value).strip()})
+
+
+def _ready_made_category_choices(categories):
+    return [(value.replace("_", " ").title(), value) for value in categories]
 
 
 def _ready_made_filter_options_from_report(report, task_family):
@@ -2498,6 +1896,7 @@ def _ready_made_filter_options_from_report(report, task_family):
             READY_LEADERBOARD_ALL_ALGORITHMS,
             *_ready_made_unique_values(task_rows, "algorithm_name"),
         ],
+        "categories": [READY_LEADERBOARD_ALL_CATEGORIES, *_ready_made_unique_values(task_rows, "task_type")],
         "sources": [
             READY_LEADERBOARD_ALL_SOURCES,
             *_ready_made_unique_values(task_rows, "dataset_source"),
@@ -2530,6 +1929,7 @@ def ready_made_leaderboard_filter_options(
                 *READY_LEADERBOARD_ALGORITHM_CHOICES,
             ],
             "sources": [READY_LEADERBOARD_ALL_SOURCES],
+            "categories": [READY_LEADERBOARD_ALL_CATEGORIES, "plagiarism"],
         }
     return _ready_made_filter_options_from_report(report, task)
 
@@ -2545,6 +1945,7 @@ def _filter_ready_made_leaderboard_report(
     aggregate_direction=READY_LEADERBOARD_SORT_DIRECTIONS[0],
     per_dataset_sort="score",
     per_dataset_direction=READY_LEADERBOARD_SORT_DIRECTIONS[0],
+    dataset_category=READY_LEADERBOARD_ALL_CATEGORIES,
 ):
     options = _ready_made_filter_options_from_report(report, task_family)
     task = options["task"]
@@ -2556,16 +1957,39 @@ def _filter_ready_made_leaderboard_report(
     per_dataset = per_dataset[
         (per_dataset["task_family"] == task) & (per_dataset["metric"] == selected_metric)
     ]
+    if dataset_category and dataset_category != READY_LEADERBOARD_ALL_CATEGORIES:
+        per_dataset = per_dataset[per_dataset["task_type"] == dataset_category]
     if dataset_name and dataset_name != READY_LEADERBOARD_ALL_DATASETS:
         per_dataset = per_dataset[per_dataset["dataset_name"] == dataset_name]
     if dataset_source and dataset_source != READY_LEADERBOARD_ALL_SOURCES:
         per_dataset = per_dataset[per_dataset["dataset_source"] == dataset_source]
 
+    strict_coverage = bool(
+        report["metadata"].get("benchmark_protocol")
+        or report["metadata"].get("strict_coverage")
+        or ("eligible" in report["aggregate"] and "algorithm_id" in report["aggregate"])
+    )
     if per_dataset.empty:
         aggregate = report["aggregate"].iloc[0:0].copy()
+    elif strict_coverage:
+        # Official aggregate scores include eligibility and complete-coverage
+        # rules. Re-averaging filtered detail rows would promote partial/failed
+        # methods and discard their full configuration identities.
+        aggregate = report["aggregate"].copy()
+        aggregate = aggregate[
+            (aggregate["task_family"] == task) & (aggregate["metric"] == selected_metric)
+        ]
+        if dataset_category and dataset_category != READY_LEADERBOARD_ALL_CATEGORIES:
+            aggregate = aggregate[aggregate["task_type"] == dataset_category]
+        aggregate["ranking_scope"] = "Full benchmark; detail filters do not change official ranks"
     else:
+        identities = [
+            column for column in ("benchmark_id", "protocol_id") if column in per_dataset
+        ]
+        if identities:
+            per_dataset[identities] = per_dataset[identities].fillna("")
         aggregate = per_dataset.groupby(
-            ["task_family", "algorithm_name", "metric"],
+            [*identities, "task_type", "task_family", "algorithm_name", "metric"],
             as_index=False,
         ).agg(
             mean_score=("score", "mean"),
@@ -2574,10 +1998,12 @@ def _filter_ready_made_leaderboard_report(
             sample_count=("sample_count", "sum"),
         )
         aggregate["rank"] = (
-            aggregate.groupby(["task_family", "metric"])["mean_score"]
+            aggregate.groupby([*identities, "task_type", "task_family", "metric"])["mean_score"]
             .rank(method="min", ascending=False, na_option="bottom")
             .astype(int)
         )
+        if "domain" in per_dataset:
+            aggregate["domain"] = aggregate["task_type"]
 
     if algorithm_name and algorithm_name != READY_LEADERBOARD_ALL_ALGORITHMS:
         per_dataset = per_dataset[per_dataset["algorithm_name"] == algorithm_name]
@@ -2635,6 +2061,7 @@ def filter_ready_made_leaderboard(
     per_dataset_sort="score",
     per_dataset_direction=READY_LEADERBOARD_SORT_DIRECTIONS[0],
     artifact_path=READY_MADE_LEADERBOARD_PATH,
+    dataset_category=READY_LEADERBOARD_ALL_CATEGORIES,
 ):
     try:
         report = _leaderboard_report_from_payload(
@@ -2653,6 +2080,19 @@ def filter_ready_made_leaderboard(
         aggregate_direction,
         per_dataset_sort,
         per_dataset_direction,
+        dataset_category,
+    )
+
+
+def filter_ready_made_leaderboard_gradio(
+    task_family, metric, dataset_name, algorithm_name, dataset_source,
+    aggregate_sort, aggregate_direction, per_dataset_sort, per_dataset_direction,
+    dataset_category,
+):
+    return filter_ready_made_leaderboard(
+        task_family, metric, dataset_name, algorithm_name, dataset_source,
+        aggregate_sort, aggregate_direction, per_dataset_sort, per_dataset_direction,
+        dataset_category=dataset_category,
     )
 
 
@@ -2677,6 +2117,10 @@ def change_ready_made_leaderboard_task(
         gr.update(choices=options["datasets"], value=READY_LEADERBOARD_ALL_DATASETS),
         gr.update(choices=options["algorithms"], value=READY_LEADERBOARD_ALL_ALGORITHMS),
         gr.update(choices=options["sources"], value=READY_LEADERBOARD_ALL_SOURCES),
+        gr.update(
+            choices=_ready_made_category_choices(options["categories"]),
+            value=READY_LEADERBOARD_ALL_CATEGORIES,
+        ),
         aggregate,
         per_dataset,
     )
@@ -2692,6 +2136,10 @@ def reset_ready_made_leaderboard_filters():
         gr.update(choices=options["datasets"], value=READY_LEADERBOARD_ALL_DATASETS),
         gr.update(choices=options["algorithms"], value=READY_LEADERBOARD_ALL_ALGORITHMS),
         gr.update(choices=options["sources"], value=READY_LEADERBOARD_ALL_SOURCES),
+        gr.update(
+            choices=_ready_made_category_choices(options["categories"]),
+            value=READY_LEADERBOARD_ALL_CATEGORIES,
+        ),
         gr.update(value="mean_score"),
         gr.update(value=READY_LEADERBOARD_SORT_DIRECTIONS[0]),
         gr.update(value="score"),
@@ -3162,6 +2610,7 @@ def dataset_evaluation_summary_html(
     task_name = "Retrieval Dataset" if str(task_label).startswith("Retrieval") else "Pair Dataset"
     items = [
         ("Dataset", str(dataset.metadata.get("name") or dataset.root.name)),
+        ("Category", dataset_task_type(dataset).replace("_", " ").title()),
         ("Task", task_name),
         ("Metric Preset", str(preset_name or "Balanced")),
         ("Top Score", f"{float(top_score):.3f}"),
@@ -3195,6 +2644,7 @@ def dataset_evaluation_leaderboard_payload(
     task_family = "retrieval" if str(task_label).startswith("Retrieval") else "pair"
     dataset_name = str(dataset.metadata.get("name") or dataset.root.name)
     resolved_algorithm = str(algorithm_name or "Custom Dataset Evaluation")
+    category = dataset_task_type(dataset)
     dataset_source = str(dataset.metadata.get("source") or "uploaded")
     sample_count = int(len(scored))
     metric_rows = []
@@ -3208,6 +2658,7 @@ def dataset_evaluation_leaderboard_payload(
         metric_rows.append(
             {
                 "task_family": task_family,
+                "task_type": category,
                 "dataset_name": dataset_name,
                 "algorithm_name": resolved_algorithm,
                 "metric": str(metric),
@@ -3221,6 +2672,7 @@ def dataset_evaluation_leaderboard_payload(
     aggregate_rows = [
         {
             "task_family": row["task_family"],
+            "task_type": category,
             "algorithm_name": row["algorithm_name"],
             "metric": row["metric"],
             "mean_score": row["score"],
@@ -3246,7 +2698,7 @@ def dataset_evaluation_leaderboard_payload(
         "manifest": {
             "schema_version": 1,
             "name": f"{dataset_name}_dataset_evaluation",
-            "datasets": [{"name": dataset_name, "task_family": task_family}],
+            "datasets": [{"name": dataset_name, "task_family": task_family, "task_type": category}],
             "algorithms": [
                 {
                     "name": resolved_algorithm,
@@ -3260,6 +2712,7 @@ def dataset_evaluation_leaderboard_payload(
                     "name": dataset_name,
                     "card_type": "dataset",
                     "task_family": task_family,
+                    "task_type": category,
                 }
             ],
             "algorithms": [
@@ -3328,6 +2781,7 @@ def _write_leaderboard_artifacts(
         if str(task_label).startswith("Retrieval")
         else "pair_classification",
         "dataset_name": str(dataset.metadata.get("name") or dataset.root.name),
+        "task_type": dataset_task_type(dataset),
         "files": files,
         "similarity_options": similarity_options,
     }
@@ -3410,6 +2864,7 @@ def dataset_validation_summary_html(report):
         "Dataset Validation",
         [
             ("Dataset", str(report.get("dataset_name") or "dataset")),
+            ("Category", str(report.get("task_type") or "plagiarism").replace("_", " ").title()),
             ("Kind", str(report.get("dataset_kind") or "unknown").replace("_", " ")),
             ("Status", str(report.get("status") or "unknown")),
             ("Errors", str(report.get("error_count", 0))),
@@ -4017,76 +3472,6 @@ def _state_scored_records(display_frame):
     return frame.to_dict(orient="records")
 
 
-def score_card_html(
-    score,
-    vector_backend="sentence_transformers",
-    runtime_device="auto",
-    code_metric="none",
-    elapsed_seconds=None,
-    threshold=None,
-):
-    numeric_score = float(score)
-    items = [("Similarity Score", f"{numeric_score:.4f}")]
-    label, guidance = score_interpretation(numeric_score, threshold=threshold)
-    items.append(("Interpretation", label))
-    items.append(("Review Hint", guidance))
-    if elapsed_seconds is not None:
-        items.append(("Elapsed", format_elapsed_seconds(elapsed_seconds)))
-    if code_metric and code_metric != "none":
-        items.append(("Code Metric", code_metric))
-    items.append(("Backend", vector_backend))
-    items.append(("Device", runtime_device))
-    return summary_panel_html("Pairwise Result", items)
-
-
-def empty_pair_summary_html():
-    return summary_panel_html(
-        "Pairwise Result",
-        [("Status", "No comparison run"), ("Similarity Score", "None")],
-        variant="empty",
-    )
-
-
-def empty_summary_html():
-    return summary_panel_html(
-        "Collection Results",
-        [("Status", "No collection run"), ("Top Pair", "None")],
-        variant="empty",
-    )
-
-
-def results_summary_html(results, vector_backend, code_metric, chunking_method, runtime_device):
-    if results is None or results.empty:
-        return summary_panel_html(
-            "Collection Results",
-            [("Status", "No pairs met the threshold"), ("Top Pair", "None")],
-            variant="empty",
-        )
-
-    scores = results["similarity_score"].astype(float)
-    top_row = results.iloc[0]
-    elapsed_seconds = float(results.attrs.get("elapsed_seconds", 0.0))
-    feature_set = results.attrs.get("feature_set", "none")
-    high_priority = int((scores >= 0.65).sum())
-    return summary_panel_html(
-        "Collection Results",
-        [
-            ("Top Pair", f"{top_row['file_name_1']} vs {top_row['file_name_2']}"),
-            ("Top Interpretation", score_band_label(top_row["similarity_score"])),
-            ("Pairs", str(len(results))),
-            ("High Priority", str(high_priority)),
-            ("Average", f"{scores.mean():.3f}"),
-            ("Top Score", f"{scores.max():.3f}"),
-            ("Elapsed", format_elapsed_seconds(elapsed_seconds)),
-            ("Features", feature_set),
-            ("Backend", vector_backend),
-            ("Code Metric", code_metric),
-            ("Chunking", chunking_method),
-            ("Device", runtime_device),
-        ],
-    )
-
-
 def calculate_similarity_gradio(
     code1,
     code2,
@@ -4134,103 +3519,17 @@ def calculate_similarity_gradio(
     if not str(code1 or "").strip() or not str(code2 or "").strip():
         raise gr.Error("Paste both snippets before running pairwise comparison.")
 
-    selected = set(selected_features or [])
-    selected_steps = set(selected_preparation or [])
-    use_levenshtein = "Levenshtein" in selected
-    use_winnowing = "Winnowing" in selected
-    use_gst = "GST" in selected
-    use_code_metric = "Code Metric" in selected
-    effective_preprocess_mode = preprocess_mode if "Preprocessing" in selected_steps else "none"
-    effective_chunking_method = chunking_method if "Chunking" in selected_steps else "none"
-    effective_code_metric = code_metric if use_code_metric else "none"
-    effective_code_metric_weight = code_metric_weight if use_code_metric else 0.0
-    effective_levenshtein_weights = "1,1,1"
-    if use_levenshtein:
-        effective_levenshtein_weights, _ = validate_levenshtein_weights_text(levenshtein_weights)
-    effective_winnowing_kgram = 5
-    effective_winnowing_window = 4
-    if use_winnowing:
-        effective_winnowing_kgram = validate_positive_int_value(
-            winnowing_kgram,
-            "Winnowing k-gram size",
-        )
-        effective_winnowing_window = validate_positive_int_value(
-            winnowing_window,
-            "Winnowing window size",
-        )
-    effective_gst_min_match_length = 5
-    if use_gst:
-        effective_gst_min_match_length = validate_positive_int_value(
-            gst_min_match_length,
-            "GST minimum match length",
-        )
-
-    effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
-    if effective_code_metric.startswith("codebleu"):
-        effective_codebleu_component_weights = validate_codebleu_component_weights_text(
-            codebleu_component_weights
-        )
-    metric_kwargs = resolve_metric_kwargs(
-        effective_code_metric,
-        ruby_mode,
-        ruby_graph_timeout_seconds,
-        tsed_costs,
-        codebertscore_model,
-        codebertscore_max_length,
-    )
-
-    feature_weights = selected_feature_weights(
-        selected_features,
-        semantic_weight,
-        levenshtein_weight,
-        jaro_winkler_weight,
-        winnowing_weight,
-        gst_weight,
-        effective_code_metric,
-        effective_code_metric_weight,
-        lexical_weights,
-    )
+    options = _scoring_options_from_controls(locals())
     start_time = perf_counter()
     score = calculate_similarity(
-        code1,
-        code2,
-        model_name=model_name,
-        feature_weights=feature_weights,
-        preprocess_mode=effective_preprocess_mode,
-        chunking_method=effective_chunking_method,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        max_chunks=max_chunks,
-        chunk_aggregation=chunk_aggregation,
-        chunk_language=chunk_language,
-        chunker_options=chunker_options,
-        code_metric=effective_code_metric,
-        code_metric_weight=effective_code_metric_weight,
-        code_language=code_language,
-        codebleu_component_weights=effective_codebleu_component_weights,
-        crystalbleu_max_order=crystalbleu_max_order,
-        crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
-        levenshtein_weights=effective_levenshtein_weights,
-        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
-        winnowing_kgram=effective_winnowing_kgram,
-        winnowing_window=effective_winnowing_window,
-        gst_min_match_length=effective_gst_min_match_length,
-        lexical_tokenizer=lexical_tokenizer,
-        vector_backend=vector_backend,
-        similarity_function=similarity_function,
-        pooling_method=pooling_method,
-        max_token_length=max_token_length,
-        device=runtime_device,
-        progress_callback=gradio_progress_callback(progress),
-        **metric_kwargs,
+        code1, code2, **options, progress_callback=gradio_progress_callback(progress)
     )
-    elapsed_seconds = elapsed_seconds_between(start_time, perf_counter())
     return score_card_html(
         score,
-        vector_backend=vector_backend,
-        runtime_device=runtime_device,
-        code_metric=effective_code_metric,
-        elapsed_seconds=elapsed_seconds,
+        vector_backend=options["vector_backend"],
+        runtime_device=options["device"],
+        code_metric=options["code_metric"],
+        elapsed_seconds=elapsed_seconds_between(start_time, perf_counter()),
     )
 
 
@@ -4284,221 +3583,20 @@ def get_sim_list_gradio(
             columns=["file_name_1", "file_name_2", "similarity_score"]
         )
 
-    selected = set(selected_features or [])
-    selected_steps = set(selected_preparation or [])
-    use_levenshtein = "Levenshtein" in selected
-    use_winnowing = "Winnowing" in selected
-    use_gst = "GST" in selected
-    use_code_metric = "Code Metric" in selected
-    effective_preprocess_mode = preprocess_mode if "Preprocessing" in selected_steps else "none"
-    effective_chunking_method = chunking_method if "Chunking" in selected_steps else "none"
-    effective_code_metric = code_metric if use_code_metric else "none"
-    effective_code_metric_weight = code_metric_weight if use_code_metric else 0.0
-    effective_levenshtein_weights = "1,1,1"
-    if use_levenshtein:
-        effective_levenshtein_weights, _ = validate_levenshtein_weights_text(levenshtein_weights)
-    effective_winnowing_kgram = 5
-    effective_winnowing_window = 4
-    if use_winnowing:
-        effective_winnowing_kgram = validate_positive_int_value(
-            winnowing_kgram,
-            "Winnowing k-gram size",
-        )
-        effective_winnowing_window = validate_positive_int_value(
-            winnowing_window,
-            "Winnowing window size",
-        )
-    effective_gst_min_match_length = 5
-    if use_gst:
-        effective_gst_min_match_length = validate_positive_int_value(
-            gst_min_match_length,
-            "GST minimum match length",
-        )
-
-    effective_codebleu_component_weights = "0.25,0.25,0.25,0.25"
-    if effective_code_metric.startswith("codebleu"):
-        effective_codebleu_component_weights = validate_codebleu_component_weights_text(
-            codebleu_component_weights
-        )
-    metric_kwargs = resolve_metric_kwargs(
-        effective_code_metric,
-        ruby_mode,
-        ruby_graph_timeout_seconds,
-        tsed_costs,
-        codebertscore_model,
-        codebertscore_max_length,
-    )
-
-    feature_weights = selected_feature_weights(
-        selected_features,
-        semantic_weight,
-        levenshtein_weight,
-        jaro_winkler_weight,
-        winnowing_weight,
-        gst_weight,
-        effective_code_metric,
-        effective_code_metric_weight,
-        lexical_weights,
-    )
+    options = _scoring_options_from_controls(locals())
     results = get_sim_list(
-        zipped_file,
-        model_name=model_name,
-        threshold=threshold,
-        number_results=number_results,
-        feature_weights=feature_weights,
-        preprocess_mode=effective_preprocess_mode,
-        chunking_method=effective_chunking_method,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        max_chunks=max_chunks,
-        chunk_aggregation=chunk_aggregation,
-        chunk_language=chunk_language,
-        chunker_options=chunker_options,
-        code_metric=effective_code_metric,
-        code_metric_weight=effective_code_metric_weight,
-        code_language=code_language,
-        codebleu_component_weights=effective_codebleu_component_weights,
-        crystalbleu_max_order=crystalbleu_max_order,
-        crystalbleu_trivial_ngram_count=crystalbleu_trivial_ngram_count,
-        levenshtein_weights=effective_levenshtein_weights,
-        jaro_winkler_prefix_weight=jaro_winkler_prefix_weight,
-        winnowing_kgram=effective_winnowing_kgram,
-        winnowing_window=effective_winnowing_window,
-        gst_min_match_length=effective_gst_min_match_length,
-        lexical_tokenizer=lexical_tokenizer,
-        vector_backend=vector_backend,
-        similarity_function=similarity_function,
-        pooling_method=pooling_method,
-        max_token_length=max_token_length,
-        device=runtime_device,
-        progress_callback=gradio_progress_callback(progress),
-        **metric_kwargs,
+        zipped_file, threshold=threshold, number_results=number_results,
+        **options, progress_callback=gradio_progress_callback(progress),
     )
     return results_summary_html(
-        results,
-        vector_backend,
-        effective_code_metric,
-        effective_chunking_method,
-        runtime_device,
+        results, options["vector_backend"], options["code_metric"],
+        options["chunking_method"], options["device"],
     ), results
 
 
 ready_made_initial = ready_made_leaderboard_values()
 ready_made_filter_initial = ready_made_leaderboard_filter_options()
-
-
-class ModelRoutingControls(NamedTuple):
-    group: object
-    model: object
-    status: object
-    vector_backend: object
-    similarity_group: object
-    similarity_function: object
-    pooling_group: object
-    pooling_method: object
-    max_token_length: object
-    runtime_device: object
-    semantic_weight: object
-
-
-class CodeMetricControls(NamedTuple):
-    group: object
-    metric: object
-    weight: object
-    language: object
-    codebleu_group: object
-    codebleu_component_weights: object
-    crystal_group: object
-    crystalbleu_max_order: object
-    crystalbleu_trivial_ngram_count: object
-    ruby_group: object
-    ruby_mode: object
-    ruby_graph_timeout_seconds: object
-    tsed_group: object
-    tsed_costs: object
-    codebertscore_group: object
-    codebertscore_model: object
-    codebertscore_max_length: object
-
-
-class PreparationControls(NamedTuple):
-    selected: object
-    preprocess_group: object
-    preprocess_mode: object
-    chunk_group: object
-    chunking_method: object
-    chunk_size: object
-    chunk_overlap: object
-    max_chunks: object
-    chunk_aggregation: object
-    chunk_language: object
-    chunker_options: object
-
-
-class ScoringControls(NamedTuple):
-    metric_preset: object
-    features: object
-    model: ModelRoutingControls
-    levenshtein_group: object
-    levenshtein_weight: object
-    levenshtein_weights: object
-    jaro_group: object
-    jaro_winkler_weight: object
-    jaro_prefix_weight: object
-    winnowing_group: object
-    winnowing_weight: object
-    winnowing_kgram: object
-    winnowing_window: object
-    gst_group: object
-    gst_weight: object
-    gst_min_match_length: object
-    lexical_tokenizer: object
-    code: CodeMetricControls
-    preparation: PreparationControls
-    lexical_weights: object
-
-    def handler_inputs(self):
-        """Return the stable Pair/Collection/Suite scoring argument order."""
-        return [
-            self.features,
-            self.model.model,
-            self.model.vector_backend,
-            self.model.similarity_function,
-            self.model.pooling_method,
-            self.model.max_token_length,
-            self.model.runtime_device,
-            self.model.semantic_weight,
-            self.levenshtein_weight,
-            self.jaro_winkler_weight,
-            self.winnowing_weight,
-            self.gst_weight,
-            self.levenshtein_weights,
-            self.jaro_prefix_weight,
-            self.winnowing_kgram,
-            self.winnowing_window,
-            self.gst_min_match_length,
-            self.lexical_tokenizer,
-            self.code.metric,
-            self.code.weight,
-            self.code.language,
-            self.code.codebleu_component_weights,
-            self.code.crystalbleu_max_order,
-            self.code.crystalbleu_trivial_ngram_count,
-            self.code.ruby_mode,
-            self.code.ruby_graph_timeout_seconds,
-            self.code.tsed_costs,
-            self.code.codebertscore_model,
-            self.code.codebertscore_max_length,
-            self.preparation.selected,
-            self.preparation.preprocess_mode,
-            self.preparation.chunking_method,
-            self.preparation.chunk_size,
-            self.preparation.chunk_overlap,
-            self.preparation.max_chunks,
-            self.preparation.chunk_aggregation,
-            self.preparation.chunk_language,
-            self.preparation.chunker_options,
-        ]
+official_benchmark_initial = build_official_benchmark_view()
 
 
 def build_model_routing_controls():
@@ -5146,6 +4244,8 @@ with gr.Blocks(
         with gr.Tab("Datasets", id="datasets"):
             dataset_scored_state = gr.State(None)
             dataset_validation_state = gr.State(None)
+            dataset_latest_revision = gr.State(0)
+            dataset_event_revision = gr.Number(value=0, visible=False)
             gr.HTML(
                 value=workflow_intro_html(
                     "Measure quality",
@@ -5587,8 +4687,22 @@ with gr.Blocks(
                 uploaded_file,
                 task_label,
                 event: gr.EventData,
+                validation_state=None,
+                event_revision=0,
+                latest_revision=0,
                 progress=gr.Progress(track_tqdm=True),
             ):
+                revision = int(event_revision or 0)
+                if revision < int(latest_revision or 0):
+                    return gr.skip()
+
+                def apply_outputs(outputs):
+                    updates = dict(zip(
+                        dataset_upload_reset_outputs[: len(outputs)], outputs, strict=True
+                    ))
+                    updates[dataset_latest_revision] = revision
+                    return updates
+
                 if event.target is dataset_validate:
                     try:
                         outputs = validate_dataset_journey_gradio(
@@ -5602,22 +4716,37 @@ with gr.Blocks(
                             "Dataset Validation", error.message, variant="error"
                         )
                         outputs[6] = dataset_journey_status_html(2, error.message, variant="error")
-                    return dict(
-                        zip(dataset_upload_reset_outputs[: len(outputs)], outputs, strict=True)
-                    )
-                return dict(
-                    zip(dataset_upload_reset_outputs, reset_dataset_upload_journey(), strict=True)
-                )
+                    return apply_outputs(outputs)
+                # File components may deliver their change event after a fast
+                # validation. The server-owned State is read when this queued
+                # handler runs, so the same upload/task must not be invalidated
+                # by that stale notification. Different contents/tasks still
+                # reset every dependent stage below.
+                if validation_state and validation_state == dataset_upload_identity(
+                    uploaded_file, task_label
+                ):
+                    return {dataset_latest_revision: revision}
+                return apply_outputs(reset_dataset_upload_journey())
 
-            # One listener serializes upload/task resets and validation. Independent
-            # listeners can deliver a queued reset after validation has completed.
+            # Keep every validation click. always_last can replace a pending
+            # click with a late file/task change before it reaches the server.
+            # The shared concurrency limit orders backend work, and the upload
+            # identity guard makes a late reset for validated inputs harmless.
             gr.on(
                 [dataset_file.change, dataset_task.change, dataset_validate.click],
                 update_dataset_upload_journey,
-                inputs=[dataset_file, dataset_task],
-                outputs=dataset_upload_reset_outputs,
+                inputs=[
+                    dataset_file, dataset_task, dataset_validation_state,
+                    dataset_event_revision, dataset_latest_revision,
+                ],
+                outputs=[*dataset_upload_reset_outputs, dataset_latest_revision],
+                js="""(...values) => {
+                    window.__matheelDatasetRevision = (window.__matheelDatasetRevision || 0) + 1;
+                    values[3] = window.__matheelDatasetRevision;
+                    return values.slice(0, 5);
+                }""",
                 api_name=False,
-                trigger_mode="always_last",
+                trigger_mode="multiple",
                 concurrency_limit=1,
             )
 
@@ -5862,12 +4991,90 @@ with gr.Blocks(
                 padding=False,
             )
             with gr.Tabs(
-                selected="ready-made-leaderboard",
+                selected="official-benchmark",
                 elem_classes=["matheel-subtabs"],
             ) as reports_tabs:
+                with gr.Tab("Official Benchmark", id="official-benchmark"):
+                    gr.Markdown(
+                        "**Matheel-Plagiarism-v1** compares complete method configurations on a "
+                        "frozen plagiarism benchmark. Pair classification and retrieval have "
+                        "separate rankings. Each declared dataset has equal weight within its "
+                        "task and metric. Incomplete or failed methods remain unranked; their "
+                        "coverage and errors remain visible in the result tables."
+                    )
+                    official_summary = gr.HTML(
+                        value=official_benchmark_initial["summary"], padding=False,
+                    )
+                    with gr.Row():
+                        official_task = gr.Dropdown(
+                            choices=official_benchmark_initial["tasks"],
+                            value=official_benchmark_initial["task"],
+                            interactive=official_benchmark_initial["available"],
+                            label="Official Evaluation Task",
+                        )
+                        official_metric = gr.Dropdown(
+                            choices=official_benchmark_initial["metrics"],
+                            value=official_benchmark_initial["metric"],
+                            interactive=official_benchmark_initial["available"],
+                            label="Official Ranking Metric",
+                        )
+                        official_method = gr.Dropdown(
+                            choices=official_benchmark_initial["methods"],
+                            value=official_benchmark_initial["method"],
+                            interactive=official_benchmark_initial["available"],
+                            label="Official Method Configuration",
+                        )
+                        official_refresh = gr.Button("Refresh Official Results")
+                    official_aggregate = gr.Dataframe(
+                        value=official_benchmark_initial["aggregate"],
+                        label="Official Aggregate Ranking", interactive=False, wrap=False,
+                        max_height=420, row_count=1, show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    official_per_dataset = gr.Dataframe(
+                        value=official_benchmark_initial["per_dataset"],
+                        label="Official Per-Dataset Results", interactive=False, wrap=False,
+                        max_height=420, row_count=1, show_search="filter",
+                        elem_classes=["matheel-table"],
+                    )
+                    with gr.Accordion("Frozen dataset scope and weighting", open=False):
+                        gr.Markdown(
+                            "The scope below records source revisions, exact content fingerprints, "
+                            "and selection rules. Pair and retrieval views from one source dataset "
+                            "belong to separate tasks. Full method identities include model, "
+                            "preprocessing, tokenization, chunking, weights, and implementation."
+                        )
+                        official_scope = gr.Dataframe(
+                            value=official_benchmark_initial["scope"],
+                            label="Official Dataset Scope", interactive=False, wrap=False,
+                            max_height=320, row_count=1, show_search="filter",
+                            elem_classes=["matheel-table"],
+                        )
+                        official_protocol = gr.JSON(
+                            value=official_benchmark_initial["protocol"], label="Frozen Protocol",
+                        )
+                        official_configurations = gr.JSON(
+                            value=official_benchmark_initial["configurations"],
+                            label="Recorded Method Configurations",
+                        )
+                    official_artifact = gr.File(
+                        value=official_benchmark_initial["artifact"],
+                        label="Official Benchmark Result JSON", interactive=False,
+                    )
+                    gr.on(
+                        [official_task.input, official_metric.input, official_method.input, official_refresh.click],
+                        update_official_benchmark_gradio,
+                        inputs=[official_task, official_metric, official_method],
+                        outputs=[
+                            official_summary, official_task, official_metric, official_method,
+                            official_aggregate, official_per_dataset, official_scope,
+                            official_protocol, official_configurations, official_artifact,
+                        ],
+                        api_name=False, trigger_mode="always_last", concurrency_limit=1,
+                    )
                 with gr.Tab("Ready-made Leaderboard", id="ready-made-leaderboard"):
                     gr.Markdown(
-                        "This saved snapshot records the datasets and algorithm presets available "
+                        "**Demo leaderboard — sampled plagiarism datasets.** This saved snapshot records the datasets and algorithm presets available "
                         "when it was generated. Its coverage table lists the recorded runs. "
                         "It uses deterministic samples and the offline `static_hash` vector backend; "
                         "use Build Leaderboard to evaluate current presets or a full-corpus run."
@@ -5877,7 +5084,7 @@ with gr.Blocks(
                         gr.Markdown(
                             "Pair classification defaults to **F1**; retrieval defaults to "
                             "**Mean Average Precision**. Both rankings start in descending score "
-                            "order. Use the controls below to filter the snapshot, the table filter "
+                            "order. Categories are ranked separately; a clone benchmark will have its own track. Use the controls below to filter the snapshot, the table filter "
                             "to search any visible column, and the explicit sort controls to reorder "
                             "either table."
                         )
@@ -5902,6 +5109,11 @@ with gr.Blocks(
                                 choices=ready_made_filter_initial["algorithms"],
                                 value=READY_LEADERBOARD_ALL_ALGORITHMS,
                                 label="Algorithm",
+                            )
+                            ready_made_category = gr.Dropdown(
+                                choices=_ready_made_category_choices(ready_made_filter_initial["categories"]),
+                                value=READY_LEADERBOARD_ALL_CATEGORIES,
+                                label="Dataset Category",
                             )
                             ready_made_source = gr.Dropdown(
                                 choices=ready_made_filter_initial["sources"],
@@ -5996,6 +5208,7 @@ with gr.Blocks(
                             ready_made_dataset,
                             ready_made_algorithm,
                             ready_made_source,
+                            ready_made_category,
                             ready_made_aggregate,
                             ready_made_per_dataset,
                         ],
@@ -6005,13 +5218,14 @@ with gr.Blocks(
                         ready_made_dataset,
                         ready_made_algorithm,
                         ready_made_source,
+                        ready_made_category,
                         ready_made_aggregate_sort,
                         ready_made_aggregate_direction,
                         ready_made_per_dataset_sort,
                         ready_made_per_dataset_direction,
                     ):
                         ready_made_filter.input(
-                            filter_ready_made_leaderboard,
+                            filter_ready_made_leaderboard_gradio,
                             inputs=[
                                 ready_made_task,
                                 ready_made_metric,
@@ -6022,6 +5236,7 @@ with gr.Blocks(
                                 ready_made_aggregate_direction,
                                 ready_made_per_dataset_sort,
                                 ready_made_per_dataset_direction,
+                                ready_made_category,
                             ],
                             outputs=[ready_made_aggregate, ready_made_per_dataset],
                         )
@@ -6033,6 +5248,7 @@ with gr.Blocks(
                             ready_made_dataset,
                             ready_made_algorithm,
                             ready_made_source,
+                            ready_made_category,
                             ready_made_aggregate_sort,
                             ready_made_aggregate_direction,
                             ready_made_per_dataset_sort,

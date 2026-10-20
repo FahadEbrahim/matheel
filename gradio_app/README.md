@@ -13,7 +13,7 @@ Interactive code-similarity analysis with configurable embedding, lexical, chunk
 
 The hosted Space installs `matheel==0.7.0`. Checkout features are synchronized to the Space after the matching package code is published. This app includes:
 
-- Pair, collection, comparison-suite, normalized-dataset, dataset-validation, threshold-tuning, visualization, scored-pair explanation, ready-made public leaderboard, custom leaderboard, and leaderboard-inspection workflows
+- Pair, collection, comparison-suite, normalized-dataset, dataset-validation, threshold-tuning, visualization, scored-pair explanation, versioned plagiarism benchmark, sampled demo leaderboard, custom leaderboard, and leaderboard-inspection workflows
 - Metric presets for balanced, lexical, embedding-only, code-aware, and individual offline baselines
 - Downloadable artifacts for dataset evaluation, validation reports, threshold sweeps, dataset maps, pair explanations, ready leaderboards, leaderboard reports, and leaderboard detail reports
 - Raw and parser-derived lexical tokenization for Winnowing and GST
