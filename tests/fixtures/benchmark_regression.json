@@ -1,0 +1,176 @@
+{
+  "name": "synthetic-offline-score-regression-v1",
+  "files": [
+    {
+      "file_id": "a",
+      "suffix": ".py",
+      "text": "def total(values):\n    result = 0\n    for value in values:\n        result += value\n    return result\n"
+    },
+    {
+      "file_id": "b",
+      "suffix": ".py",
+      "text": "def total(items):\n    answer = 0\n    for item in items:\n        answer += item\n    return answer\n"
+    },
+    {
+      "file_id": "c",
+      "suffix": ".py",
+      "text": "def total(values):\n    result = 1\n    for value in values:\n        result *= value\n    return result\n"
+    },
+    {
+      "file_id": "d",
+      "suffix": ".py",
+      "text": "def total(values):\n    # Add every element.\n    result=0\n    for value in values:\n        result+=value\n    return result\n"
+    },
+    {
+      "file_id": "e",
+      "suffix": ".py",
+      "text": "class Message:\n    def greeting(self):\n        return 'hello world'\n"
+    },
+    {
+      "file_id": "empty",
+      "suffix": ".py",
+      "text": ""
+    }
+  ],
+  "pairs": [
+    {
+      "left_id": "a",
+      "right_id": "a",
+      "label": 1
+    },
+    {
+      "left_id": "a",
+      "right_id": "b",
+      "label": 1
+    },
+    {
+      "left_id": "a",
+      "right_id": "c",
+      "label": 0
+    },
+    {
+      "left_id": "a",
+      "right_id": "d",
+      "label": 1
+    },
+    {
+      "left_id": "a",
+      "right_id": "e",
+      "label": 0
+    },
+    {
+      "left_id": "a",
+      "right_id": "empty",
+      "label": 0
+    },
+    {
+      "left_id": "empty",
+      "right_id": "empty",
+      "label": 1
+    }
+  ],
+  "methods": [
+    {
+      "name": "Levenshtein",
+      "options": {
+        "feature_weights": {
+          "levenshtein": 1
+        }
+      },
+      "expected_scores": [
+        1.0,
+        0.65,
+        0.98,
+        0.7603305785123967,
+        0.31999999999999995,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "Winnowing",
+      "options": {
+        "feature_weights": {
+          "winnowing": 1
+        }
+      },
+      "expected_scores": [
+        1.0,
+        0.0,
+        0.1111111111111111,
+        0.3,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "GST",
+      "options": {
+        "feature_weights": {
+          "gst": 1
+        }
+      },
+      "expected_scores": [
+        1.0,
+        0.0,
+        0.7,
+        0.8888888888888888,
+        0.0,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "LCS",
+      "options": {
+        "feature_weights": {
+          "lcs": 1
+        }
+      },
+      "expected_scores": [
+        1.0,
+        0.69,
+        0.98,
+        0.7933884297520661,
+        0.36,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "RapidFuzz Token Sort",
+      "options": {
+        "feature_weights": {
+          "rapidfuzz_token_sort_ratio": 1
+        }
+      },
+      "expected_scores": [
+        1.0,
+        0.5384615384615384,
+        0.975,
+        0.7796610169491526,
+        0.3407407407407408,
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "name": "RapidFuzz Partial Ratio",
+      "options": {
+        "feature_weights": {
+          "rapidfuzz_partial_ratio": 1
+        }
+      },
+      "expected_scores": [
+        1.0,
+        0.7225130890052356,
+        0.98,
+        0.8791208791208791,
+        0.5087719298245614,
+        0.0,
+        1.0
+      ]
+    }
+  ]
+}
