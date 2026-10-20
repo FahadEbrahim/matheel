@@ -9,6 +9,7 @@ from matheel.datasets import write_pair_dataset, write_retrieval_dataset
 from matheel.evaluation import score_pair_dataset, score_retrieval_dataset
 from matheel.external_detectors import dolos, jplag
 from matheel.external_detectors.common import DetectorError
+from matheel.retrieval import score_two_stage_retrieval_dataset
 
 pytestmark = pytest.mark.integration
 
@@ -53,6 +54,16 @@ def test_real_detector_pair_and_retrieval_candidate_coverage(tmp_path, local_det
                                         algorithm_options=options, exclude_self_matches=True)
     assert set(zip(retrieval.query_id, retrieval.document_id)) == {('q0', 'd1'), ('q0', 'd2'), ('q1', 'd0'), ('q1', 'd2')}
     assert retrieval.similarity_score.tolist() == [1, 0, 1, 0]
+    pipeline = score_two_stage_retrieval_dataset(
+        tmp_path / 'retrieval', candidate_count=2,
+        candidate_similarity_options={'feature_weights': {'levenshtein': 1}},
+        algorithm=module, algorithm_options=options, exclude_self_matches=True,
+    )
+    assert len(pipeline) == 4
+    actual = pipeline.set_index(['query_id', 'document_id']).similarity_score.sort_index()
+    expected = retrieval.set_index(['query_id', 'document_id']).similarity_score.sort_index()
+    pd.testing.assert_series_equal(actual, expected)
+    assert pipeline.attrs['retrieval']['candidate_diagnostics']['candidate_recall'] == 1
 
 
 def test_real_detector_rejects_unparseable_input(local_detector):
