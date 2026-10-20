@@ -34,6 +34,7 @@ Matheel compares source code through a Python API, CLI, and Gradio app. Start wi
 
 ## Extend and Contribute
 
+- [Local plagiarism detectors](external_detectors.md): optional JPlag and Dolos corpus adapters.
 - [Custom algorithms](customization.md): prototype a scorer without changing Matheel internals.
 - [Contribute algorithms](contributing_algorithms.md) or [datasets](contributing_datasets.md): add tested package support.
 - [Development](development.md): install contributor tools, run tests, build docs, and check packages.

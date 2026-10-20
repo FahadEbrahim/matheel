@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from .algorithms import normalize_algorithm_options, resolve_pair_algorithm
+from .algorithms import normalize_algorithm_options, portable_algorithm_options, resolve_pair_algorithm
 from .datasets import (
     PairDataset,
     RetrievalDataset,
@@ -59,6 +59,13 @@ def algorithm_card(config, name=None):
     options = dict(payload.get("options") or payload.get("similarity_options") or {})
     algorithm_path = payload.get("algorithm_path") or options.pop("algorithm_path", None)
     algorithm_options = normalize_algorithm_options(payload.get("algorithm_options") or options.pop("algorithm_options", None))
+    if algorithm_path:
+        try:
+            resolved = resolve_pair_algorithm(algorithm_path)
+        except Exception:
+            resolved = None  # Existing cards may describe unavailable custom modules.
+        if resolved is not None:
+            algorithm_options = portable_algorithm_options(resolved, algorithm_options)
     for key, value in payload.items():
         if key not in {"name", "options", "similarity_options", "algorithm_path", "algorithm_options"}:
             options[key] = value

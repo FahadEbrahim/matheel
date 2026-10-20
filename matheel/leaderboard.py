@@ -7,7 +7,7 @@ from pathlib import Path, PureWindowsPath
 
 import pandas as pd
 
-from .algorithms import normalize_algorithm_options
+from .algorithms import normalize_algorithm_options, public_algorithm_configuration
 from .benchmark_cards import leaderboard_cards
 from .calibration import calibration_report
 from .datasets import dataset_task_type, load_pair_datasets, load_retrieval_datasets, normalize_dataset_task_type
@@ -170,7 +170,7 @@ def leaderboard_payload(report):
     return {
         "schema_version": 1,
         "metadata": _json_safe(report.get("metadata", {})),
-        "manifest": _json_safe(report.get("manifest", {})),
+        "manifest": _json_safe({**report.get("manifest", {}), "algorithms": [public_algorithm_configuration(method) for method in report.get("manifest", {}).get("algorithms", [])]}),
         "cards": _json_safe(report.get("cards", {})),
         "per_dataset": _frame_records(report["per_dataset"]),
         "aggregate": _frame_records(report["aggregate"]),

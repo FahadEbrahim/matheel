@@ -1,0 +1,70 @@
+{
+  "artifacts": [
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_1cb01c582411128bd212_pair.csv",
+      "rows": 460,
+      "sha256": "7823bd9c1e1b46c0f88981f6906eb11ca16d84d68b82cbcaf396460bd7dd3ba1",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_aa4c49c55f5540844523_pair.csv",
+      "rows": 460,
+      "sha256": "37c1b94e981e1ce485e6fc396fbb72e1bf396978e0b08d4a5f853384e1c2a6d9",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_1cb01c582411128bd212_retrieval.csv",
+      "rows": 2485,
+      "sha256": "66b9444929d0e5f4c8c7fed9ad05d66369b3a7154e725497028b66ac9115b1c1",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_aa4c49c55f5540844523_retrieval.csv",
+      "rows": 2485,
+      "sha256": "1b1e1cc70a28fec09b294314b61ccc9d79ac8ca25fd50658f3733657abd515b3",
+      "task_family": "retrieval"
+    }
+  ],
+  "diagnostic_only": true,
+  "schema_version": 1
+}

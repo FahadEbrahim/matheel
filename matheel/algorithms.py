@@ -36,6 +36,7 @@ class PairAlgorithm:
     package_name: str | None = None
     package_version: str | None = None
     source_fingerprint: dict | None = None
+    portable_configuration: object = None
 
 
 _PREPARE_RESERVED_KEYS = frozenset({"dataset", "prepared_texts", "algorithm_options"})
@@ -182,6 +183,7 @@ def resolve_pair_algorithm(
             package_name=package_name,
             package_version=_safe_package_version(package_name),
             source_fingerprint=_module_source_fingerprint(module),
+            portable_configuration=getattr(module, "portable_configuration", None),
         )
 
     if callable(algorithm):
@@ -259,9 +261,38 @@ def score_pair_with_algorithm(
     return numeric_score
 
 
-def pair_algorithm_metadata(algorithm, algorithm_options=None):
+def portable_algorithm_options(algorithm, algorithm_options=None):
+    """Return verified, publishable options when a module provides an identity hook.
+
+    The hook receives private runtime options, and must return complete effective
+    options including external artifact versions/hashes. Execution continues to
+    receive the original options. Ordinary custom algorithms are unchanged.
+    """
     resolved = resolve_pair_algorithm(algorithm)
     options = normalize_algorithm_options(algorithm_options)
+    hook = resolved.portable_configuration
+    if hook is None:
+        return options
+    if not callable(hook):
+        raise ValueError("portable_configuration must be callable when provided.")
+    portable = normalize_algorithm_options(hook(algorithm_options=options))
+    json.dumps(portable, sort_keys=True, allow_nan=False)
+    from .benchmark_protocol import _validate_public_metadata
+    _validate_public_metadata(portable)
+    return portable
+
+
+def public_algorithm_configuration(configuration):
+    """Copy a runtime method configuration with portable external-tool identity."""
+    result = dict(configuration)
+    if result.get("algorithm_path"):
+        result["algorithm_options"] = portable_algorithm_options(result["algorithm_path"], result.get("algorithm_options"))
+    return result
+
+
+def pair_algorithm_metadata(algorithm, algorithm_options=None):
+    resolved = resolve_pair_algorithm(algorithm)
+    options = portable_algorithm_options(resolved, algorithm_options)
     return {
         "algorithm_name": resolved.name,
         "algorithm_function": resolved.function_name,
