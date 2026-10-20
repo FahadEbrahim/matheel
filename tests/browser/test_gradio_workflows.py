@@ -89,6 +89,15 @@ def _select_dropdown(page, config, label, value):
     _wait_until(lambda: listbox.input_value() == value)
 
 
+def _select_dropdown_with_keyboard(page, config, label, value):
+    root = _visible_component(page, config, label=label, component_type="dropdown")
+    listbox = root.get_by_role("listbox", name=label, exact=True)
+    listbox.click()
+    listbox.fill(value)
+    listbox.press("Enter")
+    _wait_until(lambda: listbox.input_value() == value)
+
+
 def _upload(page, config, label, path):
     root = _visible_component(page, config, label=label, component_type="file")
     file_input = root.locator("input[type=file]")
@@ -548,3 +557,128 @@ def test_dataset_exports_and_leaderboard_artifact_inspection(
             "leaderboard_report_per_dataset.csv",
         },
     )
+
+
+@contextmanager
+def _hold_dataset_callback(barriers, stage):
+    paths = {name: barriers / f"{stage}.{name}" for name in ("hold", "started", "release", "finished")}
+    for path in paths.values():
+        path.unlink(missing_ok=True)
+    paths["hold"].touch()
+    try:
+        yield paths
+    finally:
+        paths["release"].touch()
+        if paths["started"].exists():
+            _wait_until(paths["finished"].exists)
+        for path in paths.values():
+            path.unlink(missing_ok=True)
+
+
+def _button_dependency(config, button_name):
+    button_id = next(component["id"] for component in config["components"]
+                     if component.get("type") == "button" and component["props"].get("value") == button_name)
+    return next(dependency for dependency in config["dependencies"] if [button_id, "click"] in dependency["targets"])
+
+
+def _wait_for_dataset_action_completion(page, config, action, previous_joins):
+    dependency = _button_dependency(config, action)
+    chain_ids = {dependency["id"], *(item["id"] for item in config["dependencies"] if item.get("trigger_after") == dependency["id"])}
+    page.wait_for_function("""({ids, start}) => {
+        const joins = window.__matheelQueueJoins.slice(start).filter(item => ids.includes(item.fn_index));
+        return joins.length === ids.length && joins.every(join => window.__matheelQueueEvents.some(
+            event => event.event_id === join.event_id && event.msg === 'process_completed' && event.success
+        ));
+    }""", arg={"ids": list(chain_ids), "start": previous_joins}, timeout=30_000)
+
+
+@pytest.mark.parametrize("reset", ["upload", "task", "metric"])
+def test_completed_old_evaluation_cannot_restore_results_after_dataset_reset(
+    gradio_page, gradio_config, normalized_dataset_zip, invalid_dataset_zip,
+    dataset_callback_barriers, reset,
+):
+    page = gradio_page
+    _open_tab(page, "Datasets")
+    _upload(page, gradio_config, "Normalized Dataset ZIP", normalized_dataset_zip)
+    _select_dropdown(page, gradio_config, "Metric Preset", "Lexical Only")
+    page.get_by_role("button", name="Validate Dataset", exact=True).click()
+    _wait_for_text(_action_output(page, gradio_config, "Validate Dataset"), "browser_pair_dataset")
+    run = page.get_by_role("button", name="Run Dataset Evaluation", exact=True)
+    _wait_until(run.is_enabled)
+    before = page.evaluate("window.__matheelQueueJoins.length")
+    with _hold_dataset_callback(dataset_callback_barriers, "evaluation") as held:
+        run.click()
+        _wait_until(lambda: page.evaluate("true") and held["started"].exists())
+        if reset == "upload":
+            _upload(page, gradio_config, "Normalized Dataset ZIP", invalid_dataset_zip)
+            _wait_until(lambda: run.is_disabled())
+        elif reset == "task":
+            task = _visible_component(page, gradio_config, label="Task", component_type="radio")
+            task.get_by_role("radio", name="Retrieval", exact=True).check()
+            _wait_until(lambda: run.is_disabled())
+        else:
+            _select_dropdown(page, gradio_config, "Metric Preset", "Jaro-Winkler")
+        status_id = _button_dependency(gradio_config, "Run Dataset Evaluation")["outputs"][7]
+        status = page.locator(f"#component-{status_id}")
+        if reset == "metric":
+            _wait_for_text(status, "Settings changed")
+        else:
+            _wait_for_text(status, "Upload a dataset")
+        held["release"].touch()
+        _wait_for_dataset_action_completion(page, gradio_config, "Run Dataset Evaluation", before)
+    summary_id = _button_dependency(gradio_config, "Run Dataset Evaluation")["outputs"][0]
+    assert not page.locator(f"#component-{summary_id}").is_visible()
+    assert not page.locator("#dataset-next-actions").is_visible()
+    assert not page.get_by_role("button", name="Tune Pair Threshold", exact=True).is_visible()
+    artifacts = _visible_component(page, gradio_config, label="Leaderboard Artifacts", component_type="file")
+    assert artifacts.locator("a[download]").count() == 0
+    if reset == "upload":
+        page.get_by_label(invalid_dataset_zip.name, exact=True).wait_for(state="visible")
+        assert run.is_disabled()
+    elif reset == "task":
+        assert page.get_by_role("radio", name="Retrieval", exact=True).is_checked()
+        assert run.is_disabled()
+    else:
+        selected = _visible_component(page, gradio_config, label="Metric Preset", component_type="dropdown")
+        assert selected.get_by_role("listbox", name="Metric Preset", exact=True).input_value() == "Jaro-Winkler"
+        assert run.is_enabled()
+
+
+@pytest.mark.parametrize("stage", ["threshold", "explanation"])
+def test_completed_old_dataset_stage_cannot_restore_results_after_option_reset(
+    gradio_page, gradio_config, normalized_dataset_zip, dataset_callback_barriers, stage,
+):
+    page = gradio_page
+    _open_tab(page, "Datasets")
+    _upload(page, gradio_config, "Normalized Dataset ZIP", normalized_dataset_zip)
+    _select_dropdown(page, gradio_config, "Metric Preset", "Lexical Only")
+    page.get_by_role("button", name="Validate Dataset", exact=True).click()
+    _wait_for_text(_action_output(page, gradio_config, "Validate Dataset"), "browser_pair_dataset")
+    run = page.get_by_role("button", name="Run Dataset Evaluation", exact=True)
+    _wait_until(run.is_enabled)
+    run.click()
+    summary = _action_output(page, gradio_config, "Run Dataset Evaluation")
+    _wait_for_text(summary, "browser_pair_dataset")
+    if stage == "threshold":
+        action, artifact_label = "Tune Pair Threshold", "Threshold Tuning Artifacts"
+    else:
+        page.get_by_text("Scored Pair Explanation", exact=True).click()
+        action, artifact_label = "Explain Scored Pair", "Scored Pair Explanation Artifacts"
+    before = page.evaluate("window.__matheelQueueJoins.length")
+    with _hold_dataset_callback(dataset_callback_barriers, stage) as held:
+        page.get_by_role("button", name=action, exact=True).click()
+        _wait_until(lambda: page.evaluate("true") and held["started"].exists())
+        if stage == "threshold":
+            _select_dropdown_with_keyboard(page, gradio_config, "Threshold Tuning Metric", "precision")
+        else:
+            _select_dropdown_with_keyboard(page, gradio_config, "Segment Mode", "token")
+        status_id = _button_dependency(gradio_config, "Run Dataset Evaluation")["outputs"][7]
+        _wait_for_text(page.locator(f"#component-{status_id}"), "options changed")
+        held["release"].touch()
+        _wait_for_dataset_action_completion(page, gradio_config, action, before)
+    stage_summary_id = _button_dependency(gradio_config, action)["outputs"][0]
+    assert not page.locator(f"#component-{stage_summary_id}").is_visible()
+    artifacts = _visible_component(page, gradio_config, label=artifact_label, component_type="file")
+    assert artifacts.locator("a[download]").count() == 0
+    assert summary.is_visible()
+    _wait_for_text(summary, "browser_pair_dataset")

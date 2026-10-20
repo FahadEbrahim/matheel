@@ -165,7 +165,12 @@ def official_benchmark_json(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def gradio_server(browser_artifacts_dir, official_benchmark_json):
+def dataset_callback_barriers(tmp_path_factory):
+    return tmp_path_factory.mktemp("dataset-callback-barriers")
+
+
+@pytest.fixture(scope="session")
+def gradio_server(browser_artifacts_dir, official_benchmark_json, dataset_callback_barriers):
     port = _unused_local_port()
     url = f"http://127.0.0.1:{port}/"
     log_path = browser_artifacts_dir / "gradio-server.log"
@@ -182,15 +187,20 @@ def gradio_server(browser_artifacts_dir, official_benchmark_json):
         }
     )
     with log_path.open("w", encoding="utf-8") as log_handle:
-        process = subprocess.Popen(
-            [
+        command = [
                 sys.executable,
                 os.fspath(Path(__file__).with_name("serve_gradio.py")),
                 "--port",
                 str(port),
                 "--official-benchmark",
                 os.fspath(official_benchmark_json),
-            ],
+                "--dataset-barriers",
+                os.fspath(dataset_callback_barriers),
+            ]
+        if environment.get("MATHEEL_BROWSER_APP_SOURCE"):
+            command.extend(["--app-source", environment["MATHEEL_BROWSER_APP_SOURCE"]])
+        process = subprocess.Popen(
+            command,
             cwd=REPOSITORY_ROOT,
             env=environment,
             stdout=log_handle,
