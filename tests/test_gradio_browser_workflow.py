@@ -16,12 +16,18 @@ CONFTST_SPEC.loader.exec_module(BROWSER_CONFTEST)
 class SetupFailingPage:
     def __init__(self):
         self.init_scripts = []
+        self.context = SimpleNamespace(
+            pages=[self], add_init_script=self.add_init_script, on=self.on,
+        )
 
     def add_init_script(self, script):
         self.init_scripts.append(script)
 
     def evaluate(self, _script):
         return {"joins": [], "events": []}
+
+    def is_closed(self):
+        return False
 
     def route(self, *_args):
         return None

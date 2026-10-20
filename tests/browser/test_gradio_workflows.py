@@ -644,6 +644,55 @@ def test_completed_old_evaluation_cannot_restore_results_after_dataset_reset(
         assert run.is_enabled()
 
 
+def test_old_queued_evaluation_cannot_start_after_settings_reset(
+    gradio_page, gradio_server, gradio_config, normalized_dataset_zip, dataset_callback_barriers,
+):
+    first = gradio_page
+    second = first.context.new_page()
+    second.goto(gradio_server, wait_until="domcontentloaded")
+    second.get_by_role("heading", name="Matheel", exact=True).wait_for(state="visible")
+    for current in (first, second):
+        _open_tab(current, "Datasets")
+        _upload(current, gradio_config, "Normalized Dataset ZIP", normalized_dataset_zip)
+        _select_dropdown(current, gradio_config, "Metric Preset", "Lexical Only")
+        current.get_by_role("button", name="Validate Dataset", exact=True).click()
+        _wait_for_text(_action_output(current, gradio_config, "Validate Dataset"), "browser_pair_dataset")
+        _wait_until(current.get_by_role("button", name="Run Dataset Evaluation", exact=True).is_enabled)
+
+    dependency = _button_dependency(gradio_config, "Run Dataset Evaluation")
+    first_before = first.evaluate("window.__matheelQueueJoins.length")
+    second_before = second.evaluate("window.__matheelQueueJoins.length")
+    with _hold_dataset_callback(dataset_callback_barriers, "evaluation") as held:
+        first.get_by_role("button", name="Run Dataset Evaluation", exact=True).click()
+        _wait_until(lambda: first.evaluate("true") and held["started"].exists())
+        second.get_by_role("button", name="Run Dataset Evaluation", exact=True).click()
+        second.wait_for_function("""({index, start}) => window.__matheelQueueJoins.slice(start)
+            .some(join => join.fn_index === index && join.event_id)
+        """, arg={"index": dependency["id"], "start": second_before})
+        queued = second.evaluate("""({index, start}) => window.__matheelQueueJoins.slice(start)
+            .find(join => join.fn_index === index)
+        """, {"index": dependency["id"], "start": second_before})
+        # Another session occupies this callback's sole worker. The old settings
+        # were admitted, but have not started when the reset completes.
+        assert not second.evaluate("""id => window.__matheelQueueEvents.some(
+            event => event.event_id === id && event.msg === 'process_starts')
+        """, queued["event_id"])
+        _select_dropdown(second, gradio_config, "Metric Preset", "Jaro-Winkler")
+        _wait_for_text(second.locator(f"#component-{dependency['outputs'][7]}"), "Settings changed")
+        held["release"].touch()
+        _wait_for_dataset_action_completion(first, gradio_config, "Run Dataset Evaluation", first_before)
+        _wait_for_dataset_action_completion(second, gradio_config, "Run Dataset Evaluation", second_before)
+
+    assert not second.locator(f"#component-{dependency['outputs'][0]}").is_visible()
+    assert not second.locator("#dataset-next-actions").is_visible()
+    assert not second.get_by_role("button", name="Tune Pair Threshold", exact=True).is_visible()
+    artifacts = _visible_component(second, gradio_config, label="Leaderboard Artifacts", component_type="file")
+    assert artifacts.locator("a[download]").count() == 0
+    _wait_for_text(_action_output(first, gradio_config, "Run Dataset Evaluation"), "Lexical Only")
+    second.get_by_role("button", name="Run Dataset Evaluation", exact=True).click()
+    _wait_for_text(_action_output(second, gradio_config, "Run Dataset Evaluation"), "Jaro-Winkler")
+
+
 @pytest.mark.parametrize("stage", ["threshold", "explanation"])
 def test_completed_old_dataset_stage_cannot_restore_results_after_option_reset(
     gradio_page, gradio_config, normalized_dataset_zip, dataset_callback_barriers, stage,
