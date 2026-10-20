@@ -290,6 +290,34 @@ def test_late_upload_change_cannot_erase_completed_validation(
     assert run.is_enabled()
 
 
+def test_result_analysis_upload_disagreement_and_clear(gradio_page, gradio_config, tmp_path):
+    page = gradio_page
+    _open_tab(page, "Reports")
+    _open_tab(page, "Analyze Results")
+    scores = tmp_path / "scores.csv"
+    scores.write_text("left_id,right_id,label,similarity_score,assignment\n"
+                      "a,b,1,0.2,one\nc,d,0,0.9,two\ne,f,1,0.8,three\ng,h,0,0.1,four\n")
+    reference = tmp_path / "reference.csv"
+    reference.write_text("left_id,right_id,label,similarity_score,assignment\n"
+                         "a,b,1,0.8,one\nc,d,0,0.1,two\ne,f,1,0.8,three\ng,h,0,0.1,four\n")
+    _upload(page, gradio_config, "Scored Results CSV", scores)
+    _upload(page, gradio_config, "Reference Method CSV (optional)", reference)
+    page.get_by_role("button", name="Analyze Scored Results", exact=True).click()
+    errors = _visible_component(page, gradio_config, label="Errors and Disagreements (first 1000 rows)")
+    _wait_for_text(errors, "false_positive")
+    _wait_for_text(errors, "false_negative")
+    _wait_for_text(errors, "decision_disagreement")
+    metrics = _visible_component(page, gradio_config, label="Metrics and Paired Uncertainty")
+    _wait_for_text(metrics, "delta_ci_lower")
+    _wait_until(lambda: page.get_by_role("button", name="Analyze Scored Results", exact=True).is_enabled())
+    downloads = _visible_component(page, gradio_config, label="Analysis Artifacts", component_type="file")
+    exported = _download_file(page, downloads, tmp_path / "downloaded_analysis.json")
+    assert json.loads(exported.read_text())["rows"] == 4
+    upload = _visible_component(page, gradio_config, label="Scored Results CSV", component_type="file")
+    upload.get_by_role("button", name="Clear", exact=True).click()
+    _wait_until(lambda: "false_positive" not in errors.inner_text())
+
+
 def test_pairwise_lexical_browser_workflow(gradio_page, gradio_config):
     page = gradio_page
     _select_dropdown(page, gradio_config, "Metric Preset", "Lexical Only")

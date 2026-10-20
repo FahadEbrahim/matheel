@@ -6,6 +6,7 @@ recursive-include docs *.md
 recursive-include examples *
 recursive-include gradio_app *
 recursive-include scripts *.py
-recursive-include benchmarks *.json *.md
+recursive-include benchmarks *.json *.md *.csv
 recursive-include tests *.py
+recursive-include tests/fixtures *.json
 global-exclude __pycache__ *.py[cod] .DS_Store

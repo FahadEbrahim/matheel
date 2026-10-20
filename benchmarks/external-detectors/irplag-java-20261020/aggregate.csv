@@ -1,0 +1,13 @@
+domain,task_family,algorithm_name,algorithm_id,metric,mean_score,median_score,dataset_count,expected_dataset_count,coverage,complete_coverage,eligible,sample_count,elapsed_seconds,task_type,rank
+plagiarism,pair,Dolos 2.10.0,aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb,auroc,0.6701542588866535,0.6701542588866535,1,1,1.0,True,True,460,4.80393741700027,plagiarism,1
+plagiarism,pair,JPlag 6.3.0 average,1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8,auroc,0.5559087860496311,0.5559087860496311,1,1,1.0,True,True,460,30.890497917000175,plagiarism,2
+plagiarism,pair,Dolos 2.10.0,aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb,average_precision,0.8782089962498862,0.8782089962498862,1,1,1.0,True,True,460,4.80393741700027,plagiarism,1
+plagiarism,pair,JPlag 6.3.0 average,1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8,average_precision,0.81613862048036,0.81613862048036,1,1,1.0,True,True,460,30.890497917000175,plagiarism,2
+plagiarism,pair,Dolos 2.10.0,aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb,f1,0.7154213036565978,0.7154213036565978,1,1,1.0,True,True,460,4.80393741700027,plagiarism,1
+plagiarism,pair,JPlag 6.3.0 average,1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8,f1,0.5709219858156029,0.5709219858156029,1,1,1.0,True,True,460,30.890497917000175,plagiarism,2
+plagiarism,retrieval,Dolos 2.10.0,aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb,mean_average_precision,0.9563648558014755,0.9563648558014755,1,1,1.0,True,True,2485,4.727538332997938,plagiarism,1
+plagiarism,retrieval,JPlag 6.3.0 average,1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8,mean_average_precision,0.7071294433266264,0.7071294433266264,1,1,1.0,True,True,2485,30.43610549999721,plagiarism,2
+plagiarism,retrieval,Dolos 2.10.0,aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb,mean_reciprocal_rank,0.9563648558014755,0.9563648558014755,1,1,1.0,True,True,2485,4.727538332997938,plagiarism,1
+plagiarism,retrieval,JPlag 6.3.0 average,1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8,mean_reciprocal_rank,0.7071294433266264,0.7071294433266264,1,1,1.0,True,True,2485,30.43610549999721,plagiarism,2
+plagiarism,retrieval,Dolos 2.10.0,aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb,ndcg_at_k,0.9673955260892405,0.9673955260892405,1,1,1.0,True,True,2485,4.727538332997938,plagiarism,1
+plagiarism,retrieval,JPlag 6.3.0 average,1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8,ndcg_at_k,0.7764408924524386,0.7764408924524386,1,1,1.0,True,True,2485,30.43610549999721,plagiarism,2

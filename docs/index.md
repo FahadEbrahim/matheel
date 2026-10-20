@@ -26,6 +26,7 @@ Matheel compares source code through a Python API, CLI, and Gradio app. Start wi
 | Task | Guide |
 | --- | --- |
 | Load pair/retrieval data and measure quality | [Datasets and evaluation](datasets.md) |
+| Bound expensive retrieval and audit candidate recall | [Exact scoring and scalable retrieval](scalable_retrieval.md) |
 | Interpret score ranges and select thresholds | [Scoring and calibration](scoring.md) |
 | Measure controlled formatting, renaming and content changes | [Robustness diagnostics](robustness.md) |
 | Run a small auditable experiment | [Reproducible benchmark](reproducible_benchmark.md) |
@@ -33,9 +34,12 @@ Matheel compares source code through a Python API, CLI, and Gradio app. Start wi
 | Inspect the declared public plagiarism benchmark | [Plagiarism benchmark results](plagiarism_results.md) |
 | Rank methods and track exported runs | [Leaderboards and run registry](leaderboard.md) |
 | Explore dataset maps and matched code regions | [Visualization and pair explanations](visualization.md) |
+| Inspect errors, disagreements and grouped uncertainty | [Result analysis](result_analysis.md) |
+| Reproduce results and prepare a benchmark contribution | [Workflow recipes](benchmark_workflows.md) |
 
 ## Extend and Contribute
 
+- [Local plagiarism detectors](external_detectors.md): optional JPlag and Dolos corpus adapters.
 - [Custom algorithms](customization.md): prototype a scorer without changing Matheel internals.
 - [Contribute algorithms](contributing_algorithms.md) or [datasets](contributing_datasets.md): add tested package support.
 - [Development](development.md): install contributor tools, run tests, build docs, and check packages.

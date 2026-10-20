@@ -3,10 +3,12 @@ import sys
 from pathlib import Path
 
 import click
+from .retrieval_cli import register_retrieval_commands
 import pandas as pd
 
 from . import __version__
 from .algorithms import normalize_algorithm_options, score_source_pairs_with_algorithm
+from .analysis_cli import register_analysis_commands
 from .benchmark_registry import compare_benchmark_runs, list_benchmark_runs, register_benchmark_run
 from .calibration import write_calibration_report_artifacts, write_threshold_tuning_report_artifacts
 from .comparison_suite import load_run_configs, run_comparison_suite
@@ -116,6 +118,29 @@ def _coerce_cli_option_value(raw_value):
         return json.loads(text)
     except json.JSONDecodeError:
         return text
+
+
+def _validate_algorithm_reference(ctx, param, value):
+    """Accept an existing module file or a discoverable dotted import name."""
+    if value is None:
+        return None
+    from pathlib import Path
+    import re
+    path = Path(value).expanduser()
+    if path.is_file():
+        return str(path)
+    if path.exists() or "/" in value or "\\" in value or value.endswith(".py"):
+        raise click.BadParameter("must be an existing Python file or an importable module name", ctx=ctx, param=param)
+    if not re.fullmatch(r"[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*", value):
+        raise click.BadParameter("must be an existing Python file or a dotted module name", ctx=ctx, param=param)
+    import importlib.util
+    try:
+        found = importlib.util.find_spec(value)
+    except (ImportError, ValueError, AttributeError):
+        found = None
+    if found is None:
+        raise click.BadParameter("module could not be found; install it or supply an existing Python file", ctx=ctx, param=param)
+    return value
 
 
 def _parse_algorithm_options(entries):
@@ -1311,10 +1336,11 @@ def benchmark_registry_compare_command(registry_file, run_ids, output_path, outp
 @click.option('--threshold', default=0.0, help='Similarity Threshold')
 @click.option('--num', default=10, help='Number of Results to Display')
 @click.option(
-    '--algorithm-path',
+    '--algorithm-path', '--algorithm',
     default=None,
-    type=click.Path(exists=True, dir_okay=False),
-    help='Optional Python module/file path that defines score_pair for custom scoring.',
+    type=str,
+    callback=_validate_algorithm_reference,
+    help='Optional Python module name or file defining score_pair for custom scoring.',
 )
 @click.option(
     '--algorithm-option',
@@ -1612,10 +1638,11 @@ def compare_suite(
 @click.option("--metrics-out", type=click.Path(), default="pair_metrics.json", show_default=True)
 @click.option("--threshold", default=0.5, show_default=True, help="Classification threshold.")
 @click.option(
-    "--algorithm-path",
+    "--algorithm-path", "--algorithm",
     default=None,
-    type=click.Path(exists=True, dir_okay=False),
-    help="Optional Python module/file path that defines score_pair for custom scoring.",
+    type=str,
+    callback=_validate_algorithm_reference,
+    help="Optional Python module name or file defining score_pair for custom scoring.",
 )
 @click.option(
     "--algorithm-option",
@@ -1847,10 +1874,11 @@ def evaluate_pairs(
 @click.option("--metrics-out", type=click.Path(), default="retrieval_metrics.json", show_default=True)
 @click.option("--k", default=10, show_default=True, help="Ranking cutoff for top-k metrics.")
 @click.option(
-    "--algorithm-path",
+    "--algorithm-path", "--algorithm",
     default=None,
-    type=click.Path(exists=True, dir_okay=False),
-    help="Optional Python module/file path that defines score_pair for custom scoring.",
+    type=str,
+    callback=_validate_algorithm_reference,
+    help="Optional Python module name or file defining score_pair for custom scoring.",
 )
 @click.option(
     "--algorithm-option",
@@ -2074,3 +2102,5 @@ def _elapsed_summary_text(results):
 from .experiment_cli import register_experiment_commands  # noqa: E402
 
 register_experiment_commands(main)
+register_retrieval_commands(main)
+register_analysis_commands(main)

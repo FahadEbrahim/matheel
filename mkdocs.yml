@@ -24,6 +24,7 @@ nav:
       - Lexical metrics: lexical.md
       - Embeddings and routing: vectors.md
       - Code-aware metrics: code_metrics.md
+      - Local plagiarism detectors: external_detectors.md
       - Prepare code:
           - Preprocessing: preprocessing.md
           - Tokenization and limits: tokenization.md
@@ -32,14 +33,17 @@ nav:
       - Comparison suites: comparison_suite.md
   - Evaluate and benchmark:
       - Load and evaluate datasets: datasets.md
+      - Exact scoring and scalable retrieval: scalable_retrieval.md
       - Interpret and calibrate scores: scoring.md
       - Controlled robustness diagnostics: robustness.md
       - Reproducible benchmark: reproducible_benchmark.md
       - Versioned plagiarism benchmarks: benchmark_protocol.md
+      - Benchmark workflow recipes: benchmark_workflows.md
       - Plagiarism benchmark results: plagiarism_results.md
       - Leaderboards and run registry: leaderboard.md
   - Inspect results:
       - Visualization: visualization.md
+      - Errors and uncertainty: result_analysis.md
   - Extend and contribute:
       - Custom algorithms: customization.md
       - Contributing algorithms: contributing_algorithms.md

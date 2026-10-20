@@ -246,6 +246,8 @@ def _prepare_builtin_scoring_context(
     options,
     query_file_ids=None,
     document_file_ids=None,
+    *,
+    precompute_multivector=True,
 ):
     options = dict(options or {})
     signature(calculate_similarity).bind("", "", **options)
@@ -260,14 +262,14 @@ def _prepare_builtin_scoring_context(
         options.get("code_metric_weight", 0.0),
         options.get("codebleu_component_weights"),
     )
-    _similarity.validate_edit_distance_options(
+    edit_weights, prefix_weight = _similarity.validate_edit_distance_options(
         options.get("levenshtein_weights"),
         jaro_winkler_prefix_weight=options.get(
             "jaro_winkler_prefix_weight",
             0.1,
         ),
     )
-    _similarity.validate_lexical_baseline_options(
+    winnowing_kgram, winnowing_window, gst_min_match_length = _similarity.validate_lexical_baseline_options(
         winnowing_kgram=options.get("winnowing_kgram", 5),
         winnowing_window=options.get("winnowing_window", 4),
         gst_min_match_length=options.get("gst_min_match_length", 5),
@@ -345,6 +347,31 @@ def _prepare_builtin_scoring_context(
         ),
         "embeddings": {},
     }
+    # Reuse deterministic lexical preparation across every pair/candidate in a
+    # dataset. The collection scorer already follows this approach. Keep the
+    # general code-metric path intact; its parameters and parser work differ.
+    if nonsemantic_weight > 0.0 and "code_metric" not in nonsemantic_weights:
+        lexical_weights = resolve_feature_weights(feature_weights=nonsemantic_weights)
+        context["prepared_lexical"] = {
+            "weights": lexical_weights, "tokens": {}, "fingerprints": {},
+            "levenshtein_weights": edit_weights, "jaro_winkler_prefix_weight": prefix_weight,
+            "winnowing_kgram": winnowing_kgram, "winnowing_window": winnowing_window,
+            "gst_min_match_length": gst_min_match_length,
+        }
+        prepared = context["prepared_lexical"]
+        if lexical_weights.get("winnowing", 0.0) or lexical_weights.get("gst", 0.0):
+            used_ids = set(query_file_ids or ()) | set(document_file_ids or ())
+            used_texts = {prepared_texts[str(key)] for key in used_ids} if used_ids else set(prepared_texts.values())
+            for text in used_texts:
+                tokens = _similarity.tokenize_for_lexical_matching(
+                    text, lexical_tokenizer=options.get("lexical_tokenizer", "raw"),
+                    code_language=options.get("code_language"),
+                )
+                prepared["tokens"][text] = tokens
+                if lexical_weights.get("winnowing", 0.0):
+                    prepared["fingerprints"][text] = _similarity._winnowing_fingerprints(
+                        tokens, kgram_size=winnowing_kgram, window_size=winnowing_window,
+                    )
     if semantic_weight <= 0.0:
         return context
 
@@ -405,12 +432,13 @@ def _prepare_builtin_scoring_context(
             selected_pooling=selected_pooling,
         )
     if backend_is_multivector(vector_backend):
-        _add_multivector_scores(
-            context,
-            prepared_texts,
-            query_ids=query_ids,
-            document_ids=document_ids,
-        )
+        if precompute_multivector:
+            _add_multivector_scores(
+                context,
+                prepared_texts,
+                query_ids=query_ids,
+                document_ids=document_ids,
+            )
     return context
 
 
@@ -495,11 +523,26 @@ def _score_builtin_pair(context, left_id, right_id, left_is_query=False):
         score += context["semantic_weight"] * float(semantic_score)
 
     if context["nonsemantic_weight"] > 0.0:
-        nonsemantic_score = calculate_similarity(
-            left_text,
-            right_text,
-            **context["nonsemantic_options"],
-        )
+        prepared = context.get("prepared_lexical")
+        if prepared is None:
+            nonsemantic_score = calculate_similarity(left_text, right_text, **context["nonsemantic_options"])
+        else:
+            scores = {}
+            if prepared["weights"].get("winnowing", 0.0):
+                scores["winnowing"] = _similarity._winnowing_similarity_from_fingerprints(
+                    prepared["fingerprints"][left_text], prepared["fingerprints"][right_text],
+                )
+            if prepared["weights"].get("gst", 0.0):
+                scores["gst"] = _similarity.gst_similarity_from_tokens(
+                    prepared["tokens"][left_text], prepared["tokens"][right_text],
+                    min_match_length=prepared["gst_min_match_length"],
+                )
+            nonsemantic_score = _similarity.combined_similarity_from_embeddings(
+                left_text, right_text, None, None, prepared["weights"],
+                extra_feature_scores=scores,
+                levenshtein_weights=prepared["levenshtein_weights"],
+                jaro_winkler_prefix_weight=prepared["jaro_winkler_prefix_weight"],
+            )
         score += context["nonsemantic_weight"] * float(nonsemantic_score)
     return float(score)
 

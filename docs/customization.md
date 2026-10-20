@@ -164,3 +164,16 @@ Custom runs attach metadata to scored DataFrames and optional reproducibility JS
 - custom algorithm name, function, package version, options, and source SHA-256 fingerprint.
 
 Real datasets and private algorithm files are not bundled by Matheel. Keep your own copies and follow the terms of the source that provided them.
+
+
+## External tool identity
+
+The bundled [local JPlag and Dolos adapters](external_detectors.md) prepare one
+label-free corpus and reuse its complete pair results. A custom module may define
+`portable_configuration(algorithm_options)` when runtime options contain local
+tool paths. Return fully effective JSON options with verified external artifact
+versions/hashes and no private paths. Matheel uses this hook for method identity,
+algorithm cards and exported metadata; execution receives the original options.
+The hook must also accept its own already published output so imported artifacts
+can be validated without local tools. Tool adapters must verify actual local
+artifacts during every preparation rather than trust declared version strings.

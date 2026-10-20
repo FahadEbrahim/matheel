@@ -1,0 +1,1153 @@
+{
+  "aggregate": [
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_name": "Dolos 2.10.0",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.80393741700027,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.6701542588866535,
+      "median_score": 0.6701542588866535,
+      "metric": "auroc",
+      "rank": 1,
+      "sample_count": 460,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.890497917000175,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.5559087860496311,
+      "median_score": 0.5559087860496311,
+      "metric": "auroc",
+      "rank": 2,
+      "sample_count": 460,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_name": "Dolos 2.10.0",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.80393741700027,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.8782089962498862,
+      "median_score": 0.8782089962498862,
+      "metric": "average_precision",
+      "rank": 1,
+      "sample_count": 460,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.890497917000175,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.81613862048036,
+      "median_score": 0.81613862048036,
+      "metric": "average_precision",
+      "rank": 2,
+      "sample_count": 460,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_name": "Dolos 2.10.0",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.80393741700027,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.7154213036565978,
+      "median_score": 0.7154213036565978,
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 460,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.890497917000175,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.5709219858156029,
+      "median_score": 0.5709219858156029,
+      "metric": "f1",
+      "rank": 2,
+      "sample_count": 460,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_name": "Dolos 2.10.0",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.727538332997938,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.9563648558014755,
+      "median_score": 0.9563648558014755,
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 2485,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.43610549999721,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.7071294433266264,
+      "median_score": 0.7071294433266264,
+      "metric": "mean_average_precision",
+      "rank": 2,
+      "sample_count": 2485,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_name": "Dolos 2.10.0",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.727538332997938,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.9563648558014755,
+      "median_score": 0.9563648558014755,
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 2485,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.43610549999721,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.7071294433266264,
+      "median_score": 0.7071294433266264,
+      "metric": "mean_reciprocal_rank",
+      "rank": 2,
+      "sample_count": 2485,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_name": "Dolos 2.10.0",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.727538332997938,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.9673955260892405,
+      "median_score": 0.9673955260892405,
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 2485,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "complete_coverage": true,
+      "coverage": 1.0,
+      "dataset_count": 1,
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.43610549999721,
+      "eligible": true,
+      "expected_dataset_count": 1,
+      "mean_score": 0.7764408924524386,
+      "median_score": 0.7764408924524386,
+      "metric": "ndcg_at_k",
+      "rank": 2,
+      "sample_count": 2485,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    }
+  ],
+  "cards": {
+    "algorithms": [
+      {
+        "algorithm_kind": "custom",
+        "algorithm_options": {
+          "adapter_sha256": "3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4",
+          "artifact_sha256": "5f2c21e8b88ed77134effcb3a5a3ab13d188f6a3e16d401387f7479e92db9aa2",
+          "configuration": {
+            "heap_mb": 1024,
+            "language": "java",
+            "max_comparisons": 125000,
+            "max_files": 500,
+            "max_output_bytes": 2000000,
+            "max_result_bytes": 250000000,
+            "max_source_bytes": 50000000,
+            "min_tokens": 9,
+            "normalize": false,
+            "score_mode": "average",
+            "timeout_seconds": 300.0
+          },
+          "corpus_policy": "all_prepared_files_single_file_submissions",
+          "detector": "jplag",
+          "runtime": {
+            "executable_sha256": "83c9c5310d044e7c4262432854eb1bc5f49763d7c1e9971777a646c91b96c06d",
+            "modules_sha256": "74e8a4881f09f0d56c3e27e0075f60534bc4d9a908f3d179586d6515f89f9825",
+            "release_sha256": "e5e50f3c36e9ce7ac50ccbc499c8299880e8fb8fee57bb3a7a2b890477ce8498",
+            "version": "openjdk version \"25.0.4.1\" 2026-08-18 LTS"
+          },
+          "self_matches": "unsupported",
+          "version": "6.3.0"
+        },
+        "algorithm_path_name": "matheel.external_detectors.jplag",
+        "card_type": "algorithm",
+        "fingerprint": {
+          "file_name": "jplag.py",
+          "sha256": "4a831236bc6baf4e9020bef80dd6e6033ef7a9f3109103e55ab09dbf140861d6",
+          "source_type": "file",
+          "total_bytes": 8210
+        },
+        "name": "JPlag 6.3.0 average",
+        "package": "matheel",
+        "package_version": "0.7.0",
+        "resolved_algorithm_name": "matheel.external_detectors.jplag",
+        "schema_version": 1,
+        "similarity_options": {
+          "k": null,
+          "threshold": null
+        }
+      },
+      {
+        "algorithm_kind": "custom",
+        "algorithm_options": {
+          "adapter_sha256": "3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4",
+          "configuration": {
+            "heap_mb": 1024,
+            "include_comments": false,
+            "kgram_length": 23,
+            "kgrams_in_window": 17,
+            "language": "java",
+            "max_comparisons": 125000,
+            "max_files": 500,
+            "max_fingerprint_count": 2147483647,
+            "max_output_bytes": 2000000,
+            "max_result_bytes": 100000000,
+            "max_source_bytes": 50000000,
+            "timeout_seconds": 300.0
+          },
+          "corpus_policy": "all_prepared_files_single_file_submissions",
+          "detector": "dolos",
+          "installation_sha256": "20c136bd5f23d9b0f901f7a08b52202571bfc5a06f034ec7d080a94cd252e89d",
+          "lockfile_sha256": "29f32c0af8eb8e824a9d22b5fd1c0335a8545ba275c76920e675a59a24d804bc",
+          "npm_integrity": "sha512-4Orj8kGOeBnAu9l2qLLXkU3udeLDFpIqUeMxMeMoMwKcmCpZq6qSHyfR+UZsgpUC7r6JlBZ+J/dOzobVYIea7g==",
+          "runtime": {
+            "executable_sha256": "68f4d07ca49e0500cc135c7e0a445093e228e42e126ac22306d045f0a8c2636b",
+            "version": "v22.23.3"
+          },
+          "score_mode": "symmetric_selected_fingerprint_coverage",
+          "self_matches": "unsupported",
+          "version": "2.10.0"
+        },
+        "algorithm_path_name": "matheel.external_detectors.dolos",
+        "card_type": "algorithm",
+        "fingerprint": {
+          "file_name": "dolos.py",
+          "sha256": "bea0ef03b270fd7b3e3e5c015a557fa071d05222121694c638dfac1b15692791",
+          "source_type": "file",
+          "total_bytes": 9261
+        },
+        "name": "Dolos 2.10.0",
+        "package": "matheel",
+        "package_version": "0.7.0",
+        "resolved_algorithm_name": "matheel.external_detectors.dolos",
+        "schema_version": 1,
+        "similarity_options": {
+          "k": null,
+          "threshold": null
+        }
+      }
+    ],
+    "datasets": [
+      {
+        "card_type": "dataset",
+        "counts": {
+          "files": 467,
+          "pairs": 460,
+          "positive_pairs": 355
+        },
+        "dataset_kind": "pair_classification",
+        "fingerprint": {
+          "file_count": 470,
+          "sha256": "abacfd3065545cb7ebb1d6667d30fe20b4c65792f59330bebb728cfe675ba04c",
+          "source_type": "directory",
+          "total_bytes": 409281
+        },
+        "granularity": "file",
+        "ground_truth": "Original, independently written, and deliberately plagiarized submissions distinguished by source directory annotations.",
+        "languages": [
+          "java"
+        ],
+        "license": "Apache-2.0",
+        "metadata": {
+          "adapter": "irplag_pair",
+          "dataset_kind": "pair_classification",
+          "granularity": "file",
+          "ground_truth": "Original, independently written, and deliberately plagiarized submissions distinguished by source directory annotations.",
+          "languages": [
+            "java"
+          ],
+          "license": "Apache-2.0",
+          "name": "irplag_pair",
+          "source_checksum": [
+            "sha256:288efbe08cc60837ae6509e49fd0285e7d22cb9b6e4dd6740d86229969fe9b8d"
+          ],
+          "source_revision": "f07e95120680b25f78659ed63cd6130fd05b2df8",
+          "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+          "task_type": "plagiarism"
+        },
+        "name": "irplag_pair",
+        "schema_version": 1,
+        "source": {
+          "identifier": "irplag_pair",
+          "k": 10,
+          "name": "irplag_pair",
+          "task_families": [
+            "pair"
+          ],
+          "threshold": 0.5
+        },
+        "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+        "task_family": "pair",
+        "task_type": "plagiarism"
+      },
+      {
+        "card_type": "dataset",
+        "counts": {
+          "documents": 7,
+          "files": 467,
+          "qrels": 355,
+          "queries": 355
+        },
+        "dataset_kind": "retrieval",
+        "fingerprint": {
+          "file_count": 939,
+          "sha256": "7cc3b77bd7b137a6f89c356663ec2f1e51de87a6f8f18dabcd6e68273c3a7905",
+          "source_type": "directory",
+          "total_bytes": 774024
+        },
+        "granularity": "file",
+        "ground_truth": "Original, independently written, and deliberately plagiarized submissions distinguished by source directory annotations.",
+        "languages": [
+          "java"
+        ],
+        "license": "Apache-2.0",
+        "metadata": {
+          "dataset_kind": "retrieval",
+          "excluded_queries_without_positive_qrels": 105,
+          "granularity": "file",
+          "ground_truth": "Original, independently written, and deliberately plagiarized submissions distinguished by source directory annotations.",
+          "languages": [
+            "java"
+          ],
+          "license": "Apache-2.0",
+          "name": "irplag_retrieval",
+          "source_checksum": [
+            "sha256:288efbe08cc60837ae6509e49fd0285e7d22cb9b6e4dd6740d86229969fe9b8d"
+          ],
+          "source_revision": "f07e95120680b25f78659ed63cd6130fd05b2df8",
+          "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+          "task_type": "plagiarism"
+        },
+        "name": "irplag_retrieval",
+        "schema_version": 1,
+        "source": {
+          "identifier": "irplag_retrieval",
+          "k": 10,
+          "name": "irplag_retrieval",
+          "task_families": [
+            "retrieval"
+          ],
+          "threshold": 0.5
+        },
+        "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+        "task_family": "retrieval",
+        "task_type": "plagiarism"
+      }
+    ]
+  },
+  "manifest": {
+    "algorithms": [
+      {
+        "algorithm_options": {
+          "adapter_sha256": "3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4",
+          "artifact_sha256": "5f2c21e8b88ed77134effcb3a5a3ab13d188f6a3e16d401387f7479e92db9aa2",
+          "configuration": {
+            "heap_mb": 1024,
+            "language": "java",
+            "max_comparisons": 125000,
+            "max_files": 500,
+            "max_output_bytes": 2000000,
+            "max_result_bytes": 250000000,
+            "max_source_bytes": 50000000,
+            "min_tokens": 9,
+            "normalize": false,
+            "score_mode": "average",
+            "timeout_seconds": 300.0
+          },
+          "corpus_policy": "all_prepared_files_single_file_submissions",
+          "detector": "jplag",
+          "runtime": {
+            "executable_sha256": "83c9c5310d044e7c4262432854eb1bc5f49763d7c1e9971777a646c91b96c06d",
+            "modules_sha256": "74e8a4881f09f0d56c3e27e0075f60534bc4d9a908f3d179586d6515f89f9825",
+            "release_sha256": "e5e50f3c36e9ce7ac50ccbc499c8299880e8fb8fee57bb3a7a2b890477ce8498",
+            "version": "openjdk version \"25.0.4.1\" 2026-08-18 LTS"
+          },
+          "self_matches": "unsupported",
+          "version": "6.3.0"
+        },
+        "algorithm_path": "matheel.external_detectors.jplag",
+        "k": null,
+        "name": "JPlag 6.3.0 average",
+        "similarity_options": {},
+        "threshold": null
+      },
+      {
+        "algorithm_options": {
+          "adapter_sha256": "3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4",
+          "configuration": {
+            "heap_mb": 1024,
+            "include_comments": false,
+            "kgram_length": 23,
+            "kgrams_in_window": 17,
+            "language": "java",
+            "max_comparisons": 125000,
+            "max_files": 500,
+            "max_fingerprint_count": 2147483647,
+            "max_output_bytes": 2000000,
+            "max_result_bytes": 100000000,
+            "max_source_bytes": 50000000,
+            "timeout_seconds": 300.0
+          },
+          "corpus_policy": "all_prepared_files_single_file_submissions",
+          "detector": "dolos",
+          "installation_sha256": "20c136bd5f23d9b0f901f7a08b52202571bfc5a06f034ec7d080a94cd252e89d",
+          "lockfile_sha256": "29f32c0af8eb8e824a9d22b5fd1c0335a8545ba275c76920e675a59a24d804bc",
+          "npm_integrity": "sha512-4Orj8kGOeBnAu9l2qLLXkU3udeLDFpIqUeMxMeMoMwKcmCpZq6qSHyfR+UZsgpUC7r6JlBZ+J/dOzobVYIea7g==",
+          "runtime": {
+            "executable_sha256": "68f4d07ca49e0500cc135c7e0a445093e228e42e126ac22306d045f0a8c2636b",
+            "version": "v22.23.3"
+          },
+          "score_mode": "symmetric_selected_fingerprint_coverage",
+          "self_matches": "unsupported",
+          "version": "2.10.0"
+        },
+        "algorithm_path": "matheel.external_detectors.dolos",
+        "k": null,
+        "name": "Dolos 2.10.0",
+        "similarity_options": {},
+        "threshold": null
+      }
+    ],
+    "continue_on_error": true,
+    "datasets": [
+      {
+        "domain": "plagiarism",
+        "exclude_self_matches": false,
+        "k": 10,
+        "name": "irplag_pair",
+        "similarity_options": {},
+        "spec": {
+          "identifier": "irplag_pair",
+          "k": 10,
+          "name": "irplag_pair",
+          "task_families": [
+            "pair"
+          ],
+          "threshold": 0.5
+        },
+        "task_family": "pair",
+        "threshold": 0.5
+      },
+      {
+        "domain": "plagiarism",
+        "exclude_self_matches": false,
+        "k": 10,
+        "name": "irplag_retrieval",
+        "similarity_options": {},
+        "spec": {
+          "identifier": "irplag_retrieval",
+          "k": 10,
+          "name": "irplag_retrieval",
+          "task_families": [
+            "retrieval"
+          ],
+          "threshold": 0.5
+        },
+        "task_family": "retrieval",
+        "threshold": 0.5
+      }
+    ],
+    "name": "IRPlag-local-detector-diagnostic",
+    "pair_metrics": [
+      "average_precision",
+      "auroc",
+      "f1"
+    ],
+    "retrieval_metrics": [
+      "mean_average_precision",
+      "mean_reciprocal_rank",
+      "ndcg_at_k"
+    ],
+    "schema_version": 1,
+    "seed": null,
+    "strict_coverage": true
+  },
+  "metadata": {
+    "detector_corpus": {
+      "files": 467,
+      "membership": "all files in each prepared view; including105 submissions excluded from positive-judged retrieval queries",
+      "unordered_native_comparisons": 108811
+    },
+    "diagnostic_only": true,
+    "inputs": [
+      {
+        "content": {
+          "counts": {
+            "files": 467,
+            "pairs": 460
+          },
+          "sha256": "0460f56a3a07245b2598ac10db8374b610a1d54d9b7912473a53cbb8f6a6e889"
+        },
+        "domain": "plagiarism",
+        "k": 10,
+        "name": "irplag_pair",
+        "selection": {
+          "description": "All 460 original/submission labeled pairs. Retrieval uses all 355 positively judged submissions against seven originals; exclude 105 submissions with no positive qrel from ranking-only evaluation. Retain source labels including the disputed non-plagiarized submissions described in its README.",
+          "mode": "all_labeled_pairs"
+        },
+        "similarity_options": {
+          "code_language": "java"
+        },
+        "source_checksum": [
+          "sha256:288efbe08cc60837ae6509e49fd0285e7d22cb9b6e4dd6740d86229969fe9b8d"
+        ],
+        "source_revision": "f07e95120680b25f78659ed63cd6130fd05b2df8",
+        "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+        "split": "source_labeled_pairs",
+        "task": "pair"
+      },
+      {
+        "content": {
+          "counts": {
+            "corpus": 7,
+            "files": 467,
+            "qrels": 355,
+            "queries": 355
+          },
+          "sha256": "73d8d190a278898d18647419d8db135d943cbaa6ff41813f91db01600b7c5fea"
+        },
+        "domain": "plagiarism",
+        "k": 10,
+        "name": "irplag_retrieval",
+        "selection": {
+          "candidate_policy": "all",
+          "candidate_pool": "all_seven_original_submissions",
+          "description": "All 460 original/submission labeled pairs. Retrieval uses all 355 positively judged submissions against seven originals; exclude 105 submissions with no positive qrel from ranking-only evaluation. Retain source labels including the disputed non-plagiarized submissions described in its README.",
+          "excluded_queries_without_positive_qrels": 105,
+          "mode": "all_positive_judged_queries",
+          "query_policy": "positive_judged"
+        },
+        "similarity_options": {
+          "code_language": "java"
+        },
+        "source_checksum": [
+          "sha256:288efbe08cc60837ae6509e49fd0285e7d22cb9b6e4dd6740d86229969fe9b8d"
+        ],
+        "source_revision": "f07e95120680b25f78659ed63cd6130fd05b2df8",
+        "source_url": "https://github.com/oscarkarnalim/sourcecodeplagiarismdataset",
+        "split": "source_judged_retrieval",
+        "task": "retrieval"
+      }
+    ],
+    "interpretation": "Full prepared IRPlag views only; not the multilingual Matheel-Plagiarism-v1 ranking. Fixed threshold0.5; no tuning.",
+    "matheel_source": {
+      "files": {
+        "__init__.py": "759f717c74798ea0ae32f539d082a29046d3650a76100fde919ec997384d43c7",
+        "_path_utils.py": "19155967775189861e4b0050e21845c7993d6d4b0e5ece868758430f106e3621",
+        "_progress.py": "eed2a890ca01e54c9b14754c3f328cddae06f45c8a82fa2e19e279108311a992",
+        "_run_metadata.py": "3518aeb1159c10f49ea4ecf98e83db9267d83a8eb87a1c3502b40f20105179f9",
+        "algorithms.py": "b700fbcb870ffbf8d0d3ff89b1c6e50668870af72fdabacc01b5e9aed842fbce",
+        "benchmark_cache.py": "c83b7e2fd6d562e14ed2e1126e9546373d9f3ee9e9e4331601810a5dd528e828",
+        "benchmark_cards.py": "1d2675edd0d0ca2953ecc4e1dd14d0f3b1b067f5f0dabe05f6488a157eda24a1",
+        "benchmark_protocol.py": "f601d85724b698bc1b6a772eb4748606dae4668c50ba895b541915fee8631819",
+        "benchmark_registry.py": "b8356a5585034c51a65568474929a7ce763f095bfe463e9d7156c44b0844778c",
+        "calibration.py": "3cb1577cdde68b2081e95371bf2c05aad97615222e7c2669800739878f2f5c79",
+        "chunking.py": "c14d18b5baba1e57306e653a3ee6068925498f5a92b0ec6d9e3067e2710dc0f9",
+        "cli.py": "cc25ab51711815404b752170d23e1c51098f2bb853520351e841f60f6c6a1855",
+        "code_metrics.py": "dd0b1fff8f4344374d85d6ce432ec48a8b66a4d496c481e9f4a061d171736ce5",
+        "comparison_suite.py": "f513115d243a2cd348557d1b0ac3b4b41b6bb1d7c5641d8a5815a143003d64b8",
+        "custom_templates.py": "a95cea5e64fe234fb22c6ab45b232f18548df4843b36c87b554b31714eb751e1",
+        "dataset_validation.py": "fe984954a0d302b89eb73bbfb4a033fc88e3a9ac4e25bc06003cac9a839da9ce",
+        "datasets.py": "1489828cffef2ab48874e326f37460ae83eea57c51a64611d4c440cd42abd3da",
+        "evaluation.py": "cfe6a9a1e9055b56431106e073b21045493f44aea7946e3da8b7865136d7a394",
+        "external_detectors/__init__.py": "032b8cb966086b6fbe47f19c8b5509b938d1f5fb041c7e9e0e8b115300ddbf5f",
+        "external_detectors/common.py": "07d3c175dfc34a48c0dd90e11f984625219e79ca7a69fa88bcae8dc78a13200f",
+        "external_detectors/dolos.py": "bea0ef03b270fd7b3e3e5c015a557fa071d05222121694c638dfac1b15692791",
+        "external_detectors/jplag.py": "4a831236bc6baf4e9020bef80dd6e6033ef7a9f3109103e55ab09dbf140861d6",
+        "feature_weights.py": "e006c0b61c735e3d7471e20696f5458fd1f29e8d678a4517f39e3ed2dd94a2ce",
+        "leaderboard.py": "d10542605e8e9a6bcedff8dbc30ddd122a215552c3f3bb04ab19ec4bd481fef8",
+        "leaderboard_presets.py": "f7a46cbb722486356df0e55dc5a06fb7d6a4ba1198b743a0aaee55bd00b3f5d1",
+        "lexical.py": "cefd08c4e825547bb7709631ee8b676ad7a3f2948bab52d2e264daf1c3473d0c",
+        "model_routing.py": "88220fe86e73155491c828bc6a401d2ee6c4cf30a512d1aa2c518efbf055bd57",
+        "native_codebleu.py": "620b38aac9c5ee0ebc649cbab003b47052a08ddd3bc6bb7dab2c0d6933ecaa61",
+        "preprocessing.py": "6fdcb9def866fb540f37db73b49c3fcbc3233d432a60448fb9ce5e86698f7dda",
+        "reports.py": "05de992f3ef7cedfe1052b133b6d1c8a87c813a164d6eee70fd70489046f9257",
+        "reproducibility.py": "38c274777136092e828ab134c7e43a6545702c208bae33250cb19d261fd4deab",
+        "resampling.py": "b06a1637cc7526f66f542b23c59b05d64f353f4547ed9c65528e193a2e14eb3c",
+        "scoring_config.py": "cddf9ef33d7b8608f156b3194043fe631ba8628989a770196db88f9e33f18072",
+        "similarity.py": "3030fe8ac36ba524bd6ff267b10c214cdc5587bb4bc8aeab979aa548f5cb0673",
+        "vectors.py": "a60f3afd160f9653f152953dc54e069e698fcbd28d276f2c4a05832fc0a7b91e",
+        "visualization.py": "5f6f90ee453d1ba2d800a74f1517a06f86204b485572b439e1339628d01e1859"
+      },
+      "hash_scheme": "sha256(canonical relative-python-file SHA256 mapping)",
+      "sha256": "d1667609ac2e4c145d53dd621041ac595e9ef5aebdba2c9c3308ac3934be962c"
+    },
+    "method_configurations": {
+      "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8": {
+        "algorithm_module": "matheel.external_detectors.jplag",
+        "algorithm_options": {
+          "adapter_sha256": "3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4",
+          "artifact_sha256": "5f2c21e8b88ed77134effcb3a5a3ab13d188f6a3e16d401387f7479e92db9aa2",
+          "configuration": {
+            "heap_mb": 1024,
+            "language": "java",
+            "max_comparisons": 125000,
+            "max_files": 500,
+            "max_output_bytes": 2000000,
+            "max_result_bytes": 250000000,
+            "max_source_bytes": 50000000,
+            "min_tokens": 9,
+            "normalize": false,
+            "score_mode": "average",
+            "timeout_seconds": 300.0
+          },
+          "corpus_policy": "all_prepared_files_single_file_submissions",
+          "detector": "jplag",
+          "runtime": {
+            "executable_sha256": "83c9c5310d044e7c4262432854eb1bc5f49763d7c1e9971777a646c91b96c06d",
+            "modules_sha256": "74e8a4881f09f0d56c3e27e0075f60534bc4d9a908f3d179586d6515f89f9825",
+            "release_sha256": "e5e50f3c36e9ce7ac50ccbc499c8299880e8fb8fee57bb3a7a2b890477ce8498",
+            "version": "openjdk version \"25.0.4.1\" 2026-08-18 LTS"
+          },
+          "self_matches": "unsupported",
+          "version": "6.3.0"
+        },
+        "algorithm_package": "matheel",
+        "algorithm_package_version": "0.7.0",
+        "algorithm_sha256": "4a831236bc6baf4e9020bef80dd6e6033ef7a9f3109103e55ab09dbf140861d6",
+        "k": null,
+        "matheel_version": "0.7.0",
+        "similarity_options": {
+          "chunk_aggregation": "mean",
+          "chunk_language": "text",
+          "chunk_overlap": 0,
+          "chunk_size": 200,
+          "chunker_options": null,
+          "chunking_method": "none",
+          "code_language": "java",
+          "code_metric": "none",
+          "code_metric_bidirectional": false,
+          "code_metric_weight": 0.0,
+          "codebertscore_batch_size": 16,
+          "codebertscore_device": "auto",
+          "codebertscore_idf": false,
+          "codebertscore_lang": null,
+          "codebertscore_max_length": 0,
+          "codebertscore_model": "microsoft/codebert-base",
+          "codebertscore_nthreads": 4,
+          "codebertscore_num_layers": null,
+          "codebertscore_rescale_with_baseline": false,
+          "codebertscore_use_fast_tokenizer": false,
+          "codebertscore_verbose": false,
+          "codebleu_component_weights": null,
+          "crystalbleu_max_order": 4,
+          "crystalbleu_trivial_ngram_count": 50,
+          "device": "auto",
+          "feature_weights": null,
+          "gst_min_match_length": 5,
+          "jaro_winkler_prefix_weight": 0.1,
+          "levenshtein_weights": null,
+          "lexical_tokenizer": "raw",
+          "max_chunks": 0,
+          "max_token_length": null,
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "multivector_bidirectional": false,
+          "normalize_semantic_scores": false,
+          "pooling_method": "mean",
+          "preprocess_mode": "none",
+          "ruby_denominator": "max",
+          "ruby_epsilon": 1e-12,
+          "ruby_graph_include_leaf_edges": true,
+          "ruby_graph_timeout_seconds": 1.0,
+          "ruby_graph_use_edge_cost": true,
+          "ruby_max_order": 4,
+          "ruby_mode": "auto",
+          "ruby_tokenizer": "tranx",
+          "ruby_tree_max_children": 8,
+          "ruby_tree_max_depth": 10,
+          "ruby_tree_max_nodes": 180,
+          "similarity_function": "cosine",
+          "static_vector_dim": 256,
+          "static_vector_lowercase": true,
+          "tsed_delete_cost": 1.0,
+          "tsed_insert_cost": 1.0,
+          "tsed_max_children": 8,
+          "tsed_max_depth": 10,
+          "tsed_max_nodes": 180,
+          "tsed_rename_cost": 1.0,
+          "vector_backend": "auto",
+          "winnowing_kgram": 5,
+          "winnowing_window": 4
+        },
+        "threshold": null
+      },
+      "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb": {
+        "algorithm_module": "matheel.external_detectors.dolos",
+        "algorithm_options": {
+          "adapter_sha256": "3b77928e9b9bac47e650e097d609cf37be9bbbbf8d2fb22f43f7dfbb36d126c4",
+          "configuration": {
+            "heap_mb": 1024,
+            "include_comments": false,
+            "kgram_length": 23,
+            "kgrams_in_window": 17,
+            "language": "java",
+            "max_comparisons": 125000,
+            "max_files": 500,
+            "max_fingerprint_count": 2147483647,
+            "max_output_bytes": 2000000,
+            "max_result_bytes": 100000000,
+            "max_source_bytes": 50000000,
+            "timeout_seconds": 300.0
+          },
+          "corpus_policy": "all_prepared_files_single_file_submissions",
+          "detector": "dolos",
+          "installation_sha256": "20c136bd5f23d9b0f901f7a08b52202571bfc5a06f034ec7d080a94cd252e89d",
+          "lockfile_sha256": "29f32c0af8eb8e824a9d22b5fd1c0335a8545ba275c76920e675a59a24d804bc",
+          "npm_integrity": "sha512-4Orj8kGOeBnAu9l2qLLXkU3udeLDFpIqUeMxMeMoMwKcmCpZq6qSHyfR+UZsgpUC7r6JlBZ+J/dOzobVYIea7g==",
+          "runtime": {
+            "executable_sha256": "68f4d07ca49e0500cc135c7e0a445093e228e42e126ac22306d045f0a8c2636b",
+            "version": "v22.23.3"
+          },
+          "score_mode": "symmetric_selected_fingerprint_coverage",
+          "self_matches": "unsupported",
+          "version": "2.10.0"
+        },
+        "algorithm_package": "matheel",
+        "algorithm_package_version": "0.7.0",
+        "algorithm_sha256": "bea0ef03b270fd7b3e3e5c015a557fa071d05222121694c638dfac1b15692791",
+        "k": null,
+        "matheel_version": "0.7.0",
+        "similarity_options": {
+          "chunk_aggregation": "mean",
+          "chunk_language": "text",
+          "chunk_overlap": 0,
+          "chunk_size": 200,
+          "chunker_options": null,
+          "chunking_method": "none",
+          "code_language": "java",
+          "code_metric": "none",
+          "code_metric_bidirectional": false,
+          "code_metric_weight": 0.0,
+          "codebertscore_batch_size": 16,
+          "codebertscore_device": "auto",
+          "codebertscore_idf": false,
+          "codebertscore_lang": null,
+          "codebertscore_max_length": 0,
+          "codebertscore_model": "microsoft/codebert-base",
+          "codebertscore_nthreads": 4,
+          "codebertscore_num_layers": null,
+          "codebertscore_rescale_with_baseline": false,
+          "codebertscore_use_fast_tokenizer": false,
+          "codebertscore_verbose": false,
+          "codebleu_component_weights": null,
+          "crystalbleu_max_order": 4,
+          "crystalbleu_trivial_ngram_count": 50,
+          "device": "auto",
+          "feature_weights": null,
+          "gst_min_match_length": 5,
+          "jaro_winkler_prefix_weight": 0.1,
+          "levenshtein_weights": null,
+          "lexical_tokenizer": "raw",
+          "max_chunks": 0,
+          "max_token_length": null,
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "multivector_bidirectional": false,
+          "normalize_semantic_scores": false,
+          "pooling_method": "mean",
+          "preprocess_mode": "none",
+          "ruby_denominator": "max",
+          "ruby_epsilon": 1e-12,
+          "ruby_graph_include_leaf_edges": true,
+          "ruby_graph_timeout_seconds": 1.0,
+          "ruby_graph_use_edge_cost": true,
+          "ruby_max_order": 4,
+          "ruby_mode": "auto",
+          "ruby_tokenizer": "tranx",
+          "ruby_tree_max_children": 8,
+          "ruby_tree_max_depth": 10,
+          "ruby_tree_max_nodes": 180,
+          "similarity_function": "cosine",
+          "static_vector_dim": 256,
+          "static_vector_lowercase": true,
+          "tsed_delete_cost": 1.0,
+          "tsed_insert_cost": 1.0,
+          "tsed_max_children": 8,
+          "tsed_max_depth": 10,
+          "tsed_max_nodes": 180,
+          "tsed_rename_cost": 1.0,
+          "vector_backend": "auto",
+          "winnowing_kgram": 5,
+          "winnowing_window": 4
+        },
+        "threshold": null
+      }
+    },
+    "name": "IRPlag-local-detector-diagnostic",
+    "official_benchmark": false,
+    "pair_metrics": [
+      "average_precision",
+      "auroc",
+      "f1"
+    ],
+    "pair_threshold_policy": {
+      "mode": "fixed",
+      "test_label_tuning": false,
+      "value": 0.5
+    },
+    "platform": {
+      "machine": "arm64",
+      "system": "Darwin"
+    },
+    "recorded_date": "2026-10-20",
+    "retrieval_candidate_policy": "all seven original submissions for each of355 positive-judged queries",
+    "retrieval_metrics": [
+      "mean_average_precision",
+      "mean_reciprocal_rank",
+      "ndcg_at_k"
+    ],
+    "schema_version": 1,
+    "score_artifacts": [
+      {
+        "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+        "algorithm_name": "JPlag 6.3.0 average",
+        "columns": [
+          "left_id",
+          "right_id",
+          "label",
+          "similarity_score"
+        ],
+        "dataset_name": "irplag_pair",
+        "filename": "15018fb5624e_1cb01c582411128bd212_pair.csv",
+        "rows": 460,
+        "sha256": "7823bd9c1e1b46c0f88981f6906eb11ca16d84d68b82cbcaf396460bd7dd3ba1",
+        "task_family": "pair"
+      },
+      {
+        "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+        "algorithm_name": "Dolos 2.10.0",
+        "columns": [
+          "left_id",
+          "right_id",
+          "label",
+          "similarity_score"
+        ],
+        "dataset_name": "irplag_pair",
+        "filename": "15018fb5624e_aa4c49c55f5540844523_pair.csv",
+        "rows": 460,
+        "sha256": "37c1b94e981e1ce485e6fc396fbb72e1bf396978e0b08d4a5f853384e1c2a6d9",
+        "task_family": "pair"
+      },
+      {
+        "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+        "algorithm_name": "JPlag 6.3.0 average",
+        "columns": [
+          "query_id",
+          "document_id",
+          "query_file_id",
+          "document_file_id",
+          "relevance",
+          "similarity_score"
+        ],
+        "dataset_name": "irplag_retrieval",
+        "filename": "582d08bcc3dc_1cb01c582411128bd212_retrieval.csv",
+        "rows": 2485,
+        "sha256": "66b9444929d0e5f4c8c7fed9ad05d66369b3a7154e725497028b66ac9115b1c1",
+        "task_family": "retrieval"
+      },
+      {
+        "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+        "algorithm_name": "Dolos 2.10.0",
+        "columns": [
+          "query_id",
+          "document_id",
+          "query_file_id",
+          "document_file_id",
+          "relevance",
+          "similarity_score"
+        ],
+        "dataset_name": "irplag_retrieval",
+        "filename": "582d08bcc3dc_aa4c49c55f5540844523_retrieval.csv",
+        "rows": 2485,
+        "sha256": "1b1e1cc70a28fec09b294314b61ccc9d79ac8ca25fd50658f3733657abd515b3",
+        "task_family": "retrieval"
+      }
+    ],
+    "seed": null,
+    "strict_coverage": true,
+    "wall_seconds": 71.75690683300127
+  },
+  "per_dataset": [
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_kind": "custom",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.80393741700027,
+      "eligible": true,
+      "metric": "auroc",
+      "rank": 1,
+      "sample_count": 460,
+      "score": 0.6701542588866535,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_kind": "custom",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.890497917000175,
+      "eligible": true,
+      "metric": "auroc",
+      "rank": 2,
+      "sample_count": 460,
+      "score": 0.5559087860496311,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_kind": "custom",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.80393741700027,
+      "eligible": true,
+      "metric": "average_precision",
+      "rank": 1,
+      "sample_count": 460,
+      "score": 0.8782089962498862,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_kind": "custom",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.890497917000175,
+      "eligible": true,
+      "metric": "average_precision",
+      "rank": 2,
+      "sample_count": 460,
+      "score": 0.81613862048036,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_kind": "custom",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.80393741700027,
+      "eligible": true,
+      "metric": "f1",
+      "rank": 1,
+      "sample_count": 460,
+      "score": 0.7154213036565978,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_kind": "custom",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "irplag_pair",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.890497917000175,
+      "eligible": true,
+      "metric": "f1",
+      "rank": 2,
+      "sample_count": 460,
+      "score": 0.5709219858156029,
+      "task_family": "pair",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_kind": "custom",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.727538332997938,
+      "eligible": true,
+      "metric": "mean_average_precision",
+      "rank": 1,
+      "sample_count": 2485,
+      "score": 0.9563648558014755,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_kind": "custom",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.43610549999721,
+      "eligible": true,
+      "metric": "mean_average_precision",
+      "rank": 2,
+      "sample_count": 2485,
+      "score": 0.7071294433266264,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_kind": "custom",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.727538332997938,
+      "eligible": true,
+      "metric": "mean_reciprocal_rank",
+      "rank": 1,
+      "sample_count": 2485,
+      "score": 0.9563648558014755,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_kind": "custom",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.43610549999721,
+      "eligible": true,
+      "metric": "mean_reciprocal_rank",
+      "rank": 2,
+      "sample_count": 2485,
+      "score": 0.7071294433266264,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "aa4c49c55f5540844523f8868b91b610bb9380faa4efd7fb405930fe212ecfcb",
+      "algorithm_kind": "custom",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 4.727538332997938,
+      "eligible": true,
+      "metric": "ndcg_at_k",
+      "rank": 1,
+      "sample_count": 2485,
+      "score": 0.9673955260892405,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    },
+    {
+      "algorithm_id": "1cb01c582411128bd212a59d052e422b95bf802e3e2bbfe7e26fab1ca5dcc3c8",
+      "algorithm_kind": "custom",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "irplag_retrieval",
+      "dataset_source": "local",
+      "domain": "plagiarism",
+      "elapsed_seconds": 30.43610549999721,
+      "eligible": true,
+      "metric": "ndcg_at_k",
+      "rank": 2,
+      "sample_count": 2485,
+      "score": 0.7764408924524386,
+      "task_family": "retrieval",
+      "task_type": "plagiarism"
+    }
+  ],
+  "schema_version": 1
+}

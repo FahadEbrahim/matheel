@@ -47,6 +47,11 @@ except ModuleNotFoundError:
     )
 
 try:
+    from gradio_app.result_analysis import build_result_analysis_tab
+except ModuleNotFoundError:
+    from result_analysis import build_result_analysis_tab
+
+try:
     from gradio_app.theme import APP_CSS, APP_JS
     from gradio_app.presentation import (
         app_header_html,
@@ -5255,6 +5260,7 @@ with gr.Blocks(
                         ],
                         api_name=False, trigger_mode="always_last", concurrency_limit=1,
                     )
+                build_result_analysis_tab()
                 with gr.Tab("Ready-made Leaderboard", id="ready-made-leaderboard"):
                     gr.Markdown(
                         "**Demo leaderboard — sampled plagiarism datasets.** This saved snapshot records the datasets and algorithm presets available "
