@@ -7,6 +7,7 @@ import gradio as gr
 import pandas as pd
 
 from matheel.benchmark_protocol import DEFAULT_BENCHMARK_ID, validate_benchmark_result
+from matheel.benchmark_analysis import load_benchmark_analysis
 from matheel.leaderboard import available_leaderboard_metrics
 
 try:
@@ -109,6 +110,52 @@ def _metric_choices(rows, task):
     return ordered + sorted(present.difference(ordered))
 
 
+def _add_diagnostics(aggregate, per_dataset, artifact_path):
+    """Add presentation columns; leave canonical scores, ranks and flags intact."""
+    for frame in (aggregate, per_dataset):
+        if "status" not in frame:
+            frame["status"] = frame["eligible"].map({True: "completed", False: "failed"})
+        frame["availability"] = frame["eligible"].map({True: "Available", False: "N/A"})
+        if "error" in frame:
+            frame.loc[frame["error"].eq("TimeoutError"), "status"] = "timed_out"
+    aggregate["pareto_efficient"] = False
+    aggregate["failure_reason"] = ""
+    for identity, rows in per_dataset.groupby("algorithm_id"):
+        failed = rows[~rows["eligible"]]
+        reasons = []
+        for column in ("not_applicable_reason", "error"):
+            if column in failed:
+                reasons.extend(str(value) for value in failed[column].dropna().unique() if value)
+        mask = aggregate["algorithm_id"].eq(identity)
+        aggregate.loc[mask, "failure_reason"] = "; ".join(sorted(set(reasons)))
+        if "timed_out" in set(failed["status"]):
+            aggregate.loc[mask, "status"] = "timed_out"
+    valid = aggregate[aggregate["eligible"] & aggregate["elapsed_seconds"].gt(0)]
+    for index, row in valid.iterrows():
+        dominated = ((valid["mean_score"] >= row["mean_score"]) &
+                     (valid["elapsed_seconds"] <= row["elapsed_seconds"]) &
+                     ((valid["mean_score"] > row["mean_score"]) |
+                      (valid["elapsed_seconds"] < row["elapsed_seconds"]))).any()
+        aggregate.loc[index, "pareto_efficient"] = not dominated
+    per_dataset["ci_lower"] = None
+    per_dataset["ci_upper"] = None
+    per_dataset["uncertainty_status"] = "N/A: no matching analysis companion"
+    try:
+        companion = load_benchmark_analysis(artifact_path)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        per_dataset["uncertainty_status"] = f"N/A: analysis validation failed ({exc})"
+        companion = None
+    if companion:
+        by_key = {(row["dataset_name"], row["algorithm_id"], row["metric"]): row
+                  for row in companion["metrics"]}
+        for index, row in per_dataset.iterrows():
+            analysis = by_key.get((row["dataset_name"], row["algorithm_id"], row["metric"]))
+            if analysis:
+                for column in ("ci_lower", "ci_upper", "uncertainty_status"):
+                    per_dataset.at[index, column] = analysis[column]
+    return aggregate, per_dataset
+
+
 def build_official_benchmark_view(
     task_family="pair",
     metric=None,
@@ -149,6 +196,9 @@ def build_official_benchmark_view(
     per_dataset = per_dataset[
         (per_dataset["task_family"] == task) & (per_dataset["metric"] == selected_metric)
     ].copy()
+    # Compute tradeoffs across the full selected task/metric before filtering a
+    # displayed method. A filter must not change its Pareto membership or rank.
+    aggregate, per_dataset = _add_diagnostics(aggregate, per_dataset, artifact_path)
     if selected_method != ALL_OFFICIAL_METHODS:
         aggregate = aggregate[aggregate["algorithm_id"] == selected_method]
         per_dataset = per_dataset[per_dataset["algorithm_id"] == selected_method]
@@ -167,8 +217,8 @@ def build_official_benchmark_view(
     )
     # Put methods and their scores in the initial viewport. Portable JSON uses
     # sorted keys, which otherwise leaves long identity hashes before results.
-    aggregate_first = ["rank", "algorithm_name", "mean_score", "coverage", "eligible"]
-    dataset_first = ["dataset_name", "rank", "algorithm_name", "score", "eligible"]
+    aggregate_first = ["rank", "algorithm_name", "mean_score", "coverage", "eligible", "elapsed_seconds", "status", "pareto_efficient"]
+    dataset_first = ["dataset_name", "rank", "algorithm_name", "score", "eligible", "ci_lower", "ci_upper", "elapsed_seconds", "status"]
     aggregate = aggregate[
         aggregate_first + [column for column in aggregate if column not in aggregate_first]
     ]
@@ -203,6 +253,8 @@ def build_official_benchmark_view(
             ),
             ("Eligible Methods", str(int(aggregate["eligible"].sum()))),
             ("Unranked Methods", str(int(aggregate["rank"].isna().sum()))),
+            ("Uncertainty", "Per-view conditional grouped bootstrap where available; published ranks remain fixed"),
+            ("Runtime", "Observed wall time including preparation; hardware and concurrent execution affect comparisons"),
             ("Status", "Validated published results"),
         ],
     )

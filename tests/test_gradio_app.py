@@ -38,6 +38,7 @@ EXPECTED_GRADIO_TABS = (
     "Pair Explanation",
     "Reports",
     "Official Benchmark",
+    "Analyze Results",
     "Ready-made Leaderboard",
     "Build Leaderboard",
     "Inspect Artifacts",
@@ -913,7 +914,7 @@ def test_scoring_actions_append_weight_table_without_changing_existing_control_o
 
 
 def test_flat_space_checkout_imports_extracted_helpers(tmp_path):
-    for name in ("app.py", "html_utils.py", "presentation.py", "theme.py", "control_types.py", "official_benchmark.py"):
+    for name in ("app.py", "html_utils.py", "presentation.py", "theme.py", "control_types.py", "official_benchmark.py", "result_analysis.py"):
         shutil.copyfile(APP_PATH.parent / name, tmp_path / name)
     (tmp_path / "assets").mkdir()
     shutil.copyfile(
@@ -936,7 +937,7 @@ assert app["demo"].get_config_file()["mode"] == "blocks"
 """
     completed = subprocess.run(
         [sys.executable, "-c", script], cwd=tmp_path,
-        env={**os.environ, "GRADIO_ANALYTICS_ENABLED": "False"},
+        env={**os.environ, "GRADIO_ANALYTICS_ENABLED": "False", "PYTHONPATH": str(APP_PATH.parent.parent)},
         text=True, capture_output=True, timeout=30,
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
