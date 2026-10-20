@@ -1,0 +1,122 @@
+{
+  "datasets": [
+    "irplag_retrieval",
+    "soco14_cpp_a1_judged_retrieval",
+    "soco14_cpp_a2_judged_retrieval",
+    "soco14_cpp_b1_judged_retrieval",
+    "soco14_cpp_b2_judged_retrieval",
+    "soco14_cpp_c1_judged_retrieval",
+    "soco14_java_a1_judged_retrieval",
+    "soco14_java_a2_judged_retrieval",
+    "soco14_java_b1_judged_retrieval",
+    "soco14_java_b2_judged_retrieval",
+    "soco14_java_c2_judged_retrieval"
+  ],
+  "k": 10,
+  "presets": [
+    {
+      "mode": "exhaustive",
+      "name": "exhaustive_winnowing",
+      "similarity_options": {
+        "feature_weights": {
+          "winnowing": 1
+        }
+      }
+    },
+    {
+      "candidate_count": 1,
+      "candidate_similarity_options": {
+        "feature_weights": {
+          "winnowing": 1
+        }
+      },
+      "mode": "two_stage",
+      "name": "winnowing_top1_levenshtein",
+      "similarity_options": {
+        "feature_weights": {
+          "levenshtein": 1
+        }
+      }
+    },
+    {
+      "candidate_count": 5,
+      "candidate_similarity_options": {
+        "feature_weights": {
+          "winnowing": 1
+        }
+      },
+      "mode": "two_stage",
+      "name": "winnowing_top5_levenshtein",
+      "similarity_options": {
+        "feature_weights": {
+          "levenshtein": 1
+        }
+      }
+    },
+    {
+      "candidate_count": 10,
+      "candidate_similarity_options": {
+        "feature_weights": {
+          "winnowing": 1
+        }
+      },
+      "mode": "two_stage",
+      "name": "winnowing_top10_levenshtein",
+      "similarity_options": {
+        "feature_weights": {
+          "levenshtein": 1
+        }
+      }
+    },
+    {
+      "candidate_count": 5,
+      "candidate_similarity_options": {
+        "feature_weights": {
+          "lcs": 1
+        }
+      },
+      "mode": "two_stage",
+      "name": "lcs_top5_levenshtein",
+      "similarity_options": {
+        "feature_weights": {
+          "levenshtein": 1
+        }
+      }
+    },
+    {
+      "candidate_count": 5,
+      "candidate_similarity_options": {
+        "feature_weights": {
+          "winnowing": 1
+        }
+      },
+      "mode": "two_stage",
+      "name": "winnowing_top5_gst",
+      "similarity_options": {
+        "feature_weights": {
+          "gst": 1
+        }
+      }
+    },
+    {
+      "candidate_count": 5,
+      "candidate_similarity_options": {
+        "feature_weights": {
+          "winnowing": 1
+        }
+      },
+      "mode": "two_stage",
+      "name": "winnowing_top5_partial_ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_partial_ratio": 1
+        }
+      }
+    }
+  ],
+  "schema_version": 1,
+  "scope": "All existing official-prepared retrieval views; original queries, corpus and qrels; full source; existing similarity options and source self-exclusion policies. No score-based admission or N/A relabeling.",
+  "seconds_per_view": 45,
+  "selection_policy": "Presets, shortlist sizes, view order and per-view budget fixed before scoring. Single observation per configuration/view. Timed-out cells retain null quality metrics. No partial-scope aggregate rankings.",
+  "source_ref": "64ca1364a08f76904559e19504524f80671b0479"
+}

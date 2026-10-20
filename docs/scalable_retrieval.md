@@ -151,6 +151,63 @@ shortlists supply fewer than ten results at `k=10`; precision retains its declar
 denominator. Inspect query-level diagnostics and repeat on other data before
 making broader performance or quality claims.
 
+## Compare presets across the existing judged views
+
+The [0.7.1 retrieval-preset experiment](https://github.com/FahadEbrahim/matheel/tree/main/benchmarks/retrieval-presets/plagiarism-071)
+declares shortlist sizes and deadlines before scoring. It covers every existing
+retrieval view: IRPlag Java and the ten nonempty SOCO14 C++/Java judged-endpoint
+views. The source query/corpus/qrel tables and labels are retained. The seven
+configurations compare an exhaustive Winnowing control, Winnowing top 1/5/10
+followed by Levenshtein, LCS top 5 followed by Levenshtein, and Winnowing top 5
+followed by GST or RapidFuzz Partial Ratio.
+
+To replay with locally prepared data, use a new output directory:
+
+```bash
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+  python scripts/validate_retrieval_presets.py \
+    --manifest prepared/prepared-manifest.json \
+    --plan benchmarks/retrieval-presets/plagiarism-071/plan.json \
+    --source-root ../matheel-0.7.1 --release-wheel dist/matheel-0.7.1-py3-none-any.whl \
+    --output-dir benchmark_outputs/retrieval-071
+```
+
+Create the source checkout with `git worktree add --detach ../matheel-0.7.1 v0.7.1`
+and obtain the published wheel with `python -m pip download --no-deps matheel==0.7.1 --dest dist`.
+This POSIX runner checks the exact release checkout and recursively matches its
+Python modules to that wheel. It hashes each normalized table, metadata and source input, then checks
+those hashes again in each worker. Each configuration/view gets its own 45-second
+process deadline. Public outputs contain source-free scores, per-query candidate
+diagnostics, input/configuration identities and an environment snapshot. Timeouts
+retain null quality metrics and remain timeouts. They cannot become N/A after
+execution. The exhaustive control also exports grouped uncertainty and its
+relevant results below rank ten through the error-analysis API.
+
+`scoring_seconds` times scoring and metric computation; `wall_seconds` also includes
+worker startup, validation, exports and the control's error analysis. Stage times
+include the stage's representation preparation. These are single observations on
+one machine, rather than stable latency percentiles or cross-hardware guarantees.
+
+Choose a preset by the constraints of the new experiment:
+
+| Need | Starting configuration | What to inspect |
+| --- | --- | --- |
+| Cheap reference over the complete corpus | Exhaustive Winnowing | Full-ranking MAP, missed positives and score ties |
+| A complete top-ten reranking window | Winnowing top 10 → Levenshtein | Candidate recall per query and final MAP; increase N in a new declared run if required |
+| A smaller expensive-stage budget | Winnowing top 5 → Levenshtein, GST or Partial Ratio | Runtime, missed judgments and fewer-than-ten returned rows |
+| Sensitivity to the first-stage choice | LCS top 5 → Levenshtein | Compare the same N/reranker against Winnowing top 5 |
+| A deliberately severe budget diagnostic | Winnowing top 1 → Levenshtein | The recall ceiling and missing ranks; this cannot supply a ten-result list |
+
+All relevant judgments remain in the final denominators. Candidate recall alone
+does not establish good final ordering, and reranking need not improve a cheap
+scorer's MAP. A shortlist cannot exceed the number of eligible documents: IRPlag
+has seven originals, so its N=10 run scans and reranks those seven. Precision@10
+keeps its declared denominator even when a corpus or shortlist supplies fewer
+than ten results. Treat the SOCO views as their recorded judged pools, rather than
+full competition corpora. Select N and a budget for the intended workload before
+measuring that workload; the recorded experiments do not automatically select or
+admit a method based on its observed recall.
+
 ## Reproduce a bounded GST profile
 
 From a checkout containing the trusted `v0.7.0` tag:
