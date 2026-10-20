@@ -1,0 +1,17 @@
+{
+  "algorithms": [
+    {"name": "GST (pair only)", "feature_weights": {"gst": 1.0},
+     "task_eligibility": {"retrieval": {"status": "not_applicable", "reason": "Exhaustive GST exceeded the published 1800-second method budget; evaluate a separately declared shortlist pipeline."}}},
+    {"name": "Lexical Only (pair only)", "feature_weights": {"levenshtein": 0.5, "winnowing": 0.25, "gst": 0.25},
+     "task_eligibility": {"retrieval": {"status": "not_applicable", "reason": "The GST blend exceeded the published 1800-second method budget; exhaustive retrieval is outside this experiment's declared scope."}}},
+    {"name": "Partial Ratio (pair only)", "feature_weights": {"rapidfuzz_partial_ratio": 1.0},
+     "task_eligibility": {"retrieval": {"status": "not_applicable", "reason": "Long-file partial matching exceeded the published 1800-second method budget; exhaustive retrieval is excluded in advance."}}},
+    {"name": "Partial Token Sort Ratio (pair only)", "feature_weights": {"rapidfuzz_partial_token_sort_ratio": 1.0},
+     "task_eligibility": {"retrieval": {"status": "not_applicable", "reason": "Long-file partial token sorting exceeded the published 1800-second method budget; exhaustive retrieval is excluded in advance."}}},
+    {"name": "WRatio (pair only)", "feature_weights": {"rapidfuzz_wratio": 1.0},
+     "task_eligibility": {"retrieval": {"status": "not_applicable", "reason": "Long-file weighted partial matching exceeded the published 1800-second method budget; exhaustive retrieval is excluded in advance."}}},
+    {"name": "Winnowing top5 then GST", "feature_weights": {"gst": 1.0},
+     "retrieval_options": {"candidate_count": 5, "candidate_similarity_options": {"feature_weights": {"winnowing": 1.0}}},
+     "task_eligibility": {"pair": {"status": "not_applicable", "reason": "This method is a retrieval pipeline, not a pair-classification configuration."}}}
+  ]
+}

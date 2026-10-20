@@ -728,25 +728,37 @@ def gst_similarity_from_tokens(tokens1, tokens2, min_match_length=5):
     marked2 = [False] * len(tokens2)
     covered_tokens = 0
     total_tokens = float(len(tokens1) + len(tokens2))
+    index_length = min(effective_min_match_length, 8)
 
     # Repeatedly extract the longest non-overlapping matching tiles, then score
     # the proportion of both token streams that the tiles cover.
     while True:
         best_length = effective_min_match_length - 1
         matches = []
-        positions_by_token = {}
-        for index, token in enumerate(tokens2):
-            if not marked2[index]:
-                positions_by_token.setdefault(token, []).append(index)
+        # Every eligible tile starts with this exact, unmarked token prefix.
+        # Indexing the whole window avoids extending every occurrence of common
+        # punctuation. Tuple equality verifies hash collisions, and ascending
+        # positions retain the existing deterministic tie-breaking behavior.
+        # Cap prefix storage so very large configured minimum lengths cannot
+        # create quadratic-sized tuples; extension still verifies the full tile.
+        positions_by_window = {}
+        for index in range(len(tokens2) - effective_min_match_length + 1):
+            end = index + index_length
+            if not any(marked2[index:end]):
+                window = tuple(tokens2[index:end])
+                positions_by_window.setdefault(window, []).append(index)
 
-        for index1, token in enumerate(tokens1):
-            if marked1[index1]:
+        for index1 in range(len(tokens1) - effective_min_match_length + 1):
+            if len(tokens1) - index1 < best_length:
+                break
+            end = index1 + index_length
+            if any(marked1[index1:end]):
                 continue
-            for index2 in positions_by_token.get(token, ()):
-                if marked2[index2]:
+            window = tuple(tokens1[index1:end])
+            for index2 in positions_by_window.get(window, ()):
+                if len(tokens2) - index2 < best_length:
                     continue
-
-                length = 0
+                length = index_length
                 while index1 + length < len(tokens1) and index2 + length < len(tokens2):
                     if marked1[index1 + length] or marked2[index2 + length]:
                         break

@@ -1,5 +1,11 @@
 # Matheel Examples
 
+For a complete offline error-inspection workflow, run
+`python examples/evaluation/result_analysis_demo.py`. It writes synthetic scored
+pairs, a paired reference and HTML/CSV/JSON reports. See the
+[result analysis guide](../docs/result_analysis.md) and
+[benchmark workflow recipes](../docs/benchmark_workflows.md).
+
 Run these examples from the repository root after installing the checkout:
 
 ```bash
