@@ -15,6 +15,7 @@ from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .leaderboard_presets import get_leaderboard_algorithm_preset
 from ._path_utils import path_name
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
+from .task_eligibility import method_exclusion_reason, normalize_dataset_exclusions, normalize_task_eligibility
 
 
 PAIR_LEADERBOARD_METRICS = (
@@ -94,6 +95,11 @@ def normalize_leaderboard_manifest(manifest, base_dir=None):
     ]
     _validate_unique_names(normalized_datasets, "dataset")
     _validate_unique_names(normalized_algorithms, "algorithm")
+    names = {item["name"] for item in normalized_datasets}
+    for method in normalized_algorithms:
+        unknown = set(method.get("dataset_exclusions", {})) - names
+        if unknown:
+            raise ValueError(f"Unknown dataset exclusion(s): {', '.join(sorted(unknown))}")
     return {
         "schema_version": int(manifest.get("schema_version") or 1),
         "name": str(manifest.get("name") or "matheel_leaderboard"),
@@ -121,6 +127,15 @@ def run_leaderboard(manifest, output_dir=None, basename="leaderboard", *, score_
     score_artifacts = []
     for dataset_config in config["datasets"]:
         for algorithm_config in config["algorithms"]:
+            reason = method_exclusion_reason(algorithm_config, dataset_config)
+            if reason:
+                load = load_pair_datasets if dataset_config["task_family"] == "pair" else load_retrieval_datasets
+                dataset_config["domain"] = dataset_task_type(load(dataset_config["spec"]))
+                metrics = config["pair_metrics" if dataset_config["task_family"] == "pair" else "retrieval_metrics"]
+                rows.extend({**_leaderboard_row(dataset_config["task_family"], dataset_config, algorithm_config, metric, None, 0),
+                             "status": "not_applicable", "not_applicable_reason": reason, "elapsed_seconds": 0.0}
+                            for metric in metrics)
+                continue
             started = perf_counter()
             try:
                 if score_artifact_dir is None:
@@ -133,7 +148,7 @@ def run_leaderboard(manifest, output_dir=None, basename="leaderboard", *, score_
                 metrics = config["pair_metrics" if dataset_config["task_family"] == "pair" else "retrieval_metrics"]
                 run_rows = [
                     {**_leaderboard_row(dataset_config["task_family"], dataset_config, algorithm_config, metric, None, 0),
-                     "error": f"{type(exc).__name__}: {exc}"}
+                     "error": f"{type(exc).__name__}: {exc}", "status": "failed"}
                     for metric in metrics
                 ]
             elapsed = perf_counter() - started
@@ -300,13 +315,19 @@ def _evaluate_pair_leaderboard_run(manifest, dataset_config, algorithm_config, *
 def _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_config, *, score_artifact_dir=None):
     dataset = load_retrieval_datasets(dataset_config["spec"])
     dataset_config["domain"] = dataset_task_type(dataset)
-    scored, metrics = evaluate_retrieval_dataset(
+    evaluate = evaluate_retrieval_dataset
+    retrieval_options = algorithm_config.get("retrieval_options")
+    if retrieval_options:
+        from .retrieval import evaluate_two_stage_retrieval_dataset
+        evaluate = evaluate_two_stage_retrieval_dataset
+    scored, metrics = evaluate(
         dataset,
         k=int(_first_not_none(algorithm_config.get("k"), dataset_config.get("k"), 10)),
         exclude_self_matches=bool(dataset_config.get("exclude_self_matches", False)),
         similarity_options=_leaderboard_similarity_options(dataset_config, algorithm_config),
         algorithm=algorithm_config.get("algorithm_path"),
         algorithm_options=algorithm_config.get("algorithm_options"),
+        **(retrieval_options or {}),
     )
     artifact = _write_score_artifact(scored, dataset_config, algorithm_config, score_artifact_dir)
     return [
@@ -317,7 +338,10 @@ def _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_conf
             metric=metric,
             value=metrics.get(metric),
             sample_count=len(scored),
-        ), "_score_artifact": artifact}
+        ), "_score_artifact": artifact,
+         **({key: metrics[key] for key in ("retrieval_mode", "candidate_count", "candidate_recall",
+                                           "candidate_recall_micro", "first_stage_comparisons", "reranker_comparisons")}
+            if retrieval_options else {})}
         for metric in manifest["retrieval_metrics"]
     ]
 
@@ -368,6 +392,8 @@ def _leaderboard_row(task_family, dataset_config, algorithm_config, metric, valu
         "sample_count": int(sample_count),
         "dataset_source": dataset_config["spec"].get("source", "local"),
         "algorithm_kind": "custom" if algorithm_config.get("algorithm_path") else "builtin",
+        "status": "completed",
+        "not_applicable_reason": "",
     }
 
 
@@ -384,6 +410,8 @@ def _rank_per_dataset(frame):
     ranked = frame.copy()
     ranked["score"] = pd.to_numeric(ranked["score"], errors="coerce")
     ranked.loc[~ranked["score"].map(math.isfinite), "score"] = float("nan")
+    if "status" in ranked and (ranked["status"].isin(["not_applicable", "failed"]) & ranked["score"].notna()).any():
+        raise ValueError("Failed or not-applicable rows cannot contain a finite score.")
     ranked["eligible"] = ranked["score"].notna()
     keys = [column for column in ("domain", "task_family", "dataset_name", "metric") if column in ranked]
     ranked["rank"] = ranked.groupby(keys)["score"].rank(method="min", ascending=False).astype("Int64")
@@ -404,7 +432,12 @@ def _aggregate_leaderboard(per_dataset, config=None):
         valid = group[group["score"].notna()]
         covered = set(valid["dataset_name"])
         complete = covered == expected and len(group) == len(expected)
-        eligible = complete if (config or {}).get("strict_coverage") else not valid.empty
+        excluded = group.get("status", pd.Series("", index=group.index)).eq("not_applicable").any()
+        eligible = not excluded and (complete if (config or {}).get("strict_coverage") else not valid.empty)
+        if "status" in group:
+            reasons = sorted(set(group.loc[group["status"].eq("not_applicable"), "not_applicable_reason"].dropna()))
+            row.update(status="not_applicable" if excluded else ("completed" if complete else "failed"),
+                       not_applicable_reason="; ".join(reasons))
         row.update(
             mean_score=float(valid["score"].mean()) if eligible else None,
             median_score=float(valid["score"].median()) if eligible else None,
@@ -456,6 +489,7 @@ def _normalize_leaderboard_dataset(item, index=1, base_dir=None):
 
 
 def _normalize_leaderboard_algorithm(item, index=1, base_dir=None):
+    from .retrieval import normalize_retrieval_options
     if isinstance(item, str):
         item = {"preset": item}
     if not isinstance(item, dict):
@@ -474,7 +508,7 @@ def _normalize_leaderboard_algorithm(item, index=1, base_dir=None):
     options = {**preset_options, **options}
     options.update(payload.pop("similarity_options", {}))
     for key in list(payload):
-        if key not in {"name", "algorithm_path", "algorithm_options", "threshold", "k", "model_revision"}:
+        if key not in {"name", "algorithm_path", "algorithm_options", "threshold", "k", "model_revision", "task_eligibility", "dataset_exclusions", "retrieval_options"}:
             options[key] = payload.pop(key)
     payload = _resolve_relative_paths(payload, base_dir=base_dir)
     name = str(payload.get("name") or preset_display_name or f"algorithm_{index}")
@@ -486,6 +520,9 @@ def _normalize_leaderboard_algorithm(item, index=1, base_dir=None):
         "threshold": payload.get("threshold"),
         "k": payload.get("k"),
         **({"model_revision": payload["model_revision"]} if payload.get("model_revision") else {}),
+        **({"task_eligibility": normalize_task_eligibility(payload["task_eligibility"])} if "task_eligibility" in payload else {}),
+        **({"dataset_exclusions": normalize_dataset_exclusions(payload["dataset_exclusions"])} if "dataset_exclusions" in payload else {}),
+        **({"retrieval_options": normalize_retrieval_options(payload["retrieval_options"])} if "retrieval_options" in payload else {}),
     }
 
 

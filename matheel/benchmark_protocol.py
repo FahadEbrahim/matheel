@@ -14,6 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pandas as pd
 
 from .datasets import dataset_task_type, load_code_texts, load_pair_dataset, load_retrieval_dataset
+from .task_eligibility import method_exclusion_reason
 
 BENCHMARK_PROTOCOL_SCHEMA_VERSION = 1
 DEFAULT_BENCHMARK_ID = "Matheel-Plagiarism-v1"
@@ -335,12 +336,17 @@ def run_benchmark_protocol(protocol, algorithms, output_dir=None, basename="benc
         if method.get("threshold") is not None or method.get("k") is not None:
             raise ValueError("Official benchmark thresholds and retrieval k are defined by the protocol, not methods.")
     canonical_methods = config["algorithms"]
+    if any(method.get("retrieval_options") for method in canonical_methods):
+        raise ValueError("Two-stage retrieval requires separate pipeline experiments; this frozen protocol evaluates exhaustive candidate coverage.")
     identities = [method_configuration_id(method) for method in canonical_methods]
     if len(set(identities)) != len(identities):
         raise ValueError("Official method configurations must be unique; display-name aliases are not separate methods.")
     runtime_methods = []
     for method in canonical_methods:
         runtime = {**method, "similarity_options": dict(method["similarity_options"]), "_configuration_id": method_configuration_id(method)}
+        if all(method_exclusion_reason(method, entry) for entry in protocol["datasets"]):
+            runtime_methods.append(runtime)
+            continue
         weights = method["similarity_options"].get("feature_weights")
         semantic = weights is None or float(weights.get("semantic", 0)) > 0
         from .model_routing import normalize_vector_backend_name
@@ -370,6 +376,8 @@ def run_benchmark_protocol(protocol, algorithms, output_dir=None, basename="benc
             if entry["task_family"] != "pair":
                 continue
             for method in config["algorithms"]:
+                if method_exclusion_reason(method, entry):
+                    continue
                 options = {**method["similarity_options"], **entry["similarity_options"]}
                 scored = score_pair_dataset(load_pair_dataset(entry["validation_path"]), similarity_options=options,
                                             algorithm=method.get("algorithm_path"), algorithm_options=method.get("algorithm_options"))
@@ -448,7 +456,12 @@ def failed_benchmark_result(protocol, algorithms, error="TimeoutError", elapsed_
         for method in config["algorithms"]:
             for metric in protocol["pair_metrics" if entry["task_family"] == "pair" else "retrieval_metrics"]:
                 row = _leaderboard_row(entry["task_family"], dataset, method, metric, None, 0)
-                row.update(error=str(error), elapsed_seconds=0.0, dataset_fingerprint=entry["content"]["sha256"])
+                reason = method_exclusion_reason(method, entry)
+                row.update(elapsed_seconds=0.0, dataset_fingerprint=entry["content"]["sha256"])
+                if reason:
+                    row.update(status="not_applicable", not_applicable_reason=reason)
+                else:
+                    row.update(error=str(error), status="failed")
                 rows.append(row)
     per_dataset = _rank_per_dataset(pd.DataFrame(rows))
     aggregate = _aggregate_leaderboard(per_dataset, config=config)
@@ -568,6 +581,10 @@ def validate_benchmark_result(report_or_payload, protocol=None, *, score_artifac
                 raise ValueError("Score artifact shape does not match its index.")
     for row in rows.to_dict("records"):
         entry = entries.get(row["dataset_name"])
+        error = row.get("error")
+        if error is not None and not isinstance(error, str) and not (isinstance(error, float) and math.isnan(error)):
+            raise ValueError("Result errors must be strings or null.")
+        has_error = isinstance(error, str) and bool(error)
         if entry is None or row["domain"] != entry["domain"] or row["task_family"] != entry["task_family"] or row["dataset_fingerprint"] != entry["content"]["sha256"]:
             raise ValueError("Result dataset coverage or fingerprint does not match the protocol.")
         metrics = frozen["pair_metrics" if entry["task_family"] == "pair" else "retrieval_metrics"]
@@ -575,6 +592,20 @@ def validate_benchmark_result(report_or_payload, protocol=None, *, score_artifac
             raise ValueError("Result has an invalid metric or method configuration identity.")
         if row["task_type"] != row["domain"]:
             raise ValueError("Result dataset category must match its domain.")
+        reason = method_exclusion_reason(configurations[row["algorithm_id"]], entry)
+        if reason:
+            if (row.get("status") != "not_applicable" or row.get("not_applicable_reason") != reason
+                    or row["score"] is not None and not pd.isna(row["score"])
+                    or row["sample_count"] != 0 or row["elapsed_seconds"] != 0 or has_error):
+                raise ValueError("Predeclared exclusions require unscored not_applicable rows with the original reason.")
+        elif row.get("status") == "not_applicable" or row.get("not_applicable_reason"):
+            raise ValueError("Not-applicable results require a predeclared method exclusion.")
+        elif row.get("status") not in {None, "completed", "failed"}:
+            raise ValueError("Invalid benchmark result status.")
+        elif row.get("status") == "failed" and (not has_error or row["score"] is not None and not pd.isna(row["score"])):
+            raise ValueError("Failed rows require an error and a null score.")
+        elif row.get("status") == "completed" and has_error:
+            raise ValueError("Completed rows cannot contain a runtime error.")
         count = float(row["sample_count"])
         if isinstance(row["sample_count"], bool) or not math.isfinite(count) or count < 0 or not count.is_integer():
             raise ValueError("Result sample counts must be nonnegative integers.")
@@ -629,5 +660,8 @@ def validate_benchmark_result(report_or_payload, protocol=None, *, score_artifac
                 continue
             if pd.isna(left) or pd.isna(right) or not math.isclose(float(left), float(right), rel_tol=1e-10, abs_tol=1e-12):
                 raise ValueError("Result aggregate scores/ranks do not match per-dataset results.")
+        for column in ("status", "not_applicable_reason"):
+            if column + "_expected" in row and row.get(column + "_actual") != row[column + "_expected"]:
+                raise ValueError("Result aggregate status does not match declared applicability and coverage.")
     return {"valid": True, "protocol_id": frozen["protocol_id"], "benchmark_id": frozen["benchmark_id"],
             "methods": int(rows["algorithm_id"].nunique()), "eligible_rows": int(expected["eligible"].sum())}

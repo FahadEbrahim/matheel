@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 
 import click
+from .retrieval_cli import register_retrieval_commands
 import pandas as pd
 
 from . import __version__
@@ -2069,3 +2070,6 @@ def _elapsed_summary_text(results):
     if algorithm:
         summary = f"{summary} | algorithm={algorithm.get('algorithm_name')}"
     return summary
+
+
+register_retrieval_commands(main)
