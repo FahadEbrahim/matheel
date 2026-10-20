@@ -5,53 +5,20 @@ Token-based code metrics and parser-backed code metrics use different tokenizati
 
 ## Parameters
 
-- `code_metric`
-- `code_metric_weight`
-- `code_language`
-- `codebleu_component_weights`
-- `crystalbleu_max_order`
-- `crystalbleu_trivial_ngram_count`
-- `ruby_max_order`
-- `ruby_epsilon`
-- `ruby_mode`
-- `ruby_tokenizer`
-- `ruby_denominator`
-- `ruby_graph_timeout_seconds`
-- `ruby_graph_use_edge_cost`
-- `ruby_graph_include_leaf_edges`
-- `ruby_tree_max_nodes`
-- `ruby_tree_max_depth`
-- `ruby_tree_max_children`
-- `tsed_delete_cost`
-- `tsed_insert_cost`
-- `tsed_rename_cost`
-- `tsed_max_nodes`
-- `tsed_max_depth`
-- `tsed_max_children`
-- `codebertscore_model`
-- `codebertscore_num_layers`
-- `codebertscore_batch_size`
-- `codebertscore_max_length`
-- `codebertscore_device`
-- `codebertscore_lang`
-- `codebertscore_idf`
-- `codebertscore_rescale_with_baseline`
-- `codebertscore_use_fast_tokenizer`
-- `codebertscore_nthreads`
-- `codebertscore_verbose`
+Choose `code_metric`, set `code_language` for structural metrics, and give `code_metric` a positive feature weight. Metric-specific options are described with each family below.
 
 ## Supported Metrics
 
-- `none`
-- `codebleu`
-- `codebleu_ngram`
-- `codebleu_weighted_ngram`
-- `codebleu_syntax`
-- `codebleu_dataflow`
-- `crystalbleu`
-- `ruby`
-- `tsed`
-- `codebertscore`
+| Family | `code_metric` values | Additional dependencies |
+| --- | --- | --- |
+| CodeBLEU | `codebleu`, `codebleu_ngram`, `codebleu_weighted_ngram`, `codebleu_syntax`, `codebleu_dataflow` | None beyond the base install. |
+| CrystalBLEU | `crystalbleu` | None beyond the base install. |
+| RUBY | `ruby` | `apted` for tree mode; auto mode can fall back. |
+| Tree edit distance | `tsed` | `apted`, supplied by `matheel[metrics]`. |
+| Transformer token alignment | `codebertscore` | `bert-score`, supplied by `matheel[metrics]`, plus model weights. |
+| Disabled | `none` | None. |
+
+The base package includes the tree-sitter runtime. For guidance on choosing a family, see [Choose similarity metrics](choosing_metrics.md).
 
 ## Language Scope
 
@@ -80,13 +47,13 @@ Native CodeBLEU with real syntax/dataflow is currently scoped to:
 
 RUBY and TSED follow that same 20-language structural scope.
 CodeBERTScore is language-agnostic at runtime, but use that same 20-language scope for consistent code-level comparisons.
-Additional languages from the tree-sitter runtime remain plausible follow-on work, but Matheel should only claim them after keyword coverage, alias handling, and regression tests are added.
+Additional parser grammars do not imply full metric support. New languages need keyword coverage, alias handling, and regression tests.
 
 ## Metric Details
 
 ### CodeBLEU-style Metrics
 
-Matheel now ships a native CodeBLEU implementation, so the syntax and dataflow pieces use real tree/DFG extraction without requiring the pip `codebleu` package at runtime. Parser resolution is routed through `tree_sitter_language_pack`, which avoids needing separate `tree_sitter_<lang>` wheels for the supported languages in this environment.
+Matheel implements CodeBLEU natively: syntax and dataflow components extract trees and data-flow graphs through `tree_sitter_language_pack`. The separate `codebleu` package and per-language parser wheels are not required at runtime.
 
 The pip `codebleu` package is still useful for comparison or validation work, and Matheel includes selected regression examples that check exact native-vs-pip agreement on overlapping official languages. That comparison coverage is intentionally narrow: treat it as validation on representative examples, not a blanket claim of score-for-score parity on every input.
 
@@ -128,7 +95,7 @@ For very small toy examples, set `crystalbleu_trivial_ngram_count` lower than th
 
 RUBY uses a staged similarity strategy:
 
-1. graph similarity (when optional graph dependencies are available)
+1. graph similarity (using the base graph dependencies)
 2. tree similarity
 3. string similarity as a deterministic fallback
 
@@ -163,7 +130,7 @@ TSED compares syntax trees using tree edit distance.
 - `tsed_max_depth`
 - `tsed_max_children`
 
-TSED requires optional dependencies (`apted` and a tree-sitter runtime package).
+Install `matheel[metrics]` for `apted`; the tree-sitter runtime is already included in the base package.
 
 ### CodeBERTScore
 

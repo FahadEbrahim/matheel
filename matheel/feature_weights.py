@@ -1,5 +1,7 @@
 import math
 
+from .lexical import available_lexical_metrics
+
 
 _DEFAULT_FEATURE_WEIGHTS = {
     "semantic": 0.7,
@@ -9,13 +11,16 @@ _DEFAULT_FEATURE_WEIGHTS = {
 
 
 def available_default_features():
-    return (
+    existing_features = (
         "semantic",
         "levenshtein",
         "jaro_winkler",
         "winnowing",
         "gst",
         "code_metric",
+    )
+    return existing_features + tuple(
+        name for name in available_lexical_metrics() if name not in existing_features
     )
 
 

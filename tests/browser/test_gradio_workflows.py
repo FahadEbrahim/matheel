@@ -235,6 +235,24 @@ def test_pairwise_lexical_browser_workflow(gradio_page, gradio_config):
     _wait_for_text(summary, "1.0000")
 
 
+def test_pairwise_lcs_browser_workflow(gradio_page, gradio_config):
+    page = gradio_page
+    _select_dropdown(page, gradio_config, "Metric Preset", "Longest Common Subsequence (LCS)")
+    table = _visible_component(
+        page, gradio_config, label="Additional lexical weights", component_type="dataframe"
+    )
+    _wait_for_text(table, "Longest Common Subsequence (LCS)")
+    _visible_component(page, gradio_config, label="Code A", component_type="textbox").get_by_role(
+        "textbox"
+    ).fill("abcdef")
+    _visible_component(page, gradio_config, label="Code B", component_type="textbox").get_by_role(
+        "textbox"
+    ).fill("ace")
+    page.get_by_role("button", name="Run Pair", exact=True).click()
+
+    _wait_for_text(_action_output(page, gradio_config, "Run Pair"), "0.5000")
+
+
 def test_mobile_workflow_overflow_menu_accessibility(gradio_page):
     page = gradio_page
     page.set_viewport_size({"width": 390, "height": 844})

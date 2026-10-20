@@ -59,6 +59,15 @@ def test_leaderboard_algorithm_presets_include_offline_baselines():
     assert preset["name"] == "Jaro-Winkler"
 
 
+@pytest.mark.parametrize("metric", matheel.available_lexical_metrics())
+def test_every_string_metric_has_a_standalone_leaderboard_preset(metric):
+    label = matheel.lexical_metric_metadata(metric)["label"]
+    options = get_leaderboard_algorithm_preset(label)["similarity_options"]
+
+    assert options["feature_weights"] == {metric: 1.0}
+    assert options["code_metric_weight"] == 0.0
+
+
 def test_register_leaderboard_algorithm_preset_for_custom_method():
     registered = register_leaderboard_algorithm_preset(
         "Jaro-Winkler",

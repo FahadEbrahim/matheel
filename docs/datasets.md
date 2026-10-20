@@ -2,7 +2,17 @@
 
 Matheel supports local labeled pair and retrieval datasets, plus an extensible source/preset/adapter workflow for benchmark experiments.
 
-No external datasets are bundled or downloaded by default. Users provide or download datasets according to each source's terms, license, provenance, and access requirements. Use `task_type: plagiarism` for plagiarism-oriented datasets so they remain easy to separate from future dataset families.
+No external datasets are bundled or downloaded by default. Users provide or download datasets according to each source's terms, license, provenance, and access requirements. Use `task_type: plagiarism` for plagiarism-oriented datasets so manifests can distinguish their intended evaluation task.
+
+## Find a Workflow
+
+| Task | Section |
+| --- | --- |
+| Import raw files or tables | [Loading workflow](#dataset-loading-workflow) and [loading manifests](#reproducible-loading-manifests) |
+| Select a public source or extend loading | [Sources, presets, and adapters](#sources-presets-and-adapters) |
+| Understand normalized file layouts | [Pair format](#pair-dataset-format) and [retrieval format](#retrieval-dataset-format) |
+| Score labeled pairs or query/candidate rankings | [Pair evaluation](#pair-evaluation) and [retrieval evaluation](#retrieval-evaluation) |
+| Quantify uncertainty across splits | [Resampling](#resampling-and-uncertainty) |
 
 ## Dataset Loading Workflow
 

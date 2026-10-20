@@ -1,5 +1,7 @@
 from copy import deepcopy
 
+from .lexical import available_lexical_metrics, lexical_metric_metadata
+
 
 _LEADERBOARD_ALGORITHM_PRESETS = {
     "Balanced": {
@@ -75,6 +77,24 @@ _LEADERBOARD_ALGORITHM_PRESETS = {
         },
     },
 }
+
+
+# Keep the established blends first, then expose each scalar string metric.
+for _metric in available_lexical_metrics():
+    _metadata = lexical_metric_metadata(_metric)
+    _label = _metadata["label"]
+    _LEADERBOARD_ALGORITHM_PRESETS.setdefault(
+        _label,
+        {
+            "name": _label,
+            "description": f"Offline {_label} similarity on a zero-to-one scale.",
+            "similarity_options": {
+                "feature_weights": {_metric: 1.0},
+                "code_metric": "codebleu",
+                "code_metric_weight": 0.0,
+            },
+        },
+    )
 
 
 def available_leaderboard_algorithm_presets():

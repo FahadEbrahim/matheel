@@ -31,7 +31,7 @@ dependencies = [
     "click>=8.2,<9",
     "pandas>=2.2.2,<3.1",
     "numpy>=2,<3",
-    "rapidfuzz>=3,<4",
+    "rapidfuzz>=3.1,<4",
     "networkx>=3,<4",
     "tqdm>=4.66.3,<5",
     # Keep bundled grammars and offline behavior until the parser 1.x migration.
@@ -67,7 +67,7 @@ gradio = [
     "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3",
     # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
-    "gradio>=5,<6",
+    "gradio>=5.50,<6",
     "gradio-huggingfacehub-search>=0.0.8,<0.1"
 ]
 visualization = [
@@ -86,7 +86,7 @@ all = [
     "model2vec>=0.10,<0.11",
     "umap-learn>=0.5.12,<0.6",
     # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
-    "gradio>=5,<6",
+    "gradio>=5.50,<6",
     "gradio-huggingfacehub-search>=0.0.8,<0.1"
 ]
 dev = [

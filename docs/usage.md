@@ -25,7 +25,7 @@ pip install "matheel[all]"
 
 | Extra | Use it for |
 | --- | --- |
-| `matheel[semantic]` | Sentence Transformers 6 dense/multi-vector and Model2Vec semantic scoring. |
+| `matheel[semantic]` | Sentence Transformers 6.1+ dense/multi-vector and Model2Vec semantic scoring. |
 | `matheel[chunking]` | Chonkie chunkers for splitting code before embedding. |
 | `matheel[metrics]` | Optional code metric runtimes such as TSED and CodeBERTScore. |
 | `matheel[visualization]` | UMAP projection for dataset visualization. |
@@ -37,11 +37,15 @@ Compatibility extras remain available for narrower installs: `sentence_transform
 
 Examples that use semantic weights assume `matheel[semantic]` or `matheel[all]` is installed. Optional installs can take some time because they may include model and ML runtime dependencies.
 
+List the available string similarity features without loading models:
+
+```bash
+matheel metrics
+```
+
 ## Quick Checks
 
-Generate a tiny sample archive from source strings:
-
-Base CLI check:
+Generate a tiny sample archive and compare it without downloading a model:
 
 ```bash
 python - <<'PY'
@@ -107,34 +111,9 @@ print(results.head())
 
 For installation, a guided pairwise check, workflow descriptions, and troubleshooting, see the [Gradio app guide](gradio.md).
 
-## Demos and Examples
-
-- Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
-- Core workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/01_core_workflows.ipynb)
-- Dataset workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)
-- Custom algorithms Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/03_custom_algorithms.ipynb)
-- Gradio Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb)
-- Visualization and leaderboard Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/05_visualization_and_leaderboard.ipynb)
-- Examples folder: [github.com/FahadEbrahim/matheel/tree/main/examples](https://github.com/FahadEbrahim/matheel/tree/main/examples)
-
 ## Documentation Map
 
-- [Gradio app](gradio.md)
-- [Preprocessing](preprocessing.md)
-- [Tokenization and preprocessing limits](tokenization.md)
-- [Chunking](chunking.md)
-- [Vectors and routing](vectors.md)
-- [Lexical metrics and baselines](lexical.md)
-- [Code metrics](code_metrics.md)
-- [Scoring and calibration](scoring.md)
-- [Visualization](visualization.md)
-- [Leaderboard](leaderboard.md)
-- [Reproducible benchmark demo](reproducible_benchmark.md)
-- [Custom algorithms](customization.md)
-- [Comparison suite](comparison_suite.md)
-- [Contributing algorithms](contributing_algorithms.md)
-- [Contributing datasets](contributing_datasets.md)
-- [Development](development.md)
+Use [Choose similarity metrics](choosing_metrics.md) to pick a starting scorer, then follow the task-based [documentation index](index.md) for preparation, evaluation, reporting, and extension guides. Runnable scripts and Colab notebooks are listed in the [examples catalog](https://github.com/FahadEbrahim/matheel/tree/main/examples).
 
 ## Interface Notes
 

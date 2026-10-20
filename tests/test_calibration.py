@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 
 import matheel
+from matheel.lexical import available_lexical_metrics
 from matheel.calibration import (
     calibrate_threshold,
     calibration_curve,
@@ -19,6 +20,11 @@ from matheel.calibration import (
     write_calibration_report_artifacts,
     write_threshold_tuning_report_artifacts,
 )
+
+
+@pytest.mark.parametrize("name", available_lexical_metrics())
+def test_lexical_metrics_have_bounded_calibration_ranges(name):
+    assert feature_score_range(name) == (0.0, 1.0)
 
 
 def test_evaluate_threshold_reports_confusion_counts_and_metrics():

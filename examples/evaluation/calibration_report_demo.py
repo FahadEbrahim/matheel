@@ -1,6 +1,9 @@
+"""Write calibration artifacts to a directory you can inspect after the script exits."""
+
+import argparse
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory, gettempdir
+from tempfile import gettempdir
 
 import pandas as pd
 
@@ -13,6 +16,14 @@ from matheel.calibration import write_calibration_report_artifacts  # noqa: E402
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("benchmark_outputs") / "calibration_artifacts",
+        help="Where to write generated data and reports. Reruns replace generated files.",
+    )
+    args = parser.parse_args()
     scored_pairs = pd.DataFrame(
         [
             {"left_id": "a", "right_id": "b", "similarity_score": 0.95, "label": 1},
@@ -22,19 +33,18 @@ def main():
         ]
     )
 
-    with TemporaryDirectory() as tmp:
-        output_dir = Path(tmp) / "calibration_artifacts"
-        report, artifacts = write_calibration_report_artifacts(
-            scored_pairs,
-            output_dir,
-            score_key="similarity_score",
-            label_key="label",
-        )
+    output_dir = args.output_dir
+    report, artifacts = write_calibration_report_artifacts(
+        scored_pairs,
+        output_dir,
+        score_key="similarity_score",
+        label_key="label",
+    )
 
-        print("AUROC:", round(report["summary"]["auroc"], 4))
-        print("Average precision:", round(report["summary"]["average_precision"], 4))
-        print("Best threshold:", report["summary"]["optimized_threshold"]["threshold"])
-        print("Summary artifact:", artifacts["summary_json"])
+    print("AUROC:", round(report["summary"]["auroc"], 4))
+    print("Average precision:", round(report["summary"]["average_precision"], 4))
+    print("Best threshold:", report["summary"]["optimized_threshold"]["threshold"])
+    print("Summary artifact:", artifacts["summary_json"])
 
 
 if __name__ == "__main__":

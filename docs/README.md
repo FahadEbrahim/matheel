@@ -1,24 +1,10 @@
-# Docs
+# Documentation
 
-This folder contains the in-repo Matheel documentation. This README is here so the docs index is visible in the GitHub folder view.
+The [documentation index](index.md) groups guides by task: getting started, comparing code, evaluating and inspecting results, and contributing extensions.
 
-The canonical index is [index.md](index.md).
-The published site is <https://fahadebrahim.github.io/matheel/>.
+- [Published documentation](https://fahadebrahim.github.io/matheel/)
+- [Install and quick start](usage.md)
+- [Choose similarity metrics](choosing_metrics.md)
+- [Build and preview the docs](development.md#documentation-checks)
 
-## Start Here
-
-- [Documentation index](index.md)
-- [Usage](usage.md)
-- [Preprocessing](preprocessing.md)
-- [Chunking](chunking.md)
-- [Vectors and routing](vectors.md)
-- [Lexical metrics and baselines](lexical.md)
-- [Code metrics](code_metrics.md)
-- [Datasets and evaluation](datasets.md)
-- [Visualization](visualization.md)
-- [Leaderboard](leaderboard.md)
-- [Custom algorithms](customization.md)
-- [Comparison suite](comparison_suite.md)
-- [Contributing algorithms](contributing_algorithms.md)
-- [Contributing datasets](contributing_datasets.md)
-- [Development](development.md)
+Keep existing page filenames when reorganizing navigation so published guide links continue to work. Add new pages to `mkdocs.yml` and link them from the task-based index.

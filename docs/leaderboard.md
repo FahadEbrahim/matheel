@@ -1,16 +1,16 @@
 # Leaderboard
 
-Matheel leaderboards rank algorithms across normalized pair-classification and retrieval datasets. The workflow is local and offline: users provide normalized datasets or source specs, Matheel scores them, then exports per-dataset and aggregate ranking tables.
+Matheel leaderboards rank algorithms across normalized pair-classification and retrieval datasets. Matheel scores normalized datasets or source specs, then exports per-dataset and aggregate ranking tables. Runs over local datasets with lexical scorers are offline; remote sources and model-backed scorers may download data or weights.
 
 The Gradio app includes three leaderboard workflows:
 
-- **Ready-made Leaderboard** immediately displays a committed public snapshot covering every registered dataset preset and every built-in algorithm preset.
+- **Ready-made Leaderboard** immediately displays a committed public snapshot covering the public dataset and algorithm presets recorded when the snapshot was generated.
 - **Build Leaderboard** runs selected algorithm presets over uploaded normalized dataset ZIPs, shows all registered dataset presets, applies task-specific metric defaults, and exports standard leaderboard artifacts.
 - **Inspect Artifacts** loads a leaderboard JSON or ZIP artifact and renders the aggregate table, per-dataset table, static report, and downloadable report bundle.
 
 ## Ready-made Public Snapshot
 
-Open **Reports → Ready-made Leaderboard** to see rankings without uploading data or starting a benchmark run. The snapshot covers all six registered public dataset presets as seven task views: five pair-classification datasets plus SOCO14 and IRPlag retrieval views. All eight built-in algorithm presets are included.
+Open **Reports → Ready-made Leaderboard** to see rankings without uploading data or starting a benchmark run. The snapshot covers all six registered public dataset presets as seven task views: five pair-classification datasets plus SOCO14 and IRPlag retrieval views. It records eight algorithm presets. New presets added after generation appear in custom runs; regenerate the artifact to include them in the public snapshot.
 
 The ranking explorer includes every supported evaluation metric. Pair classification provides `f1`, `accuracy`, `precision`, `recall`, `auroc`, and `average_precision`; retrieval provides `mean_average_precision`, `mean_reciprocal_rank`, `ndcg_at_k`, `precision_at_k`, and `recall_at_k`. Pair views default to F1 and retrieval views default to Mean Average Precision, with scores sorted descending. Task, metric, dataset, algorithm, and source controls update both tables; dataset and source filters also recompute the aggregate ranking over the visible dataset subset. Use the table filter to search any visible column. Separate sort-column and direction controls reorder the aggregate and per-dataset tables, including ascending or descending score, rank, algorithm, dataset, source, and sample-based views where applicable.
 
@@ -22,7 +22,7 @@ Maintainers can regenerate the committed JSON artifact from the public source pr
 python scripts/build_ready_leaderboard.py
 ```
 
-The builder downloads and normalizes the registered sources, creates deterministic samples, scores every algorithm preset, and writes `gradio_app/assets/ready_leaderboard.json`. Use **Build Leaderboard** or the CLI with a custom manifest when full-corpus evaluation, another embedding backend, or different sampling is required.
+The builder downloads and normalizes the registered sources, creates deterministic samples, scores the registered algorithm presets, and writes `gradio_app/assets/ready_leaderboard.json`. Use **Build Leaderboard** or the CLI with a custom manifest when full-corpus evaluation, another embedding backend, or different sampling is required.
 
 ## Manifest
 
@@ -64,7 +64,7 @@ Create a JSON manifest with datasets, algorithms, and metrics:
 
 Relative dataset paths and custom algorithm paths are resolved from the manifest file location.
 
-Algorithm entries can be full option objects or built-in preset names. Built-in presets include `Balanced`, `Lexical Only`, `Embedding Only`, `Code-Aware`, `Jaro-Winkler`, `Winnowing`, `GST`, and `CodeBLEU`.
+Algorithm entries can be full option objects or built-in preset names. Use `available_leaderboard_algorithm_presets()` to inspect the current preset names; existing entries include `Balanced`, `Lexical Only`, `Embedding Only`, `Code-Aware`, `Jaro-Winkler`, `Winnowing`, `GST`, and `CodeBLEU`. A feature can be used directly in an algorithm object even when it has no named preset.
 
 ## CLI
 

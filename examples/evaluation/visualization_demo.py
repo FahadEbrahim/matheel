@@ -1,6 +1,9 @@
+"""Write dataset maps and pair explanations that remain available after the script exits."""
+
+import argparse
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory, gettempdir
+from tempfile import gettempdir
 
 import pandas as pd
 
@@ -18,63 +21,70 @@ from matheel.visualization import (  # noqa: E402
 
 
 def main():
-    with TemporaryDirectory() as tmp:
-        workspace = Path(tmp)
-        dataset_root = workspace / "normalized_pairs"
-        write_pair_dataset(
-            dataset_root,
-            files=pd.DataFrame(
-                [
-                    {"file_id": "a", "text": "def add(a, b):\n    return a + b\n", "suffix": ".py"},
-                    {"file_id": "b", "text": "def add(x, y):\n    return x + y\n", "suffix": ".py"},
-                    {"file_id": "c", "text": "def subtract(a, b):\n    return a - b\n", "suffix": ".py"},
-                ]
-            ),
-            pairs=pd.DataFrame(
-                [
-                    {"left_id": "a", "right_id": "b", "label": 1},
-                    {"left_id": "a", "right_id": "c", "label": 0},
-                ]
-            ),
-            metadata={"name": "tiny_visualization_pairs"},
-        )
-
-        projection, artifacts = write_dataset_embedding_map(
-            dataset_root,
-            workspace / "visualization_artifacts",
-            kind="pair",
-            method="pca",
-        )
-
-        print(projection[["document_id", "x", "y", "role"]].to_string(index=False))
-        print("HTML artifact:", artifacts["html"])
-
-        explanation, pair_artifacts = write_pair_dataset_explanation(
-            dataset_root,
-            workspace / "pair_explanations",
-            left_id="a",
-            right_id="b",
-            segment_mode="line",
-        )
-
-        print("Pair matches:", len(explanation["matches"]))
-        print("Pair HTML artifact:", pair_artifacts["html"])
-
-        scored_pairs = pd.DataFrame(
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("benchmark_outputs") / "visualization",
+        help="Where to write generated data and reports. Reruns replace generated files.",
+    )
+    args = parser.parse_args()
+    workspace = args.output_dir
+    dataset_root = workspace / "normalized_pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
             [
-                {"left_id": "a", "right_id": "b", "similarity_score": 0.94, "label": 1},
-                {"left_id": "a", "right_id": "c", "similarity_score": 0.21, "label": 0},
+                {"file_id": "a", "text": "def add(a, b):\n    return a + b\n", "suffix": ".py"},
+                {"file_id": "b", "text": "def add(x, y):\n    return x + y\n", "suffix": ".py"},
+                {"file_id": "c", "text": "def subtract(a, b):\n    return a - b\n", "suffix": ".py"},
             ]
-        )
-        scored_explanation, scored_artifacts = write_scored_pair_explanation(
-            scored_pairs,
-            dataset_root,
-            workspace / "scored_pair_explanations",
-            row_index=0,
-        )
+        ),
+        pairs=pd.DataFrame(
+            [
+                {"left_id": "a", "right_id": "b", "label": 1},
+                {"left_id": "a", "right_id": "c", "label": 0},
+            ]
+        ),
+        metadata={"name": "tiny_visualization_pairs"},
+    )
 
-        print("Scored pair score:", scored_explanation["metadata"]["similarity_score"])
-        print("Scored pair HTML artifact:", scored_artifacts["html"])
+    projection, artifacts = write_dataset_embedding_map(
+        dataset_root,
+        workspace / "visualization_artifacts",
+        kind="pair",
+        method="pca",
+    )
+
+    print(projection[["document_id", "x", "y", "role"]].to_string(index=False))
+    print("HTML artifact:", artifacts["html"])
+
+    explanation, pair_artifacts = write_pair_dataset_explanation(
+        dataset_root,
+        workspace / "pair_explanations",
+        left_id="a",
+        right_id="b",
+        segment_mode="line",
+    )
+
+    print("Pair matches:", len(explanation["matches"]))
+    print("Pair HTML artifact:", pair_artifacts["html"])
+
+    scored_pairs = pd.DataFrame(
+        [
+            {"left_id": "a", "right_id": "b", "similarity_score": 0.94, "label": 1},
+            {"left_id": "a", "right_id": "c", "similarity_score": 0.21, "label": 0},
+        ]
+    )
+    scored_explanation, scored_artifacts = write_scored_pair_explanation(
+        scored_pairs,
+        dataset_root,
+        workspace / "scored_pair_explanations",
+        row_index=0,
+    )
+
+    print("Scored pair score:", scored_explanation["metadata"]["similarity_score"])
+    print("Scored pair HTML artifact:", scored_artifacts["html"])
 
 
 if __name__ == "__main__":

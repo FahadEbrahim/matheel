@@ -1,6 +1,9 @@
+"""Write dataset validation artifacts to a directory you can inspect after the script exits."""
+
+import argparse
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory, gettempdir
+from tempfile import gettempdir
 
 import pandas as pd
 
@@ -13,31 +16,38 @@ from matheel.datasets import write_pair_dataset  # noqa: E402
 
 
 def main():
-    with TemporaryDirectory() as tmp:
-        root = Path(tmp)
-        dataset_root = root / "normalized_pairs"
-        write_pair_dataset(
-            dataset_root,
-            files=pd.DataFrame(
-                [
-                    {"file_id": "a", "text": "print(1)", "suffix": ".py"},
-                    {"file_id": "b", "text": "print(2)", "suffix": ".py"},
-                ]
-            ),
-            pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]),
-            metadata={"name": "demo_pairs"},
-        )
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("benchmark_outputs") / "dataset_validation",
+        help="Where to write generated data and reports. Reruns replace generated files.",
+    )
+    args = parser.parse_args()
+    root = args.output_dir
+    dataset_root = root / "normalized_pairs"
+    write_pair_dataset(
+        dataset_root,
+        files=pd.DataFrame(
+            [
+                {"file_id": "a", "text": "print(1)", "suffix": ".py"},
+                {"file_id": "b", "text": "print(2)", "suffix": ".py"},
+            ]
+        ),
+        pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 0}]),
+        metadata={"name": "demo_pairs"},
+    )
 
-        report, artifacts = write_dataset_validation_report(
-            dataset_root,
-            root / "validation_report",
-            kind="pair",
-        )
+    report, artifacts = write_dataset_validation_report(
+        dataset_root,
+        root / "validation_report",
+        kind="pair",
+    )
 
-        print("Status:", report["status"])
-        print("Errors:", report["error_count"])
-        print("Warnings:", report["warning_count"])
-        print("HTML report:", artifacts["report_html"])
+    print("Status:", report["status"])
+    print("Errors:", report["error_count"])
+    print("Warnings:", report["warning_count"])
+    print("HTML report:", artifacts["report_html"])
 
 
 if __name__ == "__main__":

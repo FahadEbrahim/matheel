@@ -6,6 +6,7 @@ from matheel.feature_weights import (
     normalize_feature_weights,
     resolve_feature_weights,
 )
+from matheel.lexical import available_lexical_metrics
 
 
 def test_normalize_feature_weights_scales_to_one():
@@ -92,7 +93,7 @@ def test_resolve_feature_weights_uses_defaults_without_legacy_weights():
 
 
 def test_available_default_features_includes_new_lexical_baselines():
-    assert available_default_features() == (
+    assert available_default_features()[:6] == (
         "semantic",
         "levenshtein",
         "jaro_winkler",
@@ -100,3 +101,17 @@ def test_available_default_features_includes_new_lexical_baselines():
         "gst",
         "code_metric",
     )
+    assert set(available_default_features()) == {
+        "semantic", "winnowing", "gst", "code_metric", *available_lexical_metrics()
+    }
+
+
+@pytest.mark.parametrize("name", available_lexical_metrics())
+def test_feature_weights_accept_each_lexical_metric(name):
+    assert resolve_feature_weights(f"{name}=3,semantic=1") == {name: 0.75, "semantic": 0.25}
+
+
+def test_new_lexical_metrics_do_not_change_default_blend():
+    assert default_feature_weights() == {
+        "semantic": 0.7, "levenshtein": 0.3, "jaro_winkler": 0.0
+    }

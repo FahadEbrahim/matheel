@@ -1,6 +1,9 @@
+"""Write threshold tuning artifacts to a directory you can inspect after the script exits."""
+
+import argparse
 import os
 from pathlib import Path
-from tempfile import TemporaryDirectory, gettempdir
+from tempfile import gettempdir
 
 import pandas as pd
 
@@ -12,6 +15,14 @@ from matheel.calibration import write_threshold_tuning_report_artifacts  # noqa:
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path("benchmark_outputs") / "threshold_tuning",
+        help="Where to write generated data and reports. Reruns replace generated files.",
+    )
+    args = parser.parse_args()
     scored_pairs = pd.DataFrame(
         [
             {"left_id": "a", "right_id": "b", "similarity_score": 0.95, "label": 1},
@@ -21,20 +32,19 @@ def main():
         ]
     )
 
-    with TemporaryDirectory() as tmp:
-        output_dir = Path(tmp) / "threshold_tuning"
-        report, artifacts = write_threshold_tuning_report_artifacts(
-            scored_pairs,
-            output_dir,
-            score_key="similarity_score",
-            label_key="label",
-            optimize="f1",
-        )
+    output_dir = args.output_dir
+    report, artifacts = write_threshold_tuning_report_artifacts(
+        scored_pairs,
+        output_dir,
+        score_key="similarity_score",
+        label_key="label",
+        optimize="f1",
+    )
 
-        best = report["summary"]["optimized_threshold"]
-        print("Best threshold:", best["threshold"])
-        print("Best F1:", round(best["f1"], 4))
-        print("Threshold sweep:", artifacts["threshold_sweep_csv"])
+    best = report["summary"]["optimized_threshold"]
+    print("Best threshold:", best["threshold"])
+    print("Best F1:", round(best["f1"], 4))
+    print("Threshold sweep:", artifacts["threshold_sweep_csv"])
 
 
 if __name__ == "__main__":

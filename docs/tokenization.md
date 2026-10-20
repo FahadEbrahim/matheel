@@ -32,8 +32,9 @@ Preprocessing is intentionally text-first. It uses language-specific comment and
 
 | Feature or metric | Tokenization or parsing strategy |
 | --- | --- |
-| `levenshtein` | Compares the prepared strings directly. |
-| `jaro_winkler` | Compares the prepared strings directly. |
+| RapidFuzz distance features, including `levenshtein`, `lcs`, and `jaro_winkler` | Compare characters in the prepared strings directly. |
+| `rapidfuzz_ratio`, `rapidfuzz_partial_ratio`, `rapidfuzz_wratio`, `rapidfuzz_qratio` | Use RapidFuzz matching on the prepared strings. |
+| `rapidfuzz_*token*` fuzzy ratios | Use RapidFuzz whitespace-separated words; unaffected by `lexical_tokenizer`. |
 | `winnowing` | Uses Matheel's code-token regex by default, or tree-sitter leaf node types with `lexical_tokenizer="parser"`. |
 | `gst` | Uses the same lexical tokenizer selection as Winnowing. |
 | `crystalbleu` | Uses the same code-token regex, then builds n-grams and discounts frequent n-grams. |
@@ -41,11 +42,13 @@ Preprocessing is intentionally text-first. It uses language-specific comment and
 | `ruby` with `ruby_mode=string` and `ruby_tokenizer=regex` | Uses the same code-token regex. |
 | `ruby` with `ruby_tokenizer=tranx` | Splits punctuation and camel-case boundaries for a more granular token edit sequence. |
 | CodeBLEU syntax/dataflow | Uses tree-sitter-backed syntax and DFG extraction for supported languages. |
-| TSED | Parses syntax trees and compares tree edit distance when optional parser dependencies are installed. |
+| TSED | Uses the bundled parser runtime and optional `apted` dependency for tree edit distance. |
 | CodeBERTScore | Uses the selected transformer tokenizer. |
 | Semantic embeddings | Use the selected embedding backend's tokenizer or vectorizer. |
 
 The shared code-token regex recognizes identifiers, numbers, and punctuation. It does not split snake_case or camelCase by default. For example, `totalCount` stays one token in regex mode; RUBY's `tranx` tokenizer splits it into `total` and `Count`.
+
+See [Lexical metrics](lexical.md) for the full feature catalog. `lcs` is character-based; selecting `lexical_tokenizer="parser"` changes only Winnowing and GST.
 
 ## Parser-Derived Lexical Tokens
 

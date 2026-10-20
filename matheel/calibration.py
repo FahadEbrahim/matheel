@@ -10,13 +10,7 @@ from .feature_weights import available_default_features
 from .vectors import similarity_function_score_range
 
 
-_BOUNDED_FEATURES = {
-    "levenshtein",
-    "jaro_winkler",
-    "winnowing",
-    "gst",
-    "code_metric",
-}
+_BOUNDED_FEATURES = set(available_default_features()) - {"semantic"}
 
 
 def _finite_score(value):

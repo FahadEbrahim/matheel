@@ -1,3 +1,5 @@
+"""Compare lexical configurations on the sample archive without model downloads."""
+
 import sys
 from pathlib import Path
 
@@ -9,29 +11,19 @@ from sample_data import sample_archive_path  # noqa: E402
 
 RUNS = [
     {
-        "run_name": "semantic_levenshtein_blend",
+        "run_name": "levenshtein",
         "options": {
-            "model_name": "huggingface/CodeBERTa-small-v1",
-            "vector_backend": "sentence_transformers",
-            "feature_weights": {
-                "semantic": 0.7,
-                "levenshtein": 0.3,
-            },
+            "feature_weights": {"levenshtein": 1.0},
         },
     },
     {
-        "run_name": "codebleu_java_blend",
+        "run_name": "lcs_rapidfuzz_blend",
         "options": {
-            "model_name": "huggingface/CodeBERTa-small-v1",
-            "vector_backend": "sentence_transformers",
             "preprocess_mode": "basic",
-            "chunking_method": "none",
-            "code_metric": "codebleu",
             "code_language": "java",
-            "code_metric_weight": 0.2,
             "feature_weights": {
-                "semantic": 0.8,
-                "code_metric": 0.2,
+                "lcs": 0.5,
+                "rapidfuzz_ratio": 0.5,
             },
         },
     },
@@ -42,7 +34,7 @@ def main():
     summary, details = run_comparison_suite(sample_archive_path(), RUNS)
     print(summary.round(4))
     print()
-    print(details["semantic_levenshtein_blend"].head().round(4))
+    print(details["lcs_rapidfuzz_blend"].head().round(4))
 
 
 if __name__ == "__main__":

@@ -1,55 +1,41 @@
 # Matheel Documentation
 
-Matheel is a Python package and CLI for source-code similarity. It combines semantic embeddings, lexical similarity, chunking, preprocessing, and code evaluation metrics in one workflow.
+Matheel compares source code through a Python API, CLI, and Gradio app. Start with a lightweight lexical baseline, add embeddings or code-aware metrics when needed, then evaluate the configuration on labeled data.
 
-Matheel is organized around a simple flow:
+## Getting Started
 
-1. preprocess or normalize the code
-2. optionally chunk it
-3. encode it or score it lexically
-4. add code-aware metrics when needed
-5. compare one pair or rank a whole archive
+- [Install and run a first comparison](usage.md) with the base package and no model downloads.
+- [Use the Gradio app](gradio.md) locally or in the hosted demo.
+- [Choose similarity metrics](choosing_metrics.md) for whole files, partial matches, structural comparisons, or retrieval.
 
-Start with the [usage guide](usage.md) for installation, optional extras, quick checks, demos, and example links.
+## Compare Code
 
-## Guides
+| Task | Guide |
+| --- | --- |
+| Use edit distance, LCS, fuzzy matching, or token fingerprints | [Lexical metrics](lexical.md) |
+| Select dense, static, or multi-vector embeddings | [Embeddings and routing](vectors.md) |
+| Compare syntax, dataflow, or transformer token alignments | [Code-aware metrics](code_metrics.md) |
+| Remove comments or normalize identifiers | [Preprocessing](preprocessing.md) |
+| Understand what each scorer sees | [Tokenization and limits](tokenization.md) |
+| Split long files before embedding | [Chunking](chunking.md) |
+| Compare several configurations on one collection | [Comparison suites](comparison_suite.md) |
 
-- [Usage](usage.md)
-- [Preprocessing](preprocessing.md)
-- [Chunking](chunking.md)
-- [Vectors and routing](vectors.md)
-- [Lexical metrics and baselines](lexical.md)
-- [Code metrics](code_metrics.md)
-- [Scoring and calibration](scoring.md)
-- [Datasets and evaluation](datasets.md)
-- [Visualization](visualization.md)
-- [Leaderboard](leaderboard.md)
-- [Reproducible benchmark demo](reproducible_benchmark.md)
-- [Custom algorithms](customization.md)
-- [Comparison suite](comparison_suite.md)
-- [Contributing algorithms](contributing_algorithms.md)
-- [Contributing datasets](contributing_datasets.md)
-- [Development](development.md)
+## Evaluate and Inspect Results
 
-## Demos and Examples
+| Task | Guide |
+| --- | --- |
+| Load pair/retrieval data and measure quality | [Datasets and evaluation](datasets.md) |
+| Interpret score ranges and select thresholds | [Scoring and calibration](scoring.md) |
+| Run a small auditable experiment | [Reproducible benchmark](reproducible_benchmark.md) |
+| Rank methods and track exported runs | [Leaderboards and run registry](leaderboard.md) |
+| Explore dataset maps and matched code regions | [Visualization and pair explanations](visualization.md) |
 
-- [Hugging Face Space demo](https://huggingface.co/spaces/buelfhood/matheel-framework)
-- [Core workflows Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/01_core_workflows.ipynb)
-- [Dataset workflows Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)
-- [Custom algorithms Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/03_custom_algorithms.ipynb)
-- [Gradio Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/04_gradio_app.ipynb)
-- [Visualization and leaderboard Colab notebook](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/05_visualization_and_leaderboard.ipynb)
-- [Examples folder](https://github.com/FahadEbrahim/matheel/tree/main/examples)
+## Extend and Contribute
 
-## Suggested Reading Order
+- [Custom algorithms](customization.md): prototype a scorer without changing Matheel internals.
+- [Contribute algorithms](contributing_algorithms.md) or [datasets](contributing_datasets.md): add tested package support.
+- [Development](development.md): install contributor tools, run tests, build docs, and check packages.
 
-1. Start with [Usage](usage.md).
-2. Read [Vectors and routing](vectors.md) to choose the embedding path.
-3. Add [Chunking](chunking.md) and [Preprocessing](preprocessing.md) if you need code-aware shaping before scoring.
-4. Add [Lexical metrics and baselines](lexical.md) and [Code metrics](code_metrics.md) if you want hybrid scoring.
-5. Use [Datasets and evaluation](datasets.md) for labeled pair and retrieval datasets.
-6. Use [Visualization](visualization.md) and [Leaderboard](leaderboard.md) for inspectable benchmark artifacts.
-7. Run the [reproducible benchmark demo](reproducible_benchmark.md) for a small auditable workflow.
-8. Use [Custom algorithms](customization.md) for project-specific scorers.
-9. Use [Comparison suite](comparison_suite.md) for repeatable multi-run experiments.
-10. Use the contribution guides for [algorithms](contributing_algorithms.md) and [datasets](contributing_datasets.md) before opening benchmark-facing PRs.
+## Examples and Demos
+
+Use the [examples catalog](https://github.com/FahadEbrahim/matheel/tree/main/examples) to find runnable scripts and the [notebook catalog](https://github.com/FahadEbrahim/matheel/tree/main/examples/notebooks) for Colab workflows. The [hosted Gradio demo](https://huggingface.co/spaces/buelfhood/matheel-framework) provides an interactive starting point.

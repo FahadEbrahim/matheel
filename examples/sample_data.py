@@ -44,7 +44,7 @@ public class ma {
 public static void main(String[] args)
 {List<Integer> a = Arrays.asList(10, 5, 1, 20, 100);
 int m = Integer.MIN_VALUE;
-for (Integer i : arrayList)
+for (Integer i : a)
 {if (i > m)
 m = i;}
 System.out.println(m);}}
@@ -108,7 +108,9 @@ def write_sample_files(output_dir, overwrite=False):
 
 
 def load_sample_pair(archive_path=None):
-    with ZipFile(archive_path or sample_archive_path()) as archive:
+    if archive_path is None:
+        return SAMPLE_FILES[CODE_A_NAME], SAMPLE_FILES[CODE_B_NAME]
+    with ZipFile(archive_path) as archive:
         code_a = archive.read(CODE_A_NAME).decode("utf-8")
         code_b = archive.read(CODE_B_NAME).decode("utf-8")
     return code_a, code_b
