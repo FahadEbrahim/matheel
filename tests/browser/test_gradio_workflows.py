@@ -873,6 +873,22 @@ def test_canonical_official_benchmark_preserves_published_rankings(
     assert float(rendered["coverage"]) == pytest.approx(selected["coverage"])
     assert float(rendered["mean_score"]) == pytest.approx(selected["mean_score"])
     assert rendered["protocol_id"] == payload["metadata"]["protocol_id"]
+    failed = [row for row in reference if not row["eligible"]]
+    if failed:
+        selected = failed[0]
+        _select_dropdown(
+            page, gradio_config, "Official Method Configuration", labels[selected["algorithm_id"]]
+        )
+        rendered = _rendered_dataframe_record(page, ranking, selected["algorithm_id"])
+        assert rendered["rank"].lower() in {"", "none", "null", "nan"}
+        assert rendered["mean_score"].lower() in {"", "none", "null", "nan"}
+        assert float(rendered["coverage"]) == pytest.approx(selected["coverage"])
+        details = _visible_component(
+            page, gradio_config, label="Official Per-Dataset Results", component_type="dataframe"
+        )
+        _wait_for_text(details, selected["algorithm_name"])
+    else:
+        assert all(row["coverage"] == 1 and row["rank"] is not None for row in reference)
 
 
 @pytest.mark.parametrize("gradio_server", ["canonical"], indirect=True)
@@ -910,19 +926,3 @@ def test_published_edition_switch_replaces_scope_rankings_and_download(
     _select_dropdown(page, gradio_config, "Published Benchmark Edition", "0.7.0 · original v1 · 1,800 s budget")
     _wait_for_text(summary, original["metadata"]["protocol_id"])
     _wait_until(lambda: ranking.locator('table:not([aria-hidden="true"]) tbody tr').count() == 29)
-    failed = [row for row in reference if not row["eligible"]]
-    if failed:
-        selected = failed[0]
-        _select_dropdown(
-            page, gradio_config, "Official Method Configuration", labels[selected["algorithm_id"]]
-        )
-        rendered = _rendered_dataframe_record(page, ranking, selected["algorithm_id"])
-        assert rendered["rank"].lower() in {"", "none", "null", "nan"}
-        assert rendered["mean_score"].lower() in {"", "none", "null", "nan"}
-        assert float(rendered["coverage"]) == pytest.approx(selected["coverage"])
-        details = _visible_component(
-            page, gradio_config, label="Official Per-Dataset Results", component_type="dataframe"
-        )
-        _wait_for_text(details, selected["algorithm_name"])
-    else:
-        assert all(row["coverage"] == 1 and row["rank"] is not None for row in reference)
