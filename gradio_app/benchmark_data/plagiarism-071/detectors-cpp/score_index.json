@@ -1,0 +1,241 @@
+{
+  "benchmark_id": "Matheel-Plagiarism-v1",
+  "protocol_id": "167e2425d97a3d2055cca58fd0ea9e98801c5ee19770e44157e7a041ac9222be",
+  "score_artifacts": [
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_c7679831f4ff2607d446_pair.csv",
+      "rows": 270,
+      "sha256": "f228416fa00bcb162e8d0c59a3dc51fbceb80c6cfdad55c0280f084e9142e784",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 15750,
+      "sha256": "6d061d32707266f035f8bee8ecec5dc8e6901896b644093c8069c6565b69e835",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 20880,
+      "sha256": "d51a03b8300d9d8c2623783f65656e287daf4f8cd159334f845db07e18437059",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 11130,
+      "sha256": "cb9228003cc97c159eb5e521520d8b6c77e41ba06cb8f9930e4b62cc77f36021",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 4970,
+      "sha256": "ded2f1dd7ce08747e6b00a68301738711c62cc922eea47fb81d7f5fc8c3a9d3c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 56,
+      "sha256": "aecbbb08ec8fd0cbac35c9eda9f294515d9c8c527d7e3ab4b891e458d596c990",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 270,
+      "sha256": "48dd530d87b8fbec47148ef7c36e370b50cdeaf50f6ce3453b1c42a99266202f",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 15750,
+      "sha256": "ed37bd093f0b7c6811b64a0439edfb685ac8a151b9c495c84dfa68661c14033f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 20880,
+      "sha256": "dae46e9babd0ca40b064f25e87becec0c1e45b12366ee0692e52da4188c546e9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 11130,
+      "sha256": "ea6d9044db9590c8b18d163762d511f161d4c1f1e0747a48a17d1fa27b4b0ca9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 4970,
+      "sha256": "e7199a4b350f9b4da800ec48efd0c1819247d8efa2b97b56274d2e4b7a9fbac9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 56,
+      "sha256": "a2bd80ad33d189f53e7db6cab54836e9a1638afb36d7d0d07d515df34a971c83",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "95351fe24817145701f6623c950d29b20489e61045e4d76bf4f7dc53ce9546ed",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_95351fe24817145701f6_retrieval.csv",
+      "rows": 56,
+      "sha256": "2faf880e5334b798698a94ea5bff7802dbf2f5c7fd9679cb3ebd3439570e5243",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "7b3a525948a7e9eaa7fe1232f3a8ccdec65fd594f02d73a78781abc8d0965eb0",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_7b3a525948a7e9eaa7fe_pair.csv",
+      "rows": 270,
+      "sha256": "f26c6d46a6cf8484857c6e3d6b350ff73b040da95b8bc491b450e743f5e6c189",
+      "task_family": "pair"
+    }
+  ]
+}

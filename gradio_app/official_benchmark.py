@@ -133,7 +133,7 @@ def _metric_choices(rows, task):
     return ordered + sorted(present.difference(ordered))
 
 
-def _add_diagnostics(aggregate, per_dataset, artifact_path):
+def _add_diagnostics(aggregate, per_dataset, artifact_path, metadata=None):
     """Add presentation columns; leave canonical scores, ranks and flags intact."""
     for frame in (aggregate, per_dataset):
         if "status" not in frame:
@@ -141,6 +141,20 @@ def _add_diagnostics(aggregate, per_dataset, artifact_path):
         frame["availability"] = frame["eligible"].map({True: "Available", False: "N/A"})
         if "error" in frame:
             frame.loc[frame["error"].eq("TimeoutError"), "status"] = "timed_out"
+        frame["timing_status"] = "Observed view wall time"
+        frame.loc[~frame["eligible"] & frame["elapsed_seconds"].eq(0), "timing_status"] = (
+            "N/A: uncompleted view runtime was not measured"
+        )
+    aggregate.loc[aggregate["elapsed_seconds"].gt(0), "timing_status"] = (
+        "Sum of measured view times; inspect coverage for incomplete methods"
+    )
+    metadata = metadata or {}
+    failure_times = {entry["algorithm_id"]: entry.get("elapsed_seconds")
+                     for entry in metadata.get("execution_failures", [])}
+    method_times = {entry["algorithm_id"]: (entry["method_wall_seconds"] if entry.get("method_wall_seconds") is not None
+                                           else failure_times.get(entry["algorithm_id"]))
+                    for entry in metadata.get("supervised_executions", [])}
+    aggregate["supervised_method_wall_seconds"] = aggregate["algorithm_id"].map(method_times)
     aggregate["pareto_efficient"] = False
     aggregate["failure_reason"] = ""
     for identity, rows in per_dataset.groupby("algorithm_id"):
@@ -221,7 +235,7 @@ def build_official_benchmark_view(
     ].copy()
     # Compute tradeoffs across the full selected task/metric before filtering a
     # displayed method. A filter must not change its Pareto membership or rank.
-    aggregate, per_dataset = _add_diagnostics(aggregate, per_dataset, artifact_path)
+    aggregate, per_dataset = _add_diagnostics(aggregate, per_dataset, artifact_path, metadata)
     if selected_method != ALL_OFFICIAL_METHODS:
         aggregate = aggregate[aggregate["algorithm_id"] == selected_method]
         per_dataset = per_dataset[per_dataset["algorithm_id"] == selected_method]
@@ -278,7 +292,7 @@ def build_official_benchmark_view(
             ("Eligible Methods", str(int(aggregate["eligible"].sum()))),
             ("Unranked Methods", str(int(aggregate["rank"].isna().sum()))),
             ("Uncertainty", "Per-view conditional grouped bootstrap where available; published ranks remain fixed"),
-            ("Runtime", "Observed wall time including preparation; hardware and concurrent execution affect comparisons"),
+            ("Runtime", "View times include preparation; failed views can be unmeasured. Separate supervised method time covers the full protocol where recorded. Hardware and concurrency affect comparisons."),
             ("Status", "Validated published results"),
         ],
     )

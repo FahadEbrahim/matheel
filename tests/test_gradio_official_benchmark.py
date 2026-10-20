@@ -149,6 +149,27 @@ def test_official_task_change_uses_retrieval_metrics_and_preserves_failed_rows(p
     assert failures["error"].str.contains("unsupported fixture").all()
 
 
+def test_whole_method_timeout_exposes_measured_method_duration_and_unmeasured_views(published_benchmark):
+    from gradio_app.official_benchmark import _add_diagnostics
+
+    path, _ = published_benchmark
+    view = build_official_benchmark_view(artifact_path=path)
+    aggregate, per_dataset = view["aggregate"].copy(), view["per_dataset"].copy()
+    identity = aggregate.loc[aggregate["algorithm_name"].eq("Unsupported"), "algorithm_id"].iloc[0]
+    for frame in (aggregate, per_dataset):
+        frame.loc[frame["algorithm_id"].eq(identity), "elapsed_seconds"] = 0
+    per_dataset.loc[per_dataset["algorithm_id"].eq(identity), "error"] = "TimeoutError"
+    actual, details = _add_diagnostics(aggregate, per_dataset, path, {
+        "supervised_executions": [{"algorithm_id": identity, "method_wall_seconds": None}],
+        "execution_failures": [{"algorithm_id": identity, "elapsed_seconds": 180.2}],
+    })
+    failed = actual[actual["algorithm_id"].eq(identity)]
+    assert failed["supervised_method_wall_seconds"].eq(180.2).all()
+    assert failed["timing_status"].str.startswith("N/A").all()
+    assert details.loc[details["algorithm_id"].eq(identity), "timing_status"].str.startswith("N/A").all()
+    assert failed["rank"].isna().all() and failed["elapsed_seconds"].eq(0).all()
+
+
 def test_official_method_filter_preserves_full_identity_and_authoritative_rank(published_benchmark):
     path, _ = published_benchmark
     all_methods = build_official_benchmark_view(artifact_path=path)

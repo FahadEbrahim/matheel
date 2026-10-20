@@ -169,8 +169,9 @@ def main():
         }
     output.mkdir(parents=True)
     constraints = write_runtime_constraints(output / "matheel-plagiarism-071-runtime-constraints.txt")
+    frozen_runner = runner_source()
     plan = {"schema_version": 1, "edition": "0.7.1", "source": source, "release_wheel": wheel,
-            "runner_source": runner_source(),
+            "runner_source": frozen_runner,
             "runtime_constraints": constraints,
             "prior_v1_unchanged": True, "dataset_labels_changed": False,
             "original_protocol_id": original_protocol["protocol_id"],
@@ -203,6 +204,8 @@ def main():
             report, _ = run(manifest_path, methods_path, run_root, workers=item["workers"])
             if release_source() != source:
                 raise RuntimeError("Release source changed during evaluation.")
+            if runner_source()["files"] != frozen_runner["files"]:
+                raise RuntimeError("Runner/helper source changed during evaluation.")
             declared = declarations[item["id"]]
             if (report["metadata"]["protocol_id"] != declared["protocol_id"]
                     or report["metadata"]["method_configurations"] != declared["method_configurations"]):
@@ -219,6 +222,8 @@ def main():
             atomic_json(run_root / "publication-summary.json", summary)
             print(f"Published {item['id']}: {len(report['per_dataset'])} metric rows", flush=True)
         plan["total_wall_seconds"] = time.monotonic() - started
+    if release_source() != source or runner_source()["files"] != frozen_runner["files"]:
+        raise RuntimeError("Frozen scorer or runner/helper source changed before final publication.")
     atomic_json(destination / "edition.json", plan)
     inventory = {path.relative_to(destination).as_posix(): {
         "bytes": path.stat().st_size, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}

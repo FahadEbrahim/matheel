@@ -925,4 +925,5 @@ def test_published_edition_switch_replaces_scope_rankings_and_download(
     }
     _select_dropdown(page, gradio_config, "Published Benchmark Edition", "0.7.0 · original v1 · 1,800 s budget")
     _wait_for_text(summary, original["metadata"]["protocol_id"])
-    _wait_until(lambda: ranking.locator('table:not([aria-hidden="true"]) tbody tr').count() == 29)
+    path = _download_file(page, artifact, tmp_path / "original-edition.json")
+    assert json.loads(path.read_text()) == original
