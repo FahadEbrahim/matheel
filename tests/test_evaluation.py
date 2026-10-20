@@ -82,6 +82,51 @@ def test_score_pair_dataset_uses_custom_scorer(tmp_path):
     assert scored["label"].tolist() == [1, 0]
 
 
+def _write_self_retrieval_fixture(path, positive_self=False):
+    return write_retrieval_dataset(
+        path,
+        files=pd.DataFrame([
+            {"file_id": "a", "text": "same code", "suffix": ".py"},
+            {"file_id": "b", "text": "same code", "suffix": ".py"},
+            {"file_id": "c", "text": "different code", "suffix": ".py"},
+        ]),
+        queries=pd.DataFrame([{"query_id": "q", "file_id": "a"}]),
+        corpus=pd.DataFrame([
+            {"document_id": "self", "file_id": "a"},
+            {"document_id": "clone", "file_id": "b"},
+            {"document_id": "other", "file_id": "c"},
+        ]),
+        qrels=pd.DataFrame([{
+            "query_id": "q", "document_id": "self" if positive_self else "clone", "relevance": 1,
+        }]),
+    )
+
+
+def test_retrieval_can_exclude_same_file_without_excluding_identical_clone_text(tmp_path):
+    dataset = _write_self_retrieval_fixture(tmp_path / "self_retrieval")
+    calls = []
+
+    def scorer(left, right, row):
+        calls.append(row["document_id"])
+        return float(left == right)
+
+    scored, metrics = evaluate_retrieval_dataset(
+        dataset, scorer=scorer, exclude_self_matches=True, k=1,
+    )
+
+    assert calls == ["clone", "other"]
+    assert scored["document_id"].tolist() == calls
+    assert metrics["mean_average_precision"] == 1.0
+    assert metrics["recall_at_k"] == 1.0
+    assert len(score_retrieval_dataset(dataset, scorer=lambda *args: 1.0)) == 3
+
+
+def test_self_exclusion_rejects_conflicting_positive_ground_truth(tmp_path):
+    dataset = _write_self_retrieval_fixture(tmp_path / "self_retrieval", positive_self=True)
+    with pytest.raises(ValueError, match="Self-excluded retrieval"):
+        score_retrieval_dataset(dataset, scorer=lambda *args: 1.0, exclude_self_matches=True)
+
+
 def test_score_pair_dataset_loads_once_and_embeds_unique_texts(tmp_path, monkeypatch):
     dataset = _write_tiny_pair_dataset(tmp_path / "pairs")
     load_calls = []
@@ -588,3 +633,32 @@ def test_retrieval_resamples_accept_entirely_empty_results_and_custom_columns():
     )
     assert metrics.iloc[0]["query_count"] == 1
     assert metrics.iloc[0]["mean_average_precision"] == 0.0
+
+
+def test_self_excluded_query_without_candidates_or_qrels_still_counts(tmp_path):
+    dataset = write_retrieval_dataset(
+        tmp_path / "self_only",
+        files=pd.DataFrame([{"file_id": "a", "text": "print(1)", "suffix": ".py"}]),
+        queries=pd.DataFrame([{"query_id": "q", "file_id": "a"}]),
+        corpus=pd.DataFrame([{"document_id": "self", "file_id": "a"}]),
+        qrels=pd.DataFrame(columns=["query_id", "document_id", "relevance"]),
+    )
+    scored, metrics = evaluate_retrieval_dataset(
+        dataset, scorer=lambda *args: 1.0, exclude_self_matches=True,
+    )
+    assert scored.empty
+    assert metrics["query_count"] == 1
+    assert metrics["result_count"] == 0
+    assert metrics["mean_average_precision"] == 0
+    assert metrics["mean_reciprocal_rank"] == 0
+    assert metrics["recall_at_k"] == 0
+
+
+def test_retrieval_metrics_explicit_query_universe_preserves_zero_result_queries():
+    scored = pd.DataFrame([
+        {"query_id": "q1", "document_id": "d1", "similarity_score": 0.9, "relevance": 1},
+    ])
+    metrics = retrieval_ranking_metrics(scored, query_ids=pd.Series(["q1", "q2"]), k=1)
+    assert metrics["query_count"] == 2
+    assert metrics["mean_average_precision"] == 0.5
+    assert metrics["mean_reciprocal_rank"] == 0.5

@@ -9,7 +9,7 @@ import tempfile
 import urllib.parse
 import urllib.request
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from hashlib import sha1
 from inspect import signature
 from itertools import combinations
@@ -82,7 +82,36 @@ class RetrievalDataset:
 
 
 def available_dataset_task_types():
-    return DATASET_TASK_TYPES
+    """Return the domains declared by built-in and registered datasets."""
+    return tuple(sorted({
+        *DATASET_TASK_TYPES,
+        *(entry.task_type for entry in _DATASET_REGISTRY.values()),
+        *(preset["task_type"] for preset in _DATASET_PRESETS.values() if preset.get("task_type")),
+    }))
+
+
+def normalize_dataset_task_type(value, default="plagiarism"):
+    """Validate an extensible dataset domain, independently of evaluation protocol.
+
+    Missing metadata retains the historical plagiarism domain. Explicit domains
+    use stable snake_case identifiers; protocol names cannot be used as domains.
+    """
+    if value is None:
+        value = default
+    if not isinstance(value, str) or not re.fullmatch(r"[a-z][a-z0-9_]*", value.strip().lower()):
+        raise ValueError("task_type must be a non-empty snake_case dataset domain, such as 'plagiarism'.")
+    key = value.strip().lower()
+    if key in {"pair", "pair_classification", "retrieval"}:
+        raise ValueError("task_type describes a dataset domain; use dataset_kind/task_family for the evaluation protocol.")
+    return key
+
+
+def dataset_task_type(dataset_or_metadata):
+    """Return a loaded dataset or metadata mapping's domain (legacy: plagiarism)."""
+    metadata = getattr(dataset_or_metadata, "metadata", dataset_or_metadata)
+    if not isinstance(metadata, dict):
+        raise ValueError("dataset_task_type expects a dataset or metadata dict.")
+    return normalize_dataset_task_type(metadata.get("task_type"))
 
 
 def available_dataset_kinds():
@@ -92,7 +121,7 @@ def available_dataset_kinds():
 def registered_datasets(task_type=None, dataset_kind=None):
     entries = tuple(_DATASET_REGISTRY[name] for name in sorted(_DATASET_REGISTRY))
     if task_type is not None:
-        requested_task = _normalize_choice(task_type, DATASET_TASK_TYPES, "task_type")
+        requested_task = normalize_dataset_task_type(task_type)
         entries = tuple(entry for entry in entries if entry.task_type == requested_task)
     if dataset_kind is not None:
         requested_kind = _normalize_choice(dataset_kind, DATASET_KINDS, "dataset_kind")
@@ -125,7 +154,7 @@ def register_dataset_entry(
         raise ValueError(f"Dataset registry entry already exists: {key}")
     entry = DatasetRegistryEntry(
         name=key,
-        task_type=_normalize_choice(task_type, DATASET_TASK_TYPES, "task_type"),
+        task_type=normalize_dataset_task_type(task_type),
         dataset_kind=_normalize_choice(dataset_kind, DATASET_KINDS, "dataset_kind"),
         languages=tuple(str(language).strip().lower() for language in (languages or ()) if str(language).strip()),
         license=str(license or "unknown").strip() or "unknown",
@@ -215,6 +244,7 @@ def adapt_pair_dataset(
     destination=None,
     dataset_name=None,
     adapter_options=None,
+    task_type=None,
 ):
     return _adapt_dataset(
         source_root,
@@ -222,7 +252,7 @@ def adapt_pair_dataset(
         adapter=adapter,
         destination=destination,
         dataset_name=dataset_name,
-        adapter_options=adapter_options,
+        adapter_options=_adapter_options_with_task_type(adapter_options, task_type),
     )
 
 
@@ -232,6 +262,7 @@ def adapt_retrieval_dataset(
     destination=None,
     dataset_name=None,
     adapter_options=None,
+    task_type=None,
 ):
     return _adapt_dataset(
         source_root,
@@ -239,7 +270,7 @@ def adapt_retrieval_dataset(
         adapter=adapter,
         destination=destination,
         dataset_name=dataset_name,
-        adapter_options=adapter_options,
+        adapter_options=_adapter_options_with_task_type(adapter_options, task_type),
     )
 
 
@@ -258,6 +289,8 @@ def register_dataset_preset(name, spec, overwrite=False):
 
     payload = dict(spec)
     payload.setdefault("name", key)
+    if "task_type" in payload:
+        payload["task_type"] = normalize_dataset_task_type(payload["task_type"], default=None)
     payload["task_families"] = _normalize_task_families(
         payload.get("task_families") or payload.get("task_family") or ("pair",)
     )
@@ -279,6 +312,15 @@ def get_dataset_preset(name):
 
 def dataset_preset_task_families(name):
     return get_dataset_preset(name)["task_families"]
+
+
+def dataset_preset_task_type(name):
+    return dataset_task_type(get_dataset_preset(name))
+
+
+def available_dataset_presets_by_task_type(task_type):
+    requested = normalize_dataset_task_type(task_type)
+    return tuple(name for name in available_dataset_presets() if dataset_preset_task_type(name) == requested)
 
 
 def available_dataset_presets_by_task(task_family):
@@ -343,7 +385,7 @@ def load_pair_datasets(dataset_specs):
                 dataset_name=spec.get("name"),
                 adapter_options=options,
             )
-        loaded.append(load_pair_dataset(root))
+        loaded.append(_dataset_with_spec_metadata(load_pair_dataset(root), spec))
         names.append(spec["name"])
 
     if len(loaded) == 1:
@@ -368,7 +410,7 @@ def load_retrieval_datasets(dataset_specs):
                 dataset_name=spec.get("name"),
                 adapter_options=options,
             )
-        loaded.append(load_retrieval_dataset(root))
+        loaded.append(_dataset_with_spec_metadata(load_retrieval_dataset(root), spec))
         names.append(spec["name"])
 
     if len(loaded) == 1:
@@ -389,6 +431,7 @@ def load_pair_dataset(dataset_root):
 
 
 def write_pair_dataset(dataset_root, files, pairs, metadata=None):
+    payload = _normalize_metadata(metadata, dataset_kind="pair_classification")
     root = _coerce_path(dataset_root)
     root.mkdir(parents=True, exist_ok=True)
     files_manifest = _write_files_manifest(root, files, manifests=("pairs.csv",))
@@ -397,7 +440,6 @@ def write_pair_dataset(dataset_root, files, pairs, metadata=None):
     pairs_frame["right_id"] = pairs_frame["right_id"].map(lambda value: _normalize_id(value, "right_id"))
     pairs_frame["label"] = pairs_frame["label"].map(_normalize_binary_label)
     pairs_frame.to_csv(root / "pairs.csv", index=False)
-    payload = _normalize_metadata(metadata, dataset_kind="pair_classification")
     _write_json(root / "metadata.json", payload)
     return validate_pair_dataset(
         PairDataset(root=root, files=files_manifest, pairs=pairs_frame, metadata=payload)
@@ -471,6 +513,7 @@ def load_retrieval_dataset(dataset_root):
 
 
 def write_retrieval_dataset(dataset_root, files, queries, corpus, qrels, metadata=None):
+    payload = _normalize_metadata(metadata, dataset_kind="retrieval")
     root = _coerce_path(dataset_root)
     root.mkdir(parents=True, exist_ok=True)
     files_manifest = _write_files_manifest(
@@ -501,7 +544,6 @@ def write_retrieval_dataset(dataset_root, files, queries, corpus, qrels, metadat
     corpus_frame.to_csv(root / "corpus.csv", index=False)
     qrels_frame.to_csv(root / "qrels.csv", index=False)
 
-    payload = _normalize_metadata(metadata, dataset_kind="retrieval")
     _write_json(root / "metadata.json", payload)
     return validate_retrieval_dataset(
         RetrievalDataset(
@@ -651,7 +693,7 @@ def _normalize_choice(value, choices, label):
 
 def _normalize_metadata(metadata, dataset_kind):
     payload = dict(metadata or {})
-    payload["task_type"] = _normalize_choice(payload.get("task_type") or "plagiarism", DATASET_TASK_TYPES, "task_type")
+    payload["task_type"] = normalize_dataset_task_type(payload.get("task_type"))
     payload["dataset_kind"] = _normalize_choice(
         payload.get("dataset_kind") or dataset_kind,
         DATASET_KINDS,
@@ -1030,12 +1072,14 @@ def _resolve_local_dataset_source(identifier, destination=None, revision="main",
 
 def _adapt_dataset(source_root, dataset_kind, adapter, destination, dataset_name, adapter_options):
     root = _coerce_path(source_root)
+    options = dict(adapter_options or {})
+    task_type = options.get("task_type")
     if adapter is None:
         return root
     if dataset_kind == "pair_classification" and _is_pair_dataset_root(root):
-        return _copy_normalized_dataset(root, dataset_kind, destination, dataset_name)
+        return _copy_normalized_dataset(root, dataset_kind, destination, dataset_name, task_type)
     if dataset_kind == "retrieval" and _is_retrieval_dataset_root(root):
-        return _copy_normalized_dataset(root, dataset_kind, destination, dataset_name)
+        return _copy_normalized_dataset(root, dataset_kind, destination, dataset_name, task_type)
 
     adapter_name = _normalize_name(adapter)
     try:
@@ -1046,7 +1090,6 @@ def _adapt_dataset(source_root, dataset_kind, adapter, destination, dataset_name
 
     target = _coerce_path(destination) if destination is not None else _temporary_dataset_root(adapter_name)
     target.mkdir(parents=True, exist_ok=True)
-    options = dict(adapter_options or {})
     adapted = _invoke_with_supported_kwargs(
         adapter_fn,
         source_root=root,
@@ -1054,16 +1097,31 @@ def _adapt_dataset(source_root, dataset_kind, adapter, destination, dataset_name
         dataset_name=dataset_name,
         **options,
     )
-    return _coerce_path(adapted)
+    adapted_root = _coerce_path(adapted)
+    if task_type is not None:
+        _check_task_type_conflict(_read_json(adapted_root / "metadata.json"), task_type)
+    return adapted_root
 
 
-def _copy_normalized_dataset(source_root, dataset_kind, destination=None, dataset_name=None):
+def _copy_normalized_dataset(source_root, dataset_kind, destination=None, dataset_name=None, task_type=None):
     root = _coerce_path(source_root)
+    raw_metadata = _read_json(root / "metadata.json")
+    if task_type is not None:
+        _check_task_type_conflict(raw_metadata, task_type)
+    needs_domain_assignment = (
+        task_type is not None
+        and "task_type" not in raw_metadata
+        and normalize_dataset_task_type(task_type) != "plagiarism"
+    )
     if destination is None:
-        return root
+        if not needs_domain_assignment:
+            return root
+        destination = _temporary_dataset_root("normalized_domain")
 
     target = _coerce_path(destination)
     if target == root:
+        if needs_domain_assignment:
+            raise ValueError("Assigning a task_type to legacy data requires a different destination.")
         return root
 
     if dataset_kind == "pair_classification":
@@ -1071,12 +1129,16 @@ def _copy_normalized_dataset(source_root, dataset_kind, destination=None, datase
         texts = load_code_texts(dataset)
         files = _files_with_embedded_text(dataset, texts)
         metadata = _metadata_with_name(dataset.metadata, dataset_name)
+        if task_type is not None:
+            metadata["task_type"] = normalize_dataset_task_type(task_type)
         return write_pair_dataset(target, files=files, pairs=dataset.pairs, metadata=metadata).root
 
     dataset = load_retrieval_dataset(root)
     texts = load_code_texts(dataset)
     files = _files_with_embedded_text(dataset, texts)
     metadata = _metadata_with_name(dataset.metadata, dataset_name)
+    if task_type is not None:
+        metadata["task_type"] = normalize_dataset_task_type(task_type)
     return write_retrieval_dataset(
         target,
         files=files,
@@ -1147,6 +1209,15 @@ def _dataset_manifest_specs(payload):
             "source",
             "split",
             "task_families",
+            "task_type",
+            "languages",
+            "granularity",
+            "ground_truth",
+            "license",
+            "source_url",
+            "url",
+            "citation",
+            "notes",
         }
         spec = {key: value for key, value in payload.items() if key in spec_keys}
         if not spec:
@@ -1256,6 +1327,8 @@ def _coerce_dataset_spec(spec):
 
 def _preset_to_spec(name, overrides):
     preset = get_dataset_preset(name)
+    if "task_type" in overrides and preset.get("task_type") is not None:
+        _check_task_type_conflict(preset, overrides["task_type"])
     payload = dict(preset)
     payload.update(overrides)
     payload["task_families"] = preset["task_families"]
@@ -1268,7 +1341,7 @@ def _explicit_dataset_spec(payload):
 
     name = str(payload.get("name") or Path(str(payload["identifier"])).name or "dataset").strip()
     task_families = payload.get("task_families") or DATASET_TASK_FAMILIES
-    return {
+    spec = {
         "source": str(payload.get("source") or "local").strip().lower(),
         "identifier": payload["identifier"],
         "name": _safe_name_component(name),
@@ -1283,6 +1356,12 @@ def _explicit_dataset_spec(payload):
         "adapted_destination": payload.get("adapted_destination"),
         "task_families": _normalize_task_families(task_families),
     }
+    for key in ("task_type", "languages", "granularity", "ground_truth", "license", "source_url", "url", "citation", "notes"):
+        if key in payload:
+            spec[key] = payload[key]
+    if "task_type" in spec:
+        spec["task_type"] = normalize_dataset_task_type(spec["task_type"], default=None)
+    return spec
 
 
 def _ensure_spec_supports_task(spec, task_family):
@@ -1308,10 +1387,56 @@ def _resolve_dataset_spec_root(spec):
 
 
 def _adapter_options_with_split(spec):
-    options = dict(spec.get("adapter_options") or {})
+    options = _adapter_options_with_task_type(spec.get("adapter_options"), spec.get("task_type"))
     if spec.get("split") is not None and "split" not in options:
         options["split"] = spec["split"]
     return options
+
+
+def _adapter_options_with_task_type(adapter_options, task_type):
+    options = dict(adapter_options or {})
+    if "task_type" in options:
+        options["task_type"] = normalize_dataset_task_type(options["task_type"], default=None)
+    if task_type is not None:
+        requested = normalize_dataset_task_type(task_type)
+        _check_task_type_conflict(options, requested)
+        options["task_type"] = requested
+    return options
+
+
+def _check_task_type_conflict(metadata, requested):
+    expected = normalize_dataset_task_type(requested, default=None)
+    if "task_type" in metadata and normalize_dataset_task_type(metadata["task_type"]) != expected:
+        raise ValueError(
+            f"Dataset task_type conflict: metadata declares {metadata['task_type']!r}, requested {expected!r}."
+        )
+
+
+def _dataset_with_spec_metadata(dataset, spec):
+    metadata = dict(dataset.metadata)
+    if spec.get("task_type") is not None:
+        # Read the persisted value before normalization supplies the legacy default.
+        _check_task_type_conflict(_read_json(dataset.root / "metadata.json"), spec["task_type"])
+        metadata["task_type"] = spec["task_type"]
+    for key in ("languages", "granularity", "ground_truth", "license", "source_url", "url", "citation", "notes"):
+        if key in spec:
+            metadata.setdefault(key, spec[key])
+    return replace(dataset, metadata=metadata)
+
+
+def _merged_dataset_domain_metadata(datasets, names):
+    domains = {dataset_task_type(dataset) for dataset in datasets}
+    if len(domains) != 1:
+        raise ValueError("Cannot merge datasets with different task_type domains: " + ", ".join(sorted(domains)))
+    metadata = {
+        "task_type": domains.pop(),
+        "source_metadata": {name: dict(dataset.metadata) for name, dataset in zip(names, datasets)},
+    }
+    for key in ("languages", "granularity", "ground_truth"):
+        values = [dataset.metadata.get(key) for dataset in datasets]
+        if values[0] is not None and all(value == values[0] for value in values):
+            metadata[key] = values[0]
+    return metadata
 
 
 def _prefixed_id(prefix, value):
@@ -1327,6 +1452,7 @@ def merge_pair_datasets(datasets, dataset_names=None):
     names = list(dataset_names or [f"dataset_{index + 1}" for index in range(len(resolved_datasets))])
     if len(names) != len(resolved_datasets):
         raise ValueError("dataset_names must have the same length as datasets.")
+    domain_metadata = _merged_dataset_domain_metadata(resolved_datasets, names)
 
     files = []
     pairs = []
@@ -1357,7 +1483,7 @@ def merge_pair_datasets(datasets, dataset_names=None):
         pairs=pd.DataFrame(pairs),
         metadata={
             "name": "merged_pair_dataset",
-            "task_type": "plagiarism",
+            **domain_metadata,
             "dataset_kind": "pair_classification",
             "sources": names,
         },
@@ -1372,6 +1498,7 @@ def merge_retrieval_datasets(datasets, dataset_names=None):
     names = list(dataset_names or [f"dataset_{index + 1}" for index in range(len(resolved_datasets))])
     if len(names) != len(resolved_datasets):
         raise ValueError("dataset_names must have the same length as datasets.")
+    domain_metadata = _merged_dataset_domain_metadata(resolved_datasets, names)
 
     files = []
     queries = []
@@ -1418,7 +1545,7 @@ def merge_retrieval_datasets(datasets, dataset_names=None):
         qrels=pd.DataFrame(qrels),
         metadata={
             "name": "merged_retrieval_dataset",
-            "task_type": "plagiarism",
+            **domain_metadata,
             "dataset_kind": "retrieval",
             "sources": names,
         },
@@ -1908,8 +2035,9 @@ def _add_tabular_file(
         key = ("id", identity_role, normalized_identity)
         preferred_id = _generated_id(identity_role, normalized_identity)
     elif source_path is not None:
-        key = ("path", source_path.as_posix())
-        preferred_id = _generated_id(role, source_path.as_posix())
+        relative_path = source_path.relative_to(_coerce_path(source_root)).as_posix()
+        key = ("path", relative_path)
+        preferred_id = _generated_id(role, relative_path)
     else:
         key = ("text", str(text_value))
         preferred_id = _generated_id(role, text_value)
@@ -1974,7 +2102,7 @@ def _adapt_pair_dataset_auto(source_root, destination, dataset_name=None, **opti
 
     metadata = {
         "name": dataset_name or root.name,
-        "task_type": "plagiarism",
+        "task_type": normalize_dataset_task_type(options.get("task_type")),
         "dataset_kind": "pair_classification",
         "adapter": "auto_pair_tabular",
     }
@@ -2032,7 +2160,7 @@ def _adapt_retrieval_dataset_auto(source_root, destination, dataset_name=None, *
 
     metadata = {
         "name": dataset_name or root.name,
-        "task_type": "plagiarism",
+        "task_type": normalize_dataset_task_type(options.get("task_type")),
         "dataset_kind": "retrieval",
         "adapter": "auto_retrieval_tabular",
     }
@@ -2098,10 +2226,28 @@ def _parse_qrel_line(line):
 def _adapt_soco14_retrieval_dataset(source_root, destination, dataset_name=None, **options):
     split = _normalize_soco14_split(options.get("split"))
     split_root = _find_soco14_split_root(source_root, split)
-    source_index = _index_source_files(split_root)
     qrel_files = sorted(split_root.rglob("*.qrel"))
     if not qrel_files:
         raise ValueError("SOCO14 source root does not contain qrel files.")
+    language = str(options.get("language") or "").strip().lower()
+    if language == "cpp":
+        language = "c"
+    present_languages = [value for value in ("c", "java") if (split_root / value).is_dir()]
+    if not language and len(present_languages) > 1:
+        raise ValueError(
+            "SOCO14 contains overlapping identifiers across languages. Set adapter_options={'language': 'cpp'} "
+            "or {'language': 'java'}; use prepare_plagiarism_benchmark.py for separate judged scenario tasks."
+        )
+    language = language or next(iter(present_languages), "")
+    if language and language not in {"c", "java"}:
+        raise ValueError("SOCO14 language must be cpp, c, or java.")
+    if language:
+        qrel_files = [path for path in qrel_files if re.search(rf"(?:^|[-_]){language}(?:[-_.]|$)", path.name, re.IGNORECASE)]
+    scenario = str(options.get("scenario") or "").strip().upper()
+    if scenario and scenario not in {"A1", "A2", "B1", "B2", "C1", "C2"}:
+        raise ValueError("SOCO14 scenario must be A1, A2, B1, B2, C1, or C2.")
+    scoped_root = split_root / language if language else split_root
+    source_index = _index_source_files(scoped_root / scenario if scenario else scoped_root)
 
     files = []
     file_ids_by_path = {}
@@ -2113,7 +2259,7 @@ def _adapt_soco14_retrieval_dataset(source_root, destination, dataset_name=None,
     def file_id_for(path):
         resolved = _coerce_path(path)
         if resolved not in file_ids_by_path:
-            file_id = _generated_id("soco14", resolved.as_posix())
+            file_id = _generated_id("soco14", resolved.relative_to(split_root).as_posix())
             file_ids_by_path[resolved] = file_id
             files.append({"file_id": file_id, "source_path": resolved, "suffix": resolved.suffix or ".txt"})
         return file_ids_by_path[resolved]
@@ -2124,6 +2270,8 @@ def _adapt_soco14_retrieval_dataset(source_root, destination, dataset_name=None,
             if parsed is None:
                 continue
             query_token, document_token, relevance = parsed
+            if scenario and (not query_token.startswith(scenario) or not document_token.startswith(scenario)):
+                continue
             query_path = source_index.get(query_token) or source_index.get(Path(query_token).name)
             document_path = source_index.get(document_token) or source_index.get(Path(document_token).name)
             if query_path is None or document_path is None:
@@ -2157,6 +2305,10 @@ def _adapt_soco14_retrieval_dataset(source_root, destination, dataset_name=None,
         "split": split,
         "qrel_rows_skipped_missing_files": skipped,
     }
+    if language:
+        metadata["languages"] = ["cpp" if language == "c" else "java"]
+    if scenario:
+        metadata["scenario"] = scenario
     return write_retrieval_dataset(
         destination,
         files=pd.DataFrame(files),
@@ -2201,7 +2353,7 @@ def _build_irplag_case_tables(irplag_root):
     def file_id_for(path):
         resolved = _coerce_path(path)
         if resolved not in file_ids_by_path:
-            file_id = _generated_id("irplag", resolved.as_posix())
+            file_id = _generated_id("irplag", resolved.relative_to(_coerce_path(irplag_root)).as_posix())
             file_ids_by_path[resolved] = file_id
             files.append({"file_id": file_id, "source_path": resolved, "suffix": resolved.suffix or ".java"})
         return file_ids_by_path[resolved]
@@ -2425,18 +2577,18 @@ def _adapt_conplag_pair_dataset(source_root, destination, dataset_name=None, **o
     files_by_stem = _index_conplag_submission_files(versions_root)
     for row in labels.to_dict(orient="records"):
         problem = row.get(problem_col) if problem_col else ""
-        left_path = _find_conplag_submission_file(
-            versions_root,
-            problem,
-            row[left_col],
-            files_by_stem=files_by_stem,
-        )
-        right_path = _find_conplag_submission_file(
-            versions_root,
-            problem,
-            row[right_col],
-            files_by_stem=files_by_stem,
-        )
+        raw_pair_dirs = [versions_root / "version_1" / pair for pair in (
+            f"{row[left_col]}_{row[right_col]}", f"{row[right_col]}_{row[left_col]}",
+        )]
+        pair_dir = next((path for path in raw_pair_dirs if path.is_dir()), None)
+        if pair_dir is not None:
+            left_path = pair_dir / f"{row[left_col]}.java"
+            right_path = pair_dir / f"{row[right_col]}.java"
+            if not left_path.is_file() or not right_path.is_file():
+                raise ValueError(f"ConPlag raw pair directory is missing a submission: {pair_dir.name}")
+        else:
+            left_path = _find_conplag_submission_file(versions_root, problem, row[left_col], files_by_stem=files_by_stem)
+            right_path = _find_conplag_submission_file(versions_root, problem, row[right_col], files_by_stem=files_by_stem)
         if left_path is None or right_path is None:
             continue
         left_id = _add_tabular_file(
@@ -2444,7 +2596,7 @@ def _adapt_conplag_pair_dataset(source_root, destination, dataset_name=None, **o
             file_ids_by_key,
             root,
             "left",
-            f"{problem}:{row[left_col]}",
+            f"{problem}:{pair_dir.name}:{row[left_col]}" if pair_dir is not None else f"{problem}:{row[left_col]}",
             None,
             left_path,
             ".java",
@@ -2454,7 +2606,7 @@ def _adapt_conplag_pair_dataset(source_root, destination, dataset_name=None, **o
             file_ids_by_key,
             root,
             "right",
-            f"{problem}:{row[right_col]}",
+            f"{problem}:{pair_dir.name}:{row[right_col]}" if pair_dir is not None else f"{problem}:{row[right_col]}",
             None,
             right_path,
             ".java",
@@ -2511,8 +2663,9 @@ _SOURCE_FILE_SUFFIXES = {
 
 def _find_ipca_root(source_root):
     root = _coerce_path(source_root)
-    candidates = [root / "IPC", root]
-    candidates.extend(path for path in root.rglob("IPC") if path.is_dir())
+    candidates = [root / "IPC"]
+    candidates.extend(sorted(path for path in root.rglob("IPC") if path.is_dir()))
+    candidates.append(root)
     for candidate in candidates:
         if candidate.exists() and any(candidate.rglob("*.txt")):
             return candidate
@@ -2969,9 +3122,9 @@ def _download_url_to_file(
     return target
 
 
-def _read_json_url(url, headers=None):
+def _read_json_url(url, headers=None, timeout=60):
     request = urllib.request.Request(url, headers=dict(headers or {}))
-    with urllib.request.urlopen(request) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
@@ -3107,18 +3260,21 @@ def register_default_dataset_presets(overwrite=False):
     register_dataset_preset(
         "soco14",
         {
+            "task_type": "plagiarism",
             "source": "zenodo",
             "identifier": "7433031",
             "retrieval_adapter": "soco14_retrieval",
+            "adapter_options": {"language": "cpp"},
             "task_families": ("retrieval",),
             "url": "https://zenodo.org/records/7433031",
-            "notes": "SOCO14 source-code plagiarism retrieval benchmark.",
+            "notes": "SOCO14 C/C++ source-code reuse retrieval preset. The versioned benchmark separates language/scenario views.",
         },
         overwrite=overwrite,
     )
     register_dataset_preset(
         "irplag",
         {
+            "task_type": "plagiarism",
             "source": "github",
             "identifier": "oscarkarnalim/sourcecodeplagiarismdataset",
             "revision": "master",
@@ -3133,6 +3289,7 @@ def register_default_dataset_presets(overwrite=False):
     register_dataset_preset(
         "conplag",
         {
+            "task_type": "plagiarism",
             "source": "zenodo",
             "identifier": "7332790",
             "adapter": "conplag_pair",
@@ -3145,6 +3302,7 @@ def register_default_dataset_presets(overwrite=False):
     register_dataset_preset(
         "ipca",
         {
+            "task_type": "plagiarism",
             "source": "github",
             "identifier": "humsha/IPCA",
             "revision": "main",
@@ -3158,6 +3316,7 @@ def register_default_dataset_presets(overwrite=False):
     register_dataset_preset(
         "student_code_similarity",
         {
+            "task_type": "plagiarism",
             "source": "kaggle",
             "identifier": "ehsankhani/student-code-similarity-and-plagiarism-labels",
             "adapter": "student_code_similarity_pair",
@@ -3170,6 +3329,7 @@ def register_default_dataset_presets(overwrite=False):
     register_dataset_preset(
         "criminal_minds",
         {
+            "task_type": "plagiarism",
             "source": "zenodo",
             "identifier": "19115559",
             "adapter": "criminal_minds_pair",

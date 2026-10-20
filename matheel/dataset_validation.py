@@ -11,6 +11,7 @@ from .datasets import (
     _normalize_id,
     _normalize_nonnegative_relevance,
     _normalize_relative_file_path,
+    normalize_dataset_task_type,
 )
 
 
@@ -44,6 +45,7 @@ def validate_dataset_report(dataset_root, kind="auto"):
     return {
         "schema_version": 1,
         "dataset_kind": dataset_kind or "unknown",
+        "task_type": metadata.get("task_type", "plagiarism"),
         "dataset_name": str(metadata.get("name") or root.name),
         "root_name": root.name,
         "status": status,
@@ -100,7 +102,7 @@ def dataset_validation_report_html(report):
 </head>
 <body>
   <h1>{title}</h1>
-  <p>Dataset kind: {escape(str(payload.get("dataset_kind", "unknown")))}. Status: <span class="status">{status}</span>.</p>
+  <p>Dataset domain: {escape(str(payload.get("task_type", "unknown")))}. Dataset kind: {escape(str(payload.get("dataset_kind", "unknown")))}. Status: <span class="status">{status}</span>.</p>
   <h2>Counts</h2>
   <table><tbody>{counts_rows}</tbody></table>
   <h2>Issues</h2>
@@ -374,6 +376,11 @@ def _inspect_metadata(metadata, expected_kind, issues):
         _add_issue(
             issues, "warning", "missing_task_type", "metadata.json does not include task_type."
         )
+    else:
+        try:
+            normalize_dataset_task_type(metadata["task_type"], default=None)
+        except ValueError as exc:
+            _add_issue(issues, "error", "invalid_task_type", str(exc))
 
 
 def _read_csv_manifest(root, filename, required_columns, issues):

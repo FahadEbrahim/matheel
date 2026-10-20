@@ -11,7 +11,7 @@ pinned: false
 
 Interactive code-similarity analysis with configurable embedding, lexical, chunking, preprocessing, and code-aware metrics.
 
-The hosted Space installs `matheel==0.6.1`. Checkout features are synchronized to the Space after the matching package code is published. This app includes:
+The hosted Space installs `matheel==0.7.0`. Checkout features are synchronized to the Space after the matching package code is published. This app includes:
 
 - Pair, collection, comparison-suite, normalized-dataset, dataset-validation, threshold-tuning, visualization, scored-pair explanation, ready-made public leaderboard, custom leaderboard, and leaderboard-inspection workflows
 - Metric presets for balanced, lexical, embedding-only, code-aware, and individual offline baselines

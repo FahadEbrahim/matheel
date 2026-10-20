@@ -5,6 +5,7 @@ from .algorithms import normalize_algorithm_options, resolve_pair_algorithm
 from .datasets import (
     PairDataset,
     RetrievalDataset,
+    dataset_task_type,
     load_pair_dataset,
     load_pair_datasets,
     load_retrieval_dataset,
@@ -30,14 +31,16 @@ _CREDENTIAL_KEYS = {
 def dataset_card(dataset, name=None, task_family=None, source_spec=None):
     loaded = _load_card_dataset(dataset, task_family=task_family)
     metadata = dict(getattr(loaded, "metadata", {}) or {})
-    resolved_task_family = task_family or ("retrieval" if isinstance(loaded, RetrievalDataset) else "pair")
-    return {
+    resolved_task_family = "retrieval" if isinstance(loaded, RetrievalDataset) else "pair"
+    if task_family is not None and task_family != resolved_task_family:
+        raise ValueError(f"Dataset task_family is {resolved_task_family!r}, requested {task_family!r}.")
+    card = {
         "schema_version": CARD_SCHEMA_VERSION,
         "card_type": "dataset",
         "name": str(name or metadata.get("name") or loaded.root.name),
         "task_family": resolved_task_family,
         "dataset_kind": str(metadata.get("dataset_kind") or _dataset_kind_from_task(resolved_task_family)),
-        "task_type": str(metadata.get("task_type") or "plagiarism"),
+        "task_type": dataset_task_type(loaded),
         "license": str(metadata.get("license") or "unknown"),
         "source_url": str(metadata.get("source_url") or metadata.get("url") or ""),
         "counts": _dataset_counts(loaded),
@@ -45,6 +48,10 @@ def dataset_card(dataset, name=None, task_family=None, source_spec=None):
         "metadata": _sanitize_mapping(metadata),
         "source": _sanitize_mapping(source_spec or {}),
     }
+    for key in ("languages", "granularity", "ground_truth"):
+        if key in metadata:
+            card[key] = metadata[key]
+    return card
 
 
 def algorithm_card(config, name=None):

@@ -1,5 +1,8 @@
+import hashlib
 import html
 import json
+import math
+from time import perf_counter
 from pathlib import Path, PureWindowsPath
 
 import pandas as pd
@@ -7,7 +10,7 @@ import pandas as pd
 from .algorithms import normalize_algorithm_options
 from .benchmark_cards import leaderboard_cards
 from .calibration import calibration_report
-from .datasets import load_pair_datasets, load_retrieval_datasets
+from .datasets import dataset_task_type, load_pair_datasets, load_retrieval_datasets, normalize_dataset_task_type
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .leaderboard_presets import get_leaderboard_algorithm_preset
 from ._path_utils import path_name
@@ -105,19 +108,43 @@ def normalize_leaderboard_manifest(manifest, base_dir=None):
         ),
         "datasets": normalized_datasets,
         "algorithms": normalized_algorithms,
+        "strict_coverage": bool(manifest.get("strict_coverage", False)),
+        "continue_on_error": bool(manifest.get("continue_on_error", False)),
     }
 
 
-def run_leaderboard(manifest, output_dir=None, basename="leaderboard"):
+def run_leaderboard(manifest, output_dir=None, basename="leaderboard", *, score_artifact_dir=None):
     config = normalize_leaderboard_manifest(manifest) if not _is_normalized_manifest(manifest) else manifest
     _validate_unique_names(config["datasets"], "dataset")
     _validate_unique_names(config["algorithms"], "algorithm")
     rows = []
+    score_artifacts = []
     for dataset_config in config["datasets"]:
         for algorithm_config in config["algorithms"]:
-            rows.extend(_evaluate_leaderboard_run(config, dataset_config, algorithm_config))
+            started = perf_counter()
+            try:
+                if score_artifact_dir is None:
+                    run_rows = _evaluate_leaderboard_run(config, dataset_config, algorithm_config)
+                else:
+                    run_rows = _evaluate_leaderboard_run(config, dataset_config, algorithm_config, score_artifact_dir=score_artifact_dir)
+            except Exception as exc:
+                if not config.get("continue_on_error"):
+                    raise
+                metrics = config["pair_metrics" if dataset_config["task_family"] == "pair" else "retrieval_metrics"]
+                run_rows = [
+                    {**_leaderboard_row(dataset_config["task_family"], dataset_config, algorithm_config, metric, None, 0),
+                     "error": f"{type(exc).__name__}: {exc}"}
+                    for metric in metrics
+                ]
+            elapsed = perf_counter() - started
+            for row in run_rows:
+                row["elapsed_seconds"] = elapsed
+                score_artifact = row.pop("_score_artifact", None)
+                if score_artifact is not None and score_artifact not in score_artifacts:
+                    score_artifacts.append(score_artifact)
+            rows.extend(run_rows)
     per_dataset = _rank_per_dataset(pd.DataFrame(rows))
-    aggregate = _aggregate_leaderboard(per_dataset)
+    aggregate = _aggregate_leaderboard(per_dataset, config=config)
     report = {
         "metadata": {
             "schema_version": 1,
@@ -125,6 +152,8 @@ def run_leaderboard(manifest, output_dir=None, basename="leaderboard"):
             "seed": config.get("seed"),
             "pair_metrics": list(config["pair_metrics"]),
             "retrieval_metrics": list(config["retrieval_metrics"]),
+            "strict_coverage": config.get("strict_coverage", False),
+            "score_artifacts": score_artifacts,
         },
         "manifest": config,
         "cards": leaderboard_cards(config),
@@ -230,14 +259,15 @@ def write_leaderboard_artifacts(report, output_dir, basename="leaderboard"):
     return artifacts
 
 
-def _evaluate_leaderboard_run(manifest, dataset_config, algorithm_config):
+def _evaluate_leaderboard_run(manifest, dataset_config, algorithm_config, *, score_artifact_dir=None):
     if dataset_config["task_family"] == "pair":
-        return _evaluate_pair_leaderboard_run(manifest, dataset_config, algorithm_config)
-    return _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_config)
+        return _evaluate_pair_leaderboard_run(manifest, dataset_config, algorithm_config, score_artifact_dir=score_artifact_dir)
+    return _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_config, score_artifact_dir=score_artifact_dir)
 
 
-def _evaluate_pair_leaderboard_run(manifest, dataset_config, algorithm_config):
+def _evaluate_pair_leaderboard_run(manifest, dataset_config, algorithm_config, *, score_artifact_dir=None):
     dataset = load_pair_datasets(dataset_config["spec"])
+    dataset_config["domain"] = dataset_task_type(dataset)
     scored, metrics = evaluate_pair_dataset(
         dataset,
         threshold=float(_first_not_none(algorithm_config.get("threshold"), dataset_config.get("threshold"), 0.5)),
@@ -253,40 +283,69 @@ def _evaluate_pair_leaderboard_run(manifest, dataset_config, algorithm_config):
     if calibration is not None:
         metrics["auroc"] = calibration["summary"]["auroc"]
         metrics["average_precision"] = calibration["summary"]["average_precision"]
+    artifact = _write_score_artifact(scored, dataset_config, algorithm_config, score_artifact_dir)
     return [
-        _leaderboard_row(
+        {**_leaderboard_row(
             task_family="pair",
             dataset_config=dataset_config,
             algorithm_config=algorithm_config,
             metric=metric,
             value=metrics.get(metric),
             sample_count=len(scored),
-        )
+        ), "_score_artifact": artifact}
         for metric in manifest["pair_metrics"]
     ]
 
 
-def _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_config):
+def _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_config, *, score_artifact_dir=None):
     dataset = load_retrieval_datasets(dataset_config["spec"])
+    dataset_config["domain"] = dataset_task_type(dataset)
     scored, metrics = evaluate_retrieval_dataset(
         dataset,
         k=int(_first_not_none(algorithm_config.get("k"), dataset_config.get("k"), 10)),
+        exclude_self_matches=bool(dataset_config.get("exclude_self_matches", False)),
         similarity_options=_leaderboard_similarity_options(dataset_config, algorithm_config),
         algorithm=algorithm_config.get("algorithm_path"),
         algorithm_options=algorithm_config.get("algorithm_options"),
     )
+    artifact = _write_score_artifact(scored, dataset_config, algorithm_config, score_artifact_dir)
     return [
-        _leaderboard_row(
+        {**_leaderboard_row(
             task_family="retrieval",
             dataset_config=dataset_config,
             algorithm_config=algorithm_config,
             metric=metric,
             value=metrics.get(metric),
             sample_count=len(scored),
-        )
+        ), "_score_artifact": artifact}
         for metric in manifest["retrieval_metrics"]
     ]
 
+
+
+def _write_score_artifact(scored, dataset_config, algorithm_config, output_dir):
+    if output_dir is None:
+        return None
+    safe_columns = {
+        "left_id", "right_id", "label", "similarity_score", "query_id", "document_id",
+        "query_file_id", "document_file_id", "relevance", "group", "group_id", "assignment",
+        "assignment_id", "family", "family_id", "language", "split",
+    }
+    frame = scored[[column for column in scored.columns if column in safe_columns]].copy()
+    for column in frame.select_dtypes(include=["object", "string"]).columns:
+        if any(Path(str(value)).is_absolute() or PureWindowsPath(str(value)).is_absolute() for value in frame[column]):
+            raise ValueError("Score artifacts cannot contain absolute paths in identifiers or group metadata.")
+    identity = _algorithm_identity(algorithm_config)
+    dataset_id = hashlib.sha256(dataset_config["name"].encode()).hexdigest()[:12]
+    filename = f"{dataset_id}_{identity[:20]}_{dataset_config['task_family']}.csv"
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    path = target / filename
+    frame.to_csv(path, index=False)
+    return {"dataset_name": dataset_config["name"], "task_family": dataset_config["task_family"],
+            "algorithm_name": algorithm_config["name"], "algorithm_id": identity,
+            "filename": filename, "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            "rows": len(frame), "columns": list(frame.columns)}
 
 def _leaderboard_similarity_options(dataset_config, algorithm_config):
     return {
@@ -298,9 +357,12 @@ def _leaderboard_similarity_options(dataset_config, algorithm_config):
 def _leaderboard_row(task_family, dataset_config, algorithm_config, metric, value, sample_count):
     score = None if value is None else float(value)
     return {
+        "domain": dataset_config.get("domain", "plagiarism"),
+        "task_type": dataset_config.get("domain", "plagiarism"),
         "task_family": task_family,
         "dataset_name": dataset_config["name"],
         "algorithm_name": algorithm_config["name"],
+        "algorithm_id": _algorithm_identity(algorithm_config),
         "metric": metric,
         "score": score,
         "sample_count": int(sample_count),
@@ -309,43 +371,56 @@ def _leaderboard_row(task_family, dataset_config, algorithm_config, metric, valu
     }
 
 
+def _algorithm_identity(config):
+    # Names are presentation; scores from distinct configurations must not share an identity.
+    from .benchmark_protocol import method_configuration_id
+
+    return config.get("_configuration_id") or method_configuration_id(config)
+
+
 def _rank_per_dataset(frame):
     if frame.empty:
         return pd.DataFrame()
     ranked = frame.copy()
     ranked["score"] = pd.to_numeric(ranked["score"], errors="coerce")
-    ranked["rank"] = (
-        ranked.groupby(["task_family", "dataset_name", "metric"])["score"]
-        .rank(method="min", ascending=False, na_option="bottom")
-        .astype(int)
-    )
-    return ranked.sort_values(
-        by=["task_family", "dataset_name", "metric", "rank", "algorithm_name"],
-        ignore_index=True,
-    )
+    ranked.loc[~ranked["score"].map(math.isfinite), "score"] = float("nan")
+    ranked["eligible"] = ranked["score"].notna()
+    keys = [column for column in ("domain", "task_family", "dataset_name", "metric") if column in ranked]
+    ranked["rank"] = ranked.groupby(keys)["score"].rank(method="min", ascending=False).astype("Int64")
+    return ranked.sort_values(by=keys + ["rank", "algorithm_name"], ignore_index=True, na_position="last")
 
 
-def _aggregate_leaderboard(per_dataset):
+def _aggregate_leaderboard(per_dataset, config=None):
     if per_dataset.empty:
         return pd.DataFrame()
-    grouped = (
-        per_dataset.groupby(["task_family", "algorithm_name", "metric"], as_index=False)
-        .agg(
-            mean_score=("score", "mean"),
-            median_score=("score", "median"),
-            dataset_count=("dataset_name", "nunique"),
-            sample_count=("sample_count", "sum"),
+    keys = [column for column in ("domain", "task_family", "algorithm_name", "algorithm_id", "metric") if column in per_dataset]
+    rows = []
+    for values, group in per_dataset.groupby(keys, dropna=False, sort=False):
+        row = dict(zip(keys, values))
+        expected = {
+            item["name"] for item in (config or {}).get("datasets", [])
+            if item["task_family"] == row["task_family"] and item.get("domain", "plagiarism") == row.get("domain", "plagiarism")
+        } or set(group["dataset_name"])
+        valid = group[group["score"].notna()]
+        covered = set(valid["dataset_name"])
+        complete = covered == expected and len(group) == len(expected)
+        eligible = complete if (config or {}).get("strict_coverage") else not valid.empty
+        row.update(
+            mean_score=float(valid["score"].mean()) if eligible else None,
+            median_score=float(valid["score"].median()) if eligible else None,
+            dataset_count=len(covered), expected_dataset_count=len(expected),
+            coverage=len(covered) / len(expected), complete_coverage=complete, eligible=eligible,
+            sample_count=int(group["sample_count"].sum()),
+            elapsed_seconds=float(group.get("elapsed_seconds", pd.Series(dtype=float)).sum()),
         )
-    )
-    grouped["rank"] = (
-        grouped.groupby(["task_family", "metric"])["mean_score"]
-        .rank(method="min", ascending=False, na_option="bottom")
-        .astype(int)
-    )
-    return grouped.sort_values(
-        by=["task_family", "metric", "rank", "algorithm_name"],
-        ignore_index=True,
-    )
+        rows.append(row)
+    grouped = pd.DataFrame(rows)
+    if "domain" in grouped:
+        grouped["task_type"] = grouped["domain"]
+    grouped["mean_score"] = pd.to_numeric(grouped["mean_score"], errors="coerce")
+    rank_keys = [column for column in ("domain", "task_family", "metric") if column in grouped]
+    grouped["rank"] = grouped.groupby(rank_keys)["mean_score"].rank(method="min", ascending=False).astype("Int64")
+    return grouped.sort_values(by=rank_keys + ["rank", "algorithm_name"], ignore_index=True, na_position="last")
 
 
 def _normalize_leaderboard_dataset(item, index=1, base_dir=None):
@@ -362,13 +437,20 @@ def _normalize_leaderboard_dataset(item, index=1, base_dir=None):
     name = str(payload.get("name") or f"{task_family}_dataset_{index}")
     payload["name"] = name
     payload["task_families"] = (task_family,)
+    declared_domain = item.get("domain") or item.get("task_type")
+    if declared_domain is not None:
+        payload["task_type"] = normalize_dataset_task_type(declared_domain)
+        if item.get("task_type") is not None and normalize_dataset_task_type(item["task_type"]) != payload["task_type"]:
+            raise ValueError("Leaderboard dataset domain and task_type conflict.")
     payload = _resolve_relative_paths(payload, base_dir=base_dir)
     return {
         "name": name,
+        "domain": normalize_dataset_task_type(declared_domain),
         "task_family": task_family,
         "spec": payload,
         "threshold": item.get("threshold"),
         "k": item.get("k"),
+        "exclude_self_matches": bool(item.get("exclude_self_matches", False)),
         "similarity_options": similarity_options,
     }
 
@@ -392,7 +474,7 @@ def _normalize_leaderboard_algorithm(item, index=1, base_dir=None):
     options = {**preset_options, **options}
     options.update(payload.pop("similarity_options", {}))
     for key in list(payload):
-        if key not in {"name", "algorithm_path", "algorithm_options", "threshold", "k"}:
+        if key not in {"name", "algorithm_path", "algorithm_options", "threshold", "k", "model_revision"}:
             options[key] = payload.pop(key)
     payload = _resolve_relative_paths(payload, base_dir=base_dir)
     name = str(payload.get("name") or preset_display_name or f"algorithm_{index}")
@@ -403,6 +485,7 @@ def _normalize_leaderboard_algorithm(item, index=1, base_dir=None):
         "similarity_options": options,
         "threshold": payload.get("threshold"),
         "k": payload.get("k"),
+        **({"model_revision": payload["model_revision"]} if payload.get("model_revision") else {}),
     }
 
 
@@ -492,7 +575,7 @@ def _json_safe(value, key_name=None):
         return value.name
     if isinstance(value, str) and _should_sanitize_manifest_path(key_name, value):
         return _path_name(value)
-    if pd.isna(value):
+    if pd.isna(value) or (isinstance(value, float) and not math.isfinite(value)):
         return None
     if isinstance(value, (str, int, float, bool)) or value is None:
         return value

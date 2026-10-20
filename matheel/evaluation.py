@@ -150,6 +150,7 @@ def score_retrieval_dataset(
     *,
     algorithm=None,
     algorithm_options=None,
+    exclude_self_matches=False,
 ):
     if not isinstance(dataset, RetrievalDataset):
         dataset = load_retrieval_dataset(dataset)
@@ -175,6 +176,14 @@ def score_retrieval_dataset(
 
     query_rows = dataset.queries.to_dict(orient="records")
     corpus_rows = dataset.corpus.to_dict(orient="records")
+    if exclude_self_matches:
+        query_files = {str(row["query_id"]): str(row["file_id"]) for row in query_rows}
+        document_files = {str(row["document_id"]): str(row["file_id"]) for row in corpus_rows}
+        if any(
+            relevance > 0 and query_files[query_id] == document_files[document_id]
+            for (query_id, document_id), relevance in qrels_lookup.items()
+        ):
+            raise ValueError("Self-excluded retrieval cannot contain a relevant query/document with the same file_id.")
     builtin_context = None
     if scorer is None and resolved_algorithm is None and query_rows and corpus_rows:
         builtin_context = _prepare_builtin_scoring_context(
@@ -190,6 +199,8 @@ def score_retrieval_dataset(
         for document in corpus_rows:
             document_id = str(document["document_id"])
             document_file_id = str(document["file_id"])
+            if exclude_self_matches and query_file_id == document_file_id:
+                continue
             document_text = texts[document_file_id]
             row = {
                 "query_id": query_id,
@@ -222,7 +233,9 @@ def score_retrieval_dataset(
             row[score_column] = numeric_score
             rows.append(row)
 
-    scored = pd.DataFrame(rows)
+    scored = pd.DataFrame(rows) if rows else pd.DataFrame(columns=[
+        "query_id", "document_id", "query_file_id", "document_file_id", "relevance", score_column,
+    ])
     if resolved_algorithm is not None:
         attach_algorithm_metadata(scored, resolved_algorithm, algorithm_options=algorithm_options)
     return scored
@@ -499,6 +512,7 @@ def retrieval_ranking_metrics(
     query_column="query_id",
     document_column="document_id",
     relevance_column="relevance",
+    query_ids=None,
 ):
     if k <= 0:
         raise ValueError("k must be greater than zero.")
@@ -537,7 +551,8 @@ def retrieval_ranking_metrics(
         relevant_documents = relevant_by_query.setdefault(query_id, {})
         if relevance > 0:
             relevant_documents[document_id] = relevance
-    query_ids = sorted(results_by_query.keys() | relevant_by_query.keys())
+    declared_query_ids = {str(value) for value in (() if query_ids is None else query_ids)}
+    query_ids = sorted(results_by_query.keys() | relevant_by_query.keys() | declared_query_ids)
     empty_results = frame.iloc[:0]
 
     average_precisions = []
@@ -585,6 +600,7 @@ def evaluate_retrieval_dataset(
     *,
     algorithm=None,
     algorithm_options=None,
+    exclude_self_matches=False,
 ):
     if not isinstance(dataset, RetrievalDataset):
         dataset = load_retrieval_dataset(dataset)
@@ -595,12 +611,14 @@ def evaluate_retrieval_dataset(
         score_column=score_column,
         algorithm=algorithm,
         algorithm_options=algorithm_options,
+        exclude_self_matches=exclude_self_matches,
     )
     metrics = retrieval_ranking_metrics(
         scored_results,
         qrels=dataset.qrels,
         k=k,
         score_column=score_column,
+        query_ids=dataset.queries["query_id"],
     )
     return scored_results, metrics
 

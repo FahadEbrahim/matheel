@@ -2,7 +2,7 @@
 
 Matheel supports local labeled pair and retrieval datasets, plus an extensible source/preset/adapter workflow for benchmark experiments.
 
-No external datasets are bundled or downloaded by default. Users provide or download datasets according to each source's terms, license, provenance, and access requirements. Use `task_type: plagiarism` for plagiarism-oriented datasets so manifests can distinguish their intended evaluation task.
+No external datasets are bundled or downloaded by default. Users provide or download datasets according to each source's terms, license, provenance, and access requirements. All six current public presets declare `task_type: plagiarism`. This domain describes the purpose of their labels; pair classification and retrieval describe how the labels are evaluated.
 
 ## Find a Workflow
 
@@ -13,6 +13,35 @@ No external datasets are bundled or downloaded by default. Users provide or down
 | Understand normalized file layouts | [Pair format](#pair-dataset-format) and [retrieval format](#retrieval-dataset-format) |
 | Score labeled pairs or query/candidate rankings | [Pair evaluation](#pair-evaluation) and [retrieval evaluation](#retrieval-evaluation) |
 | Quantify uncertainty across splits | [Resampling](#resampling-and-uncertainty) |
+
+## Dataset Domains and Evaluation Protocols
+
+Keep dataset meaning separate from evaluation protocol:
+
+| Field | Meaning | Current values |
+| --- | --- | --- |
+| `task_type` | Dataset domain: what its ground truth represents. | `plagiarism` for every current public preset. |
+| `task_family` / `task_families` | Supported evaluation protocol in cards/specs. | `pair`, `retrieval`, or both. |
+| `dataset_kind` | Normalized manifest layout. | `pair_classification`, `retrieval`. |
+| `languages`, `granularity`, `ground_truth` | Optional, documented dataset attributes. | Include only values established by the dataset source or annotation procedure. |
+
+A future code-clone dataset can declare `task_type: code_clone` without being mislabeled as plagiarism. These domain identifiers must use snake case; protocol identifiers such as `retrieval` cannot be domains. This extension point does not introduce any clone datasets or detector integrations. Preserve the source's actual label definition: a clone annotation does not establish plagiarism.
+
+Legacy normalized datasets and custom presets that omit `task_type` retain the historical `plagiarism` default. New contributions should always declare it explicitly. Loading specs and adapters preserve an explicit domain and reject a conflicting domain in persisted metadata or preset overrides. Generic tabular adapters accept `task_type` in the loading spec, their `adapter_options`, or the direct `adapt_pair_dataset` / `adapt_retrieval_dataset` call.
+
+Merging datasets requires a shared domain. Merged metadata retains each source's metadata under `source_metadata`; shared `languages`, `granularity`, and `ground_truth` attributes are promoted only when every source declares the same value. Evaluate different domains in separate benchmark tracks.
+
+```python
+from matheel.datasets import (
+    available_dataset_presets_by_task_type,
+    dataset_preset_task_type,
+    dataset_task_type,
+)
+
+print(available_dataset_presets_by_task_type("plagiarism"))
+print(dataset_preset_task_type("soco14"))  # plagiarism
+# print(dataset_task_type(loaded_dataset))
+```
 
 ## Dataset Loading Workflow
 
@@ -31,6 +60,7 @@ pair_dataset = load_pair_datasets(
             "source": "local",
             "identifier": "./data/raw_pairs",
             "name": "custom_pairs",
+            "task_type": "plagiarism",
             "adapter": "auto_pair_tabular",
             "adapter_options": {
                 "pair_table": "pairs.csv",
@@ -48,6 +78,7 @@ retrieval_dataset = load_retrieval_datasets(
             "source": "local",
             "identifier": "./data/raw_retrieval",
             "name": "custom_retrieval",
+            "task_type": "plagiarism",
             "adapter": "auto_retrieval_tabular",
             "adapter_options": {
                 "retrieval_table": "qrels.csv",
@@ -182,14 +213,18 @@ Built-in adapters:
 
 Approved built-in plagiarism presets:
 
-| Preset | Task families | Source | Identifier |
-| --- | --- | --- | --- |
-| `soco14` | retrieval | Zenodo | `7433031` |
-| `irplag` | pair, retrieval | GitHub | `oscarkarnalim/sourcecodeplagiarismdataset` |
-| `conplag` | pair | Zenodo | `7332790` |
-| `ipca` | pair | GitHub | `humsha/IPCA` |
-| `student_code_similarity` | pair | Kaggle | `ehsankhani/student-code-similarity-and-plagiarism-labels` |
-| `criminal_minds` | pair | Zenodo | `19115559` |
+| Preset | Domain | Task families | Source | Identifier |
+| --- | --- | --- | --- | --- |
+| `soco14` | Plagiarism | retrieval | Zenodo | `7433031` |
+| `irplag` | Plagiarism | pair, retrieval | GitHub | `oscarkarnalim/sourcecodeplagiarismdataset` |
+| `conplag` | Plagiarism | pair | Zenodo | `7332790` |
+| `ipca` | Plagiarism | pair | GitHub | `humsha/IPCA` |
+| `student_code_similarity` | Plagiarism | pair | Kaggle | `ehsankhani/student-code-similarity-and-plagiarism-labels` |
+| `criminal_minds` | Plagiarism | pair | Zenodo | `19115559` |
+
+The `soco14` preset explicitly selects **C/C++**. Its source archive also contains Java files with overlapping submission identifiers, so direct use of the native adapter on the combined archive requires `adapter_options={"language": "cpp"}` or `{"language": "java"}`. An optional `scenario` value (`A1`, `A2`, `B1`, `B2`, `C1`, or `C2`) restricts the source view. The versioned benchmark preparation recipe separates language/scenario tasks and records its judged candidate pools explicitly.
+
+ConPlag uses the raw `version_1` files in each annotated pair's directory, preserving distinct source copies when an identifier is reused. IPCA pair generation keeps course and assignment groups separate, including when source archives have already been extracted into a cache.
 
 Custom projects can register their own source resolvers, presets, and adapters:
 
@@ -207,6 +242,7 @@ register_dataset_preset(
     {
         "source": "internal",
         "identifier": "raw_pairs",
+        "task_type": "plagiarism",
         "adapter": "auto_pair_tabular",
         "task_families": ("pair",),
     },

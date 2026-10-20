@@ -1,0 +1,320 @@
+{
+  "algorithms": [
+    {
+      "name": "Jaro-Winkler",
+      "similarity_options": {
+        "feature_weights": {
+          "jaro_winkler": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Winnowing",
+      "similarity_options": {
+        "feature_weights": {
+          "winnowing": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Levenshtein",
+      "similarity_options": {
+        "feature_weights": {
+          "levenshtein": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Damerau-Levenshtein",
+      "similarity_options": {
+        "feature_weights": {
+          "damerau_levenshtein": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Optimal String Alignment (OSA)",
+      "similarity_options": {
+        "feature_weights": {
+          "osa": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Hamming",
+      "similarity_options": {
+        "feature_weights": {
+          "hamming": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Indel",
+      "similarity_options": {
+        "feature_weights": {
+          "indel": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Longest Common Subsequence (LCS)",
+      "similarity_options": {
+        "feature_weights": {
+          "lcs": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Jaro",
+      "similarity_options": {
+        "feature_weights": {
+          "jaro": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Common Prefix",
+      "similarity_options": {
+        "feature_weights": {
+          "prefix": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Common Postfix",
+      "similarity_options": {
+        "feature_weights": {
+          "postfix": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz Ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_ratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz Token Sort Ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_token_sort_ratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz Token Set Ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_token_set_ratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz Token Ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_token_ratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz QRatio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_qratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Balanced (MiniLM-L6-v2)",
+      "similarity_options": {
+        "feature_weights": {
+          "semantic": 0.7,
+          "levenshtein": 0.3
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0,
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+        "vector_backend": "sentence_transformers",
+        "device": "cpu",
+        "max_token_length": 256
+      },
+      "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    },
+    {
+      "name": "Embedding Only (MiniLM-L6-v2)",
+      "similarity_options": {
+        "feature_weights": {
+          "semantic": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0,
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+        "vector_backend": "sentence_transformers",
+        "device": "cpu",
+        "max_token_length": 256
+      },
+      "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    },
+    {
+      "name": "Model2Vec multilingual MiniLM 256",
+      "model_revision": "a6b74a06b9f1b5d436ee427b88550c0944b3bcfb",
+      "similarity_options": {
+        "feature_weights": {
+          "semantic": 1.0
+        },
+        "model_name": "Jarbas/m2v-256-paraphrase-multilingual-MiniLM-L12-v2",
+        "vector_backend": "model2vec",
+        "device": "cpu",
+        "max_token_length": 256
+      }
+    },
+    {
+      "name": "PyLate BERT tiny MaxSim",
+      "model_revision": "9cb92954e00ee9b127df35354e4714ed5ff70bee",
+      "similarity_options": {
+        "feature_weights": {
+          "semantic": 1.0
+        },
+        "model_name": "NeuML/pylate-bert-tiny",
+        "vector_backend": "multivector",
+        "device": "cpu",
+        "max_token_length": 256
+      }
+    },
+    {
+      "name": "Lexical Only",
+      "similarity_options": {
+        "feature_weights": {
+          "levenshtein": 0.5,
+          "winnowing": 0.25,
+          "gst": 0.25
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "Code-Aware (MiniLM-L6-v2)",
+      "similarity_options": {
+        "feature_weights": {
+          "semantic": 0.5,
+          "levenshtein": 0.25,
+          "code_metric": 0.25
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.25,
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2",
+        "vector_backend": "sentence_transformers",
+        "device": "cpu",
+        "max_token_length": 256
+      },
+      "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
+    },
+    {
+      "name": "GST",
+      "similarity_options": {
+        "feature_weights": {
+          "gst": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "CodeBLEU",
+      "similarity_options": {
+        "feature_weights": {
+          "code_metric": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 1.0
+      }
+    },
+    {
+      "name": "RapidFuzz Partial Ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_partial_ratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz Partial Token Sort Ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_partial_token_sort_ratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz Partial Token Set Ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_partial_token_set_ratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz Partial Token Ratio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_partial_token_ratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    },
+    {
+      "name": "RapidFuzz WRatio",
+      "similarity_options": {
+        "feature_weights": {
+          "rapidfuzz_wratio": 1.0
+        },
+        "code_metric": "codebleu",
+        "code_metric_weight": 0.0
+      }
+    }
+  ]
+}

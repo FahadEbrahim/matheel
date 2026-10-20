@@ -146,3 +146,27 @@ def _write_pair_fixture(tmp_path):
         metadata={"name": "tiny_pairs", "license": "synthetic"},
     )
     return dataset_root
+
+
+def test_dataset_card_keeps_domain_separate_from_protocol_and_known_attributes(tmp_path):
+    root = _write_pair_fixture(tmp_path)
+    metadata_path = root / "metadata.json"
+    metadata = json.loads(metadata_path.read_text())
+    metadata.update(task_type="code_clone", granularity="function", ground_truth="synthetic clone labels")
+    metadata_path.write_text(json.dumps(metadata))
+    card = dataset_card(root)
+    assert card["task_type"] == "code_clone"
+    assert card["task_family"] == "pair"
+    assert card["dataset_kind"] == "pair_classification"
+    assert card["granularity"] == "function"
+    assert card["ground_truth"] == "synthetic clone labels"
+    assert "languages" not in card
+
+
+def test_dataset_card_rejects_conflicting_requested_protocol(tmp_path):
+    import pytest
+    from matheel.datasets import load_pair_dataset
+
+    dataset = load_pair_dataset(_write_pair_fixture(tmp_path))
+    with pytest.raises(ValueError, match="task_family"):
+        dataset_card(dataset, task_family="retrieval")
