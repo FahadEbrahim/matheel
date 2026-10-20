@@ -122,7 +122,7 @@ def test_documented_lexical_presets_and_python_benchmark_example_execute_offline
     assert (tmp_path / "results" / "benchmark.json").exists()
 
 
-def test_committed_results_match_the_canonical_protocol_and_all_declared_methods(committed_publication):
+def test_committed_results_match_the_canonical_protocol_and_all_declared_methods(committed_publication, monkeypatch):
     protocol = committed_publication["protocol"]
     payload = committed_publication["result"]
     validated = validate_benchmark_result(payload, protocol=protocol)
@@ -132,6 +132,12 @@ def test_committed_results_match_the_canonical_protocol_and_all_declared_methods
     assert json.loads((PUBLICATION / "protocol.json").read_text()) == protocol
     assert payload["metadata"]["protocol_id"] == protocol["protocol_id"]
 
+    # Reconstruct historical identities with their recorded release, independent
+    # of the package version currently running these artifact-contract checks.
+    recorded_versions = {entry["matheel_version"]
+                         for entry in payload["metadata"]["method_configurations"].values()}
+    assert recorded_versions == {"0.7.0"}
+    monkeypatch.setattr("matheel.__version__", recorded_versions.pop())
     declarations = json.loads((DEFINITION / "methods.json").read_text())["algorithms"]
     methods = normalize_leaderboard_manifest({
         "datasets": [{"name": entry["name"], "task": entry["task_family"], "path": entry["name"]}
