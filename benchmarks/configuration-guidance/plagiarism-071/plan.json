@@ -1,0 +1,64 @@
+{
+  "bootstrap_rounds": 500,
+  "chunk_overlap": 64,
+  "chunk_size": 512,
+  "dataset": "student_code_similarity_pair",
+  "lexical_runs": [
+    {
+      "options": {
+        "code_language": "python",
+        "feature_weights": {
+          "levenshtein": 1
+        }
+      },
+      "run_name": "raw_levenshtein"
+    },
+    {
+      "options": {
+        "code_language": "python",
+        "feature_weights": {
+          "levenshtein": 1
+        },
+        "preprocess_mode": "basic"
+      },
+      "run_name": "basic_levenshtein"
+    },
+    {
+      "options": {
+        "code_language": "python",
+        "feature_weights": {
+          "lcs": 1
+        }
+      },
+      "run_name": "raw_lcs"
+    },
+    {
+      "options": {
+        "code_language": "python",
+        "feature_weights": {
+          "winnowing": 1
+        }
+      },
+      "run_name": "raw_winnowing"
+    }
+  ],
+  "long_file_runs": [
+    "raw_minilm",
+    "chunked_mean",
+    "chunked_max",
+    "chunked_first",
+    "chunked_mean_cap2",
+    "full_winnowing"
+  ],
+  "max_token_length": 256,
+  "model_id": "sentence-transformers/all-MiniLM-L6-v2",
+  "model_revision": "1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+  "pair_byte_ceiling": 20000,
+  "pair_selection": "All original pair observations for error analysis. For supplied-source and long-file diagnostics: among pairs with both inputs ast.parse-compatible and total UTF-8 bytes <=20000, choose greatest combined byte count, breaking ties by original pair row order. Never select by label, scorer output or coverage.",
+  "schema_version": 1,
+  "scope": "Existing configurations only. AST-checked supplied source is never executed. Six built-in controlled fixtures retain their existing explicit behavior checks. Diagnostics do not create dataset labels or fit thresholds.",
+  "seconds_per_workflow": 120,
+  "seed": 17,
+  "source_ref": "64ca1364a08f76904559e19504524f80671b0479",
+  "threshold": 0.5
+}

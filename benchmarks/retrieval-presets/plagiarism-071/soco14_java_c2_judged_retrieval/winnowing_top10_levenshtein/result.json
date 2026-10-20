@@ -1,0 +1,229 @@
+{
+  "analysis_and_export_seconds": 0.008133832998282742,
+  "candidate_queries": [
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20039",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20040",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20041",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20042",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20043",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20044",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20045",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20046",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20047",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20048",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20049",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20050",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20051",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20052",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20053",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20054",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20055",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20056",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20057",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20058",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20059",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20060",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20061",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20062",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20063",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20064",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20065",
+      "retained_positives": 1
+    },
+    {
+      "candidate_count": 10,
+      "candidate_recall": 1.0,
+      "positive_judgments": 1,
+      "query_id": "C20066",
+      "retained_positives": 1
+    }
+  ],
+  "metrics": {
+    "candidate_count": 10,
+    "candidate_recall": 1.0,
+    "candidate_recall_micro": 1.0,
+    "exclude_self_matches": true,
+    "first_stage_comparisons": 756,
+    "first_stage_seconds": 0.019024250002985355,
+    "full_comparison_count": 756,
+    "k": 10,
+    "mean_average_precision": 1.0,
+    "mean_reciprocal_rank": 1.0,
+    "ndcg_at_k": 1.0,
+    "positive_judgments": 28,
+    "precision_at_k": 0.1,
+    "queries_with_positive_judgments": 28,
+    "queries_without_positive_judgments": 0,
+    "query_count": 28,
+    "recall_at_k": 1.0,
+    "relevant_count": 28,
+    "reranker_comparisons": 280,
+    "reranker_seconds": 0.061552999999548774,
+    "result_count": 280,
+    "retained_positive_judgments": 28,
+    "retrieval_mode": "two_stage",
+    "selected_candidate_count": 280
+  },
+  "scoring_seconds": 0.10903700000199024,
+  "status": "complete"
+}

@@ -125,3 +125,37 @@ Lexical and code-only scorers use the full prepared source; chunking and vector 
 do not apply to those components. Preflight states this when such configurations are
 compared. Changing a chunk size or aggregation defines an exploratory configuration:
 it does not modify the frozen plagiarism-v1 256-token protocol or its published scores.
+
+## Choose a configuration using measured coverage
+
+The [0.7.1 configuration guidance experiment](https://github.com/FahadEbrahim/matheel/tree/main/benchmarks/configuration-guidance/plagiarism-071)
+uses one real Python pair selected by a predeclared byte-count rule. It compares
+the same pinned cached MiniLM model at a 256-token cap with raw input, 512-character
+chunks/64-character overlap aggregated by mean, max or first, and mean capped at
+two chunks. A full-source Winnowing score supplies a lexical comparison. The pair's
+existing label is retained in its dataset; this one-pair experiment does not
+estimate classification or retrieval quality.
+
+Read each score next to the input-coverage report. Raw input can omit the tail
+when the tokenizer limit is exceeded. Unlimited mean/max aggregation can preserve
+more input while changing the representation and score. `first` still encodes
+selected chunks but uses only the first chunk in the final vector, so its extra
+work does not provide final-vector tail coverage. `max_chunks=2` is an explicit
+input budget, with measured omissions rather than a claim of complete coverage.
+
+Character chunk sizes are reproducible input boundaries, not model-token counts.
+The real tokenizer's per-chunk retained-token measurements determine whether a
+512-character chunk itself truncates. Choose chunking and aggregation before
+evaluating the intended workload, check effective coverage, and compare detection
+metrics on that workload separately. Full input visibility alone does not make a
+semantic representation accurate, and these controlled comparisons do not select
+a universal aggregation strategy.
+
+For the recorded pair, raw MiniLM truncated both files and tokenizer offsets
+mapped 30.8%/30.1% of their prepared bytes into retained inputs. Unlimited mean/max
+chunks had zero truncated chunks and selected all prepared bytes; their mapped
+spans were 78.2%/75.9%, with whitespace outside token offsets excluded from the
+calculation. `first` used mapped spans of 15.0%/16.5% despite encoding six/five
+chunks. Its similarity (0.9186) exceeded raw input's (0.9014), illustrating why
+a higher similarity score cannot select an aggregation strategy without
+evaluation metrics. Full per-run coverage and scores are in the linked evidence.

@@ -1,0 +1,9 @@
+{
+  "artifact_manifest": "artifact-manifest.json",
+  "bytes": 2021320,
+  "contents": "All source-free generated retrieval evidence including every completed score CSV and explicit timeout rows. Compact JSON/summary files are also committed in this directory.",
+  "filename": "matheel-0.7.1-retrieval-presets-evidence.zip",
+  "generated_files": 168,
+  "sha256": "61426f6583016763f125285f91d82ef37773da07381014aad25dd6e58ebc8300",
+  "url": "https://github.com/FahadEbrahim/matheel/releases/download/v0.7.1/matheel-0.7.1-retrieval-presets-evidence.zip"
+}

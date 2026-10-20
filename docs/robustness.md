@@ -113,3 +113,57 @@ are small diagnostics, not evidence of population-level detection quality. For m
 runs, use a pinned local model snapshot as `model_name` when exact replay matters.
 The public frozen plagiarism-v1 protocol and its 256-token configuration remain
 separate from these experiments.
+
+## Practical configuration comparisons
+
+The [0.7.1 configuration guidance experiment](https://github.com/FahadEbrahim/matheel/tree/main/benchmarks/configuration-guidance/plagiarism-071)
+compares existing raw/basic Levenshtein, raw LCS and raw Winnowing settings.
+It uses all 293 existing Python pair observations for fixed-threshold error
+analysis, the six controlled fixtures above, and formatting/comments applied to
+one declared, size-selected Python submission. Supplied code is parsed and scored
+without executing it. The selection uses byte counts and source row order, without
+looking at labels, scores or measured coverage. Its source-free outputs retain
+input hashes, scorer options, transformation provenance, paired uncertainty,
+false positives/negatives and length slices.
+
+```bash
+OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 \
+HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+  python scripts/compare_existing_configurations.py \
+    --manifest prepared/prepared-manifest.json \
+    --plan benchmarks/configuration-guidance/plagiarism-071/plan.json \
+    --source-root ../matheel-0.7.1 --release-wheel dist/matheel-0.7.1-py3-none-any.whl \
+    --cpu-lock /private/tmp/matheel-071-benchmark-cpu.lock \
+    --output-dir benchmark_outputs/configuration-guidance-071
+```
+
+Use the exact `v0.7.1` source checkout and published wheel described in the
+[retrieval replay instructions](scalable_retrieval.md#compare-presets-across-the-existing-judged-views).
+The POSIX runner verifies that source against the wheel and gives each of its three
+workflows 120 seconds. The long-file workflow needs the pinned MiniLM snapshot
+already cached, plus the existing `sentence_transformers` and `chunking` extras.
+It downloads nothing. Scorer failures retain null scores and a failed workflow;
+they cannot count as successful zero scores.
+
+Use raw/basic comparisons to determine which formatting and comments your
+experiment intends to retain. Removing those signals may reduce sensitivity to
+surface edits, while also increasing scores for unrelated programs with common
+syntax or starter material. Inspect both false-positive and false-negative rows
+and paired differences on the same observations. The example threshold of 0.5 is
+fixed in advance for diagnosis; it is not fitted to these inputs or recommended
+as a deployment decision boundary. Confidence intervals are conditional on the
+existing source-sharing groups and labels.
+
+In the recorded 293-pair comparison, raw Levenshtein's F1 at 0.5 was 0.6070 and
+basic Levenshtein's was 0.5436, while their AP point estimates were 0.5600 and
+0.5695 respectively. These are observed values at one fixed threshold; inspect
+the paired intervals and disagreement rows before drawing a conclusion. On the
+declared supplied source, raw Winnowing fell from 1.0 to 0.570850 after
+AST-preserving formatting, while basic Levenshtein stayed at 1.0 after added
+comments. Raw fingerprint settings do not guarantee formatting invariance.
+
+Use the partial-copy and shared-starter cases to expose score behavior, with the
+recorded transformation as the explanation. A higher score after adding common
+material does not establish plagiarism. Neither these six fixtures nor one
+transformed submission establish robustness across datasets, languages or
+adversarial transformations.

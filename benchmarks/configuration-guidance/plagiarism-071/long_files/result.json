@@ -1,0 +1,1567 @@
+{
+  "diagnostic_only": true,
+  "experiment_id": "f22aa2c4d7997d8e064e738b8969ebefa15dfe4ae833ea2b9b08e72f52c9b2a8",
+  "experiment_type": "long_files",
+  "identity_note": "API experiment/run IDs bind the exact execution configuration, including its private model-cache locator. Replay uses the public pinned model identity and file hashes; cache-location changes can alter these opaque IDs.",
+  "implementation": {
+    "__init__.py": "2832bbbcda45228c75a309c1778146ad1216927a708de5617c6ab757ce3f32a0",
+    "_experiments.py": "23177aedcf955f0e0b26fc1ece6b7657abf9698a6a45d6d1b0509a98ee68292c",
+    "_path_utils.py": "19155967775189861e4b0050e21845c7993d6d4b0e5ece868758430f106e3621",
+    "_progress.py": "eed2a890ca01e54c9b14754c3f328cddae06f45c8a82fa2e19e279108311a992",
+    "_run_metadata.py": "3518aeb1159c10f49ea4ecf98e83db9267d83a8eb87a1c3502b40f20105179f9",
+    "algorithms.py": "b700fbcb870ffbf8d0d3ff89b1c6e50668870af72fdabacc01b5e9aed842fbce",
+    "analysis_cli.py": "b8e85b9e7b27be67dc5a0fa34defa9fb691b011abb8f07302cb5f322c8b60aad",
+    "benchmark_analysis.py": "6381be864da750d98e60ea9df1a2811f12d8ac1a466084a429702356d7a75feb",
+    "benchmark_cache.py": "c83b7e2fd6d562e14ed2e1126e9546373d9f3ee9e9e4331601810a5dd528e828",
+    "benchmark_cards.py": "1d2675edd0d0ca2953ecc4e1dd14d0f3b1b067f5f0dabe05f6488a157eda24a1",
+    "benchmark_protocol.py": "ff567dbeb8968e7e4d3d3f1d610b2e0d6cdb2f8d9925c82456c7b5571873e2ea",
+    "benchmark_registry.py": "b8356a5585034c51a65568474929a7ce763f095bfe463e9d7156c44b0844778c",
+    "calibration.py": "3cb1577cdde68b2081e95371bf2c05aad97615222e7c2669800739878f2f5c79",
+    "chunking.py": "c14d18b5baba1e57306e653a3ee6068925498f5a92b0ec6d9e3067e2710dc0f9",
+    "cli.py": "14b1793fe93c84e7989cc955e3373db14e65524e12452360e7afa30cd4fc17f7",
+    "code_metrics.py": "dd0b1fff8f4344374d85d6ce432ec48a8b66a4d496c481e9f4a061d171736ce5",
+    "comparison_suite.py": "f513115d243a2cd348557d1b0ac3b4b41b6bb1d7c5641d8a5815a143003d64b8",
+    "custom_templates.py": "a95cea5e64fe234fb22c6ab45b232f18548df4843b36c87b554b31714eb751e1",
+    "dataset_validation.py": "fe984954a0d302b89eb73bbfb4a033fc88e3a9ac4e25bc06003cac9a839da9ce",
+    "datasets.py": "1489828cffef2ab48874e326f37460ae83eea57c51a64611d4c440cd42abd3da",
+    "evaluation.py": "23297cb6d0a212a8b4215f358bb3a38d04d1dc1cb08025edc64f0a035f1ddb7f",
+    "experiment_cli.py": "bf028575c9d82097f9a7933ec544ec135d8cba624e918deeda742b47e2e0c64f",
+    "feature_weights.py": "e006c0b61c735e3d7471e20696f5458fd1f29e8d678a4517f39e3ed2dd94a2ce",
+    "leaderboard.py": "401dd4eb760ee9a544a9091863aae048ad211aa38416436202acde1f909044d6",
+    "leaderboard_presets.py": "f7a46cbb722486356df0e55dc5a06fb7d6a4ba1198b743a0aaee55bd00b3f5d1",
+    "lexical.py": "cefd08c4e825547bb7709631ee8b676ad7a3f2948bab52d2e264daf1c3473d0c",
+    "long_files.py": "56fe5c58110e291fed2d5dd472d06d1b6c85861cd281c541bba5090180c3cd28",
+    "model_routing.py": "88220fe86e73155491c828bc6a401d2ee6c4cf30a512d1aa2c518efbf055bd57",
+    "native_codebleu.py": "620b38aac9c5ee0ebc649cbab003b47052a08ddd3bc6bb7dab2c0d6933ecaa61",
+    "preprocessing.py": "6fdcb9def866fb540f37db73b49c3fcbc3233d432a60448fb9ce5e86698f7dda",
+    "reports.py": "05de992f3ef7cedfe1052b133b6d1c8a87c813a164d6eee70fd70489046f9257",
+    "reproducibility.py": "38c274777136092e828ab134c7e43a6545702c208bae33250cb19d261fd4deab",
+    "resampling.py": "b06a1637cc7526f66f542b23c59b05d64f353f4547ed9c65528e193a2e14eb3c",
+    "result_analysis.py": "76500892afb6300f4e609ae4c7e2d19fa8de1fb095eda73c339f60293e6c55bc",
+    "retrieval.py": "4cd02f13480f13f52886c3670f16c8569b7ebbff01b7b2fa2535a35db5699018",
+    "retrieval_cli.py": "ae371eefcc01312ed3ec8b79104bd7a600abd7a469308b7d3e0d5ded1822c4b7",
+    "robustness.py": "ab820bb27eae93b762bbb4634bb337d7cfec423cebec7b42d399443e660cc8cf",
+    "scoring_config.py": "cddf9ef33d7b8608f156b3194043fe631ba8628989a770196db88f9e33f18072",
+    "similarity.py": "1d647c0e867771bde16ef6083307bc0899b7cb0c97994b27ad1167ad6c992726",
+    "task_eligibility.py": "8bf6ac54e05e89da658af6dd858a54da074f5a57f4ae95cbba03d89f2ed8ed0b",
+    "vectors.py": "a60f3afd160f9653f152953dc54e069e698fcbd28d276f2c4a05832fc0a7b91e",
+    "visualization.py": "5f6f90ee453d1ba2d800a74f1517a06f86204b485572b439e1339628d01e1859"
+  },
+  "inputs": {
+    "left": {
+      "sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74"
+    },
+    "right": {
+      "sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383"
+    }
+  },
+  "interpretation": "Declared scoring configurations; no change to frozen benchmark protocols.",
+  "model_files_sha256": {
+    "1_Pooling/config.json": "4be450dde3b0273bb9787637cfbd28fe04a7ba6ab9d36ac48e92b11e350ffc23",
+    "README.md": "dcd602d2fd35c203a247304a06fec6654a12f7941b739f9221a064fe8dc3b7f0",
+    "config.json": "953f9c0d463486b10a6871cc2fd59f223b2c70184f49815e7efbcab5d8908b41",
+    "config_sentence_transformers.json": "061ca9d39661d6c6d6de5ba27f79a1cd5770ea247f8d46412a68a498dc5ac9f3",
+    "model.safetensors": "53aa51172d142c89d9012cce15ae4d6cc0ca6895895114379cacb4fab128d9db",
+    "modules.json": "84e40c8e006c9b1d6c122e02cba9b02458120b5fb0c87b746c41e0207cf642cf",
+    "sentence_bert_config.json": "fc1993fde0a95c24ec6c022539d41cf6e2f7c9721e5415d6fb6897472a9cd4b7",
+    "special_tokens_map.json": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3",
+    "tokenizer.json": "be50c3628f2bf5bb5e3a7f17b1f74611b2561a3a27eeab05e5aa30f411572037",
+    "tokenizer_config.json": "acb92769e8195aabd29b7b2137a9e6d6e25c476a4f15aa4355c233426c61576b",
+    "vocab.txt": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+  },
+  "preflight": [
+    {
+      "error": null,
+      "files": {
+        "left": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "mean",
+          "chunking_method": "none",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 673,
+              "lines": 79,
+              "retained_input_tokens": 256,
+              "retained_source_tokens": 254,
+              "sha256": "3d72a87eeba3fbf45c365ef15bcd9453490ea03d0a798735e3336f9916bd4b96",
+              "source_span": [
+                0,
+                2389
+              ],
+              "source_tokens": 671,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": true,
+              "used_by_aggregation": true,
+              "utf8_bytes": 2389
+            }
+          ],
+          "effective_chunks": 1,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.3084972791963165,
+            "lines": 31,
+            "utf8_bytes": 737
+          },
+          "encoder_role": "document",
+          "generated_chunks": 1,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "3d72a87eeba3fbf45c365ef15bcd9453490ea03d0a798735e3336f9916bd4b96",
+          "prepared_utf8_bytes": 2389,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2389
+          },
+          "selected_chunks": 1,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+          "source_utf8_bytes": 2390,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 1,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        },
+        "right": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "mean",
+          "chunking_method": "none",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 664,
+              "lines": 79,
+              "retained_input_tokens": 256,
+              "retained_source_tokens": 254,
+              "sha256": "9ea20c38b7f008fe226353a79c093bf83516e2a2bb0ef8cd3619c23283644247",
+              "source_span": [
+                0,
+                2166
+              ],
+              "source_tokens": 662,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": true,
+              "used_by_aggregation": true,
+              "utf8_bytes": 2166
+            }
+          ],
+          "effective_chunks": 1,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.3010156971375808,
+            "lines": 30,
+            "utf8_bytes": 652
+          },
+          "encoder_role": "document",
+          "generated_chunks": 1,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "9ea20c38b7f008fe226353a79c093bf83516e2a2bb0ef8cd3619c23283644247",
+          "prepared_utf8_bytes": 2166,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2166
+          },
+          "selected_chunks": 1,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383",
+          "source_utf8_bytes": 2167,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 1,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        }
+      },
+      "run_name": "raw_minilm"
+    },
+    {
+      "error": null,
+      "files": {
+        "left": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "mean",
+          "chunking_method": "chonkie_token",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 132,
+              "lines": 18,
+              "retained_input_tokens": 132,
+              "retained_source_tokens": 130,
+              "sha256": "85b98a71ab1d8195fc4b4704aa3e5a95a1a22454c36e11ae7dd657b9ed34e309",
+              "source_span": [
+                0,
+                505
+              ],
+              "source_tokens": 130,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 505
+            },
+            {
+              "chunk_index": 1,
+              "input_tokens": 126,
+              "lines": 21,
+              "retained_input_tokens": 126,
+              "retained_source_tokens": 124,
+              "sha256": "33856910c4275c94180b879c341d514035dc211fc073896bbfae90ff4fba04d1",
+              "source_span": [
+                452,
+                960
+              ],
+              "source_tokens": 124,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 508
+            },
+            {
+              "chunk_index": 2,
+              "input_tokens": 139,
+              "lines": 12,
+              "retained_input_tokens": 139,
+              "retained_source_tokens": 137,
+              "sha256": "879ecf23242d706953e45ba0cf830e88f5a370709adc8782a540dfd4ba107132",
+              "source_span": [
+                896,
+                1406
+              ],
+              "source_tokens": 137,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 510
+            },
+            {
+              "chunk_index": 3,
+              "input_tokens": 163,
+              "lines": 17,
+              "retained_input_tokens": 163,
+              "retained_source_tokens": 161,
+              "sha256": "10a37f82ccdc4b9289c64c957979dffb494370f43db04af8ab926f69057e9f6f",
+              "source_span": [
+                1344,
+                1856
+              ],
+              "source_tokens": 161,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 4,
+              "input_tokens": 162,
+              "lines": 19,
+              "retained_input_tokens": 162,
+              "retained_source_tokens": 160,
+              "sha256": "1e1667a39b27088514dadada558fe937b53764dd0f22d7e343a5117d0b2c1fe3",
+              "source_span": [
+                1792,
+                2304
+              ],
+              "source_tokens": 160,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 5,
+              "input_tokens": 51,
+              "lines": 8,
+              "retained_input_tokens": 51,
+              "retained_source_tokens": 49,
+              "sha256": "3f72e049c3b65db4adbc82ef2ec8814e9cdfeebd1b8cc9cb677f4276e48fd3f6",
+              "source_span": [
+                2240,
+                2389
+              ],
+              "source_tokens": 49,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 149
+            }
+          ],
+          "effective_chunks": 6,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.7819171201339472,
+            "lines": 59,
+            "utf8_bytes": 1868
+          },
+          "encoder_role": "document",
+          "generated_chunks": 6,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "3d72a87eeba3fbf45c365ef15bcd9453490ea03d0a798735e3336f9916bd4b96",
+          "prepared_utf8_bytes": 2389,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2389
+          },
+          "selected_chunks": 6,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+          "source_utf8_bytes": 2390,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        },
+        "right": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "mean",
+          "chunking_method": "chonkie_token",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 145,
+              "lines": 19,
+              "retained_input_tokens": 145,
+              "retained_source_tokens": 143,
+              "sha256": "1420dda7747331296afca5a16aac6f0dee77bc1d43926d5b920c77e180a591b2",
+              "source_span": [
+                0,
+                512
+              ],
+              "source_tokens": 143,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 1,
+              "input_tokens": 137,
+              "lines": 22,
+              "retained_input_tokens": 137,
+              "retained_source_tokens": 135,
+              "sha256": "6e337445bce8cfaacd7e6a541c305d916b5d8203c169c188fd76f048ec3b4d1c",
+              "source_span": [
+                448,
+                960
+              ],
+              "source_tokens": 135,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 2,
+              "input_tokens": 166,
+              "lines": 12,
+              "retained_input_tokens": 166,
+              "retained_source_tokens": 164,
+              "sha256": "a131eef5d24525b4534434a16a0dc71d49d452c0c8a788028959b61bec6e62e0",
+              "source_span": [
+                904,
+                1403
+              ],
+              "source_tokens": 164,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 499
+            },
+            {
+              "chunk_index": 3,
+              "input_tokens": 169,
+              "lines": 19,
+              "retained_input_tokens": 169,
+              "retained_source_tokens": 167,
+              "sha256": "0a827f1a4c75c03ca08611ab466a4156ab64e4a3174cf060802488e6565a7235",
+              "source_span": [
+                1344,
+                1856
+              ],
+              "source_tokens": 167,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 4,
+              "input_tokens": 136,
+              "lines": 17,
+              "retained_input_tokens": 136,
+              "retained_source_tokens": 134,
+              "sha256": "a11bb76e00db7424f94c0e23143538a5c2be9c554b4336d52bc3d4790e34e549",
+              "source_span": [
+                1792,
+                2166
+              ],
+              "source_tokens": 134,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 374
+            }
+          ],
+          "effective_chunks": 5,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.7585410895660203,
+            "lines": 59,
+            "utf8_bytes": 1643
+          },
+          "encoder_role": "document",
+          "generated_chunks": 5,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "9ea20c38b7f008fe226353a79c093bf83516e2a2bb0ef8cd3619c23283644247",
+          "prepared_utf8_bytes": 2166,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2166
+          },
+          "selected_chunks": 5,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383",
+          "source_utf8_bytes": 2167,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        }
+      },
+      "run_name": "chunked_mean"
+    },
+    {
+      "error": null,
+      "files": {
+        "left": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "max",
+          "chunking_method": "chonkie_token",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 132,
+              "lines": 18,
+              "retained_input_tokens": 132,
+              "retained_source_tokens": 130,
+              "sha256": "85b98a71ab1d8195fc4b4704aa3e5a95a1a22454c36e11ae7dd657b9ed34e309",
+              "source_span": [
+                0,
+                505
+              ],
+              "source_tokens": 130,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 505
+            },
+            {
+              "chunk_index": 1,
+              "input_tokens": 126,
+              "lines": 21,
+              "retained_input_tokens": 126,
+              "retained_source_tokens": 124,
+              "sha256": "33856910c4275c94180b879c341d514035dc211fc073896bbfae90ff4fba04d1",
+              "source_span": [
+                452,
+                960
+              ],
+              "source_tokens": 124,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 508
+            },
+            {
+              "chunk_index": 2,
+              "input_tokens": 139,
+              "lines": 12,
+              "retained_input_tokens": 139,
+              "retained_source_tokens": 137,
+              "sha256": "879ecf23242d706953e45ba0cf830e88f5a370709adc8782a540dfd4ba107132",
+              "source_span": [
+                896,
+                1406
+              ],
+              "source_tokens": 137,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 510
+            },
+            {
+              "chunk_index": 3,
+              "input_tokens": 163,
+              "lines": 17,
+              "retained_input_tokens": 163,
+              "retained_source_tokens": 161,
+              "sha256": "10a37f82ccdc4b9289c64c957979dffb494370f43db04af8ab926f69057e9f6f",
+              "source_span": [
+                1344,
+                1856
+              ],
+              "source_tokens": 161,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 4,
+              "input_tokens": 162,
+              "lines": 19,
+              "retained_input_tokens": 162,
+              "retained_source_tokens": 160,
+              "sha256": "1e1667a39b27088514dadada558fe937b53764dd0f22d7e343a5117d0b2c1fe3",
+              "source_span": [
+                1792,
+                2304
+              ],
+              "source_tokens": 160,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 5,
+              "input_tokens": 51,
+              "lines": 8,
+              "retained_input_tokens": 51,
+              "retained_source_tokens": 49,
+              "sha256": "3f72e049c3b65db4adbc82ef2ec8814e9cdfeebd1b8cc9cb677f4276e48fd3f6",
+              "source_span": [
+                2240,
+                2389
+              ],
+              "source_tokens": 49,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 149
+            }
+          ],
+          "effective_chunks": 6,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.7819171201339472,
+            "lines": 59,
+            "utf8_bytes": 1868
+          },
+          "encoder_role": "document",
+          "generated_chunks": 6,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "3d72a87eeba3fbf45c365ef15bcd9453490ea03d0a798735e3336f9916bd4b96",
+          "prepared_utf8_bytes": 2389,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2389
+          },
+          "selected_chunks": 6,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+          "source_utf8_bytes": 2390,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        },
+        "right": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "max",
+          "chunking_method": "chonkie_token",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 145,
+              "lines": 19,
+              "retained_input_tokens": 145,
+              "retained_source_tokens": 143,
+              "sha256": "1420dda7747331296afca5a16aac6f0dee77bc1d43926d5b920c77e180a591b2",
+              "source_span": [
+                0,
+                512
+              ],
+              "source_tokens": 143,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 1,
+              "input_tokens": 137,
+              "lines": 22,
+              "retained_input_tokens": 137,
+              "retained_source_tokens": 135,
+              "sha256": "6e337445bce8cfaacd7e6a541c305d916b5d8203c169c188fd76f048ec3b4d1c",
+              "source_span": [
+                448,
+                960
+              ],
+              "source_tokens": 135,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 2,
+              "input_tokens": 166,
+              "lines": 12,
+              "retained_input_tokens": 166,
+              "retained_source_tokens": 164,
+              "sha256": "a131eef5d24525b4534434a16a0dc71d49d452c0c8a788028959b61bec6e62e0",
+              "source_span": [
+                904,
+                1403
+              ],
+              "source_tokens": 164,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 499
+            },
+            {
+              "chunk_index": 3,
+              "input_tokens": 169,
+              "lines": 19,
+              "retained_input_tokens": 169,
+              "retained_source_tokens": 167,
+              "sha256": "0a827f1a4c75c03ca08611ab466a4156ab64e4a3174cf060802488e6565a7235",
+              "source_span": [
+                1344,
+                1856
+              ],
+              "source_tokens": 167,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 4,
+              "input_tokens": 136,
+              "lines": 17,
+              "retained_input_tokens": 136,
+              "retained_source_tokens": 134,
+              "sha256": "a11bb76e00db7424f94c0e23143538a5c2be9c554b4336d52bc3d4790e34e549",
+              "source_span": [
+                1792,
+                2166
+              ],
+              "source_tokens": 134,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 374
+            }
+          ],
+          "effective_chunks": 5,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.7585410895660203,
+            "lines": 59,
+            "utf8_bytes": 1643
+          },
+          "encoder_role": "document",
+          "generated_chunks": 5,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "9ea20c38b7f008fe226353a79c093bf83516e2a2bb0ef8cd3619c23283644247",
+          "prepared_utf8_bytes": 2166,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2166
+          },
+          "selected_chunks": 5,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383",
+          "source_utf8_bytes": 2167,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        }
+      },
+      "run_name": "chunked_max"
+    },
+    {
+      "error": null,
+      "files": {
+        "left": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "first",
+          "chunking_method": "chonkie_token",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 132,
+              "lines": 18,
+              "retained_input_tokens": 132,
+              "retained_source_tokens": 130,
+              "sha256": "85b98a71ab1d8195fc4b4704aa3e5a95a1a22454c36e11ae7dd657b9ed34e309",
+              "source_span": [
+                0,
+                505
+              ],
+              "source_tokens": 130,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 505
+            },
+            {
+              "chunk_index": 1,
+              "input_tokens": 126,
+              "lines": 21,
+              "retained_input_tokens": 126,
+              "retained_source_tokens": 124,
+              "sha256": "33856910c4275c94180b879c341d514035dc211fc073896bbfae90ff4fba04d1",
+              "source_span": [
+                452,
+                960
+              ],
+              "source_tokens": 124,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 508
+            },
+            {
+              "chunk_index": 2,
+              "input_tokens": 139,
+              "lines": 12,
+              "retained_input_tokens": 139,
+              "retained_source_tokens": 137,
+              "sha256": "879ecf23242d706953e45ba0cf830e88f5a370709adc8782a540dfd4ba107132",
+              "source_span": [
+                896,
+                1406
+              ],
+              "source_tokens": 137,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 510
+            },
+            {
+              "chunk_index": 3,
+              "input_tokens": 163,
+              "lines": 17,
+              "retained_input_tokens": 163,
+              "retained_source_tokens": 161,
+              "sha256": "10a37f82ccdc4b9289c64c957979dffb494370f43db04af8ab926f69057e9f6f",
+              "source_span": [
+                1344,
+                1856
+              ],
+              "source_tokens": 161,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 4,
+              "input_tokens": 162,
+              "lines": 19,
+              "retained_input_tokens": 162,
+              "retained_source_tokens": 160,
+              "sha256": "1e1667a39b27088514dadada558fe937b53764dd0f22d7e343a5117d0b2c1fe3",
+              "source_span": [
+                1792,
+                2304
+              ],
+              "source_tokens": 160,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 5,
+              "input_tokens": 51,
+              "lines": 8,
+              "retained_input_tokens": 51,
+              "retained_source_tokens": 49,
+              "sha256": "3f72e049c3b65db4adbc82ef2ec8814e9cdfeebd1b8cc9cb677f4276e48fd3f6",
+              "source_span": [
+                2240,
+                2389
+              ],
+              "source_tokens": 49,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 149
+            }
+          ],
+          "effective_chunks": 1,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.15027208036835496,
+            "lines": 16,
+            "utf8_bytes": 359
+          },
+          "encoder_role": "document",
+          "generated_chunks": 6,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "All selected chunks are encoded, but first aggregation uses only the first chunk.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "3d72a87eeba3fbf45c365ef15bcd9453490ea03d0a798735e3336f9916bd4b96",
+          "prepared_utf8_bytes": 2389,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2389
+          },
+          "selected_chunks": 6,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+          "source_utf8_bytes": 2390,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        },
+        "right": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "first",
+          "chunking_method": "chonkie_token",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 145,
+              "lines": 19,
+              "retained_input_tokens": 145,
+              "retained_source_tokens": 143,
+              "sha256": "1420dda7747331296afca5a16aac6f0dee77bc1d43926d5b920c77e180a591b2",
+              "source_span": [
+                0,
+                512
+              ],
+              "source_tokens": 143,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 1,
+              "input_tokens": 137,
+              "lines": 22,
+              "retained_input_tokens": 137,
+              "retained_source_tokens": 135,
+              "sha256": "6e337445bce8cfaacd7e6a541c305d916b5d8203c169c188fd76f048ec3b4d1c",
+              "source_span": [
+                448,
+                960
+              ],
+              "source_tokens": 135,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 2,
+              "input_tokens": 166,
+              "lines": 12,
+              "retained_input_tokens": 166,
+              "retained_source_tokens": 164,
+              "sha256": "a131eef5d24525b4534434a16a0dc71d49d452c0c8a788028959b61bec6e62e0",
+              "source_span": [
+                904,
+                1403
+              ],
+              "source_tokens": 164,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 499
+            },
+            {
+              "chunk_index": 3,
+              "input_tokens": 169,
+              "lines": 19,
+              "retained_input_tokens": 169,
+              "retained_source_tokens": 167,
+              "sha256": "0a827f1a4c75c03ca08611ab466a4156ab64e4a3174cf060802488e6565a7235",
+              "source_span": [
+                1344,
+                1856
+              ],
+              "source_tokens": 167,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 4,
+              "input_tokens": 136,
+              "lines": 17,
+              "retained_input_tokens": 136,
+              "retained_source_tokens": 134,
+              "sha256": "a11bb76e00db7424f94c0e23143538a5c2be9c554b4336d52bc3d4790e34e549",
+              "source_span": [
+                1792,
+                2166
+              ],
+              "source_tokens": 134,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": false,
+              "utf8_bytes": 374
+            }
+          ],
+          "effective_chunks": 1,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.16481994459833796,
+            "lines": 17,
+            "utf8_bytes": 357
+          },
+          "encoder_role": "document",
+          "generated_chunks": 5,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "All selected chunks are encoded, but first aggregation uses only the first chunk.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "9ea20c38b7f008fe226353a79c093bf83516e2a2bb0ef8cd3619c23283644247",
+          "prepared_utf8_bytes": 2166,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2166
+          },
+          "selected_chunks": 5,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383",
+          "source_utf8_bytes": 2167,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        }
+      },
+      "run_name": "chunked_first"
+    },
+    {
+      "error": null,
+      "files": {
+        "left": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "mean",
+          "chunking_method": "chonkie_token",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 132,
+              "lines": 18,
+              "retained_input_tokens": 132,
+              "retained_source_tokens": 130,
+              "sha256": "85b98a71ab1d8195fc4b4704aa3e5a95a1a22454c36e11ae7dd657b9ed34e309",
+              "source_span": [
+                0,
+                505
+              ],
+              "source_tokens": 130,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 505
+            },
+            {
+              "chunk_index": 1,
+              "input_tokens": 126,
+              "lines": 21,
+              "retained_input_tokens": 126,
+              "retained_source_tokens": 124,
+              "sha256": "33856910c4275c94180b879c341d514035dc211fc073896bbfae90ff4fba04d1",
+              "source_span": [
+                452,
+                960
+              ],
+              "source_tokens": 124,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 508
+            }
+          ],
+          "effective_chunks": 2,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.2904981163666806,
+            "lines": 30,
+            "utf8_bytes": 694
+          },
+          "encoder_role": "document",
+          "generated_chunks": 6,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 4,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "3d72a87eeba3fbf45c365ef15bcd9453490ea03d0a798735e3336f9916bd4b96",
+          "prepared_utf8_bytes": 2389,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 0.40184177480117206,
+            "lines": 37,
+            "utf8_bytes": 960
+          },
+          "selected_chunks": 2,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+          "source_utf8_bytes": 2390,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        },
+        "right": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "mean",
+          "chunking_method": "chonkie_token",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": 145,
+              "lines": 19,
+              "retained_input_tokens": 145,
+              "retained_source_tokens": 143,
+              "sha256": "1420dda7747331296afca5a16aac6f0dee77bc1d43926d5b920c77e180a591b2",
+              "source_span": [
+                0,
+                512
+              ],
+              "source_tokens": 143,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            },
+            {
+              "chunk_index": 1,
+              "input_tokens": 137,
+              "lines": 22,
+              "retained_input_tokens": 137,
+              "retained_source_tokens": 135,
+              "sha256": "6e337445bce8cfaacd7e6a541c305d916b5d8203c169c188fd76f048ec3b4d1c",
+              "source_span": [
+                448,
+                960
+              ],
+              "source_tokens": 135,
+              "special_tokens": 2,
+              "token_measurement": "tokenizer_offsets",
+              "tokenization_note": null,
+              "truncated": false,
+              "used_by_aggregation": true,
+              "utf8_bytes": 512
+            }
+          ],
+          "effective_chunks": 2,
+          "effective_max_input_tokens": 256,
+          "effective_model_input_coverage": {
+            "byte_fraction": 0.31301939058171746,
+            "lines": 31,
+            "utf8_bytes": 678
+          },
+          "encoder_role": "document",
+          "generated_chunks": 5,
+          "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Tokenizer offsets assume no additional backend-specific text normalization."
+          ],
+          "omitted_chunks": 3,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "9ea20c38b7f008fe226353a79c093bf83516e2a2bb0ef8cd3619c23283644247",
+          "prepared_utf8_bytes": 2166,
+          "requested_max_token_length": 256,
+          "selected_chunk_coverage": {
+            "byte_fraction": 0.44321329639889195,
+            "lines": 38,
+            "utf8_bytes": 960
+          },
+          "selected_chunks": 2,
+          "semantic_scoring_active": true,
+          "source_lines": 79,
+          "source_sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383",
+          "source_utf8_bytes": 2167,
+          "tokenizer_class": "BertTokenizer",
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 0,
+          "vector_backend": "sentence_transformers"
+        }
+      },
+      "run_name": "chunked_mean_cap2"
+    },
+    {
+      "error": null,
+      "files": {
+        "left": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "mean",
+          "chunking_method": "none",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": null,
+              "lines": 79,
+              "retained_input_tokens": null,
+              "retained_source_tokens": null,
+              "sha256": "3d72a87eeba3fbf45c365ef15bcd9453490ea03d0a798735e3336f9916bd4b96",
+              "source_span": [
+                0,
+                2389
+              ],
+              "source_tokens": null,
+              "special_tokens": null,
+              "token_measurement": "unavailable",
+              "tokenization_note": null,
+              "truncated": null,
+              "used_by_aggregation": true,
+              "utf8_bytes": 2389
+            }
+          ],
+          "effective_chunks": 1,
+          "effective_max_input_tokens": null,
+          "effective_model_input_coverage": {
+            "byte_fraction": null,
+            "lines": null,
+            "utf8_bytes": null
+          },
+          "encoder_role": "document",
+          "generated_chunks": 1,
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Backend auto-routing is unresolved in offline preflight; supply its actual model.",
+            "No tokenizer supplied: bytes/lines are not estimates of transformer token counts.",
+            "Lexical/code-only scoring uses full prepared text; these vector controls do not affect it."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "3d72a87eeba3fbf45c365ef15bcd9453490ea03d0a798735e3336f9916bd4b96",
+          "prepared_utf8_bytes": 2389,
+          "requested_max_token_length": null,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2389
+          },
+          "selected_chunks": 1,
+          "semantic_scoring_active": false,
+          "source_lines": 79,
+          "source_sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+          "source_utf8_bytes": 2390,
+          "tokenizer_class": null,
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 1,
+          "vector_backend": "auto"
+        },
+        "right": {
+          "alignment_ambiguous": false,
+          "chunk_aggregation": "mean",
+          "chunking_method": "none",
+          "chunks": [
+            {
+              "chunk_index": 0,
+              "input_tokens": null,
+              "lines": 79,
+              "retained_input_tokens": null,
+              "retained_source_tokens": null,
+              "sha256": "9ea20c38b7f008fe226353a79c093bf83516e2a2bb0ef8cd3619c23283644247",
+              "source_span": [
+                0,
+                2166
+              ],
+              "source_tokens": null,
+              "special_tokens": null,
+              "token_measurement": "unavailable",
+              "tokenization_note": null,
+              "truncated": null,
+              "used_by_aggregation": true,
+              "utf8_bytes": 2166
+            }
+          ],
+          "effective_chunks": 1,
+          "effective_max_input_tokens": null,
+          "effective_model_input_coverage": {
+            "byte_fraction": null,
+            "lines": null,
+            "utf8_bytes": null
+          },
+          "encoder_role": "document",
+          "generated_chunks": 1,
+          "model_name": "huggingface/CodeBERTa-small-v1",
+          "notes": [
+            "Coverage concerns encoder inputs, not semantic correctness or score attribution.",
+            "Backend auto-routing is unresolved in offline preflight; supply its actual model.",
+            "No tokenizer supplied: bytes/lines are not estimates of transformer token counts.",
+            "Lexical/code-only scoring uses full prepared text; these vector controls do not affect it."
+          ],
+          "omitted_chunks": 0,
+          "prefix": "",
+          "prefix_origin": "no default prompt inferred",
+          "prepared_lines": 79,
+          "prepared_sha256": "9ea20c38b7f008fe226353a79c093bf83516e2a2bb0ef8cd3619c23283644247",
+          "prepared_utf8_bytes": 2166,
+          "requested_max_token_length": null,
+          "selected_chunk_coverage": {
+            "byte_fraction": 1.0,
+            "lines": 79,
+            "utf8_bytes": 2166
+          },
+          "selected_chunks": 1,
+          "semantic_scoring_active": false,
+          "source_lines": 79,
+          "source_sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383",
+          "source_utf8_bytes": 2167,
+          "tokenizer_class": null,
+          "truncated_chunks": 0,
+          "unknown_truncation_chunks": 1,
+          "vector_backend": "auto"
+        }
+      },
+      "run_name": "full_winnowing"
+    }
+  ],
+  "runs": [
+    {
+      "options": {
+        "device": "cpu",
+        "feature_weights": {
+          "semantic": 1.0
+        },
+        "max_token_length": 256,
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "number_results": 10,
+        "threshold": 0.0,
+        "vector_backend": "sentence_transformers"
+      },
+      "run_name": "raw_minilm"
+    },
+    {
+      "options": {
+        "chunk_aggregation": "mean",
+        "chunk_overlap": 64,
+        "chunk_size": 512,
+        "chunker_options": {
+          "tokenizer": "character"
+        },
+        "chunking_method": "chonkie_token",
+        "device": "cpu",
+        "feature_weights": {
+          "semantic": 1.0
+        },
+        "max_token_length": 256,
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "number_results": 10,
+        "threshold": 0.0,
+        "vector_backend": "sentence_transformers"
+      },
+      "run_name": "chunked_mean"
+    },
+    {
+      "options": {
+        "chunk_aggregation": "max",
+        "chunk_overlap": 64,
+        "chunk_size": 512,
+        "chunker_options": {
+          "tokenizer": "character"
+        },
+        "chunking_method": "chonkie_token",
+        "device": "cpu",
+        "feature_weights": {
+          "semantic": 1.0
+        },
+        "max_token_length": 256,
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "number_results": 10,
+        "threshold": 0.0,
+        "vector_backend": "sentence_transformers"
+      },
+      "run_name": "chunked_max"
+    },
+    {
+      "options": {
+        "chunk_aggregation": "first",
+        "chunk_overlap": 64,
+        "chunk_size": 512,
+        "chunker_options": {
+          "tokenizer": "character"
+        },
+        "chunking_method": "chonkie_token",
+        "device": "cpu",
+        "feature_weights": {
+          "semantic": 1.0
+        },
+        "max_token_length": 256,
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "number_results": 10,
+        "threshold": 0.0,
+        "vector_backend": "sentence_transformers"
+      },
+      "run_name": "chunked_first"
+    },
+    {
+      "options": {
+        "chunk_aggregation": "mean",
+        "chunk_overlap": 64,
+        "chunk_size": 512,
+        "chunker_options": {
+          "tokenizer": "character"
+        },
+        "chunking_method": "chonkie_token",
+        "device": "cpu",
+        "feature_weights": {
+          "semantic": 1.0
+        },
+        "max_chunks": 2,
+        "max_token_length": 256,
+        "model_name": "sentence-transformers/all-MiniLM-L6-v2@1110a243fdf4706b3f48f1d95db1a4f5529b4d41",
+        "number_results": 10,
+        "threshold": 0.0,
+        "vector_backend": "sentence_transformers"
+      },
+      "run_name": "chunked_mean_cap2"
+    },
+    {
+      "options": {
+        "feature_weights": {
+          "winnowing": 1.0
+        },
+        "model_name": "huggingface/CodeBERTa-small-v1",
+        "number_results": 10,
+        "threshold": 0.0
+      },
+      "run_name": "full_winnowing"
+    }
+  ],
+  "schema_version": 1,
+  "scores": [
+    {
+      "error": null,
+      "run_id": "05b6fc58319de427952db1044e96541995796c191a65aecdd7dcd8d86c579c87",
+      "run_name": "raw_minilm",
+      "similarity_score": 0.9013993565446506,
+      "status": "ok"
+    },
+    {
+      "error": null,
+      "run_id": "155afdfe118963753f68ba8f5e600a7661d8b2578609a3ba39e4a5e56871fe9f",
+      "run_name": "chunked_mean",
+      "similarity_score": 0.8995433355193819,
+      "status": "ok"
+    },
+    {
+      "error": null,
+      "run_id": "6ce883aecf0646d19939009d59dde6cfa2e90d5858549f548eb50484c2e2d500",
+      "run_name": "chunked_max",
+      "similarity_score": 0.8986424028610287,
+      "status": "ok"
+    },
+    {
+      "error": null,
+      "run_id": "3389167e17050a9d7e7a71b0fcac3daf1d8c5b6687827a91be5a473019458226",
+      "run_name": "chunked_first",
+      "similarity_score": 0.9186385213155677,
+      "status": "ok"
+    },
+    {
+      "error": null,
+      "run_id": "e5133ca2b0da92ca67dc070308b398430f699f882ad8fb0ed37d2d65d01768c5",
+      "run_name": "chunked_mean_cap2",
+      "similarity_score": 0.9202128977157054,
+      "status": "ok"
+    },
+    {
+      "error": null,
+      "run_id": "d34338b3ebf8446d17a05efb4cc7270195b606fdff2addd82dbf2038ef522e47",
+      "run_name": "full_winnowing",
+      "similarity_score": 0.11614730878186968,
+      "status": "ok"
+    }
+  ],
+  "source_input": {
+    "dataset": "student_code_similarity_pair",
+    "left_id": "right_8007c9aa2f279a9c",
+    "left_sha256": "6cc2e782830d5e7d906cc9aa72a34cdc3aa16f2a9ad67d4e35795772a157ed74",
+    "left_utf8_bytes": 2390,
+    "right_id": "right_65fb6b7dea3d5a69",
+    "right_sha256": "9d250ac6c0c3bb840166efc669b5411d2f664154b4707a69106f8aa26fde4383",
+    "right_utf8_bytes": 2167,
+    "row_index": 102
+  },
+  "status": "complete"
+}

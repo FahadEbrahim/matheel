@@ -1,0 +1,9 @@
+{
+  "dataset": "soco14_java_a1_judged_retrieval",
+  "deadline_seconds": 45,
+  "metrics": null,
+  "preset": "winnowing_top5_partial_ratio",
+  "reason": "Predeclared wall-clock budget exceeded.",
+  "status": "timeout",
+  "wall_seconds": 45.00656208299915
+}
