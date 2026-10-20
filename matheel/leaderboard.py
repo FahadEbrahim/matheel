@@ -393,7 +393,7 @@ def _leaderboard_row(task_family, dataset_config, algorithm_config, metric, valu
         "dataset_source": dataset_config["spec"].get("source", "local"),
         "algorithm_kind": "custom" if algorithm_config.get("algorithm_path") else "builtin",
         "status": "completed",
-        "not_applicable_reason": "",
+        "not_applicable_reason": None,
     }
 
 
@@ -437,7 +437,7 @@ def _aggregate_leaderboard(per_dataset, config=None):
         if "status" in group:
             reasons = sorted(set(group.loc[group["status"].eq("not_applicable"), "not_applicable_reason"].dropna()))
             row.update(status="not_applicable" if excluded else ("completed" if complete else "failed"),
-                       not_applicable_reason="; ".join(reasons))
+                       not_applicable_reason="; ".join(reasons) if reasons else None)
         row.update(
             mean_score=float(valid["score"].mean()) if eligible else None,
             median_score=float(valid["score"].median()) if eligible else None,
