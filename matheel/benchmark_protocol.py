@@ -56,6 +56,8 @@ def method_configuration(configuration):
     config.pop("_configuration_id", None)
     algorithm_path = config.pop("algorithm_path", None)
     if algorithm_path:
+        from .algorithms import portable_algorithm_options
+        config["algorithm_options"] = portable_algorithm_options(algorithm_path, config.get("algorithm_options"))
         path = Path(algorithm_path)
         if path.is_file():
             config["algorithm_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()

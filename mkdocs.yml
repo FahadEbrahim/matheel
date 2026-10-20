@@ -24,6 +24,7 @@ nav:
       - Lexical metrics: lexical.md
       - Embeddings and routing: vectors.md
       - Code-aware metrics: code_metrics.md
+      - Local plagiarism detectors: external_detectors.md
       - Prepare code:
           - Preprocessing: preprocessing.md
           - Tokenization and limits: tokenization.md

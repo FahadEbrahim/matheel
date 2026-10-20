@@ -121,6 +121,12 @@ def fingerprint_source(source_path):
 
 def _json_safe(value):
     if isinstance(value, dict):
+        if value.get("algorithm_path") and "algorithm_options" in value:
+            from .algorithms import public_algorithm_configuration
+            try:
+                value = public_algorithm_configuration(value)
+            except (ImportError, FileNotFoundError):
+                pass  # Published legacy file algorithms retain only a filename.
         payload = {}
         for key, item in sorted(value.items(), key=lambda item: str(item[0])):
             name = str(key)
