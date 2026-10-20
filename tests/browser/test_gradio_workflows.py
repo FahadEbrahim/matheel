@@ -62,6 +62,23 @@ def _action_output(page, config, button_name, output_index=0):
     return root
 
 
+def _rendered_dataframe_record(page, root, identity):
+    """Read the displayed Gradio 5 table rather than its hidden sizing copy."""
+    table = root.locator('table:not([aria-hidden="true"])')
+    headers = table.locator("thead th[title]").evaluate_all(
+        "headers => headers.map(header => header.getAttribute('title'))"
+    )
+    identity_column = headers.index("algorithm_id")
+    row = table.locator("tbody tr").filter(
+        has=page.locator(f'td[data-col="{identity_column}"]', has_text=identity)
+    )
+    _wait_until(lambda: row.count() == 1)
+    return {
+        name: row.locator(f'td[data-col="{index}"]').inner_text().strip()
+        for index, name in enumerate(headers)
+    }
+
+
 def _wait_until(predicate, *, timeout=30, interval=0.1):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -422,6 +439,14 @@ def test_official_benchmark_preserves_failed_methods_and_task_specific_rankings(
     _select_dropdown(page, gradio_config, "Official Method Configuration", method)
     _wait_until(lambda: ranking.get_by_text("Levenshtein", exact=True).count() == 0)
     _wait_for_text(ranking, "Unsupported")
+    identity = next(
+        identity for component in gradio_config["components"]
+        if component.get("props", {}).get("label") == "Official Method Configuration"
+        for label, identity in component["props"]["choices"] if label == method
+    )
+    rendered = _rendered_dataframe_record(page, ranking, identity)
+    assert float(rendered["coverage"]) == 0
+    assert rendered["rank"].lower() in {"", "none", "null", "nan"}
     artifact = _visible_component(
         page, gradio_config, label="Official Benchmark Result JSON", component_type="file"
     )
@@ -594,6 +619,18 @@ def _wait_for_dataset_action_completion(page, config, action, previous_joins):
 
 def _dispatch_component_event_and_wait(page, config, component_id, event):
     dependency = next(item for item in config["dependencies"] if [component_id, event] in item["targets"])
+    page.locator(f"#component-{component_id}").wait_for(state="visible")
+    page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+    # A mounting slider can already have an input request pending. Gradio's
+    # trigger_once drops another dispatch until that request is fully applied.
+    # Drain it before requiring a distinct new admission from our forced event.
+    page.wait_for_function("""index => {
+        const handler = window.gradio_config.dependencies.find(item => item.id === index);
+        return handler && !handler.pending_request && window.__matheelQueueJoins
+            .filter(join => join.fn_index === index).every(join => window.__matheelQueueEvents.some(
+                event => event.event_id === join.event_id && event.msg === 'process_completed' && event.success
+            ));
+    }""", arg=dependency["id"], timeout=30_000)
     before = page.evaluate("window.__matheelQueueJoins.length")
     page.evaluate("""({id, event}) => window.__matheelGradioTargets.at(-1).dispatchEvent(new CustomEvent("gradio", {
         detail: {id, event, data: null}, bubbles: true
@@ -751,3 +788,76 @@ def test_completed_old_dataset_stage_cannot_restore_results_after_option_reset(
     assert artifacts.locator("a[download]").count() == 0
     assert summary.is_visible()
     _wait_for_text(summary, "browser_pair_dataset")
+
+
+@pytest.mark.parametrize("gradio_server", ["canonical"], indirect=True)
+def test_canonical_official_benchmark_preserves_published_rankings(
+    gradio_page, gradio_config, gradio_server
+):
+    path = (
+        Path(__file__).resolve().parents[2] / "gradio_app" / "benchmark_data"
+        / "plagiarism-v1" / "matheel_plagiarism_v1.json"
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    methods = payload["metadata"]["method_configurations"]
+    assert len(methods) == 29
+    page = gradio_page
+    _open_tab(page, "Reports")
+    _open_tab(page, "Official Benchmark")
+    summary = _action_output(page, gradio_config, "Refresh Official Results")
+    _wait_for_text(summary, "Validated published results")
+    _wait_for_text(summary, payload["metadata"]["protocol_id"])
+    choices = next(
+        component["props"]["choices"] for component in gradio_config["components"]
+        if component.get("props", {}).get("label") == "Official Method Configuration"
+    )
+    labels = {identity: label for label, identity in choices if identity != "all"}
+    assert len(labels) == 29
+    assert set(labels) == set(methods)
+    selector = _visible_component(
+        page, gradio_config, label="Official Method Configuration", component_type="dropdown"
+    ).get_by_role("listbox", name="Official Method Configuration", exact=True)
+    selector.click()
+    _wait_until(lambda: page.get_by_role("option").count() == 30)  # 29 methods plus All methods.
+    selector.press("Escape")
+    ranking = _visible_component(
+        page, gradio_config, label="Official Aggregate Ranking", component_type="dataframe"
+    )
+    _wait_for_text(ranking, "pair")
+    _select_dropdown(page, gradio_config, "Official Evaluation Task", "Retrieval")
+    _wait_for_text(ranking, "mean_average_precision")
+    _select_dropdown(page, gradio_config, "Official Ranking Metric", "mean_average_precision")
+    reference = [
+        row for row in payload["aggregate"]
+        if row["task_family"] == "retrieval" and row["metric"] == "mean_average_precision"
+    ]
+    eligible = [row for row in reference if row["eligible"]]
+    assert eligible
+    # Prefer a non-winning method: filtering must not turn its published rank
+    # into rank one or recalculate its coverage from a smaller set of rows.
+    selected = next((row for row in eligible if row["rank"] > 1), eligible[0])
+    _select_dropdown(
+        page, gradio_config, "Official Method Configuration", labels[selected["algorithm_id"]]
+    )
+    _wait_until(lambda: ranking.locator('table:not([aria-hidden="true"]) tbody tr').count() == 1)
+    rendered = _rendered_dataframe_record(page, ranking, selected["algorithm_id"])
+    assert int(float(rendered["rank"])) == selected["rank"]
+    assert float(rendered["coverage"]) == pytest.approx(selected["coverage"])
+    assert float(rendered["mean_score"]) == pytest.approx(selected["mean_score"])
+    assert rendered["protocol_id"] == payload["metadata"]["protocol_id"]
+    failed = [row for row in reference if not row["eligible"]]
+    if failed:
+        selected = failed[0]
+        _select_dropdown(
+            page, gradio_config, "Official Method Configuration", labels[selected["algorithm_id"]]
+        )
+        rendered = _rendered_dataframe_record(page, ranking, selected["algorithm_id"])
+        assert rendered["rank"].lower() in {"", "none", "null", "nan"}
+        assert rendered["mean_score"].lower() in {"", "none", "null", "nan"}
+        assert float(rendered["coverage"]) == pytest.approx(selected["coverage"])
+        details = _visible_component(
+            page, gradio_config, label="Official Per-Dataset Results", component_type="dataframe"
+        )
+        _wait_for_text(details, selected["algorithm_name"])
+    else:
+        assert all(row["coverage"] == 1 and row["rank"] is not None for row in reference)
