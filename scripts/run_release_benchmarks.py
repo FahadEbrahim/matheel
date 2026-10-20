@@ -8,9 +8,12 @@ only the validated publisher outputs and the portable plan belong in the repo.
 import argparse
 import copy
 import hashlib
+import importlib.metadata
 import json
 import os
 from pathlib import Path
+import platform
+import re
 import subprocess
 import time
 import zipfile
@@ -62,6 +65,18 @@ def runner_source():
     return {"git_commit": subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip(),
             "files": {f"scripts/{name}": hashlib.sha256((ROOT / "scripts" / name).read_bytes()).hexdigest()
                       for name in scripts}}
+
+
+def write_runtime_constraints(path):
+    names = {distribution.metadata["Name"] for distribution in importlib.metadata.distributions()}
+    if any(not re.fullmatch(r"[A-Za-z0-9_.-]+", name) for name in names):
+        raise ValueError("Distribution names must be portable package identifiers.")
+    pins = [f"{name}=={importlib.metadata.version(name)}" for name in sorted(names, key=str.casefold)]
+    path.write_text(f"# Python {platform.python_version()}; {platform.system()} {platform.machine()}\n"
+                    "# Observed Python distributions, including optional and verification dependencies.\n"
+                    "# Local JPlag/Dolos artifacts and runtimes are pinned separately in edition.json.\n"
+                    + "\n".join(pins) + "\n")
+    return {"filename": path.name, "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
 
 
 def edition_definitions(prepared_manifest, *, jar_path, java_path, dolos_path, node_path):
@@ -134,6 +149,8 @@ def main():
         raise ValueError("Use HF_HUB_OFFLINE=1 with the pinned existing model snapshots.")
     output = Path(args.output_dir).resolve()
     destination = Path(args.destination).resolve()
+    if output.exists() or destination.exists():
+        raise ValueError("Use new output and destination directories for a new release measurement.")
     original = json.loads(Path(args.prepared_manifest).read_text())
     frozen = freeze_benchmark_protocol(original)
     original_public = {**public_benchmark_protocol(frozen), "protocol_id": frozen["protocol_id"]}
@@ -150,8 +167,11 @@ def main():
             "protocol_id": protocol["protocol_id"],
             "method_configurations": {method_configuration_id(method): method_configuration(method) for method in methods},
         }
+    output.mkdir(parents=True)
+    constraints = write_runtime_constraints(output / "matheel-plagiarism-071-runtime-constraints.txt")
     plan = {"schema_version": 1, "edition": "0.7.1", "source": source, "release_wheel": wheel,
             "runner_source": runner_source(),
+            "runtime_constraints": constraints,
             "prior_v1_unchanged": True, "dataset_labels_changed": False,
             "original_protocol_id": original_protocol["protocol_id"],
             "original_method_definitions_sha256": hashlib.sha256(
@@ -182,6 +202,10 @@ def main():
             report, _ = run(manifest_path, methods_path, run_root, workers=item["workers"])
             if release_source() != source:
                 raise RuntimeError("Release source changed during evaluation.")
+            declared = declarations[item["id"]]
+            if (report["metadata"]["protocol_id"] != declared["protocol_id"]
+                    or report["metadata"]["method_configurations"] != declared["method_configurations"]):
+                raise RuntimeError("Evaluated protocol or methods differ from the predeclared edition plan.")
             # The existing validator verifies full candidate coverage, exact
             # score hashes, method identities and honest unranked failures.
             public = destination / item["id"]
