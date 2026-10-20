@@ -6,6 +6,7 @@ Missing candidates are absent from the ranking, never synthesized as zero ties.
 """
 
 from collections import Counter, defaultdict
+from copy import deepcopy
 import heapq
 import math
 from time import perf_counter
@@ -61,6 +62,26 @@ def _universe(dataset, exclude_self_matches):
     return queries, documents, query_files, document_files, full_count
 
 
+def _preparation_dataset(dataset):
+    # Preparation can inspect source identities/text, but not evaluation truth.
+    def source_table(frame, columns):
+        table = frame.loc[:, [name for name in columns if name in frame]].copy()
+        table.attrs = {}
+        return table
+
+    metadata_fields = {"name", "task_type", "dataset_kind", "language", "languages",
+                       "granularity", "license", "source_url", "source_revision"}
+    qrels = source_table(dataset.qrels, ("query_id", "document_id", "relevance")).iloc[:0].copy()
+    return RetrievalDataset(
+        root=dataset.root,
+        files=source_table(dataset.files, ("file_id", "file_path", "language")),
+        queries=source_table(dataset.queries, ("query_id", "file_id")),
+        corpus=source_table(dataset.corpus, ("document_id", "file_id")),
+        qrels=qrels,
+        metadata={key: deepcopy(value) for key, value in dataset.metadata.items() if key in metadata_fields},
+    )
+
+
 class _Stage:
     def __init__(self, dataset, texts, options, query_files, document_files,
                  scorer=None, algorithm=None, algorithm_options=None):
@@ -70,7 +91,7 @@ class _Stage:
         self.algorithm = resolve_pair_algorithm(algorithm) if algorithm is not None else None
         self.options = dict(algorithm_options or {})
         self.texts = _preprocess_algorithm_texts(texts, options) if self.algorithm is not None else texts
-        self.context = (prepare_algorithm_dataset(self.algorithm, dataset, algorithm_options=self.options,
+        self.context = (prepare_algorithm_dataset(self.algorithm, _preparation_dataset(dataset), algorithm_options=self.options,
                                                  prepared_texts=self.texts)
                         if self.algorithm is not None else None)
         if scorer is None and self.algorithm is None:

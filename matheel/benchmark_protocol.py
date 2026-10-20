@@ -14,7 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pandas as pd
 
 from .datasets import dataset_task_type, load_code_texts, load_pair_dataset, load_retrieval_dataset
-from .task_eligibility import method_exclusion_reason
+from .task_eligibility import _validate_dataset_exclusion_names, method_exclusion_reason
 
 BENCHMARK_PROTOCOL_SCHEMA_VERSION = 1
 DEFAULT_BENCHMARK_ID = "Matheel-Plagiarism-v1"
@@ -82,6 +82,11 @@ def method_configuration(configuration):
 def method_configuration_id(configuration):
     """Hash the effective configuration, defaults, package version, and custom code."""
     return _digest(method_configuration(configuration))
+
+
+def _validate_exhaustive_methods(methods):
+    if any("retrieval_options" in method for method in methods):
+        raise ValueError("Two-stage retrieval requires separate pipeline experiments; this frozen protocol evaluates exhaustive candidate coverage.")
 
 
 def dataset_content_fingerprint(root, task_family):
@@ -336,8 +341,7 @@ def run_benchmark_protocol(protocol, algorithms, output_dir=None, basename="benc
         if method.get("threshold") is not None or method.get("k") is not None:
             raise ValueError("Official benchmark thresholds and retrieval k are defined by the protocol, not methods.")
     canonical_methods = config["algorithms"]
-    if any(method.get("retrieval_options") for method in canonical_methods):
-        raise ValueError("Two-stage retrieval requires separate pipeline experiments; this frozen protocol evaluates exhaustive candidate coverage.")
+    _validate_exhaustive_methods(canonical_methods)
     identities = [method_configuration_id(method) for method in canonical_methods]
     if len(set(identities)) != len(identities):
         raise ValueError("Official method configurations must be unique; display-name aliases are not separate methods.")
@@ -389,6 +393,10 @@ def run_benchmark_protocol(protocol, algorithms, output_dir=None, basename="benc
         for dataset in config["datasets"]:
             for method in config["algorithms"]:
                 tuned = {**method, "threshold": calibrated.get((dataset["name"], method["name"]))}
+                if "dataset_exclusions" in tuned:
+                    # This internal child run evaluates only one declared dataset.
+                    tuned["dataset_exclusions"] = {name: reason for name, reason in tuned["dataset_exclusions"].items()
+                                                    if name == dataset["name"]}
                 partial, _ = run_leaderboard({**config, "datasets": [dataset], "algorithms": [tuned]}, score_artifact_dir=score_artifact_dir)
                 partial["per_dataset"]["algorithm_id"] = method["_configuration_id"]
                 partial["per_dataset"]["selected_threshold"] = tuned["threshold"]
@@ -451,6 +459,7 @@ def failed_benchmark_result(protocol, algorithms, error="TimeoutError", elapsed_
         "datasets": [{"name": entry["name"], "domain": entry["domain"], "task": entry["task_family"],
                       "path": entry.get("path", entry["name"]), "similarity_options": entry["similarity_options"]} for entry in protocol["datasets"]],
     })
+    _validate_exhaustive_methods(config["algorithms"])
     rows = []
     for entry, dataset in zip(protocol["datasets"], config["datasets"]):
         for method in config["algorithms"]:
@@ -563,6 +572,8 @@ def validate_benchmark_result(report_or_payload, protocol=None, *, score_artifac
         raise ValueError("Result method identities do not match the recorded full configurations.")
     for configuration in configurations.values():
         _validate_public_metadata(configuration)
+    _validate_exhaustive_methods(configurations.values())
+    _validate_dataset_exclusion_names(configurations.values(), frozen["datasets"])
     if any(_digest(config) != identity for identity, config in configurations.items()):
         raise ValueError("Result method configuration fingerprint does not match its definition.")
     entries = {entry["name"]: entry for entry in frozen["datasets"]}

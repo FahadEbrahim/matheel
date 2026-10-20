@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 from click.testing import CliRunner
 
+from matheel.algorithms import PairAlgorithm
 from matheel.cli import main
 from matheel.datasets import write_retrieval_dataset
 from matheel.evaluation import evaluate_retrieval_dataset
@@ -67,6 +68,49 @@ def test_reranking_penalizes_missed_positives_using_full_qrels_and_every_query(d
     assert metrics["mean_average_precision"] == pytest.approx(1 / 6)
     assert metrics["recall_at_k"] == pytest.approx(1 / 6)
     assert set(scored["document_id"]) == {"a"}  # No synthetic zero-score tail.
+
+
+def test_custom_reranker_preparation_receives_only_source_data(dataset):
+    dataset.metadata.update(language="python", labels={"q1": "positive"}, ground_truth="held-out labels",
+                            nested={"relevance": 1})
+    for table in (dataset.files, dataset.queries, dataset.corpus):
+        table["label"] = 1
+        table["relevance"] = 1
+        table.attrs["ground_truth"] = "held-out labels"
+    dataset.qrels["label"] = 1
+    dataset.qrels.attrs["ground_truth"] = "held-out labels"
+    calls = []
+
+    def prepare(dataset, prepared_texts):
+        assert dataset.qrels.empty
+        assert dataset.qrels.columns.tolist() == ["query_id", "document_id", "relevance"]
+        assert dataset.files.columns.tolist() == ["file_id", "file_path"]
+        assert dataset.queries.columns.tolist() == ["query_id", "file_id"]
+        assert dataset.corpus.columns.tolist() == ["document_id", "file_id"]
+        assert all(not table.attrs for table in (dataset.files, dataset.queries, dataset.corpus, dataset.qrels))
+        assert not {"labels", "ground_truth", "nested"}.intersection(dataset.metadata)
+        assert dataset.metadata["language"] == "python"
+        assert set(prepared_texts) == set(dataset.files["file_id"])
+        assert dataset.queries["query_id"].tolist() == ["q1", "q2", "q0"]
+        assert dataset.corpus["document_id"].tolist() == ["d", "c", "b", "a"]
+        assert all((dataset.root / path).is_file() for path in dataset.files["file_path"])
+        calls.append("prepare")
+        return dataset
+
+    def score(code_a, code_b, dataset_context, row):
+        assert dataset_context.qrels.empty
+        assert "relevance" not in row and "label" not in row
+        calls.append("score")
+        return 1.0
+
+    algorithm = PairAlgorithm("source-only", score_pair=score, prepare_dataset=prepare)
+    _, metrics = evaluate_two_stage_retrieval_dataset(
+        dataset, 1, k=1, candidate_scorer=lambda *args: 0.0, algorithm=algorithm,
+    )
+    assert calls == ["prepare", "score", "score", "score"]
+    assert metrics["relevant_count"] == 3  # Full original truth still drives evaluation.
+    assert metrics["mean_average_precision"] == pytest.approx(1 / 6)
+    assert not dataset.qrels.empty and "labels" in dataset.metadata
 
 
 def test_full_candidate_limit_matches_exhaustive_scores_and_metrics(dataset):

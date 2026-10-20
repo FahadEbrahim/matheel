@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from matheel.benchmark_protocol import (
-    failed_benchmark_result, freeze_benchmark_protocol, method_configuration_id,
+    _digest, failed_benchmark_result, freeze_benchmark_protocol, method_configuration_id,
     run_benchmark_protocol, validate_benchmark_result,
 )
 from matheel.datasets import write_pair_dataset
@@ -97,6 +97,28 @@ def test_unknown_dataset_exclusion_is_not_silently_ignored(tmp_path):
         normalize_leaderboard_manifest(manifest)
 
 
+def test_normalized_manifest_mutation_cannot_bypass_exclusion_scope(tmp_path):
+    config = normalize_leaderboard_manifest(_manifest(tmp_path))
+    config["algorithms"][0]["dataset_exclusions"] = {"typo": "Must be excluded"}
+    with pytest.raises(ValueError, match="Unknown dataset exclusion"):
+        run_leaderboard(config)
+
+
+def test_calibrated_child_runs_keep_declared_dataset_exclusions(tmp_path):
+    manifest = _manifest(tmp_path)
+    validation = write_pair_dataset(tmp_path / "validation", files=pd.DataFrame([
+        {"file_id": "a", "text": "# held out\nsame"}, {"file_id": "b", "text": "# held out\nsame"},
+        {"file_id": "c", "text": "# held out\nother"},
+    ]), pairs=pd.DataFrame([{"left_id": "a", "right_id": "b", "label": 1},
+                           {"left_id": "a", "right_id": "c", "label": 0}]))
+    manifest["threshold_policy"] = {"mode": "validation_f1"}
+    for entry in manifest["datasets"]:
+        entry.update(validation_path=str(validation.root), validation_split="validation")
+    report, _ = run_benchmark_protocol(freeze_benchmark_protocol(manifest), manifest["algorithms"])
+    assert report["per_dataset"].set_index("dataset_name").loc["second", "status"] == "not_applicable"
+    assert validate_benchmark_result(report)["valid"]
+
+
 def test_fully_excluded_semantic_method_does_not_download_or_initialize_models(tmp_path, monkeypatch):
     manifest = _manifest(tmp_path)
     method = {"name": "Unavailable semantic method", "feature_weights": {"semantic": 1.0},
@@ -108,11 +130,35 @@ def test_fully_excluded_semantic_method_does_not_download_or_initialize_models(t
     assert validate_benchmark_result(report)["valid"]
 
 
-def test_frozen_exhaustive_protocol_rejects_shortlist_options(tmp_path):
+@pytest.mark.parametrize("options", [{}, {"candidate_count": 1}])
+def test_frozen_exhaustive_protocol_rejects_shortlist_options(tmp_path, options):
     manifest = _manifest(tmp_path)
-    manifest["algorithms"][0]["retrieval_options"] = {"candidate_count": 1}
+    manifest["algorithms"][0]["retrieval_options"] = options
     with pytest.raises(ValueError, match="exhaustive candidate coverage"):
         run_benchmark_protocol(freeze_benchmark_protocol(manifest), manifest["algorithms"])
+    with pytest.raises(ValueError, match="exhaustive candidate coverage"):
+        failed_benchmark_result(freeze_benchmark_protocol(manifest), manifest["algorithms"])
+
+
+@pytest.mark.parametrize("changes, message", [
+    ({"retrieval_options": {}}, "exhaustive candidate coverage"),
+    ({"retrieval_options": {"candidate_count": 1}}, "exhaustive candidate coverage"),
+    ({"dataset_exclusions": {"typo": "Must be excluded"}}, "Unknown dataset exclusion"),
+])
+def test_import_cannot_bypass_scope_with_a_recomputed_method_identity(tmp_path, changes, message):
+    manifest = _manifest(tmp_path)
+    report, _ = run_benchmark_protocol(freeze_benchmark_protocol(manifest), manifest["algorithms"])
+    payload = leaderboard_payload(report)
+    configurations = payload["metadata"]["method_configurations"]
+    old_id = next(iter(configurations))
+    configuration = configurations.pop(old_id)
+    configuration.update(changes)
+    new_id = _digest(configuration)
+    configurations[new_id] = configuration
+    for row in payload["per_dataset"] + payload["aggregate"]:
+        row["algorithm_id"] = new_id
+    with pytest.raises(ValueError, match=message):
+        validate_benchmark_result(payload)
 
 
 def test_published_v1_legacy_statuses_and_method_identities_still_validate():

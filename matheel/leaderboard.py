@@ -15,7 +15,10 @@ from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
 from .leaderboard_presets import get_leaderboard_algorithm_preset
 from ._path_utils import path_name
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
-from .task_eligibility import method_exclusion_reason, normalize_dataset_exclusions, normalize_task_eligibility
+from .task_eligibility import (
+    _validate_dataset_exclusion_names, method_exclusion_reason,
+    normalize_dataset_exclusions, normalize_task_eligibility,
+)
 
 
 PAIR_LEADERBOARD_METRICS = (
@@ -95,11 +98,7 @@ def normalize_leaderboard_manifest(manifest, base_dir=None):
     ]
     _validate_unique_names(normalized_datasets, "dataset")
     _validate_unique_names(normalized_algorithms, "algorithm")
-    names = {item["name"] for item in normalized_datasets}
-    for method in normalized_algorithms:
-        unknown = set(method.get("dataset_exclusions", {})) - names
-        if unknown:
-            raise ValueError(f"Unknown dataset exclusion(s): {', '.join(sorted(unknown))}")
+    _validate_dataset_exclusion_names(normalized_algorithms, normalized_datasets)
     return {
         "schema_version": int(manifest.get("schema_version") or 1),
         "name": str(manifest.get("name") or "matheel_leaderboard"),
@@ -123,6 +122,7 @@ def run_leaderboard(manifest, output_dir=None, basename="leaderboard", *, score_
     config = normalize_leaderboard_manifest(manifest) if not _is_normalized_manifest(manifest) else manifest
     _validate_unique_names(config["datasets"], "dataset")
     _validate_unique_names(config["algorithms"], "algorithm")
+    _validate_dataset_exclusion_names(config["algorithms"], config["datasets"])
     rows = []
     score_artifacts = []
     for dataset_config in config["datasets"]:

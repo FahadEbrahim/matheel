@@ -37,6 +37,14 @@ def normalize_dataset_exclusions(value=None):
     return result
 
 
+def _validate_dataset_exclusion_names(methods, datasets):
+    names = {dataset["name"] for dataset in datasets}
+    for method in methods:
+        unknown = set(normalize_dataset_exclusions(method.get("dataset_exclusions"))) - names
+        if unknown:
+            raise ValueError(f"Unknown dataset exclusion(s): {', '.join(sorted(unknown))}")
+
+
 def method_exclusion_reason(method, dataset):
     """Return the declared reason, or None when this method is applicable."""
     exclusions = normalize_dataset_exclusions(method.get("dataset_exclusions"))

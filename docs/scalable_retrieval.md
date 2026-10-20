@@ -32,8 +32,10 @@ The default first stage is LCS and the default reranker is Levenshtein; both run
 offline. Options files or dictionaries can choose other existing scorers. Python
 also accepts custom `candidate_scorer` and reranking `scorer` callbacks, and a
 custom reranking `algorithm` with the existing preparation hook. Candidate callbacks
-and reranker callbacks receive identifiers, without relevance labels. Custom reranker preparation retains
-the existing trusted algorithm contract, including access to the dataset.
+and reranker callbacks receive identifiers, without relevance labels. In this pipeline,
+custom preparation receives source IDs, file locators, source metadata, prepared texts,
+and empty qrels. Extra manifest columns and label metadata are omitted. The general
+custom algorithm API retains its existing preparation contract.
 
 Every declared query and **all original qrels** contribute to end-to-end metrics.
 Missed relevant documents lower AP/MAP and recall. Omitted candidates remain absent
