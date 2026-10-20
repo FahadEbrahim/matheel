@@ -126,6 +126,18 @@ def test_missing_optional_metadata_exports_as_json_null(pairs, tmp_path):
     assert sum(row["language"] is None for row in payload["errors"]) == 2
 
 
+def test_custom_score_column_survives_exports_and_reanalysis(pairs, tmp_path):
+    pairs = pairs.rename(columns={"similarity_score": "detector_score"})
+    report = analyze_scored_results(pairs, score_column="detector_score", rounds=5)
+    artifacts = write_result_analysis(report, tmp_path)
+    payload = json.loads(artifacts["json"].read_text())
+    assert payload["score_column"] == "detector_score"
+    assert [row["detector_score"] for row in payload["errors"]] == pairs["detector_score"].tolist()
+    exported = pd.read_csv(artifacts["errors"])
+    repeated = analyze_scored_results(exported, score_column=payload["score_column"], rounds=5)
+    assert repeated["metrics"] == report["metrics"]
+
+
 def test_cli_offline_analysis(pairs, tmp_path):
     scores = tmp_path / "scores.csv"
     pairs.to_csv(scores, index=False)
