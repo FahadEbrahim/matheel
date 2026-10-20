@@ -348,7 +348,9 @@ def test_dataset_upload_event_dispatch_keeps_validation_and_reset_outputs_aligne
     assert validated[gradio_app.dataset_validation_summary] == "validated summary"
     assert validated[gradio_app.dataset_validation_state] == "identity"
     assert validated[gradio_app.dataset_run] == "enabled"
-    assert len(validated) == 8
+    assert len(validated) == 27
+    assert validated[gradio_app.dataset_scored_state] is None
+    assert validated[gradio_app.dataset_summary]["visible"] is False
     assert validated[gradio_app.dataset_latest_revision] == 0
 
     for target in (gradio_app.dataset_file, gradio_app.dataset_task):
@@ -2167,3 +2169,173 @@ def test_gradio_ready_leaderboard_runs_pair_and_retrieval_uploads(tmp_path):
         assert "ready_leaderboard_details.html" in names
         assert "ready_leaderboard_per_dataset.csv" in names
         assert "ready_leaderboard_reproducibility.json" in names
+
+
+@pytest.mark.parametrize("stage,reset_name", [
+    ("evaluation", "reset_dataset_upload_journey"),
+    ("evaluation", "reset_dataset_results"),
+    ("threshold", "reset_dataset_threshold_stage"),
+    ("explanation", "reset_dataset_explanation_stage"),
+])
+def test_held_dataset_work_cannot_commit_after_its_stage_resets(stage, reset_name):
+    import threading
+    state = {}
+    started, release = threading.Event(), threading.Event()
+    prepared = []
+    def callback(progress=None):
+        started.set()
+        assert release.wait(5)
+        return ("obsolete summary", {"scored": ["obsolete row"]})
+    thread = threading.Thread(target=lambda: prepared.append(
+        gradio_app.run_current_dataset_journey(state, stage, callback)
+    ))
+    thread.start()
+    try:
+        assert started.wait(5)
+        getattr(gradio_app, reset_name)(state)
+    finally:
+        release.set()
+        thread.join(5)
+    assert not thread.is_alive()
+    assert prepared[0][:-1] == (gradio_app.gr.skip(), gradio_app.gr.skip())
+    assert gradio_app.commit_current_dataset_journey(state, prepared[0][-1]) == (
+        gradio_app.gr.skip(), gradio_app.gr.skip(),
+    )
+
+
+def test_dataset_result_commit_and_all_resets_share_a_serial_concurrency_group():
+    config = gradio_app.demo.get_config_file()
+    guarded = [dependency for dependency in config["dependencies"] if (
+        dependency["inputs"] and dependency["inputs"][0] == gradio_app.dataset_journey_generation._id
+        and (dependency.get("trigger_after") is not None or "reset_dataset" in str(dependency.get("api_name")))
+    )]
+    assert len(guarded) >= 3 + 11 + 1 + 6
+    for dependency in guarded:
+        function = gradio_app.demo.fns[dependency["id"]]
+        assert function.concurrency_id == "dataset-journey-commit"
+        assert function.concurrency_limit == 1
+        if dependency.get("trigger_after") is not None:
+            assert dependency["trigger_only_on_success"] is True
+
+
+def test_generation_state_is_mutable_by_reference_and_isolated_per_browser_session():
+    from gradio.state_holder import SessionState
+    first, second = SessionState(gradio_app.demo), SessionState(gradio_app.demo)
+    identifier = gradio_app.dataset_journey_generation._id
+    running_reference = first[identifier]
+    assert running_reference is first[identifier]
+    assert running_reference is not second[identifier]
+    gradio_app.reset_dataset_results(first[identifier])
+    assert running_reference["evaluation"] == 1
+    assert second[identifier] == {}
+
+
+def test_stage_specific_reset_does_not_invalidate_unrelated_work():
+    state = {}
+    prepared = gradio_app.run_current_dataset_journey(state, "evaluation", lambda progress=None: ("current",))
+    gradio_app.reset_dataset_threshold_stage(state)
+    gradio_app.reset_dataset_explanation_stage(state)
+    assert gradio_app.commit_current_dataset_journey(state, prepared[-1]) == ("current",)
+
+
+@pytest.mark.parametrize("stage", ["evaluation", "threshold", "explanation"])
+def test_old_request_admission_cannot_start_after_its_queued_stage_resets(stage):
+    state = {}
+    calls = []
+    gradio_app.invalidate_dataset_journey(state, stage, event_revision=7)
+    queued = gradio_app.run_current_dataset_journey(
+        state, stage, lambda progress=None: calls.append("obsolete") or ("obsolete",),
+        admission_revision=6, output_count=1,
+    )
+    assert calls == []
+    assert queued == (gradio_app.gr.skip(), None)
+    assert gradio_app.commit_current_dataset_journey(state, queued[-1]) == gradio_app.gr.skip()
+    current = gradio_app.run_current_dataset_journey(
+        state, stage, lambda progress=None: ("current",), admission_revision=7, output_count=1,
+    )
+    assert gradio_app.commit_current_dataset_journey(state, current[-1]) == ("current",)
+
+
+def test_queued_request_admission_remains_scoped_to_its_stage():
+    state = {}
+    gradio_app.reset_dataset_threshold_stage(state, event_revision=7)
+    prepared = gradio_app.run_current_dataset_journey(
+        state, "evaluation", lambda progress=None: ("current",), admission_revision=6, output_count=1,
+    )
+    assert gradio_app.commit_current_dataset_journey(state, prepared[-1]) == ("current",)
+
+
+def test_rejected_queued_evaluation_keeps_current_dependent_work_valid():
+    state = {}
+    gradio_app.reset_dataset_results(state, event_revision=7)
+    threshold = gradio_app.run_current_dataset_journey(
+        state, "threshold", lambda progress=None: ("current threshold",),
+        admission_revision=8, output_count=1,
+    )
+    gradio_app.run_current_dataset_journey(
+        state, "evaluation", lambda progress=None: pytest.fail("obsolete evaluation ran"),
+        admission_revision=6, output_count=12, invalidate_stages=("threshold", "explanation"),
+    )
+    assert gradio_app.commit_current_dataset_journey(state, threshold[-1]) == ("current threshold",)
+
+
+@pytest.mark.parametrize("stage,reset_name,count", [
+    ("evaluation", "reset_dataset_results", 20),
+    ("evaluation", "reset_dataset_upload_journey", 26),
+    ("threshold", "reset_dataset_threshold_stage", 5),
+    ("explanation", "reset_dataset_explanation_stage", 5),
+])
+def test_delayed_older_reset_preserves_newer_work_and_visible_results(stage, reset_name, count):
+    state = {}
+    reset_outputs = []
+    def callback(progress=None):
+        reset_outputs.append(getattr(gradio_app, reset_name)(state, event_revision=9))
+        return ("newer current result",)
+    pending = gradio_app.run_current_dataset_journey(
+        state, stage, callback, admission_revision=10, output_count=1,
+    )
+    assert reset_outputs == [tuple(gradio_app.gr.skip() for _ in range(count))]
+    assert state.get(stage, 0) == 0
+    assert gradio_app.commit_current_dataset_journey(state, pending[-1]) == ("newer current result",)
+
+
+def test_new_validation_identity_invalidates_work_even_before_file_change_arrives(monkeypatch):
+    generation = {}
+    monkeypatch.setattr(gradio_app, "validate_dataset_journey_gradio", lambda *args, **kwargs: (
+        "validated", "issues", "report", "artifact", "new identity", "enabled", "status",
+    ))
+    outputs = gradio_app.update_dataset_upload_journey(
+        "new.zip", "Pair Classification", gradio_app.gr.EventData(gradio_app.dataset_validate, None),
+        validation_state="old identity", generation_state=generation, progress=None,
+    )
+    assert generation == {"evaluation": 1, "threshold": 1, "explanation": 1}
+    assert outputs[gradio_app.dataset_scored_state] is None
+    assert outputs[gradio_app.dataset_summary]["visible"] is False
+
+
+def test_later_scoring_option_reset_does_not_discard_upload_validation(monkeypatch):
+    generation = {}
+    gradio_app.reset_dataset_results(generation, event_revision=16)
+    monkeypatch.setattr(gradio_app, "validate_dataset_journey_gradio", lambda *args, **kwargs: (
+        "validated", "issues", "report", "artifact", "new identity", "enabled", "status",
+    ))
+    outputs = gradio_app.update_dataset_upload_journey(
+        "new.zip", "Pair Classification", gradio_app.gr.EventData(gradio_app.dataset_validate, None),
+        validation_state=None, event_revision=15, latest_revision=13,
+        generation_state=generation, progress=None,
+    )
+    assert outputs[gradio_app.dataset_validation_state] == "new identity"
+    assert outputs[gradio_app.dataset_run] == "enabled"
+    assert outputs[gradio_app.dataset_summary] == gradio_app.gr.skip()
+    assert generation["evaluation"] == 1
+
+
+def test_late_same_upload_notification_keeps_active_work_generation(monkeypatch):
+    generation = {"evaluation": 3, "threshold": 2, "explanation": 1}
+    monkeypatch.setattr(gradio_app, "dataset_upload_identity", lambda *args: "current identity")
+    outputs = gradio_app.update_dataset_upload_journey(
+        "dataset.zip", "Pair Classification", gradio_app.gr.EventData(gradio_app.dataset_file, None),
+        validation_state="current identity", generation_state=generation, progress=None,
+    )
+    assert generation == {"evaluation": 3, "threshold": 2, "explanation": 1}
+    assert outputs == {gradio_app.dataset_latest_revision: 0}

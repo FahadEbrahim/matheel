@@ -7,6 +7,7 @@ import tempfile
 import time
 import zipfile
 from pathlib import Path
+from threading import Lock
 
 mpl_config_dir = os.path.join(tempfile.gettempdir(), "matheel-mpl")
 os.makedirs(mpl_config_dir, exist_ok=True)
@@ -2962,6 +2963,130 @@ def validate_dataset_journey_gradio(
     return (*outputs, identity, gr.update(interactive=identity is not None), status)
 
 
+_DATASET_JOURNEY_GENERATION_LOCK = Lock()
+
+
+def dataset_admission_js(input_count):
+    # Gradio 5 supplies current output values after the listener inputs. Return
+    # exactly the inputs, preserving every server-State placeholder position.
+    return """(...values) => {
+        window.__matheelDatasetRevision = (window.__matheelDatasetRevision || 0) + 1;
+        values[%d] = window.__matheelDatasetRevision;
+        return values.slice(0, %d);
+    }""" % (input_count - 1, input_count)
+
+
+_DATASET_RESET_REVISION_JS = """(...values) => {
+    window.__matheelDatasetRevision = (window.__matheelDatasetRevision || 0) + 1;
+    values[1] = window.__matheelDatasetRevision;
+    return values.slice(0, 2);
+}"""
+
+
+def _dataset_journey_latest_revision(generation_state, stage):
+    return max(generation_state.get("reset_revisions", {}).get(stage, 0),
+               generation_state.get("admitted_revisions", {}).get(stage, 0))
+
+
+def dataset_journey_revision_is_current(generation_state, event_revision, stage=None):
+    if generation_state is None or event_revision is None or int(event_revision) <= 0:
+        return True
+    with _DATASET_JOURNEY_GENERATION_LOCK:
+        # Scoring-option resets keep upload validation valid. Only a newer
+        # accepted action can make a delayed upload/task/validation obsolete.
+        return all(int(event_revision) >= generation_state.get("admitted_revisions", {}).get(key, 0)
+                   for key in ((stage,) if stage else ("evaluation", "threshold", "explanation")))
+
+
+def invalidate_dataset_journey(generation_state, stage=None, event_revision=None):
+    if generation_state is None:
+        return True
+    with _DATASET_JOURNEY_GENERATION_LOCK:
+        stages = (stage,) if stage else ("evaluation", "threshold", "explanation")
+        if event_revision is not None and int(event_revision) > 0 and any(
+            int(event_revision) < _dataset_journey_latest_revision(generation_state, key) for key in stages
+        ):
+            return False
+        for key in stages:
+            generation_state[key] = generation_state.get(key, 0) + 1
+            if event_revision is not None and int(event_revision) > 0:
+                revisions = generation_state.setdefault("reset_revisions", {})
+                revisions[key] = max(revisions.get(key, 0), int(event_revision))
+    return True
+
+
+def current_dataset_journey_generation(generation_state, stage):
+    with _DATASET_JOURNEY_GENERATION_LOCK:
+        return generation_state.get(stage, 0)
+
+
+def run_current_dataset_journey(
+    generation_state, stage, callback, *args, progress=None,
+    admission_revision=None, output_count=None, invalidate_stages=(),
+):
+    # Gradio 5 passes the server-owned State object by reference. Reset handlers
+    # mutate this per-session object, so work already running can observe changes.
+    # A queued request also needs its original browser admission: reading only
+    # the current server generation when its worker starts would bless old inputs.
+    with _DATASET_JOURNEY_GENERATION_LOCK:
+        generation = generation_state.get(stage, 0)
+        latest_reset = _dataset_journey_latest_revision(generation_state, stage)
+        if admission_revision is not None and int(admission_revision) < latest_reset:
+            return (*tuple(gr.skip() for _ in range(output_count)), None)
+        if admission_revision is not None:
+            generation_state.setdefault("admitted_revisions", {})[stage] = int(admission_revision)
+    for dependent_stage in invalidate_stages:
+        invalidate_dataset_journey(generation_state, dependent_stage, admission_revision)
+    outputs = callback(*args, progress=progress)
+    # Visible values are committed by a separate short listener, serialized with
+    # resets. Returning a guarded result directly would leave a race between the
+    # final check and Gradio's asynchronous output application.
+    pending = {"generation": generation, "stage": stage, "outputs": outputs,
+               "admission_revision": admission_revision}
+    return (*tuple(gr.skip() for _ in outputs), pending)
+
+
+def commit_current_dataset_journey(generation_state, pending):
+    if pending is None:
+        return gr.skip()
+    outputs = pending["outputs"]
+    with _DATASET_JOURNEY_GENERATION_LOCK:
+        latest_reset = _dataset_journey_latest_revision(generation_state, pending["stage"])
+    if pending.get("admission_revision") is not None and int(pending["admission_revision"]) < latest_reset:
+        return tuple(gr.skip() for _ in outputs)
+    if pending["generation"] != current_dataset_journey_generation(generation_state, pending["stage"]):
+        return tuple(gr.skip() for _ in outputs)
+    return outputs
+
+
+def evaluate_current_dataset_journey_gradio(
+    generation_state, *args, progress=gr.Progress(track_tqdm=True)
+):
+    return run_current_dataset_journey(
+        generation_state, "evaluation", evaluate_dataset_journey_gradio,
+        *args[:-1], progress=progress, admission_revision=args[-1], output_count=12,
+        invalidate_stages=("threshold", "explanation"),
+    )
+
+
+def tune_current_dataset_journey_gradio(
+    generation_state, *args, progress=gr.Progress(track_tqdm=True)
+):
+    return run_current_dataset_journey(
+        generation_state, "threshold", threshold_tuning_journey_gradio,
+        *args[:-1], progress=progress, admission_revision=args[-1], output_count=5,
+    )
+
+
+def explain_current_dataset_journey_gradio(
+    generation_state, *args, progress=gr.Progress(track_tqdm=True)
+):
+    return run_current_dataset_journey(
+        generation_state, "explanation", explain_scored_pair_journey_gradio,
+        *args[:-1], progress=progress, admission_revision=args[-1], output_count=5,
+    )
+
+
 def evaluate_dataset_journey_gradio(
     validation_state,
     dataset_file,
@@ -3070,8 +3195,10 @@ def explain_scored_pair_journey_gradio(
     )
 
 
-def reset_dataset_results():
+def reset_dataset_results(generation_state=None, event_revision=None):
     """Clear evaluation and every dependent stage after a scoring option changes."""
+    if not invalidate_dataset_journey(generation_state, event_revision=event_revision):
+        return tuple(gr.skip() for _ in range(20))
     return (
         None,
         gr.update(
@@ -3106,7 +3233,9 @@ def reset_dataset_results():
     )
 
 
-def reset_dataset_threshold_stage():
+def reset_dataset_threshold_stage(generation_state=None, event_revision=None):
+    if not invalidate_dataset_journey(generation_state, "threshold", event_revision):
+        return tuple(gr.skip() for _ in range(5))
     return (
         gr.update(value=empty_threshold_tuning_summary_html(), visible=False),
         gr.update(value=pd.DataFrame(), visible=False),
@@ -3118,7 +3247,9 @@ def reset_dataset_threshold_stage():
     )
 
 
-def reset_dataset_explanation_stage():
+def reset_dataset_explanation_stage(generation_state=None, event_revision=None):
+    if not invalidate_dataset_journey(generation_state, "explanation", event_revision):
+        return tuple(gr.skip() for _ in range(5))
     return (
         gr.update(value=empty_pair_explanation_summary_html(), visible=False),
         gr.update(value=pd.DataFrame(), visible=False),
@@ -3130,8 +3261,10 @@ def reset_dataset_explanation_stage():
     )
 
 
-def reset_dataset_upload_journey():
+def reset_dataset_upload_journey(generation_state=None, event_revision=None):
     """Invalidate validation and downstream stages after upload/task changes."""
+    if not invalidate_dataset_journey(generation_state, event_revision=event_revision):
+        return tuple(gr.skip() for _ in range(26))
     return (
         empty_dataset_validation_summary_html(),
         pd.DataFrame(columns=["Severity", "Code", "Message", "Count"]),
@@ -4244,6 +4377,10 @@ with gr.Blocks(
         with gr.Tab("Datasets", id="datasets"):
             dataset_scored_state = gr.State(None)
             dataset_validation_state = gr.State(None)
+            dataset_journey_generation = gr.State({})
+            dataset_pending_evaluation = gr.State(None)
+            dataset_pending_threshold = gr.State(None)
+            dataset_pending_explanation = gr.State(None)
             dataset_latest_revision = gr.State(0)
             dataset_event_revision = gr.Number(value=0, visible=False)
             gr.HTML(
@@ -4551,9 +4688,16 @@ with gr.Blocks(
                 inputs=dataset_task,
                 outputs=[dataset_pair_group, dataset_retrieval_group],
             )
+            dataset_evaluation_outputs = [
+                dataset_summary, dataset_metrics, dataset_scores,
+                dataset_resampling_metrics, dataset_resampling_summary, dataset_artifacts,
+                dataset_scored_state, dataset_journey_status, dataset_threshold_optimize,
+                dataset_threshold_tune, dataset_pair_explanation_actions, dataset_next_actions,
+            ]
             dataset_run.click(
-                evaluate_dataset_journey_gradio,
+                evaluate_current_dataset_journey_gradio,
                 inputs=[
+                    dataset_journey_generation,
                     dataset_validation_state,
                     dataset_file,
                     dataset_task,
@@ -4568,22 +4712,18 @@ with gr.Blocks(
                     dataset_k,
                     dataset_resampling_folds,
                     dataset_resampling_seed,
+                    dataset_event_revision,
                 ],
-                outputs=[
-                    dataset_summary,
-                    dataset_metrics,
-                    dataset_scores,
-                    dataset_resampling_metrics,
-                    dataset_resampling_summary,
-                    dataset_artifacts,
-                    dataset_scored_state,
-                    dataset_journey_status,
-                    dataset_threshold_optimize,
-                    dataset_threshold_tune,
-                    dataset_pair_explanation_actions,
-                    dataset_next_actions,
-                ],
+                outputs=[*dataset_evaluation_outputs, dataset_pending_evaluation],
                 api_name=False,
+                js=dataset_admission_js(16),
+            ).success(
+                commit_current_dataset_journey,
+                inputs=[dataset_journey_generation, dataset_pending_evaluation],
+                outputs=dataset_evaluation_outputs,
+                api_name=False,
+                concurrency_id="dataset-journey-commit",
+                concurrency_limit=1,
             )
             dataset_validate_api.click(
                 validate_dataset_gradio,
@@ -4623,20 +4763,33 @@ with gr.Blocks(
                 ],
                 api_name="evaluate_dataset_gradio_with_state",
             )
+            dataset_threshold_outputs = [
+                dataset_threshold_summary, dataset_threshold_sweep, dataset_threshold_report,
+                dataset_threshold_artifacts, dataset_journey_status,
+            ]
             dataset_threshold_tune.click(
-                threshold_tuning_journey_gradio,
-                inputs=[dataset_scored_state, dataset_threshold_optimize],
-                outputs=[
-                    dataset_threshold_summary,
-                    dataset_threshold_sweep,
-                    dataset_threshold_report,
-                    dataset_threshold_artifacts,
-                    dataset_journey_status,
-                ],
+                tune_current_dataset_journey_gradio,
+                inputs=[dataset_journey_generation, dataset_scored_state, dataset_threshold_optimize,
+                        dataset_event_revision],
+                outputs=[*dataset_threshold_outputs, dataset_pending_threshold],
+                api_name=False,
+                js=dataset_admission_js(4),
+            ).success(
+                commit_current_dataset_journey,
+                inputs=[dataset_journey_generation, dataset_pending_threshold],
+                outputs=dataset_threshold_outputs,
+                api_name=False,
+                concurrency_id="dataset-journey-commit",
+                concurrency_limit=1,
             )
+            dataset_explanation_outputs = [
+                dataset_pair_explain_summary, dataset_pair_explain_matches,
+                dataset_pair_explain_report, dataset_pair_explain_artifacts, dataset_journey_status,
+            ]
             dataset_pair_explain_run.click(
-                explain_scored_pair_journey_gradio,
+                explain_current_dataset_journey_gradio,
                 inputs=[
+                    dataset_journey_generation,
                     dataset_scored_state,
                     dataset_pair_explain_row,
                     dataset_pair_explain_segment_mode,
@@ -4644,14 +4797,18 @@ with gr.Blocks(
                     dataset_pair_explain_medium_threshold,
                     dataset_pair_explain_low_threshold,
                     dataset_pair_explain_chunk_size,
+                    dataset_event_revision,
                 ],
-                outputs=[
-                    dataset_pair_explain_summary,
-                    dataset_pair_explain_matches,
-                    dataset_pair_explain_report,
-                    dataset_pair_explain_artifacts,
-                    dataset_journey_status,
-                ],
+                outputs=[*dataset_explanation_outputs, dataset_pending_explanation],
+                api_name=False,
+                js=dataset_admission_js(9),
+            ).success(
+                commit_current_dataset_journey,
+                inputs=[dataset_journey_generation, dataset_pending_explanation],
+                outputs=dataset_explanation_outputs,
+                api_name=False,
+                concurrency_id="dataset-journey-commit",
+                concurrency_limit=1,
             )
 
             dataset_upload_reset_outputs = [
@@ -4690,10 +4847,13 @@ with gr.Blocks(
                 validation_state=None,
                 event_revision=0,
                 latest_revision=0,
+                generation_state=None,
                 progress=gr.Progress(track_tqdm=True),
             ):
                 revision = int(event_revision or 0)
                 if revision < int(latest_revision or 0):
+                    return gr.skip()
+                if not dataset_journey_revision_is_current(generation_state, revision):
                     return gr.skip()
 
                 def apply_outputs(outputs):
@@ -4711,11 +4871,16 @@ with gr.Blocks(
                     except gr.Error as error:
                         # Always return data for expected input errors so Gradio
                         # drains the latest event queued behind this validation.
-                        outputs = list(reset_dataset_upload_journey())
+                        outputs = list(reset_dataset_upload_journey(generation_state, revision))
                         outputs[0] = status_panel_html(
                             "Dataset Validation", error.message, variant="error"
                         )
                         outputs[6] = dataset_journey_status_html(2, error.message, variant="error")
+                    if len(outputs) == 7 and outputs[4] != validation_state:
+                        # Validation can arrive before the corresponding file
+                        # change event. A genuinely new validated identity must
+                        # still invalidate and clear every previous result.
+                        outputs = (*outputs, *reset_dataset_upload_journey(generation_state, revision)[7:])
                     return apply_outputs(outputs)
                 # File components may deliver their change event after a fast
                 # validation. The server-owned State is read when this queued
@@ -4726,7 +4891,7 @@ with gr.Blocks(
                     uploaded_file, task_label
                 ):
                     return {dataset_latest_revision: revision}
-                return apply_outputs(reset_dataset_upload_journey())
+                return apply_outputs(reset_dataset_upload_journey(generation_state, revision))
 
             # Keep every validation click. always_last can replace a pending
             # click with a late file/task change before it reaches the server.
@@ -4738,15 +4903,17 @@ with gr.Blocks(
                 inputs=[
                     dataset_file, dataset_task, dataset_validation_state,
                     dataset_event_revision, dataset_latest_revision,
+                    dataset_journey_generation,
                 ],
                 outputs=[*dataset_upload_reset_outputs, dataset_latest_revision],
                 js="""(...values) => {
                     window.__matheelDatasetRevision = (window.__matheelDatasetRevision || 0) + 1;
                     values[3] = window.__matheelDatasetRevision;
-                    return values.slice(0, 5);
+                    return values.slice(0, 6);
                 }""",
                 api_name=False,
                 trigger_mode="multiple",
+                concurrency_id="dataset-journey-commit",
                 concurrency_limit=1,
             )
 
@@ -4787,12 +4954,17 @@ with gr.Blocks(
             ):
                 component.input(
                     reset_dataset_results,
+                    inputs=[dataset_journey_generation, dataset_event_revision],
                     outputs=dataset_result_reset_outputs,
                     show_api=False,
+                    js=_DATASET_RESET_REVISION_JS,
+                    concurrency_id="dataset-journey-commit",
+                    concurrency_limit=1,
                 )
 
             dataset_threshold_optimize.input(
                 reset_dataset_threshold_stage,
+                inputs=[dataset_journey_generation, dataset_event_revision],
                 outputs=[
                     dataset_threshold_summary,
                     dataset_threshold_sweep,
@@ -4801,6 +4973,9 @@ with gr.Blocks(
                     dataset_journey_status,
                 ],
                 show_api=False,
+                js=_DATASET_RESET_REVISION_JS,
+                concurrency_id="dataset-journey-commit",
+                concurrency_limit=1,
             )
             for component in (
                 dataset_pair_explain_row,
@@ -4812,6 +4987,7 @@ with gr.Blocks(
             ):
                 component.input(
                     reset_dataset_explanation_stage,
+                    inputs=[dataset_journey_generation, dataset_event_revision],
                     outputs=[
                         dataset_pair_explain_summary,
                         dataset_pair_explain_matches,
@@ -4820,6 +4996,9 @@ with gr.Blocks(
                         dataset_journey_status,
                     ],
                     show_api=False,
+                    js=_DATASET_RESET_REVISION_JS,
+                    concurrency_id="dataset-journey-commit",
+                    concurrency_limit=1,
                 )
 
         with gr.Tab("Explain", id="explain"):

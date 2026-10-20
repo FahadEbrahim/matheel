@@ -165,7 +165,12 @@ def official_benchmark_json(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def gradio_server(browser_artifacts_dir, official_benchmark_json):
+def dataset_callback_barriers(tmp_path_factory):
+    return tmp_path_factory.mktemp("dataset-callback-barriers")
+
+
+@pytest.fixture(scope="session")
+def gradio_server(browser_artifacts_dir, official_benchmark_json, dataset_callback_barriers):
     port = _unused_local_port()
     url = f"http://127.0.0.1:{port}/"
     log_path = browser_artifacts_dir / "gradio-server.log"
@@ -182,15 +187,20 @@ def gradio_server(browser_artifacts_dir, official_benchmark_json):
         }
     )
     with log_path.open("w", encoding="utf-8") as log_handle:
-        process = subprocess.Popen(
-            [
+        command = [
                 sys.executable,
                 os.fspath(Path(__file__).with_name("serve_gradio.py")),
                 "--port",
                 str(port),
                 "--official-benchmark",
                 os.fspath(official_benchmark_json),
-            ],
+                "--dataset-barriers",
+                os.fspath(dataset_callback_barriers),
+            ]
+        if environment.get("MATHEEL_BROWSER_APP_SOURCE"):
+            command.extend(["--app-source", environment["MATHEEL_BROWSER_APP_SOURCE"]])
+        process = subprocess.Popen(
+            command,
             cwd=REPOSITORY_ROOT,
             env=environment,
             stdout=log_handle,
@@ -284,12 +294,10 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
             return
         web_socket.connect_to_server()
 
-    page.route("**/*", route_request)
-    page.route_web_socket("**/*", route_web_socket)
     # Observe actual queue completion rather than treating a POST response or
     # a transient frontend pending flag as evidence that outputs were applied.
     # Cloned response bodies leave Gradio's own streams and errors untouched.
-    page.add_init_script("""(() => {
+    page.context.add_init_script("""(() => {
         window.__matheelQueueJoins = [];
         window.__matheelQueueEvents = [];
         window.__matheelGradioTargets = [];
@@ -329,21 +337,27 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
             return response;
         };
     })();""")
-    page.on("console", lambda message: events.append(f"console.{message.type}: {message.text}"))
-    page.on("pageerror", lambda error: events.append(f"pageerror: {error}"))
-    page.on(
-        "response",
-        lambda response: events.append(f"http.{response.status}: {response.url}")
-        if response.status >= 400
-        else None,
-    )
-    page.on(
-        "requestfailed",
-        lambda failed_request: events.append(
-            f"requestfailed: {failed_request.method} {failed_request.url} {failed_request.failure}"
-        ),
-    )
-    page.set_default_timeout(15_000)
+    def record_page(current_page):
+        current_page.route("**/*", route_request)
+        current_page.route_web_socket("**/*", route_web_socket)
+        current_page.on("console", lambda message: events.append(f"console.{message.type}: {message.text}"))
+        current_page.on("pageerror", lambda error: events.append(f"pageerror: {error}"))
+        current_page.on(
+            "response",
+            lambda response: events.append(f"http.{response.status}: {response.url}")
+            if response.status >= 400
+            else None,
+        )
+        current_page.on(
+            "requestfailed",
+            lambda failed_request: events.append(
+                f"requestfailed: {failed_request.method} {failed_request.url} {failed_request.failure}"
+            ),
+        )
+        current_page.set_default_timeout(15_000)
+
+    record_page(page)
+    page.context.on("page", record_page)
     setup_succeeded = False
     try:
         page.goto(gradio_server, wait_until="domcontentloaded")
@@ -365,10 +379,13 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
             if event.startswith("console.error:") or event.startswith("pageerror:")
         ]
         if setup_succeeded:
-            queue_failures = page.evaluate("""() => (window.__matheelQueueEvents || []).filter(
-                event => event.msg === "process_completed" && event.success === false
-            )""")
-            fatal_events.extend(f"queue-error: {json.dumps(event)}" for event in queue_failures)
+            for current_page in page.context.pages:
+                if current_page.is_closed():
+                    continue
+                queue_failures = current_page.evaluate("""() => (window.__matheelQueueEvents || []).filter(
+                    event => event.msg === "process_completed" && event.success === false
+                )""")
+                fatal_events.extend(f"queue-error: {json.dumps(event)}" for event in queue_failures)
         should_persist = (
             not setup_succeeded
             or report_failed
@@ -378,7 +395,9 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
         if should_persist:
             safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", request.node.nodeid).strip("_")
             try:
-                queue_trace = page.evaluate("({joins: window.__matheelQueueJoins, events: window.__matheelQueueEvents})")
+                queue_trace = [current_page.evaluate(
+                    "({joins: window.__matheelQueueJoins, events: window.__matheelQueueEvents})"
+                ) for current_page in page.context.pages if not current_page.is_closed()]
                 (browser_artifacts_dir / f"{safe_name}-queue.json").write_text(
                     json.dumps(queue_trace, indent=2), encoding="utf-8"
                 )
