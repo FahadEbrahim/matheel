@@ -1,0 +1,468 @@
+{
+  "benchmark_id": "Matheel-Plagiarism-v1",
+  "protocol_id": "bdb53c74d85020bdd48b7d767d88ebc2aa3f1255a8db152df742d97c01ee167a",
+  "score_artifacts": [
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_c7679831f4ff2607d446_pair.csv",
+      "rows": 460,
+      "sha256": "ed3d1f7f0e6d79d44fef09e6e40f75a10ed9292d383f20d47f6af7da68f14ea1",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 2485,
+      "sha256": "cbf743fe499f326853c68c5e7ba50fca6d1c61f7a13835c11aab21d0a7830dc6",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_c7679831f4ff2607d446_pair.csv",
+      "rows": 350,
+      "sha256": "b7c8448074e7380f1f08665b063ac2ab0506c956eee5e7780a85a05d4beb2216",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 7310,
+      "sha256": "e8da00f94731289d6dd2f46a32c2782f3163e76903508fd9f9607c76ab65200a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 5550,
+      "sha256": "6378ec5421ace1ccb2174164d103d8cf9a154a69b232cdc253196e43f3370a3c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 15252,
+      "sha256": "57c968a265b6bbaa3184f3028e1a4ae73b2d5a05fb9d0fea34a0be65b90865b2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 3080,
+      "sha256": "d518b72d89523c46010966e347dcc04344df7843368b9373f655f8f8807f44c7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 756,
+      "sha256": "2d86c9691e131cb4e0afab301aa901f2b3c8134bb90919665dd76c8337e872a5",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 460,
+      "sha256": "b4a5e819b91e33af4af3dd433e11fb3847f5f097e34851e5c329e316c6e64e89",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 2485,
+      "sha256": "ec0dbf345c9a2cf8ce6df76184b240537a550ea719a4c2d8d94643414038ba94",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 350,
+      "sha256": "a55170ffb5bf4fe6b6b01b6e96988348b43798f08922290dc11a459fdbed296b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 7310,
+      "sha256": "816407498106c4fd9d71e855b74ba6bd0d3596580469a565ff05f2214115723e",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 5550,
+      "sha256": "727b4bbac46e7534b611b05b3481d0556c593b9f2d063c44f67a0880aa85daa7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 15252,
+      "sha256": "953d9f3c98dae6f84f660c44a1bcfef6d39c392043313456ab25413b258dcc68",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 3080,
+      "sha256": "29c2396ba4947219b3a615011d8a19459ba9d86c9a972062a4c5164332eb72cc",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 756,
+      "sha256": "db716349a9e752a7d578a8fea50e0760a0433cf3f0a6ebde338437ef659130af",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2114d1a8e69454fd5fbb05b1f5d7e52090a1ca8307b0023282351f528cea67ad",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_2114d1a8e69454fd5fbb_pair.csv",
+      "rows": 460,
+      "sha256": "7823bd9c1e1b46c0f88981f6906eb11ca16d84d68b82cbcaf396460bd7dd3ba1",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "2114d1a8e69454fd5fbb05b1f5d7e52090a1ca8307b0023282351f528cea67ad",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_2114d1a8e69454fd5fbb_retrieval.csv",
+      "rows": 2485,
+      "sha256": "66b9444929d0e5f4c8c7fed9ad05d66369b3a7154e725497028b66ac9115b1c1",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2114d1a8e69454fd5fbb05b1f5d7e52090a1ca8307b0023282351f528cea67ad",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_2114d1a8e69454fd5fbb_retrieval.csv",
+      "rows": 7310,
+      "sha256": "718de5873735181e65f7016c7793cc89ee4cb32741037f42d864ad340f2d036d",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2114d1a8e69454fd5fbb05b1f5d7e52090a1ca8307b0023282351f528cea67ad",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_2114d1a8e69454fd5fbb_retrieval.csv",
+      "rows": 3080,
+      "sha256": "d827198b502d67ad32e4f741e21d1c20757032b4d07d01f2f6087e2ea8c055ce",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2114d1a8e69454fd5fbb05b1f5d7e52090a1ca8307b0023282351f528cea67ad",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_2114d1a8e69454fd5fbb_retrieval.csv",
+      "rows": 756,
+      "sha256": "b33913325b4bf5bfbaee8d3729e471267b0a88af89b004a33a8e5da608bf3060",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "e2876d3bed556c9be8a822b54dfbc4d4bdd7b789708cfc864cc4d9e7d3826e15",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_e2876d3bed556c9be8a8_pair.csv",
+      "rows": 460,
+      "sha256": "37c1b94e981e1ce485e6fc396fbb72e1bf396978e0b08d4a5f853384e1c2a6d9",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "e2876d3bed556c9be8a822b54dfbc4d4bdd7b789708cfc864cc4d9e7d3826e15",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_e2876d3bed556c9be8a8_retrieval.csv",
+      "rows": 2485,
+      "sha256": "1b1e1cc70a28fec09b294314b61ccc9d79ac8ca25fd50658f3733657abd515b3",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "e2876d3bed556c9be8a822b54dfbc4d4bdd7b789708cfc864cc4d9e7d3826e15",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_e2876d3bed556c9be8a8_pair.csv",
+      "rows": 350,
+      "sha256": "99e569b4ec4c32f47ba14b47ed58cbaf72a33a3b3979475302dbc0c7425b40ca",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "e2876d3bed556c9be8a822b54dfbc4d4bdd7b789708cfc864cc4d9e7d3826e15",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_e2876d3bed556c9be8a8_retrieval.csv",
+      "rows": 7310,
+      "sha256": "fc7e26dc33e925a71def13d5c5ab652dea5e95341db65d804bd0b8c3186e9901",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "e2876d3bed556c9be8a822b54dfbc4d4bdd7b789708cfc864cc4d9e7d3826e15",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_e2876d3bed556c9be8a8_retrieval.csv",
+      "rows": 15252,
+      "sha256": "799a5dbb09649b931f7f9791383cebb40995584a385065eb8a1fef8da4df5bb2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "e2876d3bed556c9be8a822b54dfbc4d4bdd7b789708cfc864cc4d9e7d3826e15",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_e2876d3bed556c9be8a8_retrieval.csv",
+      "rows": 3080,
+      "sha256": "399dcdaa2ebddc048e947ab61c5e8cf682404e914518535c4350ab97e1e6766f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "e2876d3bed556c9be8a822b54dfbc4d4bdd7b789708cfc864cc4d9e7d3826e15",
+      "algorithm_name": "Dolos 2.10.0",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_e2876d3bed556c9be8a8_retrieval.csv",
+      "rows": 756,
+      "sha256": "7f8a25de8218774d5cc8097c8d262d76f972dab6d3c8bb51d57aae5faf69e20c",
+      "task_family": "retrieval"
+    }
+  ]
+}

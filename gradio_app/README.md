@@ -16,6 +16,8 @@ The hosted Space installs `matheel==0.7.1`. Checkout features are synchronized t
 - Pair, collection, comparison-suite, normalized-dataset, dataset-validation, threshold-tuning, visualization, scored-pair explanation, versioned plagiarism benchmark, sampled demo leaderboard, custom leaderboard, and leaderboard-inspection workflows
 - Metric presets for balanced, lexical, embedding-only, code-aware, and individual offline baselines
 - Downloadable artifacts for dataset evaluation, validation reports, threshold sweeps, dataset maps, pair explanations, ready leaderboards, leaderboard reports, and leaderboard detail reports
+- Reports → Analyze Results for scored CSV uploads, paired method comparisons, grouped confidence intervals, error tables, language/length slices, and HTML/CSV/JSON downloads
+- Official plagiarism leaderboard diagnostics with per-view uncertainty, observed runtime, failure reasons, and speed/quality tradeoffs
 - Raw and parser-derived lexical tokenization for Winnowing and GST
 - All 20 RapidFuzz scalar string metrics, including longest common subsequence (LCS), plus Winnowing and GST
 - Relative feature weights normalized automatically, with saved comparison-suite settings

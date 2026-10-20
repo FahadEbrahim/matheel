@@ -1,0 +1,13 @@
+# Matheel 0.7.1 release evidence
+
+The [0.7.1 edition guide](../../docs/plagiarism_release_071.md) describes the declared scopes, budgets, optional local tools and reproduction command. The [published app artifacts](../../gradio_app/benchmark_data/plagiarism-071) contain the exact protocols and method identities, confidence companions, a complete SHA256 inventory and source/release provenance. Source-free scored-row archives are separate [release assets](https://github.com/FahadEbrahim/matheel/releases/tag/v0.7.1).
+
+The all-method edition reruns the existing 29 configurations and all 16 unchanged v1 prepared views, using a 180-second whole-method budget with three single-thread workers. Three common-scope detector editions use Java (eight views), C++ (six) and Python (one), comparing JPlag, Dolos, Levenshtein and Winnowing. Every retained view uses complete original data for every method. A predeclared 500-file/125,000-native-pair resource limit excludes the entire ConPlag view from every method in the Java detector track; it remains present in the all-method edition. Native input rejection remains a failed result. No new metrics, methods, datasets or labels are introduced.
+
+The original [`benchmarks/plagiarism-v1`](../plagiarism-v1) definitions and [`gradio_app/benchmark_data/plagiarism-v1`](../../gradio_app/benchmark_data/plagiarism-v1) publication remain unchanged. The 0.7.1 protocols retain the benchmark family name but have distinct protocol IDs that bind the declared runtime budget and dataset scope. Scores from different editions must not be combined to construct a rank.
+
+The all-method edition completed 21/29 configurations; eight exceeded its declared budget. Native coverage is limited: JPlag completed Java 5/8, C++ 1/6 and Python 0/1 views; Dolos completed 7/8, 1/6 and 0/1 respectively. Each lexical reference completed every retained view. [native_failures.json](native_failures.json) preserves the exact generic adapter reason for each failed view. Failures remain unscored and incomplete methods remain unranked for the affected task; no failed corpus was filtered to obtain a successful result.
+
+## Measurement audit
+
+One entire initial attempt was discarded after another controlled measurement briefly overlapped it. Every published method was restarted with fresh outputs under the unchanged plan; no configuration, scope or budget was selected from observed quality. The predeclared plan was byte-identical across both attempts, SHA256 `cbd62e2eb48cbf01d471cf91e95fdca9c8c9635f6c40f2f1da45dd2ce47b04b8`. Removing only the final `total_wall_seconds` field from `edition.json` and serializing with sorted keys and two-space indentation reconstructs that plan.

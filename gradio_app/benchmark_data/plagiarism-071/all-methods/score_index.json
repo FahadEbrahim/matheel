@@ -1,0 +1,5529 @@
+{
+  "benchmark_id": "Matheel-Plagiarism-v1",
+  "protocol_id": "301bc7c1b7453a4187e8d5b55e5ab5b8e36983985247bbc1da16eac02ef0344b",
+  "score_artifacts": [
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_d359f744b16842c34651_pair.csv",
+      "rows": 911,
+      "sha256": "d08cc928f1b1826a99e4b4163604f7bfe7094d83d5503054db46ee78a9a07ff1",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_d359f744b16842c34651_pair.csv",
+      "rows": 460,
+      "sha256": "c5bca799f7f6ded39d89b968120d8feb9f6425b0083513daf02d12d06aaab223",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_d359f744b16842c34651_retrieval.csv",
+      "rows": 2485,
+      "sha256": "63ddb86a2e00a6f0e79b0469f7ed411b0e074ffc496b21396779e53a3790fd67",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_d359f744b16842c34651_pair.csv",
+      "rows": 270,
+      "sha256": "d149d62db033556f6cc1088d762a74ef34b4fb7abf549553d32970f0005f2ec0",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_d359f744b16842c34651_pair.csv",
+      "rows": 350,
+      "sha256": "b4d5be651d30e5b0405197ca16acdf038f89df9fa9886012e7d68884a96e22c8",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_d359f744b16842c34651_pair.csv",
+      "rows": 293,
+      "sha256": "13345277ee524c0e75b039871edf9e2ab8a0da413545a1eaf6f936169e84be45",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_d359f744b16842c34651_retrieval.csv",
+      "rows": 15750,
+      "sha256": "9f7d75ddac5a46e43ebcc01e4c1532819f25f1df38b9432d99ea951ef54df682",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_d359f744b16842c34651_retrieval.csv",
+      "rows": 20880,
+      "sha256": "9a40a3d9e332ee59b3f6fa8f5f39fd49ffa30f7c86ef2f62bf2ad881e21e9a91",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_d359f744b16842c34651_retrieval.csv",
+      "rows": 11130,
+      "sha256": "30573cda9442d495a70e4bfe35451c4cc461b3b320d596fce3a9327ebc6424c8",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_d359f744b16842c34651_retrieval.csv",
+      "rows": 4970,
+      "sha256": "914bdb2eb09b2e5cd373747cf30ba59eb506a3ccbb6305790d798b64fdc54bc2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_d359f744b16842c34651_retrieval.csv",
+      "rows": 56,
+      "sha256": "b002230e1a8588fc801205ba340460e4169fb5f0c7b9f9bbeed4929c02cdb850",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_d359f744b16842c34651_retrieval.csv",
+      "rows": 7310,
+      "sha256": "a8774d242699f2cae3942fa5cf67a5fa9f9922dd0a2f484989cbb7d1181a7360",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_d359f744b16842c34651_retrieval.csv",
+      "rows": 5550,
+      "sha256": "eeadc8c755a1a168555f112b97c396f7ffacf56f35f6d73fe734f88b95d26e1a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_d359f744b16842c34651_retrieval.csv",
+      "rows": 15252,
+      "sha256": "5f7b11ccedb630751c49d4ea3a1f562a17f35382a563fbca8179e84d3e73d660",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_d359f744b16842c34651_retrieval.csv",
+      "rows": 3080,
+      "sha256": "2f6155181353152fdf72c433e90ac4f6f0b11f1cad0714f650c3966da4fb97be",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d359f744b16842c34651ab272d461d80751a254a897b66915677a0ab06ddc6c0",
+      "algorithm_name": "Jaro-Winkler",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_d359f744b16842c34651_retrieval.csv",
+      "rows": 756,
+      "sha256": "9e178d469c2da1a35c7feac2982a020e39178a0d5d48bbb5fe2012fa764d53ad",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_c7679831f4ff2607d446_pair.csv",
+      "rows": 911,
+      "sha256": "e5910be941174fbab08733516883362bed5aff0cdff1a77c3f520f9b7c5413e6",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_c7679831f4ff2607d446_pair.csv",
+      "rows": 460,
+      "sha256": "ed3d1f7f0e6d79d44fef09e6e40f75a10ed9292d383f20d47f6af7da68f14ea1",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 2485,
+      "sha256": "cbf743fe499f326853c68c5e7ba50fca6d1c61f7a13835c11aab21d0a7830dc6",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_c7679831f4ff2607d446_pair.csv",
+      "rows": 270,
+      "sha256": "f228416fa00bcb162e8d0c59a3dc51fbceb80c6cfdad55c0280f084e9142e784",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_c7679831f4ff2607d446_pair.csv",
+      "rows": 350,
+      "sha256": "b7c8448074e7380f1f08665b063ac2ab0506c956eee5e7780a85a05d4beb2216",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_c7679831f4ff2607d446_pair.csv",
+      "rows": 293,
+      "sha256": "80ba49040c9f264d7475fda8694a832dcbac801dd7d4ffa231965f0e060f97e2",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 15750,
+      "sha256": "6d061d32707266f035f8bee8ecec5dc8e6901896b644093c8069c6565b69e835",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 20880,
+      "sha256": "d51a03b8300d9d8c2623783f65656e287daf4f8cd159334f845db07e18437059",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 11130,
+      "sha256": "cb9228003cc97c159eb5e521520d8b6c77e41ba06cb8f9930e4b62cc77f36021",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 4970,
+      "sha256": "ded2f1dd7ce08747e6b00a68301738711c62cc922eea47fb81d7f5fc8c3a9d3c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 56,
+      "sha256": "aecbbb08ec8fd0cbac35c9eda9f294515d9c8c527d7e3ab4b891e458d596c990",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 7310,
+      "sha256": "e8da00f94731289d6dd2f46a32c2782f3163e76903508fd9f9607c76ab65200a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 5550,
+      "sha256": "6378ec5421ace1ccb2174164d103d8cf9a154a69b232cdc253196e43f3370a3c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 15252,
+      "sha256": "57c968a265b6bbaa3184f3028e1a4ae73b2d5a05fb9d0fea34a0be65b90865b2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 3080,
+      "sha256": "d518b72d89523c46010966e347dcc04344df7843368b9373f655f8f8807f44c7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c7679831f4ff2607d4465fdd0d74fd8d29662d86b7fc341222c6f5a9a11d7090",
+      "algorithm_name": "Winnowing",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_c7679831f4ff2607d446_retrieval.csv",
+      "rows": 756,
+      "sha256": "2d86c9691e131cb4e0afab301aa901f2b3c8134bb90919665dd76c8337e872a5",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 911,
+      "sha256": "5fc9410e82163e9240751e092a3d8e1ceb092025e44f398478a40bab38df414b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 460,
+      "sha256": "b4a5e819b91e33af4af3dd433e11fb3847f5f097e34851e5c329e316c6e64e89",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 2485,
+      "sha256": "ec0dbf345c9a2cf8ce6df76184b240537a550ea719a4c2d8d94643414038ba94",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 270,
+      "sha256": "48dd530d87b8fbec47148ef7c36e370b50cdeaf50f6ce3453b1c42a99266202f",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 350,
+      "sha256": "a55170ffb5bf4fe6b6b01b6e96988348b43798f08922290dc11a459fdbed296b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_ad7fd1da5313093c7f73_pair.csv",
+      "rows": 293,
+      "sha256": "3d3ec0029f8ec5fbd10b802ccf22a00cf14b011c1883dc2b5d36f71cc6fd8445",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 15750,
+      "sha256": "ed37bd093f0b7c6811b64a0439edfb685ac8a151b9c495c84dfa68661c14033f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 20880,
+      "sha256": "dae46e9babd0ca40b064f25e87becec0c1e45b12366ee0692e52da4188c546e9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 11130,
+      "sha256": "ea6d9044db9590c8b18d163762d511f161d4c1f1e0747a48a17d1fa27b4b0ca9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 4970,
+      "sha256": "e7199a4b350f9b4da800ec48efd0c1819247d8efa2b97b56274d2e4b7a9fbac9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 56,
+      "sha256": "a2bd80ad33d189f53e7db6cab54836e9a1638afb36d7d0d07d515df34a971c83",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 7310,
+      "sha256": "816407498106c4fd9d71e855b74ba6bd0d3596580469a565ff05f2214115723e",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 5550,
+      "sha256": "727b4bbac46e7534b611b05b3481d0556c593b9f2d063c44f67a0880aa85daa7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 15252,
+      "sha256": "953d9f3c98dae6f84f660c44a1bcfef6d39c392043313456ab25413b258dcc68",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 3080,
+      "sha256": "29c2396ba4947219b3a615011d8a19459ba9d86c9a972062a4c5164332eb72cc",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ad7fd1da5313093c7f735fe64375b8d77a211f78307c754d49bb333e3af57994",
+      "algorithm_name": "Levenshtein",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_ad7fd1da5313093c7f73_retrieval.csv",
+      "rows": 756,
+      "sha256": "db716349a9e752a7d578a8fea50e0760a0433cf3f0a6ebde338437ef659130af",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_6ab3d69538a66bc97705_pair.csv",
+      "rows": 911,
+      "sha256": "9a42195f0fc9668489a7d68c87b218f646f15f99713b84734c595691ab837ca2",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_6ab3d69538a66bc97705_pair.csv",
+      "rows": 460,
+      "sha256": "56e8c0e56d6bb98002ce696162faf903b0ed5b137310fd1ff97a3881a84be840",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 2485,
+      "sha256": "8e8f2b64a444ff15128e22dfe9d6073ca26080bc51ee433fc634578575bc227a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_6ab3d69538a66bc97705_pair.csv",
+      "rows": 270,
+      "sha256": "3be8a93f2a1b502f1666aef6ffe64c7db8ef19267eb8e338d482c5559f5215c2",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_6ab3d69538a66bc97705_pair.csv",
+      "rows": 350,
+      "sha256": "15848880c0b9cd644eedfb8d45b1e9cf79aeb013d9db3ca89fb4ce5238036e90",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_6ab3d69538a66bc97705_pair.csv",
+      "rows": 293,
+      "sha256": "297638b1dd009ef7f6e4eed28c430da3100b1731197cbb6a1f305245082c3747",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 15750,
+      "sha256": "2f1fc07cb1bc5c815fcf0d02dea39db3aa93a72237dc4f13d4e9142ab34460e8",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 20880,
+      "sha256": "005bb56bf6b7b18bb5ef8854655b8845401cbb4035ab4d1b08fefb0838580956",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 11130,
+      "sha256": "4d80b1d94ce5b5e90af15bd78bade8286bed7f384833701355a2b913df7b5367",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 4970,
+      "sha256": "d39328c527b855431923122c065d82331ccbfc998b86780f0765cfdd10a89f22",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 56,
+      "sha256": "491dce274cbdec6ec3b3361fe03140fa071dbaf9f453617dbd91b42ceae84f70",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 7310,
+      "sha256": "e44e8d2cbdcc592eecc008c394be36c3f7dd8354b313da5ae1527c5b1c8194ea",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 5550,
+      "sha256": "40ef858b7ac796eff75924fdbdc0d596ff308306853c57c6128788bf706577a3",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 15252,
+      "sha256": "770a8d887649c3e822772d97ae3bb1fcce50bba2f49014d95c747c6ed86f08e1",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 3080,
+      "sha256": "c4560046d29b9e857f75da3de9057c1f82bbc0be9aa5f0ffe3996ac208b13673",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "6ab3d69538a66bc977050831d2a4ed518faa14f5d7564780118e0eb61694fbf5",
+      "algorithm_name": "Optimal String Alignment (OSA)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_6ab3d69538a66bc97705_retrieval.csv",
+      "rows": 756,
+      "sha256": "50929916f41aa6ffa82732c117bcb55502970c2b0e0905dddd7a0aed26d8a300",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_79b7cc32c0620a058e51_pair.csv",
+      "rows": 911,
+      "sha256": "759c2fd888136fab0a7b2dde4be44db790738437f66a2c28caf2ab61a70294b9",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_79b7cc32c0620a058e51_pair.csv",
+      "rows": 460,
+      "sha256": "f087b2d3b0d676a6ad326b4ef8e31cfbcab0bb5ab32d3d78c680cdd09e701450",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 2485,
+      "sha256": "66de267983c28965011eedd2fc9f619949663f692f83326b051bb8d104c5b812",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_79b7cc32c0620a058e51_pair.csv",
+      "rows": 270,
+      "sha256": "c2616eb11086ac58688ecc7d5b01d5d4b69b89f7e7886266fa321056905017bb",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_79b7cc32c0620a058e51_pair.csv",
+      "rows": 350,
+      "sha256": "72ec1f28f320710b63c12520ee28cb8d2fe6f772668e6956592af07e0890a99a",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_79b7cc32c0620a058e51_pair.csv",
+      "rows": 293,
+      "sha256": "d14b3fe383b43c6529e8c764265fc14c2accdfd353619aae8dd2682d5a7ba211",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 15750,
+      "sha256": "53cba4033c776faf2fa628032771b1f038ebabdfabe1f28ebd55f2578762d9dd",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 20880,
+      "sha256": "e2942cb45fcf609bfc3f64a71c2684487d7ba3907d370e1a31e29648b429d361",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 11130,
+      "sha256": "2191dd6914bfd64285d354d21aadbae3eace7e208af2e0931186f4fc861b149d",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 4970,
+      "sha256": "913d8f7d920f25354bc300ff4ed9964f0b4ba9b8dced3acb95e6c3d023a86dc8",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 56,
+      "sha256": "f45c1cf191880885c50e556748b3d8264beb66f61ae11a174ad778d769ee1622",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 7310,
+      "sha256": "8e9bf9fb2128378983b6069fbaf3af4b2ce11f5d36aab07748af0388e28751a7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 5550,
+      "sha256": "40a88fedf4b098c1eff3af1216b14d23ee6efb8d188145692d8a1ddab63b0881",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 15252,
+      "sha256": "e8f41d336faa36a51f7162af360b63890a82f9298bf29b36c69d276d6da779ca",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 3080,
+      "sha256": "dfdfb793ba3cf73e4d7adeee9a2e3b41a59598e1f971b0cf6e2315b1ee41889f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "79b7cc32c0620a058e51af7e5c5daba9fc0b97863a0304a590be72de5e16e845",
+      "algorithm_name": "Hamming",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_79b7cc32c0620a058e51_retrieval.csv",
+      "rows": 756,
+      "sha256": "47412c9a834b83bf82d08637901f9ee6da271fe423b200cbd82dc6574a2277c5",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_2f3164adab1a18fb5559_pair.csv",
+      "rows": 911,
+      "sha256": "010ee695e75ec048327c94db68ec5549ea67cd6f9cd33979b681c9398cbe393f",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_2f3164adab1a18fb5559_pair.csv",
+      "rows": 460,
+      "sha256": "bec64c95ed2946c6f23a6e3b9ccda895fe3c32dc6abb25f0587366488b7d023a",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 2485,
+      "sha256": "5194af50c71e1c37052c19c2b9639a3447c4151db994fc32095448dd60b24e45",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_2f3164adab1a18fb5559_pair.csv",
+      "rows": 270,
+      "sha256": "f688acee61b60ab3b528909dd150c83066b6963dd5b994402f47665178355b8e",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_2f3164adab1a18fb5559_pair.csv",
+      "rows": 350,
+      "sha256": "f660a5566fef46c9d040237f554fa429749d1c8d1abf90e2cd9cfb6c2a13b284",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_2f3164adab1a18fb5559_pair.csv",
+      "rows": 293,
+      "sha256": "afb7f7731e4512bb6f0179104fc11fc60e904547666e25eaff14915502f92fc2",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 15750,
+      "sha256": "63fae1e092d04c24092cd6682a4c74708d834afea8373086293d0356ded5c456",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 20880,
+      "sha256": "85722c69b0088aeae00ac367641976edffd936a160f82691eb594fec928b0a2b",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 11130,
+      "sha256": "ffdc96c89c1ed32857197ce58af3ca442c9ff4e56c35ae1027598dea980e0989",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 4970,
+      "sha256": "02bcd6156a1bc4ded0c200d5b935af142f9d55791a3976cf35448172317a95bd",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 56,
+      "sha256": "dd56a423f525ae0abcad4050a508ceaa38ede214a9539e5ceeb50b9e279a4e28",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 7310,
+      "sha256": "91ae746f16b6aee34a6be6c7a8750e194d27b6d2f4c104e5fd98497057c9cc4b",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 5550,
+      "sha256": "e5dee06355e024f5ae207156d5bd5713eef9d80cd5f85120eaa2caa23cdd3589",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 15252,
+      "sha256": "c7cbdf118eb9f61d9ccdca249effe9028278eab9e48f35e7cebfec2204d88e44",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 3080,
+      "sha256": "0dc5db5a9d6fd6639eeafafaa7605948ae5ff1b2d84e73416a24ecba11e36b59",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "2f3164adab1a18fb5559f16f2b4b5717c32ddd075ef20227d7e9ce6a53cc803a",
+      "algorithm_name": "Indel",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_2f3164adab1a18fb5559_retrieval.csv",
+      "rows": 756,
+      "sha256": "88096493f288fc051595ca527018648d38a95b39b1c373bfd9a7ebd1aa75406f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_d934e86a5354a627f412_pair.csv",
+      "rows": 911,
+      "sha256": "8c9fbe0f06bcc51cbffce4c504a81e71512aef4690e8b561940ede1f61c1eeee",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_d934e86a5354a627f412_pair.csv",
+      "rows": 460,
+      "sha256": "b8c5738061a4b2e8bfb531172de94ea5f18cde40322dbd9cd9ecac151bf65955",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_d934e86a5354a627f412_retrieval.csv",
+      "rows": 2485,
+      "sha256": "28cec10f1ef017d0a2448349224b799f839814805511b04b94839328b54281b4",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_d934e86a5354a627f412_pair.csv",
+      "rows": 270,
+      "sha256": "19d84d0d9cbc7bad3f1c11f8195e9228dafb44b3d3aaf51a19d9eedee7fb016b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_d934e86a5354a627f412_pair.csv",
+      "rows": 350,
+      "sha256": "0ace6fd8719621df5622551b800fefdaeb0331456257d58bc4c9d6ead1c35a63",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_d934e86a5354a627f412_pair.csv",
+      "rows": 293,
+      "sha256": "c437b4630927da154aaf27728c60e932e9c01e716f39422b7cd32b94b36003e4",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_d934e86a5354a627f412_retrieval.csv",
+      "rows": 15750,
+      "sha256": "1872f6c7163cc740c653cc129a19707f6180c38d8c1487ac1b0eb62dcb17a9bf",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_d934e86a5354a627f412_retrieval.csv",
+      "rows": 20880,
+      "sha256": "536407c710642dbcc8e06a602393214e145fd8580f262c62e71bb9e06cf981f3",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_d934e86a5354a627f412_retrieval.csv",
+      "rows": 11130,
+      "sha256": "cea303eade5841eac5ac96fdc4e1bfea46e6636226872ded50c076e245d139c0",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_d934e86a5354a627f412_retrieval.csv",
+      "rows": 4970,
+      "sha256": "cd566834d8a7b2d39fb712771783d6419a4c170cde7bf7a81fa6e758eb8cd7f6",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_d934e86a5354a627f412_retrieval.csv",
+      "rows": 56,
+      "sha256": "42a16bc0e48799732b7de7c97be46db171704f8c077b4ad0e83841b17187a129",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_d934e86a5354a627f412_retrieval.csv",
+      "rows": 7310,
+      "sha256": "e44570a3c9764b7da9073e6bcb2f29911dfa289496a723ebc3c3c7d844c3339b",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_d934e86a5354a627f412_retrieval.csv",
+      "rows": 5550,
+      "sha256": "7d161242d126f2aa008c271d175c4f4195c345d6849074c940212a7f5ade7277",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_d934e86a5354a627f412_retrieval.csv",
+      "rows": 15252,
+      "sha256": "bf6a63f8d22b4efe8edb7cba031f1f99ca525d57f0807d8fe84ec48055b15eef",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_d934e86a5354a627f412_retrieval.csv",
+      "rows": 3080,
+      "sha256": "a6fe0dbce7858269fe718c4b937226a43255bd691a864c24505609a1e002ed24",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d934e86a5354a627f412267cab8d1eff677f4601ae0107b1f1ad5143e87e7031",
+      "algorithm_name": "Longest Common Subsequence (LCS)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_d934e86a5354a627f412_retrieval.csv",
+      "rows": 756,
+      "sha256": "343f613cfde273434385c49cfb616d8880e00b1132ad9d462f937565bf735004",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_d9d173e211d12e87bb78_pair.csv",
+      "rows": 911,
+      "sha256": "140da9869d1956521cc1ec6d15e83e9d77295ef7acc113c3e6454560a4f8959d",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_d9d173e211d12e87bb78_pair.csv",
+      "rows": 460,
+      "sha256": "5bd2b59a780bf95b77ca95f1fcc283208a9a5bc58ffe8b9bdb3b683a087270a2",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 2485,
+      "sha256": "3586d72ea4ddacb40d94810a8296bbb6bc33faaf5c44f0972475ff4c4c46234f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_d9d173e211d12e87bb78_pair.csv",
+      "rows": 270,
+      "sha256": "3942daeb9bac3df372c807832e9f46116732f20fd58d39e0324750474256b1ce",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_d9d173e211d12e87bb78_pair.csv",
+      "rows": 350,
+      "sha256": "22e5b9d08d2c7c213b7e5e34f56af804d9e3497f6820c6b26bbfe50f06b06625",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_d9d173e211d12e87bb78_pair.csv",
+      "rows": 293,
+      "sha256": "670ae2464978ada4cdbe5a608a5d96c9ff70773b9a09bd1b18777c1e0be3320f",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 15750,
+      "sha256": "afd07f1da0b7ea9f28017a124393e0ea8068a39dd690bf3e9b059c606a5b3490",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 20880,
+      "sha256": "73aeb4085c199656b6715cca19f1053d51b1ab612f3fbcf420e93ac8e6f78670",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 11130,
+      "sha256": "fe460b58ff67602d8f85d9771c0d1ecec132f053eaa5862b296c722fe488cfb1",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 4970,
+      "sha256": "b663ceedf7b75576454d4a6d994d90e6654eb969a64aabadbe5f181487379314",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 56,
+      "sha256": "2e539d7688fa05db4e1068b2512f5b138e35155ee6e13bce2547993c2bc14536",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 7310,
+      "sha256": "84d3d790ec9222c992837180da79e6c6a835ffcc2eadb188f76b47bac1d2e185",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 5550,
+      "sha256": "0007b7d354602ea01ca07de56b387bbf62517df2956a49ea060ec856e1b65d32",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 15252,
+      "sha256": "7ab3cf18b6e62407471756d314e1b03cc09478937a68db2d6150410b3275b44a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 3080,
+      "sha256": "d63ae1d221d627ddd06f12e81d31b534d9b24090f4bdfacfeb8acf66e2b28103",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "d9d173e211d12e87bb78692f0614a0a2d5b39a1f5d5160c9b9e8d1d7ea90c73b",
+      "algorithm_name": "Jaro",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_d9d173e211d12e87bb78_retrieval.csv",
+      "rows": 756,
+      "sha256": "1116a1def6eae21c7a12b7f1e9b1d89123bb778cee6f64963acca904dbf2dc85",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_c49d4cc073fea841ebcc_pair.csv",
+      "rows": 911,
+      "sha256": "1d298d0d019b3932e192e194bc3a6aa5ce3f631a6f941f778f181bb84c945454",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_c49d4cc073fea841ebcc_pair.csv",
+      "rows": 460,
+      "sha256": "2c32f789a1b081b31bf3f1996cc3b3e96d1ed81663e39b365bc1574d998f1a8a",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 2485,
+      "sha256": "837e1eb86558e548ddadf5fd594531d964cce7dadbdedc425180572aae4c4d1e",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_c49d4cc073fea841ebcc_pair.csv",
+      "rows": 270,
+      "sha256": "31d50d8379b08a00109f8f4564f71a6ecd601f89b1b9240ec39943e4e8d90a38",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_c49d4cc073fea841ebcc_pair.csv",
+      "rows": 350,
+      "sha256": "504a28beb8dfb0916fbcf06088250cde623226cbe2ead330165df59ae44f9e2b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_c49d4cc073fea841ebcc_pair.csv",
+      "rows": 293,
+      "sha256": "45ab92e746899b98798aa4582cac3ed30616807e1836253f7709fcade0b8d941",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 15750,
+      "sha256": "bb5d360f53e38fd9595ff5822e3d4685e5af2114381ad3e093273bb5c1f20bd7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 20880,
+      "sha256": "19338fc180e3ce7477f4eea006de736fe4f8c5490fcbd74d97631f46d74a4e92",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 11130,
+      "sha256": "28f3ba32092c6c8798b64448522900cbd7cac924e09dd72b34e74e8f782aeb74",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 4970,
+      "sha256": "3945ea1c2feedbfa524356bfb092bc65d1cfb74e1870bcb53e2258bcfbb4f784",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 56,
+      "sha256": "de1dc2005c32198b48cc6ac3ebbec7b6b2c7e16023ca1da9e6a2ce428c531a39",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 7310,
+      "sha256": "cd6db5dcfc03c3e07f8f169da72d7ac98263c90500891d51a7cf86fc2f29fa80",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 5550,
+      "sha256": "44eac01615125c6c564df29c052f2cc348fa2bf60b4697c6db437b755a411748",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 15252,
+      "sha256": "67c55e60243a456b5b5bfe8a00c7a8f4a1ed8ca256611f406192ac60e2202f88",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 3080,
+      "sha256": "967f5efed9e55e5d19d25b42b23c4659774e021e408228e5d0be139e2c708fbf",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c49d4cc073fea841ebccda175c100e1d405aa3cd088941c7c453a3abc3b77df6",
+      "algorithm_name": "Common Prefix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_c49d4cc073fea841ebcc_retrieval.csv",
+      "rows": 756,
+      "sha256": "492fe793824218b9ef14e8c08f22968c7bfb6348e2ef14211b2c16111a8f18e4",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_f6d8b8ab72ac2c7af13c_pair.csv",
+      "rows": 911,
+      "sha256": "4ab8a0589a2b1ab3f4480add5638c133b8372ce6fbc08a72cc61475db287dc3e",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_f6d8b8ab72ac2c7af13c_pair.csv",
+      "rows": 460,
+      "sha256": "ac558a03f84d2bfdaa81999278eb456d73cda0564aa99e616f1395d06ff898c0",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 2485,
+      "sha256": "105252f3528125ba3532a1dc3fc53f656931e29d30d327ab717448702d51c2db",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_f6d8b8ab72ac2c7af13c_pair.csv",
+      "rows": 270,
+      "sha256": "ac1a78474cf77391456a4f4f8b0ec9a31bbfb5fee63e83c987aa505f7b87a52d",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_f6d8b8ab72ac2c7af13c_pair.csv",
+      "rows": 350,
+      "sha256": "d41f3628355c5edc65631f7bdce6eccaa069c9873ce1eb44a44bcbe4857492d3",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_f6d8b8ab72ac2c7af13c_pair.csv",
+      "rows": 293,
+      "sha256": "005d662b6ef38c0415372b1af84ee9bca89c287ac93f159359567e138eb1a9da",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 15750,
+      "sha256": "d9da639fd824d08915c7cdfaa10aab17c295b9f56acb93cec748e961ae30bc30",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 20880,
+      "sha256": "871fd098b7f4c7de963887e0a8cf5c8d0f5a6f1193fb83e8556c524e8f9f3963",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 11130,
+      "sha256": "d0e796d7796b70dfc576f577269ee6ac4e6e329170e8dbc39fa3ddf4ac312d55",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 4970,
+      "sha256": "55f072b1bac331bfd428b7b11a117eee78a930f3dd78285003e3eb167106b9c3",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 56,
+      "sha256": "000b4681729a524985709744b8d93373d5f9ea9600b217ce3aeb86285cdeba5a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 7310,
+      "sha256": "74ea6fea5039460b370bd06d39add40e164256eb986da07e6375724834fec25d",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 5550,
+      "sha256": "e78241aa8ee710ad713ad2ffa690ae283b6ad761248cac107cb1e5b01c0d568b",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 15252,
+      "sha256": "2542bb37a0f6b621b1014f24c0161905bc9db300236abf247cf6eea019ca3b10",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 3080,
+      "sha256": "074acbfcb6899956c4072b34fb166edcfbf73e7a0d28541859f5b8d191e4a499",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "f6d8b8ab72ac2c7af13cf6698076009334d13ee1f0f7d7f74174afc3830a311f",
+      "algorithm_name": "Common Postfix",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_f6d8b8ab72ac2c7af13c_retrieval.csv",
+      "rows": 756,
+      "sha256": "ae152ad3e779766d4fcf32f991aad6acd09f4454c1808aa636547a840a598276",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_ee925ba1b20f55e14eca_pair.csv",
+      "rows": 911,
+      "sha256": "acb2d20a7aba8d0c7e9fa95f13f5158d981fcadeb889cb0fc5965d2f20812507",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_ee925ba1b20f55e14eca_pair.csv",
+      "rows": 460,
+      "sha256": "f8f076cb7526921c6a26e3ef71689c46199505ddfab02900cb2bf899f1ddb9c7",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 2485,
+      "sha256": "5dce77a6a8899d3458c303310437942dae8514b14ef40bd861e4da54b898e603",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_ee925ba1b20f55e14eca_pair.csv",
+      "rows": 270,
+      "sha256": "9d4fd893791daeb4186f00ea30a1358b6b57e707404a105d52fefb746786e51b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_ee925ba1b20f55e14eca_pair.csv",
+      "rows": 350,
+      "sha256": "7b4cf84e18713ed4816e7d263163556cae030ddee487113249fa1d137bae09a4",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_ee925ba1b20f55e14eca_pair.csv",
+      "rows": 293,
+      "sha256": "7b4ba506a29a5acd68ead60f1efb4a778a811323216282f01ece7691d95a5556",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 15750,
+      "sha256": "1d47ed127068efb80d6a56cc4cc00e112fe2de602d248cda451b599f36a4dc0f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 20880,
+      "sha256": "879be48119a6a0774b6137d6a5069dd8bf5a05cd2c43b012bc3e2ffd5315f537",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 11130,
+      "sha256": "6771b27450481551e3dde68c2565935b914df3a6e3500216c6b5f0c2765f4912",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 4970,
+      "sha256": "66ee38dfe59389e14775114b96b0972cbc930b11ef609ef74a28eb4c7b5aaffa",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 56,
+      "sha256": "07067403ed5a0828aac18b9a0cd7e5e492b40cc52865b4610b1bbd5a690d49f7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 7310,
+      "sha256": "b874d3983fcaadb6e61395de6ac7fee5ecf409c7a5e19817b21d37a598e3881c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 5550,
+      "sha256": "4864f6eaa0c7e910ba4a2d959d30eb3b14b43ee139f95c9f8e4dc5920c9dd400",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 15252,
+      "sha256": "71c2fcc9ea47dccc5638562c50baf43ad5e8d199978de1cdf8143ed4ad2fbf52",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 3080,
+      "sha256": "c1ea37ae636cf1476513cd71aa5e854885f298b068ba5640e7473ad85809047f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee925ba1b20f55e14eca739575aefd91439a73c0798a1ff5833cc99b7dcd58a5",
+      "algorithm_name": "RapidFuzz Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_ee925ba1b20f55e14eca_retrieval.csv",
+      "rows": 756,
+      "sha256": "89e0c5ec34ff8bb438b82e98e4aabd4016db22aa4806cf033a1044f3bb400b04",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_1894548e62ac71fbe6a5_pair.csv",
+      "rows": 911,
+      "sha256": "3bf5cd38bd1cced5a85390597f686903b697a02b25ab644723121d8708464bc1",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_1894548e62ac71fbe6a5_pair.csv",
+      "rows": 460,
+      "sha256": "78dae096eed858a2849c1af4b25ed129b80076edd935d634a4dfe5365ac54c4b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 2485,
+      "sha256": "fd29009bf00ca33b500a6de8e097a0b10e4b981e4a8e61827a7d9aafc5609d5f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_1894548e62ac71fbe6a5_pair.csv",
+      "rows": 270,
+      "sha256": "290cce622baeeb1cb982308b21991c06416fc9cc9d53f3f03ac63bc6c7ad01c6",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_1894548e62ac71fbe6a5_pair.csv",
+      "rows": 350,
+      "sha256": "54e844ec0e461c967499a9bb99ede3c7d2534aedac5cee41f5b5262b3af7cfa3",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_1894548e62ac71fbe6a5_pair.csv",
+      "rows": 293,
+      "sha256": "0641be2987cbb0e80117542d2de372e76356a500f2cd487b7b315237daf76505",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 15750,
+      "sha256": "3767eb2ec467abd62b977477dbaf31ecca86cbcbe6ed3775e696e29551d57741",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 20880,
+      "sha256": "31a4ab28f5ec642c53bd2158d2923a79d57c8dab47dcc23d1a7ec15c52939e12",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 11130,
+      "sha256": "f3de29736b42511ab8efc16c77cccedc68268146abe3267939a7d9f6a86e0d7c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 4970,
+      "sha256": "a5fb823b93ee88f969c591cec271853af0e7c176cce39d21b929600944c25c04",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 56,
+      "sha256": "ca7c8480d682abf67cfa530bc38ce782ca82e870d128ebdceb34fe7ed83436f9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 7310,
+      "sha256": "8b6a7ae617db04888418f9d4833549bf68feb75365b150f7a20654c10bd55602",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 5550,
+      "sha256": "774f15e02f4174ffef947800b329a601ca3816abd9c3d6c00e6618c00e84962f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 15252,
+      "sha256": "8148dd94d14507e46ec790d588dea100e33659c3840e28f06e2afd5a3c6b81b3",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 3080,
+      "sha256": "05de28fd81ad2874395f869af7f7d6ec23d7c535b94ae264e17191cc924d84e7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "1894548e62ac71fbe6a5e378b867057f1ad922ef7eeb6f170db09e9448e78999",
+      "algorithm_name": "RapidFuzz Token Sort Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_1894548e62ac71fbe6a5_retrieval.csv",
+      "rows": 756,
+      "sha256": "5415ddd9ffab370e050cea608cfb5c2757ff66e6420dbf72ede7b6717ea721c2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_5a8049b5ada48d87b5a7_pair.csv",
+      "rows": 911,
+      "sha256": "40889ae97ee7af640541b1b5789cf7277230a97574b2b7968d7de5a606aed31e",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_5a8049b5ada48d87b5a7_pair.csv",
+      "rows": 460,
+      "sha256": "25802cd49d0880fbfdd7bfaf6840d1c8e08ec88d1c4bb0f579d4add3ab7383f8",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 2485,
+      "sha256": "e0add5205934181d0be21f3c018e497a6eae19c4fd01e680d6fa2b02c128f77c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_5a8049b5ada48d87b5a7_pair.csv",
+      "rows": 270,
+      "sha256": "6c38950126a0bd04d374af36a332f104050f98cddb954cce86e1912b84af7724",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_5a8049b5ada48d87b5a7_pair.csv",
+      "rows": 350,
+      "sha256": "5ca3689fb88346c400fe42d3de4eb3776d415b72c5174643db1adb6d9b28188d",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_5a8049b5ada48d87b5a7_pair.csv",
+      "rows": 293,
+      "sha256": "4d93b3f57fbbd1364d904902a6d225e5e8900c666b5e61e460e22d00618142b9",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 15750,
+      "sha256": "bb88f04b57e78dfc3cd46e6c1a6409d0823b810c4478437f27862d3ead48d949",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 20880,
+      "sha256": "0ec1f046576edb5054dde5aaef352dfccfff955927527ffb37c93f3a5aa1dadc",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 11130,
+      "sha256": "4aa29d88e6693f9b67465915e781f4b09951da5faf48e8c3e44f7e5c98e63f0a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 4970,
+      "sha256": "ffa6b717821be356c9e9876b3b2e0cc9e549d095c0532e75b3d812339c5fee1c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 56,
+      "sha256": "110b1ae02f8ae06eeec6663fe357fa4be3f1f58b65024c9b564b8f3731e816b6",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 7310,
+      "sha256": "75f51209db698f4aa54ed14e10b7044e19797537371ea45a63d2fd20a443295a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 5550,
+      "sha256": "37823c002f65d70d2cb8551fcbbb8eb0ca8a63bb8966150948a74edd7e6de635",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 15252,
+      "sha256": "effc97d64b510d1fcd256041753c9495dd7db17f0cc2c76686c08eb541d827c9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 3080,
+      "sha256": "e24c47d71e258368cc307b28d28b6b55e5018c3683c767398caf89fa83a7d3e7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "5a8049b5ada48d87b5a72dcd1eccc96cfc5865c91c3ddd9521bb98fd6fe79a35",
+      "algorithm_name": "RapidFuzz Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_5a8049b5ada48d87b5a7_retrieval.csv",
+      "rows": 756,
+      "sha256": "4dbcb48099c29a4374b834f9f555267f7e0f08e9cf0cef6e2c0a5c55ec2babac",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_ee8b830371b0e8f499f3_pair.csv",
+      "rows": 911,
+      "sha256": "b37d2a4384a5a7acf0822b0077736ebd59c531bf0900104034ee202e2ef66cfb",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_ee8b830371b0e8f499f3_pair.csv",
+      "rows": 460,
+      "sha256": "9a249fb7e5161336d449082e6bd98f2d92e29d050666c8a280d7ad4e57153897",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 2485,
+      "sha256": "42a77fb2113f932aa0ad0703a35a5b3d040818c28c707abb8ee4cb6f4fcf25ec",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_ee8b830371b0e8f499f3_pair.csv",
+      "rows": 270,
+      "sha256": "3e30043efe97cb90d48f3bd5e30b9fad97e8524418ef27b11855cf946185bdd0",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_ee8b830371b0e8f499f3_pair.csv",
+      "rows": 350,
+      "sha256": "af816524f61ebb4b32d8c1fe9da04d478ef7353c482d70edbfe129a19d3e2738",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_ee8b830371b0e8f499f3_pair.csv",
+      "rows": 293,
+      "sha256": "879a37fcffb4e56f2ee51a68168eb66f1f3392892657dc288432c27a945e23e4",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 15750,
+      "sha256": "a8c2d80567f07ab7a3ea76f845c14e00b07501984195495c504b078115362c9b",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 20880,
+      "sha256": "f5eaa606f4c2ef9e799732772a27e02d944f40902339874da783ca41588361f5",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 11130,
+      "sha256": "375ce9f64f648c5e2482f0861cfa26dcdcc271fe237526ce3e5ea9f57838671a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 4970,
+      "sha256": "cbde6f863610ff838ae81f802b9c759f067f7ce5a3213f1e238f6bb90f1d9a17",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 56,
+      "sha256": "110b1ae02f8ae06eeec6663fe357fa4be3f1f58b65024c9b564b8f3731e816b6",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 7310,
+      "sha256": "ebcfc1ac6726166cb90d5c29deed8368be247e5cc6d017f9d88ec0cbefa4bcbe",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 5550,
+      "sha256": "5a1329f36c1a13da2978810d5ff266aee37f6c0072b8cfe047843fab202ce24a",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 15252,
+      "sha256": "b50393150f7486000410ba32182a180b45ac521b2578a5a893e4e0692fabd4b2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 3080,
+      "sha256": "fc2b72c15a8fd8b14f267ac003e775af6ab7c4ad5a457c6533fe4f125a0b0c5c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "ee8b830371b0e8f499f3c415a200b0ce4fb78f534113d1f77029072bb6d72533",
+      "algorithm_name": "RapidFuzz Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_ee8b830371b0e8f499f3_retrieval.csv",
+      "rows": 756,
+      "sha256": "5673323a55b95a6032d8b11dfa8d47d5e082f11ba39339018798f8d96ff2c6e8",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_c78a3f6c9e9bf68835a1_pair.csv",
+      "rows": 911,
+      "sha256": "acb2d20a7aba8d0c7e9fa95f13f5158d981fcadeb889cb0fc5965d2f20812507",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_c78a3f6c9e9bf68835a1_pair.csv",
+      "rows": 460,
+      "sha256": "f8f076cb7526921c6a26e3ef71689c46199505ddfab02900cb2bf899f1ddb9c7",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 2485,
+      "sha256": "5dce77a6a8899d3458c303310437942dae8514b14ef40bd861e4da54b898e603",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_c78a3f6c9e9bf68835a1_pair.csv",
+      "rows": 270,
+      "sha256": "9d4fd893791daeb4186f00ea30a1358b6b57e707404a105d52fefb746786e51b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_c78a3f6c9e9bf68835a1_pair.csv",
+      "rows": 350,
+      "sha256": "7b4cf84e18713ed4816e7d263163556cae030ddee487113249fa1d137bae09a4",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_c78a3f6c9e9bf68835a1_pair.csv",
+      "rows": 293,
+      "sha256": "7b4ba506a29a5acd68ead60f1efb4a778a811323216282f01ece7691d95a5556",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 15750,
+      "sha256": "1d47ed127068efb80d6a56cc4cc00e112fe2de602d248cda451b599f36a4dc0f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 20880,
+      "sha256": "879be48119a6a0774b6137d6a5069dd8bf5a05cd2c43b012bc3e2ffd5315f537",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 11130,
+      "sha256": "6771b27450481551e3dde68c2565935b914df3a6e3500216c6b5f0c2765f4912",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 4970,
+      "sha256": "66ee38dfe59389e14775114b96b0972cbc930b11ef609ef74a28eb4c7b5aaffa",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 56,
+      "sha256": "07067403ed5a0828aac18b9a0cd7e5e492b40cc52865b4610b1bbd5a690d49f7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 7310,
+      "sha256": "b874d3983fcaadb6e61395de6ac7fee5ecf409c7a5e19817b21d37a598e3881c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 5550,
+      "sha256": "4864f6eaa0c7e910ba4a2d959d30eb3b14b43ee139f95c9f8e4dc5920c9dd400",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 15252,
+      "sha256": "71c2fcc9ea47dccc5638562c50baf43ad5e8d199978de1cdf8143ed4ad2fbf52",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 3080,
+      "sha256": "c1ea37ae636cf1476513cd71aa5e854885f298b068ba5640e7473ad85809047f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "c78a3f6c9e9bf68835a13446dd87458c30cd4ce3e59e17fc77a02ca5c8a27a16",
+      "algorithm_name": "RapidFuzz QRatio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_c78a3f6c9e9bf68835a1_retrieval.csv",
+      "rows": 756,
+      "sha256": "89e0c5ec34ff8bb438b82e98e4aabd4016db22aa4806cf033a1044f3bb400b04",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_58f4ae2df6ffcabe49f8_pair.csv",
+      "rows": 911,
+      "sha256": "1e815fb07a04bb69a5c20270fd52eeadfcba81a929cb9e7d3e7045124060d689",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_58f4ae2df6ffcabe49f8_pair.csv",
+      "rows": 460,
+      "sha256": "f076b7c5509188595d74d50d0df909ed7046de25b2052ace8cf6a4f61bb962ad",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 2485,
+      "sha256": "ccf08d214153126003455280ea8e890876a062b162e6d250cdbfde81ace189fe",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_58f4ae2df6ffcabe49f8_pair.csv",
+      "rows": 270,
+      "sha256": "099f75c7da21dd29b6f03b90ce49a271a02180bc5e06271f02b1b221d3103c36",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_58f4ae2df6ffcabe49f8_pair.csv",
+      "rows": 350,
+      "sha256": "76811f6097066fbc545a80258d0b68c150daf96c0fd427df300ba04ad9c099eb",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_58f4ae2df6ffcabe49f8_pair.csv",
+      "rows": 293,
+      "sha256": "357370d43f88c58fc75a65d571e9733a464787f19e7a1268a9c797c742efe93b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 15750,
+      "sha256": "661c374ccdad4b44273ba173f0452a0ba98de22e8ca575e8fc5c6cf7f69cdd09",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 20880,
+      "sha256": "cde7b01d80d031c91722cf85b80432d6c196d5916c3aa965e3a486ea46dab979",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 11130,
+      "sha256": "d58a34b9cb2b6084088ad468ca0d237b2a0b8dda8206190da2be82bc6d3c1099",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 4970,
+      "sha256": "7c558ee0a9b2afd86de6c9c5760d1742b93ddbf1fc4dc7ff27b1223e49e9aa9e",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 56,
+      "sha256": "c603107122d63610a8733b84677a22f6b869991656d5f6042f76d3988af21125",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 7310,
+      "sha256": "c4d5caa8a15cdc21ff74e562a6b1a6d2c1c1db6e34ad8fe54b092bd09a616df2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 5550,
+      "sha256": "6cc7db2bd850f9ac07161a2d55c83d8f00b4295edbc0cfe1f62807c73eb2705b",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 15252,
+      "sha256": "4d873c389dd7dc29938b05b46cb53996529e93da645dcee86b4f795cba2ed40c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 3080,
+      "sha256": "b903e129219295c345c1e08b717752b1f1eded4c13cb45b26b016e9a7d03d220",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "58f4ae2df6ffcabe49f808b04c48ff69f14eb4ad2eca047102ff01c458bff307",
+      "algorithm_name": "Balanced (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_58f4ae2df6ffcabe49f8_retrieval.csv",
+      "rows": 756,
+      "sha256": "fbe373be3c058a441343f494aeb41cbd4c19823ee7ecdbf3dcc1284516d9c234",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_b544c3772353da9d8bef_pair.csv",
+      "rows": 911,
+      "sha256": "c28e68a226100326137c42ab4d1d7754d856aae2b1cea5135ab5058677974215",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_b544c3772353da9d8bef_pair.csv",
+      "rows": 460,
+      "sha256": "0ca9775556726dfddca31622def98b40edc147eafb92143a2bfd7162dc94d178",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 2485,
+      "sha256": "2f4edf68274de42d4d548963791e3c26045cb7df0f60e00d794cc219059740f7",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_b544c3772353da9d8bef_pair.csv",
+      "rows": 270,
+      "sha256": "4341b647ac943bfcbde837076d5d5b3510114257dded28af313bf07405455d30",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_b544c3772353da9d8bef_pair.csv",
+      "rows": 350,
+      "sha256": "edfc76ee8324a42e1f68bf5f364811c98ef9c731414f588633003b436affbf11",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_b544c3772353da9d8bef_pair.csv",
+      "rows": 293,
+      "sha256": "78eda560f6e7f3af2a7c7fb104d07a98c742c30f549599056fb376d0e25ea199",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 15750,
+      "sha256": "50f5f9793b1983776ed29cc8e7c5a8378647c624c735108de4f412c00edf00ea",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 20880,
+      "sha256": "72b62d179cd7a2c203d24688199e2b681be2676121f4a2d70593b74e8db92031",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 11130,
+      "sha256": "c7c029db6df65ccd1eaa9e50b121dedc75baa7ab8b2eaa2850db5046e3bb2c14",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 4970,
+      "sha256": "769e4e5d8e7826f601cf0c09cde1567b2069ba5e1bfc68b72e07cac834323818",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 56,
+      "sha256": "bc2e115ea153a049bcd82d8a628f465ee27f83e1bd3ba8063ad93ec30a5bfdd0",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 7310,
+      "sha256": "7c535bd888a748e507a5aa10f4d790c10953042a10774ee38d9424b25fa87cc8",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 5550,
+      "sha256": "0a7aa3df70ecaabc2e0c91a8732bc10d7c0791c71f1b5d157cd67baa1b0cf124",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 15252,
+      "sha256": "125d46dcfcd608c7b9554ac31fb4d9653e637ffd8b30a61873c385ef2463ab53",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 3080,
+      "sha256": "b66bf3cda6533f4fc7e6d06df3d74657f5b5302080cc4b5d4aab3f3747fddbe9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "b544c3772353da9d8bef49669652252ca48cfeee9372bb131aadac92ffd98cac",
+      "algorithm_name": "Embedding Only (MiniLM-L6-v2)",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_b544c3772353da9d8bef_retrieval.csv",
+      "rows": 756,
+      "sha256": "cfafd574ce023825ae165960596693ec2cefae052d7c854e976bdec1abf4bcfe",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_aa95072ad237019956c7_pair.csv",
+      "rows": 911,
+      "sha256": "0a20412a4da42b2dbab3a5c5945eef94f3a7096d09cc5ea7a5dd9b29f6b7b921",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_aa95072ad237019956c7_pair.csv",
+      "rows": 460,
+      "sha256": "c421f04a148a0b2b9080b31ec04a91f0923ed839d8fbbf3cdd1dab644e95f19b",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_aa95072ad237019956c7_retrieval.csv",
+      "rows": 2485,
+      "sha256": "d37b2c0d4673eb9ae7c184f98112bb34ea0024eaa963440ee57cfa60df27c941",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_aa95072ad237019956c7_pair.csv",
+      "rows": 270,
+      "sha256": "400ae7ac5818315e993623d94ec77a3c4bf2dd68e1a773e91f846f32a92571eb",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_aa95072ad237019956c7_pair.csv",
+      "rows": 350,
+      "sha256": "bab6b3e19293841b28f1efbd03265a31ab4f415bff5b761166f4b6f524d233ca",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_aa95072ad237019956c7_pair.csv",
+      "rows": 293,
+      "sha256": "ecd9d93995c00f1232df138e21ec28e2af248a14ce6fed3b4fc0b90017672518",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_aa95072ad237019956c7_retrieval.csv",
+      "rows": 15750,
+      "sha256": "0fe7ff50193a629abc17bd78654524cd3a553821fc7002d4a3295fba9938ec37",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_aa95072ad237019956c7_retrieval.csv",
+      "rows": 20880,
+      "sha256": "de0d15c8ff6c66f21cfaebd8fa8aed42b2c6a5238373cbbf9adc9fb01497bc35",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_aa95072ad237019956c7_retrieval.csv",
+      "rows": 11130,
+      "sha256": "17f5ac64b4a1819df05b6c957f8cda7808e448cfa2f8a74aed12741dc5705fc2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_aa95072ad237019956c7_retrieval.csv",
+      "rows": 4970,
+      "sha256": "1f02719955292f6e501ad18d1ddf71480b1c546967a3be318dcd0d82624356fb",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_aa95072ad237019956c7_retrieval.csv",
+      "rows": 56,
+      "sha256": "e2f911733ffb49bcfa4b2b8d98e6298bd3bb45cfaae0853c3a790788ffcbbc22",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_aa95072ad237019956c7_retrieval.csv",
+      "rows": 7310,
+      "sha256": "64258b1367e96d9b7297e72238374b132b6da928013f70c592e6b1a91a9c155c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_aa95072ad237019956c7_retrieval.csv",
+      "rows": 5550,
+      "sha256": "524566cb36fef45f3fcb45c0cf6a5d353a7eaa9e86126c4c6045d2b76ae374da",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_aa95072ad237019956c7_retrieval.csv",
+      "rows": 15252,
+      "sha256": "fb4e0e755c9d4e8f76c95fba28f0564dd41d61a28ca32264de73bc6930530172",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_aa95072ad237019956c7_retrieval.csv",
+      "rows": 3080,
+      "sha256": "07849e89a7b74d63d18a2e527f9f7a1c6443ddb3e0ac60c441843bc40cda8b30",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "aa95072ad237019956c7085e71349ace16d926c534f1bce9c0f06bddcad93c0b",
+      "algorithm_name": "Model2Vec multilingual MiniLM 256",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_aa95072ad237019956c7_retrieval.csv",
+      "rows": 756,
+      "sha256": "ad63a1136b9f91c8a21cf97195b42b66746167207cead44dbc6af9532e0869e2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_8994a9ecd80c964d1968_pair.csv",
+      "rows": 911,
+      "sha256": "7de28aab5837515f17b4a70fb0b8f75e99dde6623584002ab24ac3abb42833eb",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_8994a9ecd80c964d1968_pair.csv",
+      "rows": 460,
+      "sha256": "87cb8676e77e9776660c48d8dfa0ea45ad86edc8a0c08842a89bac4aae297936",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 2485,
+      "sha256": "9130a5acd37edef095f5a8e25cbff73ff3e3c7a1f3995d992e09f7a0d047e513",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_8994a9ecd80c964d1968_pair.csv",
+      "rows": 270,
+      "sha256": "784bee49fdb3a2981a18ed6cd0251df1445f44624c55227e813be035d0520c89",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_8994a9ecd80c964d1968_pair.csv",
+      "rows": 350,
+      "sha256": "f7d7f42ef804fb2a6e4dd7634fac0808971fa8e99ca655bb6bdd278b5216cc18",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_8994a9ecd80c964d1968_pair.csv",
+      "rows": 293,
+      "sha256": "92fa343ab0c87f020d4ee7cea34df7a82bb52396089a691b8aca51bf6995b0c0",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 15750,
+      "sha256": "6cf45d685cccf194b55e8c9ffa75faf824c233e84a93b8a960f026040959cc4d",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 20880,
+      "sha256": "5b69277034697591e4edeac471b3b78a96fdb31984c66fdb1e5705b82536d2b2",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 11130,
+      "sha256": "ae02080077d796039cb5666cf5c09710d6519f660bb3738662d82e212117b9dc",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 4970,
+      "sha256": "2c8613d72fd59f77d71ed46a7baa60f31655e6806ee9bb994bb4bcd978ca4aa6",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 56,
+      "sha256": "76dd7db84b084f68b6dd64ce1b64934809ab8bdf0b0e54176ad890be1dccc6c0",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 7310,
+      "sha256": "7be29899d8ef528c1295e8953db881b2664ad5a813c2fb7f7fcc6c3921126002",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 5550,
+      "sha256": "2b7e81925032cd81e1fea3f9b5d3480a3fde4a27e77bf584f3580baffd4456ab",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 15252,
+      "sha256": "28a767783190c0a2b544c8ae8d6c593eef8af60dbb9456786b9cab38cf9e8c7d",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 3080,
+      "sha256": "1260c03bec4e36237769c21badcb7854bdf1ba5669f13be2d98313adf776579c",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "8994a9ecd80c964d19689ff5f806def29460c51389b485766600a992ac04de67",
+      "algorithm_name": "PyLate BERT tiny MaxSim",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_8994a9ecd80c964d1968_retrieval.csv",
+      "rows": 756,
+      "sha256": "8e2c1d991e3dac2e7a0a99bb1cd5f5c505e988bca0f2f37756c2a483feed856d",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_77551b419735192dd4b4_pair.csv",
+      "rows": 911,
+      "sha256": "1386d412910b29c1fdeea61d83f19448629c6046ed742d4a4f61acc8528eecf1",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_77551b419735192dd4b4_pair.csv",
+      "rows": 460,
+      "sha256": "8021d9d3debb34e465693dd2cef4e148dd1ab0ddf1ebb5806f163acf13afca0a",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_77551b419735192dd4b4_retrieval.csv",
+      "rows": 2485,
+      "sha256": "763ed25f0d197f8f835016ad6c40b04040593a6e624fcc2de275098ede1f2cf9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_77551b419735192dd4b4_pair.csv",
+      "rows": 270,
+      "sha256": "c2e5d9fccf154f14e0b6338a0be51cd3900a3f8911f067c50de463b40f2ef7ac",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_77551b419735192dd4b4_pair.csv",
+      "rows": 350,
+      "sha256": "b89f5ac10da5ac734f70935ba564bc9d4e8e6a7d7f5efc9e443965e79b9ca50f",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_77551b419735192dd4b4_pair.csv",
+      "rows": 293,
+      "sha256": "a363bbc7765e77924088596af69415f40366c6c5d7bbb5cf6ee4c2dea3580387",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_77551b419735192dd4b4_retrieval.csv",
+      "rows": 15750,
+      "sha256": "6164e93e2cfbf1cca640ba05c56ef5ba9ca2c153ee55646a5bcd77863d44e2ad",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_77551b419735192dd4b4_retrieval.csv",
+      "rows": 20880,
+      "sha256": "0d558e5ea1e432c8305a7471663535023f55ca9dd193341bfd10c67a531c0519",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_77551b419735192dd4b4_retrieval.csv",
+      "rows": 11130,
+      "sha256": "bbe672914ce80018ab43c49c7e0b689d1cbe8e88d169e5a522b0762f2a0d65f3",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_77551b419735192dd4b4_retrieval.csv",
+      "rows": 4970,
+      "sha256": "132adbca57f2440ec747cc4ea151d8a4681a1dd287dab4b8fa0e154e2cf91f2e",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_77551b419735192dd4b4_retrieval.csv",
+      "rows": 56,
+      "sha256": "3330a2c977760cfa468c8bdb27c3f2a266827e955bf2017f431ffa921f93a254",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_77551b419735192dd4b4_retrieval.csv",
+      "rows": 7310,
+      "sha256": "a0bbbdbd12eb8d0fc2a82cb2d47c3fc9741daef741194bbc70d0c90fc6d44f19",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_77551b419735192dd4b4_retrieval.csv",
+      "rows": 5550,
+      "sha256": "44d1ecb897353d4d0a0fe823ffa7aac2663043982e7cb39e41f3cf59ad9604ff",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_77551b419735192dd4b4_retrieval.csv",
+      "rows": 15252,
+      "sha256": "e6972f2589e2f88d7777206b123019cfccfbe676e3402e16ca0b984d3ecf0fef",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_77551b419735192dd4b4_retrieval.csv",
+      "rows": 3080,
+      "sha256": "c384b3b0a8039772ba73f1d59ac989abae6028e756ddd1b85f138e3e3de57e55",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "77551b419735192dd4b499299dd828e253d36e94ba1eccc2c8ed0f66868ea917",
+      "algorithm_name": "RapidFuzz Partial Token Set Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_77551b419735192dd4b4_retrieval.csv",
+      "rows": 756,
+      "sha256": "52f30621946ac8b51e833fe76c86729efb675f8ebd104491984b0b72a921564f",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "conplag_pair",
+      "filename": "ffeea1dafd0c_bc149bf7dfedbfd6ba16_pair.csv",
+      "rows": 911,
+      "sha256": "1386d412910b29c1fdeea61d83f19448629c6046ed742d4a4f61acc8528eecf1",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_pair",
+      "filename": "15018fb5624e_bc149bf7dfedbfd6ba16_pair.csv",
+      "rows": 460,
+      "sha256": "8021d9d3debb34e465693dd2cef4e148dd1ab0ddf1ebb5806f163acf13afca0a",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "irplag_retrieval",
+      "filename": "582d08bcc3dc_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 2485,
+      "sha256": "763ed25f0d197f8f835016ad6c40b04040593a6e624fcc2de275098ede1f2cf9",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "assignment",
+        "similarity_score"
+      ],
+      "dataset_name": "ipca_pair",
+      "filename": "b4a004ae5a9b_bc149bf7dfedbfd6ba16_pair.csv",
+      "rows": 270,
+      "sha256": "c2e5d9fccf154f14e0b6338a0be51cd3900a3f8911f067c50de463b40f2ef7ac",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "criminal_minds_pair",
+      "filename": "18e84bcb8e08_bc149bf7dfedbfd6ba16_pair.csv",
+      "rows": 350,
+      "sha256": "b89f5ac10da5ac734f70935ba564bc9d4e8e6a7d7f5efc9e443965e79b9ca50f",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "left_id",
+        "right_id",
+        "label",
+        "similarity_score"
+      ],
+      "dataset_name": "student_code_similarity_pair",
+      "filename": "1e5691891cc6_bc149bf7dfedbfd6ba16_pair.csv",
+      "rows": 293,
+      "sha256": "a363bbc7765e77924088596af69415f40366c6c5d7bbb5cf6ee4c2dea3580387",
+      "task_family": "pair"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "filename": "e6ea776d9cc8_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 15750,
+      "sha256": "6164e93e2cfbf1cca640ba05c56ef5ba9ca2c153ee55646a5bcd77863d44e2ad",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "filename": "c91cae4bf11a_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 20880,
+      "sha256": "0d558e5ea1e432c8305a7471663535023f55ca9dd193341bfd10c67a531c0519",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "filename": "e4db636766db_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 11130,
+      "sha256": "bbe672914ce80018ab43c49c7e0b689d1cbe8e88d169e5a522b0762f2a0d65f3",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "filename": "684cee88d37a_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 4970,
+      "sha256": "132adbca57f2440ec747cc4ea151d8a4681a1dd287dab4b8fa0e154e2cf91f2e",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "filename": "97d6e3769e5d_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 56,
+      "sha256": "3330a2c977760cfa468c8bdb27c3f2a266827e955bf2017f431ffa921f93a254",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a1_judged_retrieval",
+      "filename": "6a3ed3f227ca_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 7310,
+      "sha256": "a0bbbdbd12eb8d0fc2a82cb2d47c3fc9741daef741194bbc70d0c90fc6d44f19",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "filename": "b4e7adcad67d_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 5550,
+      "sha256": "c85939bdfcf8162ad0af3b1344e37375683c0049ef7dee6f0a73f54e7b371707",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "filename": "5a615d810359_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 15252,
+      "sha256": "e6972f2589e2f88d7777206b123019cfccfbe676e3402e16ca0b984d3ecf0fef",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_b2_judged_retrieval",
+      "filename": "18b9df096d4b_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 3080,
+      "sha256": "c384b3b0a8039772ba73f1d59ac989abae6028e756ddd1b85f138e3e3de57e55",
+      "task_family": "retrieval"
+    },
+    {
+      "algorithm_id": "bc149bf7dfedbfd6ba16226f95996c8d6dbee1440aa68e136ae38e50c04dd5bb",
+      "algorithm_name": "RapidFuzz Partial Token Ratio",
+      "columns": [
+        "query_id",
+        "document_id",
+        "query_file_id",
+        "document_file_id",
+        "relevance",
+        "similarity_score"
+      ],
+      "dataset_name": "soco14_java_c2_judged_retrieval",
+      "filename": "95907d96b264_bc149bf7dfedbfd6ba16_retrieval.csv",
+      "rows": 756,
+      "sha256": "52f30621946ac8b51e833fe76c86729efb675f8ebd104491984b0b72a921564f",
+      "task_family": "retrieval"
+    }
+  ]
+}

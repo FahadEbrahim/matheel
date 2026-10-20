@@ -889,3 +889,41 @@ def test_canonical_official_benchmark_preserves_published_rankings(
         _wait_for_text(details, selected["algorithm_name"])
     else:
         assert all(row["coverage"] == 1 and row["rank"] is not None for row in reference)
+
+
+@pytest.mark.parametrize("gradio_server", ["canonical"], indirect=True)
+def test_published_edition_switch_replaces_scope_rankings_and_download(
+    gradio_page, gradio_config, tmp_path
+):
+    root = Path(__file__).resolve().parents[2] / "gradio_app/benchmark_data"
+    edition = root / "plagiarism-071/detectors-cpp/matheel_plagiarism_v1.json"
+    if not edition.is_file():
+        pytest.skip("0.7.1 edition has not been published")
+    expected = json.loads(edition.read_text())
+    original = json.loads((root / "plagiarism-v1/matheel_plagiarism_v1.json").read_text())
+    page = gradio_page
+    _open_tab(page, "Reports")
+    _open_tab(page, "Official Benchmark")
+    summary = _action_output(page, gradio_config, "Refresh Official Results")
+    _select_dropdown(page, gradio_config, "Published Benchmark Edition", "0.7.1 · C++ detector comparison")
+    _wait_for_text(summary, expected["metadata"]["protocol_id"])
+    _wait_for_text(summary, "600 seconds")
+    ranking = _visible_component(
+        page, gradio_config, label="Official Aggregate Ranking", component_type="dataframe"
+    )
+    _wait_for_text(ranking, "JPlag 6.3.0 average")
+    _wait_until(lambda: ranking.locator('table:not([aria-hidden="true"]) tbody tr').count() == 4)
+    artifact = _visible_component(
+        page, gradio_config, label="Official Benchmark Result JSON", component_type="file"
+    )
+    path = _download_file(page, artifact, tmp_path / "cpp-edition.json")
+    downloaded = json.loads(path.read_text())
+    assert downloaded == expected
+    assert {entry["name"] for entry in downloaded["metadata"]["benchmark_protocol"]["datasets"]} == {
+        "ipca_pair", "soco14_cpp_a1_judged_retrieval", "soco14_cpp_a2_judged_retrieval",
+        "soco14_cpp_b1_judged_retrieval", "soco14_cpp_b2_judged_retrieval", "soco14_cpp_c1_judged_retrieval",
+    }
+    _select_dropdown(page, gradio_config, "Published Benchmark Edition", "0.7.0 · original v1 · 1,800 s budget")
+    _wait_for_text(summary, original["metadata"]["protocol_id"])
+    path = _download_file(page, artifact, tmp_path / "original-edition.json")
+    assert json.loads(path.read_text()) == original

@@ -2,7 +2,7 @@
 
 Matheel can evaluate **JPlag 6.3.0** and **Dolos 2.10.0** through its custom algorithm interface. Both run locally, once per corpus, using explicit tool paths. Importing Matheel does not install tools, start services, or upload source code. These adapters add no Python dependencies.
 
-These are optional detector integrations. The published [Matheel-Plagiarism-v1 results](plagiarism_results.md) remain the original 29 configurations; neither detector has been evaluated on that benchmark here.
+These are optional detector integrations. The original [Matheel-Plagiarism-v1 results](plagiarism_results.md) retain their 29 configurations. Separate [0.7.1 supported-language comparisons](plagiarism_release_071.md) evaluate the detectors and existing lexical references on identical bounded scopes.
 
 ## Scope and score meaning
 
@@ -123,7 +123,7 @@ Real local verification used JPlag 6.3.0 with Temurin 25.0.4.1 and Dolos 2.10.0 
 To repeat the optional integration tests, set `MATHEEL_JPLAG_JAR`, `MATHEEL_JAVA`, `MATHEEL_DOLOS_PREFIX` and `MATHEEL_NODE`, then run:
 
 ```bash
-pytest tests/test_external_detectors_integration.py -m integration
+python -m pytest -o addopts='' -m integration tests/test_external_detectors_integration.py
 ```
 
 Ordinary unit tests use offline fixtures. Integration tests skip when local tool paths are absent and never install or download tools.

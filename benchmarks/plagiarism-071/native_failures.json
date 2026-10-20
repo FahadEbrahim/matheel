@@ -1,0 +1,134 @@
+{
+  "interpretation": "Recorded adapter reasons only; no inferred parser diagnosis, corpus filtering, or post-hoc N/A exclusions. Every failed view retains null scores and no rank.",
+  "rows": [
+    {
+      "algorithm_id": "2114d1a8e69454fd5fbb05b1f5d7e52090a1ca8307b0023282351f528cea67ad",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "criminal_minds_pair",
+      "edition": "detectors-java",
+      "error": "DetectorError: Local detector exited with status 1; no scores were accepted.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "e2876d3bed556c9be8a822b54dfbc4d4bdd7b789708cfc864cc4d9e7d3826e15",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "edition": "detectors-java",
+      "error": "DetectorError: Local detector exited with status 1; no scores were accepted.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "2114d1a8e69454fd5fbb05b1f5d7e52090a1ca8307b0023282351f528cea67ad",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "soco14_java_a2_judged_retrieval",
+      "edition": "detectors-java",
+      "error": "DetectorError: JPlag rejected submissions or returned an unexpected report version.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "2114d1a8e69454fd5fbb05b1f5d7e52090a1ca8307b0023282351f528cea67ad",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "soco14_java_b1_judged_retrieval",
+      "edition": "detectors-java",
+      "error": "DetectorError: JPlag rejected submissions or returned an unexpected report version.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "95351fe24817145701f6623c950d29b20489e61045e4d76bf4f7dc53ce9546ed",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "ipca_pair",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: JPlag rejected submissions or returned an unexpected report version.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "7b3a525948a7e9eaa7fe1232f3a8ccdec65fd594f02d73a78781abc8d0965eb0",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: Local detector exited with status 1; no scores were accepted.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "95351fe24817145701f6623c950d29b20489e61045e4d76bf4f7dc53ce9546ed",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "soco14_cpp_a1_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: JPlag rejected submissions or returned an unexpected report version.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "7b3a525948a7e9eaa7fe1232f3a8ccdec65fd594f02d73a78781abc8d0965eb0",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: Local detector exited with status 1; no scores were accepted.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "95351fe24817145701f6623c950d29b20489e61045e4d76bf4f7dc53ce9546ed",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "soco14_cpp_a2_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: JPlag rejected submissions or returned an unexpected report version.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "7b3a525948a7e9eaa7fe1232f3a8ccdec65fd594f02d73a78781abc8d0965eb0",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: Local detector exited with status 1; no scores were accepted.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "95351fe24817145701f6623c950d29b20489e61045e4d76bf4f7dc53ce9546ed",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "soco14_cpp_b1_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: JPlag rejected submissions or returned an unexpected report version.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "7b3a525948a7e9eaa7fe1232f3a8ccdec65fd594f02d73a78781abc8d0965eb0",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: Local detector exited with status 1; no scores were accepted.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "95351fe24817145701f6623c950d29b20489e61045e4d76bf4f7dc53ce9546ed",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "soco14_cpp_b2_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: JPlag rejected submissions or returned an unexpected report version.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "7b3a525948a7e9eaa7fe1232f3a8ccdec65fd594f02d73a78781abc8d0965eb0",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "soco14_cpp_c1_judged_retrieval",
+      "edition": "detectors-cpp",
+      "error": "DetectorError: Local detector exited with status 1; no scores were accepted.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "e559f55c3745d8d7df9543b4c03dcfa4d2a33b2a73284ac5afdb4468bc34b155",
+      "algorithm_name": "Dolos 2.10.0",
+      "dataset_name": "student_code_similarity_pair",
+      "edition": "detectors-python",
+      "error": "DetectorError: Empty or non-text source files are unsupported; no scores were accepted.",
+      "status": "failed"
+    },
+    {
+      "algorithm_id": "e627055b72e8b96f0f1ab5375704cd2861244e7e23d9f758fada4d1dfc0ab096",
+      "algorithm_name": "JPlag 6.3.0 average",
+      "dataset_name": "student_code_similarity_pair",
+      "edition": "detectors-python",
+      "error": "DetectorError: Empty or non-text source files are unsupported; no scores were accepted.",
+      "status": "failed"
+    }
+  ],
+  "schema_version": 1
+}

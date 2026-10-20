@@ -1,5 +1,7 @@
 # Plagiarism benchmark results
 
+This page preserves the original 0.7.0 publication. The separate [0.7.1 benchmark editions](plagiarism_release_071.md) rerun the released scorer under an explicit shorter budget and add common-scope language-specific detector comparisons.
+
 `Matheel-Plagiarism-v1` compares **29 method configurations** on a frozen
 plagiarism benchmark: **2,284 labeled pairs** across five datasets and **1,180
 retrieval queries** across 11 task views. **24 configurations completed every
