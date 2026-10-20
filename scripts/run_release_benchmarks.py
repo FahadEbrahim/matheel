@@ -17,14 +17,16 @@ import zipfile
 
 import matheel
 from matheel.benchmark_analysis import build_benchmark_analysis
-from matheel.benchmark_protocol import freeze_benchmark_protocol, public_benchmark_protocol
+from matheel.benchmark_protocol import (freeze_benchmark_protocol, method_configuration,
+                                        method_configuration_id, public_benchmark_protocol,
+                                        _validate_public_metadata)
 
 if __package__:
     from scripts.publish_plagiarism_benchmark import publish_benchmark_results
-    from scripts.run_plagiarism_benchmark import atomic_json, run
+    from scripts.run_plagiarism_benchmark import atomic_json, normalized_methods, run
 else:
     from publish_plagiarism_benchmark import publish_benchmark_results
-    from run_plagiarism_benchmark import atomic_json, run
+    from run_plagiarism_benchmark import atomic_json, normalized_methods, run
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,6 +55,13 @@ def verify_release_wheel(path, source):
         raise ValueError("Release wheel Python modules differ from the scoring checkout.")
     return {"filename": wheel.name, "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
             "all_python_modules_match_scoring_checkout": True}
+
+
+def runner_source():
+    scripts = ("run_release_benchmarks.py", "run_plagiarism_benchmark.py", "publish_plagiarism_benchmark.py")
+    return {"git_commit": subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip(),
+            "files": {f"scripts/{name}": hashlib.sha256((ROOT / "scripts" / name).read_bytes()).hexdigest()
+                      for name in scripts}}
 
 
 def edition_definitions(prepared_manifest, *, jar_path, java_path, dolos_path, node_path):
@@ -133,7 +142,16 @@ def main():
         raise ValueError("Prepared inputs, labels and selection must exactly match the published v1 protocol.")
     editions = edition_definitions(original, jar_path=args.jar_path, java_path=args.java_path,
                                    dolos_path=args.dolos_path, node_path=args.node_path)
+    declarations = {}
+    for item in editions:
+        protocol = freeze_benchmark_protocol(item["manifest"])
+        methods = normalized_methods(protocol, item["methods"]["algorithms"])
+        declarations[item["id"]] = {
+            "protocol_id": protocol["protocol_id"],
+            "method_configurations": {method_configuration_id(method): method_configuration(method) for method in methods},
+        }
     plan = {"schema_version": 1, "edition": "0.7.1", "source": source, "release_wheel": wheel,
+            "runner_source": runner_source(),
             "prior_v1_unchanged": True, "dataset_labels_changed": False,
             "original_protocol_id": original_protocol["protocol_id"],
             "original_method_definitions_sha256": hashlib.sha256(
@@ -149,7 +167,8 @@ def main():
                           "dataset_views": [entry["name"] for entry in item["manifest"]["datasets"]],
                           "methods": [method["name"] for method in item["methods"]["algorithms"]],
                           "workers": item["workers"], "execution_policy": item["manifest"]["execution_policy"],
-                          "excluded_views": item["excluded_views"]} for item in editions]}
+                          "excluded_views": item["excluded_views"], **declarations[item["id"]]} for item in editions]}
+    _validate_public_metadata(plan)
     atomic_json(output / "plan.json", plan)
     destination.mkdir(parents=True, exist_ok=True)
     with Path(args.cpu_lock).open("w") as lock:
