@@ -457,6 +457,30 @@ def test_retrieval_ranking_metrics_rejects_duplicate_result_rows():
         retrieval_ranking_metrics(scored_results, k=2)
 
 
+def test_retrieval_ranking_metrics_groups_string_equivalent_ids_and_missing_queries():
+    scored_results = pd.DataFrame([
+        {"query_id": 1, "document_id": "d1", "similarity_score": 0.8},
+        {"query_id": "1", "document_id": "d2", "similarity_score": 0.9},
+        {"query_id": "unjudged", "document_id": "d3", "similarity_score": 1.0},
+    ])
+    qrels = pd.DataFrame([
+        {"query_id": "1", "document_id": "d1", "relevance": 1},
+        {"query_id": 1, "document_id": "d2", "relevance": 0},
+        {"query_id": "missing", "document_id": "d4", "relevance": 1},
+        {"query_id": "negative_only", "document_id": "d5", "relevance": 0},
+    ])
+
+    metrics = retrieval_ranking_metrics(scored_results, qrels=qrels, k=2)
+
+    assert metrics["query_count"] == 4
+    assert metrics["result_count"] == 3
+    assert metrics["relevant_count"] == 2
+    assert metrics["mean_average_precision"] == pytest.approx(0.125)
+    assert metrics["mean_reciprocal_rank"] == pytest.approx(0.125)
+    assert metrics["precision_at_k"] == pytest.approx(0.125)
+    assert metrics["recall_at_k"] == pytest.approx(0.25)
+
+
 def test_retrieval_ranking_metrics_requires_score_column():
     with pytest.raises(ValueError, match="similarity_score"):
         retrieval_ranking_metrics([{"query_id": "q1", "document_id": "d1", "relevance": 1}])

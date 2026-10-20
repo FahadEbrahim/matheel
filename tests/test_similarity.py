@@ -957,6 +957,79 @@ def test_rank_code_pairs_batches_multivector_scoring(monkeypatch):
     ]
 
 
+@pytest.mark.parametrize("lexical_tokenizer", ("raw", "parser"))
+@pytest.mark.parametrize(
+    "feature_weights",
+    (
+        {"winnowing": 1.0},
+        {"gst": 1.0},
+        {"winnowing": 0.25, "gst": 0.5, "levenshtein": 0.25},
+    ),
+)
+def test_rank_code_pairs_prepares_lexical_features_once_per_document(
+    monkeypatch, lexical_tokenizer, feature_weights
+):
+    codes = [
+        "", "", "return a + b", "return x + y", "return b + a", "return a + b"
+    ]
+    options = {
+        "vector_backend": "static_hash",
+        "lexical_tokenizer": lexical_tokenizer,
+        "code_language": "python",
+        "winnowing_kgram": 2,
+        "winnowing_window": 2,
+        "gst_min_match_length": 2,
+    }
+    expected = sorted(
+        (
+            similarity.combined_similarity_from_embeddings(
+                codes[i], codes[j], None, None, feature_weights, **options
+            ),
+            i,
+            j,
+        )
+        for i in range(len(codes))
+        for j in range(i + 1, len(codes))
+    )[::-1]
+    original_tokenize = similarity.tokenize_for_lexical_matching
+    original_fingerprint = similarity._winnowing_fingerprints
+    tokenize_calls = []
+    fingerprint_calls = []
+
+    def count_tokenize(code, **kwargs):
+        tokenize_calls.append(code)
+        return original_tokenize(code, **kwargs)
+
+    def count_fingerprint(tokens, **kwargs):
+        fingerprint_calls.append(tokens)
+        return original_fingerprint(tokens, **kwargs)
+
+    monkeypatch.setattr(similarity, "tokenize_for_lexical_matching", count_tokenize)
+    monkeypatch.setattr(similarity, "_winnowing_fingerprints", count_fingerprint)
+
+    actual = similarity.rank_code_pairs(
+        codes, [None] * len(codes), feature_weights, **options
+    )
+
+    assert actual == expected
+    assert tokenize_calls == codes
+    assert len(fingerprint_calls) == (len(codes) if "winnowing" in feature_weights else 0)
+
+
+@pytest.mark.parametrize("codes", ([], ["return a"], ["return a", "return b"]))
+def test_rank_code_pairs_skips_unused_lexical_preparation(monkeypatch, codes):
+    monkeypatch.setattr(
+        similarity,
+        "tokenize_for_lexical_matching",
+        lambda *args, **kwargs: pytest.fail("unused lexical tokens should not be prepared"),
+    )
+    weights = {"winnowing": 1.0} if len(codes) < 2 else {"levenshtein": 1.0}
+
+    ranked = similarity.rank_code_pairs(codes, [None] * len(codes), weights)
+
+    assert len(ranked) == len(codes) * (len(codes) - 1) // 2
+
+
 def test_calculate_similarity_normalizes_custom_feature_weights(monkeypatch):
     monkeypatch.setattr(
         similarity,

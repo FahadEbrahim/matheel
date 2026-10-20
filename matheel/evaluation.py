@@ -531,7 +531,14 @@ def retrieval_ranking_metrics(
         document_column=document_column,
         relevance_column=relevance_column,
     )
-    query_ids = sorted(set(frame[query_column].astype(str).tolist()) | {query for query, _ in qrels_lookup})
+    results_by_query = dict(iter(frame.groupby(frame[query_column].astype(str), sort=False)))
+    relevant_by_query = {}
+    for (query_id, document_id), relevance in qrels_lookup.items():
+        relevant_documents = relevant_by_query.setdefault(query_id, {})
+        if relevance > 0:
+            relevant_documents[document_id] = relevance
+    query_ids = sorted(results_by_query.keys() | relevant_by_query.keys())
+    empty_results = frame.iloc[:0]
 
     average_precisions = []
     reciprocal_ranks = []
@@ -541,14 +548,10 @@ def retrieval_ranking_metrics(
     relevant_count = 0
 
     for query_id in query_ids:
-        relevant_by_document = {
-            document_id: relevance
-            for (judged_query_id, document_id), relevance in qrels_lookup.items()
-            if judged_query_id == query_id and relevance > 0
-        }
+        relevant_by_document = relevant_by_query.get(query_id, {})
         relevant_count += len(relevant_by_document)
         ranked = _rank_query_results(
-            frame[frame[query_column].astype(str) == query_id],
+            results_by_query.get(query_id, empty_results),
             document_column=document_column,
             score_column=score_column,
         )

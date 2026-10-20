@@ -300,6 +300,84 @@ def test_dataset_upstream_events_clear_stale_dependent_state():
         )
 
 
+def test_dataset_validation_and_upload_resets_share_one_serial_listener():
+    config = gradio_app.demo.get_config_file()
+    targets = {
+        (gradio_app.dataset_file._id, "change"),
+        (gradio_app.dataset_task._id, "change"),
+        (gradio_app.dataset_validate._id, "click"),
+    }
+    dependencies = [
+        dependency
+        for dependency in config["dependencies"]
+        if targets.intersection(map(tuple, dependency["targets"]))
+        and gradio_app.dataset_validation_summary._id in dependency["outputs"]
+    ]
+
+    assert len(dependencies) == 1
+    assert set(map(tuple, dependencies[0]["targets"])) == targets
+    assert dependencies[0]["trigger_mode"] == "always_last"
+    assert gradio_app.demo.fns[dependencies[0]["id"]].concurrency_limit == 1
+
+
+def test_dataset_upload_event_dispatch_keeps_validation_and_reset_outputs_aligned(monkeypatch):
+    monkeypatch.setattr(
+        gradio_app,
+        "validate_dataset_journey_gradio",
+        lambda *args, **kwargs: (
+            "validated summary",
+            "issues",
+            "report",
+            "archive",
+            "identity",
+            "enabled",
+            "status",
+        ),
+    )
+    validated = gradio_app.update_dataset_upload_journey(
+        "dataset.zip",
+        "Pair Classification",
+        gradio_app.gr.EventData(gradio_app.dataset_validate, None),
+        progress=None,
+    )
+    assert validated[gradio_app.dataset_validation_summary] == "validated summary"
+    assert validated[gradio_app.dataset_validation_state] == "identity"
+    assert validated[gradio_app.dataset_run] == "enabled"
+    assert len(validated) == 7
+
+    for target in (gradio_app.dataset_file, gradio_app.dataset_task):
+        reset = gradio_app.update_dataset_upload_journey(
+            None,
+            "Pair Classification",
+            gradio_app.gr.EventData(target, None),
+            progress=None,
+        )
+        assert "No dataset checked" in reset[gradio_app.dataset_validation_summary]
+        assert reset[gradio_app.dataset_validation_state] is None
+        assert reset[gradio_app.dataset_run]["interactive"] is False
+        assert reset[gradio_app.dataset_scored_state] is None
+        assert reset[gradio_app.dataset_summary]["visible"] is False
+
+
+def test_dataset_validation_input_error_returns_data_and_clears_stale_results(monkeypatch):
+    def fail_validation(*args, **kwargs):
+        raise gradio_app.gr.Error("Invalid <dataset>")
+
+    monkeypatch.setattr(gradio_app, "validate_dataset_journey_gradio", fail_validation)
+    outputs = gradio_app.update_dataset_upload_journey(
+        "dataset.zip",
+        "Pair Classification",
+        gradio_app.gr.EventData(gradio_app.dataset_validate, None),
+        progress=None,
+    )
+    assert "Invalid &lt;dataset&gt;" in outputs[gradio_app.dataset_validation_summary]
+    assert "Invalid &lt;dataset&gt;" in outputs[gradio_app.dataset_journey_status]
+    assert outputs[gradio_app.dataset_validation_state] is None
+    assert outputs[gradio_app.dataset_run]["interactive"] is False
+    assert outputs[gradio_app.dataset_scored_state] is None
+    assert outputs[gradio_app.dataset_summary]["visible"] is False
+
+
 def test_dataset_next_actions_share_inputs_and_select_destination_tabs():
     explain_outputs = gradio_app.handoff_dataset_to_explain(
         "dataset.zip",

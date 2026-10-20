@@ -577,6 +577,35 @@ def test_basic_preprocess_preserves_slashes_inside_string_literals():
     assert processed == 'String url = "https://example.com/path"; int value = 1;'
 
 
+@pytest.mark.parametrize("language", (None, "java", "javascript", "c", "php"))
+def test_block_comment_opener_inside_line_comment_preserves_following_code(language):
+    code = 'int value = 1; // /* unfinished comment\nint next = 2;'
+
+    assert preprocess_code(code, mode="basic", language=language) == (
+        "int value = 1; int next = 2;"
+    )
+
+
+@pytest.mark.parametrize(
+    "mode,expected",
+    (("basic", "int value = 1;"), ("advanced", "int id1 = <NUM> ;")),
+)
+def test_quote_inside_line_comment_does_not_hide_following_block_comment(mode, expected):
+    code = '// "unclosed quote\n/* discard this text */\nint value = 1;'
+
+    processed = preprocess_code(code, mode=mode, language="java")
+
+    assert processed == expected
+
+
+def test_lua_block_comment_opener_inside_line_comment_preserves_following_code():
+    code = "local value = 1 -- --[[ unfinished comment\nlocal next = 2"
+
+    assert preprocess_code(code, mode="basic", language="lua") == (
+        "local value = 1 local next = 2"
+    )
+
+
 def test_advanced_preprocess_normalizes_string_with_slashes_before_stripping_comment():
     code = """
     String url = "https://example.com/path";

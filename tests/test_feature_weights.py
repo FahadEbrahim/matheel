@@ -14,6 +14,31 @@ def test_normalize_feature_weights_scales_to_one():
     assert normalized == {"semantic": 0.75, "code_metric": 0.25}
 
 
+def test_normalize_feature_weights_preserves_ratios_when_sum_overflows():
+    normalized = normalize_feature_weights(
+        {"semantic": 1e308, "levenshtein": 1e308, "code_metric": 5e307, "gst": 0.0}
+    )
+
+    assert normalized == pytest.approx(
+        {"semantic": 0.4, "levenshtein": 0.4, "code_metric": 0.2, "gst": 0.0}
+    )
+    assert sum(normalized.values()) == pytest.approx(1.0)
+
+
+def test_similarity_with_large_finite_weights_matches_equivalent_small_weights():
+    from matheel.similarity import calculate_similarity
+
+    large = calculate_similarity(
+        "a = 1", "a = 1", feature_weights={"levenshtein": 1e308, "jaro_winkler": 1e308}
+    )
+    small = calculate_similarity(
+        "a = 1", "a = 1", feature_weights={"levenshtein": 1.0, "jaro_winkler": 1.0}
+    )
+
+    assert large == pytest.approx(small)
+    assert large == pytest.approx(1.0)
+
+
 def test_resolve_feature_weights_accepts_string_overrides():
     resolved = resolve_feature_weights(feature_weights="semantic=2,code_metric=2")
 

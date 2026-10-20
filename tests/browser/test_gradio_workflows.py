@@ -3,6 +3,7 @@ import io
 import re
 import time
 import zipfile
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -126,6 +127,85 @@ def _open_tab(page, name):
     tab = page.get_by_role("tab", name=name, exact=True)
     tab.click()
     _wait_until(lambda: tab.get_attribute("aria-selected") == "true")
+
+
+@contextmanager
+def _hold_dataset_events(page, config, *, trigger):
+    components = {component["id"]: component for component in config["components"]}
+    validate_id = next(
+        component_id
+        for component_id, component in components.items()
+        if component.get("type") == "button"
+        and component["props"].get("value") == "Validate Dataset"
+    )
+    dependency = next(
+        dependency
+        for dependency in config["dependencies"]
+        if [validate_id, "click"] in dependency["targets"]
+    )
+    trigger_ids = {
+        target_id for target_id, event in dependency["targets"] if event == trigger
+    }
+    held = []
+
+    def hold(route):
+        data = route.request.post_data_json
+        if data.get("fn_index") == dependency["id"] and data.get("trigger_id") in trigger_ids:
+            held.append(route)
+        else:
+            route.continue_()
+
+    pattern = "**/gradio_api/queue/join*"
+    page.route(pattern, hold)
+
+    def wait_for_pending_validation():
+        page.wait_for_function(
+            """({dependencyId, validateId}) => {
+                const dependency = window.gradio_config.dependencies.find(
+                    dependency => dependency.id === dependencyId
+                );
+                return dependency.pending_request
+                    && dependency.final_event?.trigger_id === validateId;
+            }""",
+            arg={"dependencyId": dependency["id"], "validateId": validate_id},
+        )
+
+    try:
+        yield held, wait_for_pending_validation
+    finally:
+        page.unroute(pattern, hold)
+        for route in held:
+            route.continue_()
+
+
+@pytest.mark.parametrize("hold_trigger", ["change", "click"])
+def test_dataset_validation_preserves_latest_intent_while_an_event_is_pending(
+    gradio_page, gradio_config, invalid_dataset_zip, normalized_dataset_zip, hold_trigger
+):
+    page = gradio_page
+    _open_tab(page, "Datasets")
+    validate = page.get_by_role("button", name="Validate Dataset", exact=True)
+    if hold_trigger == "click":
+        _upload(page, gradio_config, "Normalized Dataset ZIP", invalid_dataset_zip)
+    with _hold_dataset_events(page, gradio_config, trigger=hold_trigger) as (held, wait_pending):
+        if hold_trigger == "click":
+            validate.click()
+        else:
+            _upload(page, gradio_config, "Normalized Dataset ZIP", normalized_dataset_zip)
+        # Pump Playwright's event loop while observing the intercepted request.
+        _wait_until(lambda: page.evaluate("true") and bool(held))
+        if hold_trigger == "click":
+            _upload(page, gradio_config, "Normalized Dataset ZIP", normalized_dataset_zip)
+            task = _visible_component(page, gradio_config, label="Task", component_type="radio")
+            task.get_by_role("radio", name="Retrieval", exact=True).check()
+            task.get_by_role("radio", name="Pair Classification", exact=True).check()
+        validate.click()
+        wait_pending()
+
+    _wait_for_text(_action_output(page, gradio_config, "Validate Dataset"), "browser_pair_dataset")
+    _wait_until(
+        lambda: page.get_by_role("button", name="Run Dataset Evaluation", exact=True).is_enabled()
+    )
 
 
 def test_pairwise_lexical_browser_workflow(gradio_page, gradio_config):

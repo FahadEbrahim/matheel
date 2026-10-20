@@ -392,10 +392,13 @@ def _line_comment_markers(language=None):
     return tuple(markers)
 
 
-def _strip_block_comments_with_markers(text, markers):
+def _strip_block_comments_with_markers(text, markers, language=None):
     value = normalize_newlines(text)
     if not markers:
         return value
+
+    line_markers = _line_comment_markers(language)
+    normalized_language = normalize_preprocess_language(language)
 
     cleaned = []
     index = 0
@@ -444,6 +447,26 @@ def _strip_block_comments_with_markers(text, markers):
         if matched:
             continue
 
+        # Quotes and block delimiters inside line comments are plain comment
+        # text. Preserve the line for strip_line_comments(), without allowing
+        # it to change the scanner state for the following source lines.
+        if any(value.startswith(marker, index) for marker in line_markers):
+            line_start = value.rfind("\n", 0, index) + 1
+            is_hash_directive = (
+                char == "#"
+                and not normalized_language
+                and not value[line_start:index].strip()
+                and value.startswith(_HASH_DIRECTIVES, index)
+            )
+            if not is_hash_directive:
+                line_end = value.find("\n", index)
+                if line_end < 0:
+                    cleaned.append(value[index:])
+                    break
+                cleaned.append(value[index:line_end])
+                index = line_end
+                continue
+
         cleaned.append(char)
         index += 1
 
@@ -451,7 +474,9 @@ def _strip_block_comments_with_markers(text, markers):
 
 
 def strip_block_comments(text, language=None):
-    return _strip_block_comments_with_markers(text, _block_comment_markers(language))
+    return _strip_block_comments_with_markers(
+        text, _block_comment_markers(language), language=language
+    )
 
 
 def _strip_line_comment_with_markers(line, markers, language=None, triple_quote=None):
