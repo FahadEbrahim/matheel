@@ -324,7 +324,8 @@ def analyze_scored_results(
                                **_metrics(subset, task, threshold, k, score_column)})
     queries = [{"query_id": group, **metric} for group, metric in zip(grouped, per_query)]
     return {
-        "schema_version": 1, "task_family": task, "threshold": float(threshold), "k": k,
+        "schema_version": 1, "task_family": task, "score_column": score_column,
+        "threshold": float(threshold), "k": k,
         "rows": len(frame), "confidence": confidence, "rounds": rounds, "seed": seed,
         "grouping": grouping, "group_count": len(indices), "paired": reference is not None,
         "interpretation": "Conditional grouped percentile bootstrap on supplied scored rows; no threshold fitting, candidate recovery, or official rank changes.",
@@ -346,6 +347,7 @@ def write_result_analysis(report, output_dir, basename="result_analysis"):
                       "similarity_score", "rank", "outcome", "threshold_distance", "reference_score",
                       "reference_rank", "score_delta", "decision_disagreement", "language", "assignment",
                       "length_bucket", "query_file_id", "document_file_id", "score_row_index", "source_characters"}
+    public_columns.add(report.get("score_column", "similarity_score"))
     safe_report["errors"] = [{key: value for key, value in row.items() if key in public_columns}
                              for row in report["errors"]]
     artifacts["json"].write_text(json.dumps(safe_report, indent=2, allow_nan=False), encoding="utf-8")

@@ -1,6 +1,8 @@
 import copy
 import json
 from pathlib import Path
+import sys
+from types import ModuleType
 
 import pandas as pd
 import pytest
@@ -124,10 +126,33 @@ def test_fully_excluded_semantic_method_does_not_download_or_initialize_models(t
     method = {"name": "Unavailable semantic method", "feature_weights": {"semantic": 1.0},
               "vector_backend": "sentence_transformers", "model_name": "offline/pinned", "model_revision": "a" * 40,
               "task_eligibility": {"pair": {"status": "not_applicable", "reason": "Unavailable for this task"}}}
-    monkeypatch.setattr("huggingface_hub.snapshot_download", lambda *args, **kwargs: pytest.fail("Excluded model must not download"))
+    hub = ModuleType("huggingface_hub")
+    hub.snapshot_download = lambda *args, **kwargs: pytest.fail("Excluded model must not download")
+    monkeypatch.setitem(sys.modules, "huggingface_hub", hub)
+    monkeypatch.setattr("matheel.evaluation._similarity.load_backend_model",
+                        lambda *args, **kwargs: pytest.fail("Excluded model must not initialize"))
     report, _ = run_benchmark_protocol(freeze_benchmark_protocol(manifest), [method])
     assert report["per_dataset"]["status"].eq("not_applicable").all()
     assert validate_benchmark_result(report)["valid"]
+
+
+@pytest.mark.parametrize("missing", [None, float("nan"), pd.NA], ids=["null", "nan", "nullable"])
+def test_missing_reasons_survive_mixed_applicability_import_without_hiding_real_reasons(tmp_path, missing):
+    manifest = _manifest(tmp_path)
+    manifest["algorithms"].append({"name": "complete", "feature_weights": {"lcs": 1}})
+    report, _ = run_benchmark_protocol(freeze_benchmark_protocol(manifest), manifest["algorithms"])
+    payload = leaderboard_payload(report)
+    for table in ("per_dataset", "aggregate"):
+        for row in payload[table]:
+            if row["status"] != "not_applicable":
+                row["not_applicable_reason"] = missing
+    assert validate_benchmark_result(payload)["valid"]
+    for table, message in (("per_dataset", "Predeclared exclusions"), ("aggregate", "aggregate status")):
+        tampered = copy.deepcopy(payload)
+        excluded = next(row for row in tampered[table] if row["status"] == "not_applicable")
+        excluded["not_applicable_reason"] = missing
+        with pytest.raises(ValueError, match=message):
+            validate_benchmark_result(tampered)
 
 
 @pytest.mark.parametrize("options", [{}, {"candidate_count": 1}])
