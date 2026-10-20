@@ -34,66 +34,66 @@ dependencies = [
     "rapidfuzz>=3,<4",
     "networkx>=3,<4",
     "tqdm>=4.66.3,<5",
-    # 1.x currently has limited wheel coverage across the supported Python matrix.
+    # Keep bundled grammars and offline behavior until the parser 1.x migration.
     "tree-sitter-language-pack>=0.7,<0.8",
     "func-timeout>=4,<5"
 ]
 
 [project.optional-dependencies]
 chunking = [
-    "chonkie>=1.5,<1.7"
+    # Newer code extras require the deferred parser 1.x migration.
+    "chonkie>=1.6.5,<1.6.6"
 ]
 chunking_code = [
-    "chonkie[code]>=1.5,<1.7"
+    "chonkie[code]>=1.6.5,<1.6.6"
 ]
 metrics = [
     "apted>=1.0,<2",
     "bert-score>=0.3.13,<0.4"
 ]
 sentence_transformers = [
-    "sentence-transformers>=6.0.1,<7",
+    "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3"
 ]
 model2vec = [
-    "model2vec>=0.7,<0.9"
+    "model2vec>=0.10,<0.11"
 ]
 semantic = [
-    "sentence-transformers>=6.0.1,<7",
+    "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3",
-    "model2vec>=0.7,<0.9"
+    "model2vec>=0.10,<0.11"
 ]
 gradio = [
-    "sentence-transformers>=6.0.1,<7",
+    "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3",
     # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
     "gradio>=5,<6",
     "gradio-huggingfacehub-search>=0.0.8,<0.1"
 ]
 visualization = [
-    # 0.5.11 supports the NumPy 2 / Python 3.13 / current scikit-learn stack.
-    "umap-learn>=0.5.11,<0.6"
+    "umap-learn>=0.5.12,<0.6"
 ]
 browser = [
     "playwright>=1.61,<2",
-    "pytest-playwright>=0.8,<0.9"
+    "pytest-playwright>=0.10,<0.11"
 ]
 all = [
-    "chonkie[code]>=1.5,<1.7",
+    "chonkie[code]>=1.6.5,<1.6.6",
     "apted>=1.0,<2",
     "bert-score>=0.3.13,<0.4",
-    "sentence-transformers>=6.0.1,<7",
+    "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3",
-    "model2vec>=0.7,<0.9",
-    "umap-learn>=0.5.11,<0.6",
+    "model2vec>=0.10,<0.11",
+    "umap-learn>=0.5.12,<0.6",
     # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
     "gradio>=5,<6",
     "gradio-huggingfacehub-search>=0.0.8,<0.1"
 ]
 dev = [
     "pytest>=8,<10",
-    "ruff>=0.15,<0.16",
+    "ruff>=0.15.22,<0.16",
     "build>=1,<2",
-    "twine>=6,<7"
+    "twine>=7,<8"
 ]
 
 [project.urls]
