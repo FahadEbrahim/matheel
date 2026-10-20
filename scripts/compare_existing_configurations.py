@@ -19,12 +19,12 @@ from time import perf_counter
 if __package__:
     from scripts.validate_retrieval_presets import (
         ROOT, environment_snapshot, package_inventory, runner_inventory, set_source_root,
-        sha256, verify_source, wheel_proof, write_json,
+        sha256, verify_source, wheel_proof, write_artifact_manifest, write_json,
     )
 else:
     from validate_retrieval_presets import (
         ROOT, environment_snapshot, package_inventory, runner_inventory, set_source_root,
-        sha256, verify_source, wheel_proof, write_json,
+        sha256, verify_source, wheel_proof, write_artifact_manifest, write_json,
     )
 
 
@@ -260,6 +260,7 @@ def main():
                          "deadline_seconds": plan["seconds_per_workflow"]})
             write_json(args.output_dir / "results.json", rows)
             print(f"{kind}: {status} ({rows[-1]['wall_seconds']:.2f}s)", flush=True)
+    write_artifact_manifest(args.output_dir)
     if any(row["status"] != "complete" for row in rows):
         raise SystemExit("At least one diagnostic workflow failed or exceeded its declared budget.")
 

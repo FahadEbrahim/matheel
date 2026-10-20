@@ -37,6 +37,16 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n")
 
 
+def write_artifact_manifest(root):
+    write_json(root / "artifact-manifest.json", {
+        "schema_version": 1,
+        "files": {path.relative_to(root).as_posix(): {"bytes": path.stat().st_size,
+                                                     "sha256": sha256(path.read_bytes())}
+                  for path in sorted(root.rglob("*"))
+                  if path.is_file() and path.name != "artifact-manifest.json"},
+    })
+
+
 def package_inventory():
     return {str(path.relative_to(SOURCE_ROOT)): sha256(path.read_bytes())
             for path in sorted((SOURCE_ROOT / "matheel").rglob("*.py"))}
@@ -280,6 +290,7 @@ def run(args):
     pd.DataFrame([{**{key: row[key] for key in ("dataset", "preset", "status", "wall_seconds", "deadline_seconds")},
                    "scoring_seconds": row.get("scoring_seconds"),
                    **(row["metrics"] or {})} for row in rows]).to_csv(args.output_dir / "summary.csv", index=False)
+    write_artifact_manifest(args.output_dir)
     if any(row["status"] == "failed" for row in rows):
         raise SystemExit("At least one worker failed; inspect the explicit failure rows.")
 
