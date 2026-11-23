@@ -63,7 +63,6 @@ jobs:
           - os: windows-latest
             python-version: "3.14"
     env:
-      TREE_SITTER_LANGUAGE_PACK_CACHE_DIR: ${{ runner.temp }}/matheel-grammars
       HF_HUB_OFFLINE: "1"
       TRANSFORMERS_OFFLINE: "1"
 
@@ -75,12 +74,23 @@ jobs:
           cache: pip
       - name: Install chunking and parser test dependencies
         run: python -m pip install -e ".[dev,chunking_code]" "apted>=1,<2"
+      - name: Set the grammar cache location
+        shell: bash
+        run: echo "TREE_SITTER_LANGUAGE_PACK_CACHE_DIR=$RUNNER_TEMP/matheel-grammars" >> "$GITHUB_ENV"
       - name: Check clean-cache offline startup (Ubuntu)
         if: runner.os == 'Linux'
         run: |
           sudo env "TREE_SITTER_LANGUAGE_PACK_CACHE_DIR=$TREE_SITTER_LANGUAGE_PACK_CACHE_DIR" \
             unshare --net --setuid="$(id -u)" --setgid="$(id -g)" \
             "$(command -v python)" -m pytest tests/test_grammars.py -k clean_cache
+      - name: Verify code chunking with only the Python grammar (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          matheel grammars python
+          sudo env "TREE_SITTER_LANGUAGE_PACK_CACHE_DIR=$TREE_SITTER_LANGUAGE_PACK_CACHE_DIR" \
+            HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+            unshare --net --setuid="$(id -u)" --setgid="$(id -g)" \
+            "$(command -v python)" -m pytest tests/test_chunking.py
       - name: Provision Matheel grammars
         run: matheel grammars
       - name: Run parser and chunking tests with network blocked (Ubuntu)
