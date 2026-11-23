@@ -14,6 +14,7 @@ on:
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
       suite:
         description: Optional integrations to run.
         required: true

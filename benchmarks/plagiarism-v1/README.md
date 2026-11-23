@@ -2,7 +2,7 @@
 
 This directory records the pinned source recipe for Matheel's plagiarism track. `sources.json` contains immutable GitHub commit IDs, versioned archive URLs, exact archive sizes and SHA-256 hashes, published Zenodo MD5 checksums, and dataset provenance. It contains no source submissions.
 
-Use Python 3.11–3.13 and install this checkout with its semantic backends before
+Use Python 3.11–3.14 and install this checkout with its semantic backends before
 running the scripts. The installed Matheel version is part of method identity:
 
 ```bash

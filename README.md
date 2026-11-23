@@ -11,7 +11,7 @@ Matheel is a Python package and CLI for source-code similarity. It combines sema
 
 ## Installation
 
-Matheel supports Python `3.11` to `3.13`.
+Matheel supports Python `3.11` to `3.14`.
 
 Recommended install:
 

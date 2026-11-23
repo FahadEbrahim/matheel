@@ -98,6 +98,8 @@ python -m pytest -o addopts='' -m browser tests/browser \
 
 The collection guard prevents an accidentally filtered zero-test run. When a browser workflow fails, screenshots, traces, video, browser console events, failed requests, and the Gradio server log are retained under `test-results/browser`.
 
+The browser job also runs on Python 3.14 with `.[all,dev,browser]` and checks the installed dependencies with `pip check`.
+
 ## Package Checks
 
 When preparing release or packaging changes, build the package and check the distribution metadata:

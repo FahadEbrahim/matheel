@@ -20,6 +20,7 @@ jobs:
           - "3.11"
           - "3.12"
           - "3.13"
+          - "3.14"
 
     steps:
       - name: Check out repository
@@ -191,9 +192,21 @@ jobs:
         run: python -m pytest tests/test_gradio_app.py tests/test_gradio_html_utils.py
 
   gradio-browser:
-    name: Gradio browser workflows
+    name: ${{ matrix.job-name }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.12"
+            job-name: Gradio browser workflows
+            extras: "dev,gradio,browser"
+            failure-artifact: gradio-browser-failure-artifacts
+          - python-version: "3.14"
+            job-name: Gradio browser workflows (Python 3.14)
+            extras: "all,dev,browser"
+            failure-artifact: gradio-browser-failure-artifacts-py3.14
     env:
       GRADIO_ANALYTICS_ENABLED: "False"
       HF_HUB_OFFLINE: "1"
@@ -208,13 +221,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6.2.0
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install package and browser test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -e ".[dev,gradio,browser]"
+          python -m pip install -e ".[${{ matrix.extras }}]"
+          python -m pip check
 
       - name: Install Chromium and system dependencies
         run: python -m playwright install --with-deps chromium
@@ -233,7 +247,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v6.0.0
         with:
-          name: gradio-browser-failure-artifacts
+          name: ${{ matrix.failure-artifact }}
           path: test-results/browser
           if-no-files-found: warn
           retention-days: 7

@@ -4,7 +4,7 @@ This page is the quick-start entry point for installing Matheel and running the 
 
 ## Installation
 
-Matheel supports Python `3.11` to `3.13`.
+Matheel supports Python `3.11` to `3.14`.
 
 Base install:
 
