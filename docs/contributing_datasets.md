@@ -10,7 +10,7 @@ Keep these pieces separate so custom users can reuse generic sources and adapter
 
 ## Dataset Contribution Checklist
 
-- Declare the dataset domain with `task_type`, independently of its protocol. Current public presets use `plagiarism`; a future clone dataset would use `code_clone`. Stable snake_case domains are extensible without changing an enum.
+- Declare the dataset domain with `task_type`, independently of its protocol. The catalog includes `plagiarism`, `code_similarity`, `code_clone`, and `ai_authorship`. Use stable snake_case identifiers for additional domains.
 - Confirm the task family: `pair`, `retrieval`, or both. These protocol names are not dataset domains.
 - Describe the ground-truth definition and its limits. Record languages and file/function/fragment granularity only when established by the source; do not infer plagiarism from clone labels.
 - Confirm license, provenance, access requirements, and citation information.

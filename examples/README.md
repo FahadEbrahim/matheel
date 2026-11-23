@@ -24,6 +24,7 @@ The default script runs use local sample data and do not download models or data
 | Explore vectors | [Vector options and static hash baseline](basic/vectors_demo.py) | `.[semantic]` for the optional model flags |
 | Compare code metrics | [CodeBLEU, CrystalBLEU, RUBY, TSED, CodeBERTScore](basic/code_metrics_demo.py) | `.[metrics]` for TSED and the optional CodeBERTScore step |
 | Evaluate datasets | [Dataset adapters](evaluation/datasets_demo.py), [validation reports](evaluation/dataset_validation_demo.py), [reproducible benchmark](evaluation/reproducible_benchmark_demo.py) | None |
+| Evaluate clone spans and code origin | [Research benchmarks](evaluation/research_benchmarks_demo.py) | None for synthetic fixtures. Install `.[authorship]` to run the learned origin baseline. |
 | Tune and compare results | [Threshold tuning](evaluation/threshold_tuning_demo.py), [calibration](evaluation/calibration_report_demo.py), [leaderboard](evaluation/leaderboard_demo.py) | None |
 | Diagnose robustness and long-file coverage | [Controlled transformations and chunk aggregation](experiments/robustness_and_long_files.py) | `.[chunking]`; all default scorers run offline |
 | Inspect results visually | [Dataset maps and pair explanations](evaluation/visualization_demo.py) | None for PCA; `.[visualization]` enables UMAP elsewhere |

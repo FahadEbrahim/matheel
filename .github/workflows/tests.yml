@@ -119,9 +119,14 @@ jobs:
           python-version: "3.12"
           cache: pip
       - name: Install offline benchmark dependencies
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -e ".[dev,benchmark]"
       - name: Check score parity and record timings
         run: python scripts/check_benchmark_regressions.py --output benchmark-regression.json
+      - name: Verify release benchmark evidence
+        run: |
+          python -m pytest tests/test_similarity_benchmarks.py tests/test_authorship.py
+          python scripts/build_research_benchmark_summary.py --check
+          python -m scripts.run_authorship_benchmark validate benchmarks/authorship-v1/results.json
       - name: Preserve score and timing diagnostics
         if: always()
         uses: actions/upload-artifact@v6.0.0

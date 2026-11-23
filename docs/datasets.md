@@ -2,7 +2,7 @@
 
 Matheel supports local labeled pair and retrieval datasets, plus an extensible source/preset/adapter workflow for benchmark experiments.
 
-No external datasets are bundled or downloaded by default. Users provide or download datasets according to each source's terms, license, provenance, and access requirements. All six current public presets declare `task_type: plagiarism`. This domain describes the purpose of their labels; pair classification and retrieval describe how the labels are evaluated.
+Users provide or download datasets according to each source's terms and access requirements. The built-in plagiarism presets and locally prepared research datasets are listed by `matheel datasets catalog`. See [research benchmarks](research_benchmarks.md) for clone discovery, similarity and retrieval, and AI authorship.
 
 ## Find a Workflow
 
@@ -12,6 +12,7 @@ No external datasets are bundled or downloaded by default. Users provide or down
 | Select a public source or extend loading | [Sources, presets, and adapters](#sources-presets-and-adapters) |
 | Understand normalized file layouts | [Pair format](#pair-dataset-format) and [retrieval format](#retrieval-dataset-format) |
 | Score labeled pairs or query/candidate rankings | [Pair evaluation](#pair-evaluation) and [retrieval evaluation](#retrieval-evaluation) |
+| Evaluate clone spans or single-snippet authorship | [Research benchmarks](research_benchmarks.md) |
 | Quantify uncertainty across splits | [Resampling](#resampling-and-uncertainty) |
 
 ## Dataset Domains and Evaluation Protocols
@@ -20,12 +21,12 @@ Keep dataset meaning separate from evaluation protocol:
 
 | Field | Meaning | Current values |
 | --- | --- | --- |
-| `task_type` | Dataset domain: what its ground truth represents. | `plagiarism` for every current public preset. |
+| `task_type` | Dataset domain, based on what its ground truth represents. | `plagiarism`, `code_similarity`, `code_clone`, `ai_authorship`. |
 | `task_family` / `task_families` | Supported evaluation protocol in cards/specs. | `pair`, `retrieval`, or both. |
-| `dataset_kind` | Normalized manifest layout. | `pair_classification`, `retrieval`. |
+| `dataset_kind` | Registered data layout. | `pair_classification`, `retrieval`, `clone_discovery`, `single_snippet_classification`. |
 | `languages`, `granularity`, `ground_truth` | Optional, documented dataset attributes. | Include only values established by the dataset source or annotation procedure. |
 
-A future code-clone dataset can declare `task_type: code_clone` without being mislabeled as plagiarism. These domain identifiers must use snake case; protocol identifiers such as `retrieval` cannot be domains. This extension point does not introduce any clone datasets or detector integrations. Preserve the source's actual label definition: a clone annotation does not establish plagiarism.
+Use snake case for domain identifiers and preserve the source's label definition. For example, the CodeXGLUE BigCloneBench pair-classification labels describe code clones. Use the [research commands](research_benchmarks.md) for span-based clone discovery and single-snippet authorship data.
 
 Legacy normalized datasets and custom presets that omit `task_type` retain the historical `plagiarism` default. New contributions should always declare it explicitly. Loading specs and adapters preserve an explicit domain and reject a conflicting domain in persisted metadata or preset overrides. Generic tabular adapters accept `task_type` in the loading spec, their `adapter_options`, or the direct `adapt_pair_dataset` / `adapt_retrieval_dataset` call.
 
@@ -529,6 +530,8 @@ matheel evaluate-retrieval tiny_retrieval \
 ```
 
 The metrics include mean average precision, mean reciprocal rank, precision at `k`, recall at `k`, and nDCG at `k`.
+
+Use `--map-at-r` to calculate average precision at each query's relevant document count before taking the mean. For a corpus that also contains the queries, use `--exclude-self-matches` when required by the protocol. The full [POJ-104 run](research_benchmarks.md#code-similarity-and-retrieval) uses the bounded benchmark command for exhaustive scoring.
 
 Raw custom retrieval tables can be adapted the same way:
 

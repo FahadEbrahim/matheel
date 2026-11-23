@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "matheel"
-version = "0.7.2"
+version = "0.8.0"
 authors = [
-  { name = "Fahad Ebrahim" }
+  { name = "Codex" }
 ]
 description = "Matheel: A CLI and Python package for source-code similarity detection."
 readme = "README.md"
@@ -40,6 +40,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+authorship = [
+    "scikit-learn>=1.8,<2"
+]
+benchmark = [
+    "scikit-learn>=1.8,<2",
+    "pyarrow>=19,<25"
+]
 chunking = [
     "chonkie>=1.7,<1.8"
 ]
@@ -63,6 +70,7 @@ semantic = [
     "model2vec>=0.10,<0.11"
 ]
 gradio = [
+    "scikit-learn>=1.8,<2",
     "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3",
     "gradio>=6.32.0,<7",
@@ -76,6 +84,8 @@ browser = [
     "pytest-playwright>=0.10,<0.11"
 ]
 all = [
+    "scikit-learn>=1.8,<2",
+    "pyarrow>=19,<25",
     "chonkie[code]>=1.7,<1.8",
     "apted>=1.0,<2",
     "bert-score>=0.3.13,<0.4",

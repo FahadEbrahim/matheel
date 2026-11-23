@@ -4,6 +4,10 @@ This demo creates a tiny synthetic pair-classification dataset, adapts it throug
 
 It is a workflow example, not a benchmark claim. Real datasets are not bundled with Matheel, and users should provide or download datasets according to each source's terms.
 
+The [research example](https://github.com/FahadEbrahim/matheel/blob/main/examples/evaluation/research_benchmarks_demo.py)
+adds offline clone span and code-authorship fixtures. To rerun the published results,
+follow the [research benchmark guide](research_benchmarks.md).
+
 ## Run the Demo
 
 From the repository root:

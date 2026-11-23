@@ -49,9 +49,11 @@ except ModuleNotFoundError:
 
 try:
     from gradio_app.model_search import build_model_search
+    from gradio_app.research_benchmarks import build_research_benchmarks_tab
     from gradio_app.result_analysis import build_result_analysis_tab
 except ModuleNotFoundError:
     from model_search import build_model_search
+    from research_benchmarks import build_research_benchmarks_tab
     from result_analysis import build_result_analysis_tab
 
 try:
@@ -277,7 +279,10 @@ DATASET_TASK_CHOICES = ("Pair Classification", "Retrieval")
 DEFAULT_DATASET_TASK = DATASET_TASK_CHOICES[0]
 READY_LEADERBOARD_ALGORITHM_CHOICES = tuple(METRIC_PRESETS)
 READY_LEADERBOARD_PAIR_METRICS = available_leaderboard_metrics("pair")
-READY_LEADERBOARD_RETRIEVAL_METRICS = available_leaderboard_metrics("retrieval")
+READY_LEADERBOARD_RETRIEVAL_METRICS = tuple(
+    metric for metric in available_leaderboard_metrics("retrieval")
+    if metric != "mean_average_precision_at_r"
+)
 READY_LEADERBOARD_DEFAULT_METRICS = {
     "pair": "f1",
     "retrieval": "mean_average_precision",
@@ -3487,10 +3492,16 @@ def evaluate_dataset_gradio(
     start_time = perf_counter()
     if str(task_label).startswith("Retrieval"):
         dataset = load_retrieval_dataset(dataset_root)
+        ranking_options = {}
+        if dataset.metadata.get("ranking_metric") == "mean_average_precision_at_r":
+            ranking_options["include_map_at_r"] = True
+        if dataset.metadata.get("exclude_self_matches") is True:
+            ranking_options["exclude_self_matches"] = True
         scored, metrics = evaluate_retrieval_dataset(
             dataset,
             k=int(retrieval_k),
             similarity_options=similarity_options,
+            **ranking_options,
         )
         resample_metrics, resample_summary = _resample_retrieval_scores(
             scored,
@@ -5565,6 +5576,8 @@ with gr.Blocks(
                             ready_artifacts,
                         ],
                     )
+
+                build_research_benchmarks_tab()
 
                 with gr.Tab("Inspect Artifacts", id="inspect-artifacts"):
                     with gr.Row(elem_classes=["matheel-workflow-grid"]):

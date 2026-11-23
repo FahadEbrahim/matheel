@@ -41,6 +41,7 @@ EXPECTED_GRADIO_TABS = (
     "Analyze Results",
     "Ready-made Leaderboard",
     "Build Leaderboard",
+    "Research Benchmarks",
     "Inspect Artifacts",
 )
 EXPECTED_PRIMARY_ACTIONS = {
@@ -52,6 +53,9 @@ EXPECTED_PRIMARY_ACTIONS = {
     "Generate Map": "generate_dataset_map_gradio",
     "Generate Explanation": "generate_pair_explanation_gradio",
     "Run Custom Leaderboard": "run_ready_leaderboard_gradio",
+    "Summarize Score Slices": "similcode_slices_gradio",
+    "Evaluate Clone Recall": "evaluate_clones_gradio",
+    "Run AI-Authorship Benchmark": "benchmark_authorship_gradio",
     "Inspect Leaderboard": "inspect_leaderboard_artifacts_gradio",
 }
 
@@ -959,7 +963,7 @@ def test_scoring_actions_append_weight_table_without_changing_existing_control_o
 def test_flat_space_checkout_imports_extracted_helpers(tmp_path):
     for name in (
         "app.py", "html_utils.py", "presentation.py", "theme.py", "control_types.py",
-        "model_search.py", "official_benchmark.py", "result_analysis.py",
+        "model_search.py", "official_benchmark.py", "research_benchmarks.py", "result_analysis.py",
     ):
         shutil.copyfile(APP_PATH.parent / name, tmp_path / name)
     (tmp_path / "assets").mkdir()

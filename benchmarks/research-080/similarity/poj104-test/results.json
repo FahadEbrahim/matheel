@@ -1,0 +1,88 @@
+{
+  "artifacts": {
+    "queries.csv": {
+      "bytes": 678885,
+      "sha256": "06f5e08e0677a0cec20c9ff4c2ba4f208749a8df595200194a7c9836c48415d9"
+    },
+    "scores.csv.gz": {
+      "bytes": 85274172,
+      "sha256": "b89051b106bc6961609d10cbd03fcf169775519ac43139d262992d2c9ff1ef2d"
+    }
+  },
+  "benchmark_schema_version": 1,
+  "dataset": {
+    "adapter": "poj104_retrieval",
+    "dataset_kind": "retrieval",
+    "exclude_self_matches": true,
+    "input_format": "parquet",
+    "languages": [
+      "c",
+      "cpp"
+    ],
+    "license": "Computational Use of Data Agreement (C-UDA) and upstream source terms",
+    "name": "poj104_test",
+    "official_split_dimensions": true,
+    "problem_count": 24,
+    "ranking_metric": "mean_average_precision_at_r",
+    "relevance_definition": "same problem excluding the query",
+    "source_files_sha256": {
+      "test.parquet": "4c1d6389d66a68c2b5ad4c345ac264b8f4062258aa870b74a3fd478b7cce4955"
+    },
+    "source_revision": "701869dece36b32174ee48277eada423cdcf699c",
+    "source_url": "https://github.com/microsoft/CodeXGLUE/tree/main/Code-Code/Clone-detection-POJ-104",
+    "split": "test",
+    "task_type": "code_similarity"
+  },
+  "dataset_sha256": "58bb67958302da248d3579a6ac2ef582143e49284ed100af63932e6fd60563b9",
+  "implementation_sha256": {
+    "datasets.py": "565f7694c3073869d4d6f14ad95d0d697ae6b921e7919ee105a8419b49548ab1",
+    "evaluation.py": "a5ba3bfbdfb69ce496db11302f0be0ba673c46a75151275c987d58d324b9425a",
+    "similarity.py": "42bb390e2ae825d0a047d5aa39ee961a0908e21b85f8296e307aea4cd9792556",
+    "similarity_benchmark.py": "e5b03adbc762b29c7bd93b9a19f57ec9a827ab45c900ce1837109b24fa5e5c2e",
+    "similarity_datasets.py": "865ecd01cf90b185b237ed1b2841c22c0d1fb1257ec93e7d0f5c8010a23af14b"
+  },
+  "matheel_version": "0.8.0",
+  "normalized_fingerprint_schema": "manifest-bytes-and-files-v1",
+  "results": [
+    {
+      "configuration": {
+        "analyzer": "char",
+        "batch_size": 32,
+        "exclude_self_matches": true,
+        "fit_scope": "fixed unlabeled target corpus",
+        "lowercase": false,
+        "max_features": 50000,
+        "min_df": 1,
+        "ngram_range": [
+          3,
+          5
+        ],
+        "norm": "l2",
+        "sublinear_tf": true,
+        "tie_break": "ascending document ID"
+      },
+      "metrics": {
+        "candidate_count": 12000,
+        "k": 10,
+        "mean_average_precision": 0.506060041735227,
+        "mean_average_precision_at_r": 0.4010469338606908,
+        "mean_reciprocal_rank": 0.962899638880346,
+        "query_count": 12000,
+        "recall_at_k": 0.018155644622579632,
+        "relevant_count": 5988000,
+        "retained_score_rows": 5988000,
+        "scored_comparisons": 143988000
+      },
+      "name": "character_tfidf_cosine"
+    }
+  ],
+  "runtime": {
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "pyarrow": "23.0.1",
+    "python": "3.14.2",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1"
+  },
+  "task_family": "retrieval"
+}

@@ -12,7 +12,7 @@ Base install:
 pip install matheel
 ```
 
-The base package includes the CLI, preprocessing, lexical similarity, and the core comparison workflow. Install optional extras when you need larger semantic backends, chunkers, metric runtimes, or the Gradio app:
+The base package includes the CLI, preprocessing, lexical similarity, and the core comparison workflow. Install optional extras for additional workflows:
 
 ```bash
 pip install "matheel[semantic]"
@@ -20,6 +20,8 @@ pip install "matheel[chunking]"
 pip install "matheel[metrics]"
 pip install "matheel[visualization]"
 pip install "matheel[gradio]"
+pip install "matheel[benchmark]"
+pip install "matheel[authorship]"
 pip install "matheel[all]"
 ```
 
@@ -30,6 +32,8 @@ pip install "matheel[all]"
 | `matheel[metrics]` | Optional code metric runtimes such as TSED and CodeBERTScore. |
 | `matheel[visualization]` | UMAP projection for dataset visualization. |
 | `matheel[gradio]` | Dependencies for running the Gradio web app from a repository checkout or the hosted Space. |
+| `matheel[benchmark]` | Exact TF-IDF retrieval baselines and Parquet dataset preparation. |
+| `matheel[authorship]` | TF-IDF and logistic regression for AI-authorship evaluation. |
 | `matheel[all]` | All supported optional backends in one install. |
 
 Compatibility extras remain available for narrower installs: `sentence_transformers`,
@@ -107,6 +111,7 @@ print(results.head())
 - Use `matheel compare-suite` with a JSON config for repeatable multi-run comparisons.
 - Use `--algorithm-path` when you need a custom `score_pair` implementation.
 - Run the reproducible benchmark demo when you need a small auditable evaluation workflow.
+- Use `matheel datasets catalog` and the [research benchmark guide](research_benchmarks.md) to reproduce similarity, clone discovery, or AI-authorship benchmarks.
 - Run the Gradio app or notebooks when you want an interactive workflow, including normalized dataset evaluation, visualization artifacts, ready leaderboards, and leaderboard inspection.
 
 For installation, a guided pairwise check, workflow descriptions, and troubleshooting, see the [Gradio app guide](gradio.md).

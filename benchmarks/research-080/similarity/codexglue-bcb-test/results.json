@@ -1,0 +1,80 @@
+{
+  "artifacts": {
+    "scores.csv.gz": {
+      "bytes": 6469338,
+      "sha256": "36ff4d87085d814faea6fb36b1c94f9c21fb1c98102b08e03f4bb751c5ea6a9c"
+    }
+  },
+  "benchmark_schema_version": 1,
+  "dataset": {
+    "adapter": "codexglue_bcb_pair",
+    "dataset_kind": "pair_classification",
+    "dataset_lineage": "Filtered BigCloneBench derivative used in CodeXGLUE",
+    "duplicate_ordered_pairs": 0,
+    "granularity": "method",
+    "languages": [
+      "java"
+    ],
+    "license": "Computational Use of Data Agreement (C-UDA) and upstream source terms",
+    "name": "codexglue_bcb_test",
+    "official_split_dimensions": true,
+    "primary_metric": "f1",
+    "shared_methods_by_partition": {
+      "train": 0,
+      "validation": 0
+    },
+    "source_files_sha256": {
+      "data.jsonl": "d8bc51e62deddcc45bd26c5b57f5add2a2cf377f13b9f6c2fb656fbc8fca4dd2",
+      "test.txt": "a6c0cf79be34e582fdc64007aa894ed094e4f9ff2e5395a8d2b5c39eeef2737a",
+      "train.txt": "29119bfa94673374249c3424809fbe6baaa1f0e87a13e3c727bbd6cdf1224b77",
+      "valid.txt": "e59e8c1321df59b6ab0143165cb603030c55800c00e2d782e06810517b8de1e4"
+    },
+    "source_revision": "ac74a62802a0dd159b3258c78a2df8ad36cdf2b9",
+    "source_url": "https://github.com/microsoft/CodeXGLUE/tree/main/Code-Code/Clone-detection-BigCloneBench",
+    "split": "test",
+    "task_type": "code_clone"
+  },
+  "dataset_sha256": "1c2f722040b4e9524935420df81e42b9306766080ad0b01e6ab107c87e673c5e",
+  "implementation_sha256": {
+    "datasets.py": "565f7694c3073869d4d6f14ad95d0d697ae6b921e7919ee105a8419b49548ab1",
+    "evaluation.py": "a5ba3bfbdfb69ce496db11302f0be0ba673c46a75151275c987d58d324b9425a",
+    "similarity.py": "42bb390e2ae825d0a047d5aa39ee961a0908e21b85f8296e307aea4cd9792556",
+    "similarity_benchmark.py": "e5b03adbc762b29c7bd93b9a19f57ec9a827ab45c900ce1837109b24fa5e5c2e",
+    "similarity_datasets.py": "865ecd01cf90b185b237ed1b2841c22c0d1fb1257ec93e7d0f5c8010a23af14b"
+  },
+  "matheel_version": "0.8.0",
+  "normalized_fingerprint_schema": "manifest-bytes-and-files-v1",
+  "results": [
+    {
+      "configuration": {
+        "preprocess_mode": "none",
+        "weights": [
+          1,
+          1,
+          1
+        ]
+      },
+      "metrics": {
+        "accuracy": 0.8660547499374122,
+        "f1": 0.04421388941374512,
+        "false_negative": 55533,
+        "false_positive": 110,
+        "negative_count": 358596,
+        "positive_count": 56820,
+        "precision": 0.9212598425196851,
+        "recall": 0.022650475184794086,
+        "threshold": 0.5,
+        "true_negative": 358486,
+        "true_positive": 1287
+      },
+      "name": "levenshtein"
+    }
+  ],
+  "runtime": {
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "python": "3.14.2",
+    "rapidfuzz": "3.14.6"
+  },
+  "task_family": "pair"
+}

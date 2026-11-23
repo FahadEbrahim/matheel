@@ -121,7 +121,7 @@ jobs:
 
       - name: Install base package and test tools
         timeout-minutes: 5
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -e ".[dev]" 'copydetect==0.5.0'
 
       - name: Provision pinned local runtimes and detectors
         timeout-minutes: 12
@@ -138,6 +138,12 @@ jobs:
         run: |
           python -m pytest -o addopts='' -m integration tests/test_external_detectors_integration.py --junitxml=test-results/detectors.xml -rs
           python scripts/ci/check_integration_report.py test-results/detectors.xml --tests 8 --allowed-skips 1 --skip-reason "Dolos exposes a symmetric score; directional mode belongs to JPlag."
+
+      - name: Verify the pinned Copydetect wheel
+        timeout-minutes: 3
+        run: |
+          python -m pytest -o addopts='' -m integration tests/test_detector_adapters_080.py -k copydetect_real_wheel --junitxml=test-results/copydetect.xml -rs
+          python scripts/ci/check_integration_report.py test-results/copydetect.xml --tests 1 --allowed-skips 0
 
       - name: Retain detector test results
         if: always()

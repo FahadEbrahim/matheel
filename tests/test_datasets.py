@@ -91,7 +91,7 @@ def test_dataset_registry_tracks_plagiarism_entries():
         overwrite=True,
     )
 
-    assert available_dataset_task_types() == ("plagiarism",)
+    assert {"plagiarism", "code_similarity", "code_clone"}.issubset(available_dataset_task_types())
     assert "pair_classification" in available_dataset_kinds()
     assert get_dataset_entry("unit_plagiarism_pairs") == entry
     assert entry in registered_datasets(task_type="plagiarism", dataset_kind="pair_classification")

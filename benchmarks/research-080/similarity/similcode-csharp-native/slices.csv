@@ -1,0 +1,10 @@
+language,dimension,slice,pair_count,mean,median,min,max,method
+csharp,similarity_category,identical,15,1.0,1.0,1.0,1.0,jplag
+csharp,similarity_category,functional,15,0.08097023508676439,0.0,0.0,0.5674740484429066,jplag
+csharp,similarity_category,structural,15,0.8721753250910943,1.0,0.281767955801105,1.0,jplag
+csharp,similarity_category,different,15,0.030982052327343804,0.0,0.0,0.20179372197309417,jplag
+csharp,clone_type,type1,15,1.0,1.0,1.0,1.0,jplag
+csharp,clone_type,type2,4,1.0,1.0,1.0,1.0,jplag
+csharp,clone_type,type3,11,0.8256936251242195,0.9743589743589743,0.281767955801105,1.0,jplag
+csharp,clone_type,type4,15,0.08097023508676439,0.0,0.0,0.5674740484429066,jplag
+csharp,clone_type,unrelated,15,0.030982052327343804,0.0,0.0,0.20179372197309417,jplag

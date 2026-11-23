@@ -7,6 +7,10 @@ benchmark recipe](benchmark_protocol.md). Source archives, models, runtime
 constraints and audited scored rows are documented with the [published
 results](plagiarism_results.md). Keep local inputs and outputs outside the checkout.
 
+For the 0.8.0 similarity, typed clone discovery, and AI-authorship runs, use the
+[research benchmark recipes](research_benchmarks.md). These record separate
+candidate pools, reference filters, or cohort splits for each protocol.
+
 Validate the result JSON and score CSVs before publishing. Preserve the original
 protocol and result bundle; declare new settings or candidate policies as new
 configurations or experiments rather than rewriting a previous release.
@@ -27,6 +31,10 @@ Run matching and nonmatching fixtures against the real executable, then test its
 parser, identity metadata and failure handling independently. Keep tool
 installation optional. See [versioned protocols](benchmark_protocol.md) for
 configuration identity and artifact validation requirements.
+
+For sparse span reports, use the [clone discovery protocol](research_benchmarks.md#clone-discovery)
+to calculate recall against known references. Record input and output coverage for
+saved service reports such as MOSS.
 
 ## Select a threshold using validation data
 

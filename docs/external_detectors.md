@@ -2,6 +2,8 @@
 
 Matheel can evaluate **JPlag 6.3.0** and **Dolos 2.10.0** through its custom algorithm interface. Both run locally, once per corpus, using explicit tool paths. Importing Matheel does not install tools, start services, or upload source code. These adapters add no Python dependencies.
 
+For local clone detection, Copydetect pair scoring, or archived MOSS reports, see [the additional detector integrations](#clone-and-plagiarism-detector-additions).
+
 These are optional detector integrations. The original [Matheel-Plagiarism-v1 results](plagiarism_results.md) retain their 29 configurations. Separate [0.7.1 supported-language comparisons](plagiarism_release_071.md) evaluate the detectors and existing lexical references on identical bounded scopes.
 
 ## Scope and score meaning
@@ -140,3 +142,42 @@ scored pair AP 0.8161 and retrieval MAP 0.7071. Pair threshold 0.5 was fixed.
 The bundle records full scores, immutable source/content/tool/runtime hashes and
 per-corpus timings. This common Java scope is separate from the official
 multilingual leaderboard and does not establish results on other datasets.
+
+## Clone and plagiarism detector additions
+
+| Tool | Integration | Output |
+| --- | --- | --- |
+| NiCad 7.0.1 | Local Java runner with OpenTxl 11.3.7, or saved XML report | Source span pairs, including native similarity |
+| PMD CPD 7.29.0 | Local Java runner with a configured JDK, or saved XML report | Source span pairs, duplication groups, and token counts |
+| SourcererCC | Import reported pair IDs with an ID-to-source map | Source span pairs when the mapping supplies original spans |
+| Copydetect 0.5.0 | Local custom algorithm with a pinned Python installation | Directional or symmetric file-pair scores |
+| MOSS | Import archived HTML and optional saved match details | Reported pairs with two percentages, match counts, and optional passages |
+
+The clone runners analyze the Java corpus once. Supply the tool executable and a JSON file of runner options. For NiCad, put `txl_path` and any non-default `granularity` or `configuration` in the options file. For CPD, set `java_home` and `minimum_tokens`. The metadata records tool and runtime identity, corpus and report hashes, settings, and coverage. Review the [published detector evidence](https://github.com/FahadEbrahim/matheel/tree/main/benchmarks/research-080/detectors) for tested combinations and setup commands.
+
+```bash
+matheel run-clone-detector nicad ./corpus /tools/nicad/bin/nicad ./runs/nicad.csv \
+  --options ./nicad-options.json
+matheel run-clone-detector pmd-cpd ./corpus /tools/pmd/bin/pmd ./runs/cpd.csv \
+  --options ./pmd-options.json
+matheel import-clone-report ./native/results.pairs ./runs/sourcerercc.csv \
+  --format sourcerercc --source-map ./native/source-spans.csv --metadata-out ./runs/sourcerercc.json
+```
+
+Use the [clone discovery evaluator](research_benchmarks.md#clone-discovery) to measure reference recall by type. A file-level SourcererCC mapping defines a file-level result. Function-level recall needs original method spans for both sides of every finding.
+
+Install Copydetect separately and select it through the same local algorithm interface used for JPlag and Dolos. The pinned PyPI wheel passed the short, empty, and identical Java fixture on Python 3.11, 3.12, 3.13, and 3.14.
+
+```bash
+python -m pip install 'copydetect==0.5.0'
+matheel evaluate-pairs ./normalized-java-pairs --algorithm matheel.external_detectors.copydetect \
+  --algorithm-option language=java --reproducibility-out copydetect-run.json
+```
+
+MOSS imports run against saved local files. A `--match-directory` can supply saved detail pages and `--expected-pairs` can declare the pair universe for coverage. Unreported pairs remain missing. The importer exports the native directional percentages along with the matched-line count.
+
+```bash
+matheel import-moss-report ./native/moss-index.html ./runs/moss-matches.csv \
+  --source-map ./native/submission-map.json \
+  --match-directory ./native/detail-pages --expected-pairs ./normalized/pairs.csv
+```

@@ -26,6 +26,7 @@ from ._path_utils import (
 
 DATASET_TASK_TYPES = ("plagiarism",)
 DATASET_KINDS = ("pair_classification", "retrieval")
+DATASET_CATALOG_KINDS = (*DATASET_KINDS, "clone_discovery", "single_snippet_classification")
 DATASET_ACCESS_TYPES = ("bundled", "download", "manual", "external")
 DATASET_TASK_FAMILIES = ("pair", "retrieval")
 DATASET_MANIFEST_VERSION = 1
@@ -124,7 +125,7 @@ def registered_datasets(task_type=None, dataset_kind=None):
         requested_task = normalize_dataset_task_type(task_type)
         entries = tuple(entry for entry in entries if entry.task_type == requested_task)
     if dataset_kind is not None:
-        requested_kind = _normalize_choice(dataset_kind, DATASET_KINDS, "dataset_kind")
+        requested_kind = _normalize_choice(dataset_kind, DATASET_CATALOG_KINDS, "dataset_kind")
         entries = tuple(entry for entry in entries if entry.dataset_kind == requested_kind)
     return entries
 
@@ -155,7 +156,7 @@ def register_dataset_entry(
     entry = DatasetRegistryEntry(
         name=key,
         task_type=normalize_dataset_task_type(task_type),
-        dataset_kind=_normalize_choice(dataset_kind, DATASET_KINDS, "dataset_kind"),
+        dataset_kind=_normalize_choice(dataset_kind, DATASET_CATALOG_KINDS, "dataset_kind"),
         languages=tuple(str(language).strip().lower() for language in (languages or ()) if str(language).strip()),
         license=str(license or "unknown").strip() or "unknown",
         source_url=str(source_url or "").strip(),
@@ -2950,6 +2951,8 @@ def _adapt_criminal_minds_pair_dataset(source_root, destination, dataset_name=No
 
 
 def register_default_dataset_adapters(overwrite=False):
+    from .similarity_datasets import register_similarity_datasets
+
     register_dataset_adapter("auto_pair_tabular", _adapt_pair_dataset_auto, overwrite=overwrite)
     register_dataset_adapter("auto_retrieval_tabular", _adapt_retrieval_dataset_auto, overwrite=overwrite)
     register_dataset_adapter("soco14_retrieval", _adapt_soco14_retrieval_dataset, overwrite=overwrite)
@@ -2963,6 +2966,7 @@ def register_default_dataset_adapters(overwrite=False):
         overwrite=overwrite,
     )
     register_dataset_adapter("criminal_minds_pair", _adapt_criminal_minds_pair_dataset, overwrite=overwrite)
+    register_similarity_datasets(overwrite=overwrite)
 
 
 def _is_relative_to(path, parent):
@@ -3344,3 +3348,15 @@ def register_default_dataset_presets(overwrite=False):
 register_default_dataset_sources(overwrite=True)
 register_default_dataset_adapters(overwrite=True)
 register_default_dataset_presets(overwrite=True)
+register_dataset_entry(
+    "bigclonebench_v2", "code_clone", "clone_discovery", languages=("java",),
+    license="CC BY-NC 4.0 and upstream IJaDataset source terms",
+    source_url="https://github.com/clonebench/BigCloneBench", access="manual",
+    notes="Prepare local source-span reference records and use matheel evaluate-clones.", overwrite=True,
+)
+register_dataset_entry(
+    "aigcodeset", "ai_authorship", "single_snippet_classification", languages=("python",),
+    license="CDLA-Permissive-2.0 with Apache-2.0 source code",
+    source_url="https://huggingface.co/datasets/basakdemirok/AIGCodeSet", access="manual",
+    notes="Prepare the pinned local CSVs with matheel authorship prepare-aigcodeset.", overwrite=True,
+)

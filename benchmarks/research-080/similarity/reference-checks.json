@@ -1,0 +1,19 @@
+{
+  "codexglue_bcb": {
+    "evaluated": 415416,
+    "matheel": 0.04421388941374512,
+    "metric": "F1",
+    "reference_sha256": "0b1c9e46cf78ecabcce51334a5bcd877e3df2474f43713058f4628f996b538e7",
+    "scores_sha256": "36ff4d87085d814faea6fb36b1c94f9c21fb1c98102b08e03f4bb751c5ea6a9c",
+    "upstream": 0.04421388941374513
+  },
+  "poj104": {
+    "evaluated": 12000,
+    "matheel": 0.401,
+    "metric": "MAP@R",
+    "reference_sha256": "9ee0dfc582007d8c90adf8a90e3d69817550a133939033d928e31f91c67ad72a",
+    "scores_sha256": "b89051b106bc6961609d10cbd03fcf169775519ac43139d262992d2c9ff1ef2d",
+    "upstream": 0.401
+  },
+  "reference_revision": "ac74a62802a0dd159b3258c78a2df8ad36cdf2b9"
+}

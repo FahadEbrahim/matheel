@@ -250,13 +250,13 @@ def score_two_stage_retrieval_dataset(
     return scored
 
 
-def evaluate_two_stage_retrieval_dataset(dataset, candidate_count=100, *, k=10, **options):
+def evaluate_two_stage_retrieval_dataset(dataset, candidate_count=100, *, k=10, include_map_at_r=False, **options):
     """Evaluate the returned ranking against full qrels and every declared query."""
     dataset = _load(dataset)
     scored = score_two_stage_retrieval_dataset(dataset, candidate_count, **options)
     metrics = retrieval_ranking_metrics(scored, qrels=dataset.qrels, k=k,
                                        score_column=options.get("score_column", "similarity_score"),
-                                       query_ids=dataset.queries["query_id"])
+                                       query_ids=dataset.queries["query_id"], include_map_at_r=include_map_at_r)
     diagnostics = scored.attrs["retrieval"]
     metrics.update({key: value for key, value in diagnostics.items() if key not in {
         "candidate_similarity_options", "similarity_options", "candidate_diagnostics"}})

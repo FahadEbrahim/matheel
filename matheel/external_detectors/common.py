@@ -120,7 +120,21 @@ def validate_options(options, allowed):
         raise DetectorError("Unknown detector option(s): " + ", ".join(sorted(unknown)))
 
 
-def run_local(command, *, cwd, timeout_seconds, max_output_bytes=2_000_000, result_paths=(), max_result_bytes=None):
+def _result_bytes(paths):
+    total = 0
+    for path in map(Path, paths):
+        for file in path.rglob("*") if path.is_dir() else (path,):
+            if not file.is_symlink() and file.is_file():
+                try:
+                    total += file.stat().st_size
+                except FileNotFoundError:
+                    # Native tools can remove intermediates between these checks.
+                    continue
+    return total
+
+
+def run_local(command, *, cwd, timeout_seconds, max_output_bytes=2_000_000, result_paths=(), max_result_bytes=None,
+              environment_overrides=None, allowed_return_codes=(0,)):
     """Run without a shell; bound output and wall time and reap a POSIX process group."""
     timeout = positive_number(timeout_seconds, "timeout_seconds")
     limit = positive_number(max_output_bytes, "max_output_bytes", integer=True)
@@ -128,7 +142,9 @@ def run_local(command, *, cwd, timeout_seconds, max_output_bytes=2_000_000, resu
     env = {key: value for key, value in os.environ.items()
            if key not in {"NODE_OPTIONS", "JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS", "CLASSPATH"}}
     env.update({"NO_COLOR": "1", "CI": "true"})
+    env.update(environment_overrides or {})
     started = time.monotonic()
+    result_paths = tuple(result_paths)
     result_limit = positive_number(max_result_bytes, "max_result_bytes", integer=True) if max_result_bytes is not None else None
     with log_path.open("wb") as log:
         try:
@@ -141,14 +157,16 @@ def run_local(command, *, cwd, timeout_seconds, max_output_bytes=2_000_000, resu
             while process.poll() is None:
                 if time.monotonic() - started > timeout:
                     raise DetectorTimeoutError("Local detector exceeded timeout_seconds.")
-                if result_limit is not None and sum(Path(path).stat().st_size for path in result_paths if Path(path).is_file()) > result_limit:
+                if result_limit is not None and _result_bytes(result_paths) > result_limit:
                     raise DetectorError("Local detector exceeded max_result_bytes.")
                 if log_path.stat().st_size > limit:
                     raise DetectorError("Local detector exceeded max_output_bytes.")
                 time.sleep(0.02)
             if log_path.stat().st_size > limit:
                 raise DetectorError("Local detector exceeded max_output_bytes.")
-            if process.returncode:
+            if result_limit is not None and _result_bytes(result_paths) > result_limit:
+                raise DetectorError("Local detector exceeded max_result_bytes.")
+            if process.returncode not in allowed_return_codes:
                 # Tool output can include source text and private paths. Do not
                 # copy it into published error rows or exception messages.
                 raise DetectorError(f"Local detector exited with status {process.returncode}; no scores were accepted.")
@@ -226,7 +244,8 @@ def complete_context(records, aliases, identity):
 def adapter_sha256():
     """Include shared safeguards and both adapters in reproducibility identity."""
     digest = hashlib.sha256()
-    for path in sorted(Path(__file__).parent.glob("*.py")):
+    for name in ("__init__.py", "common.py", "dolos.py", "jplag.py"):
+        path = Path(__file__).with_name(name)
         digest.update(json.dumps([path.name, file_sha256(path)], separators=(",", ":")).encode())
     return digest.hexdigest()
 

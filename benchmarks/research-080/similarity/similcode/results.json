@@ -1,0 +1,97 @@
+{
+  "artifacts": {
+    "scores.csv.gz": {
+      "bytes": 3902,
+      "sha256": "ceddfc3cb8eb50a1300d24cfd7f4319799e33d465c2ab7a62aa664f2433c3113"
+    },
+    "slices.csv": {
+      "bytes": 3818,
+      "sha256": "1c4ff31f9b27a5ac9ae8208a4c85af2f3ee7ae7e5e5289b117bb59eaef6561a6"
+    }
+  },
+  "benchmark_schema_version": 1,
+  "dataset": {
+    "adapter": "similcode_pair",
+    "clone_type_source": "tipos_clon.csv (author-derived)",
+    "complete_source_case_count": 120,
+    "dataset_kind": "pair_classification",
+    "label_view": "related",
+    "languages": [
+      "csharp",
+      "java"
+    ],
+    "license": "CC BY 4.0",
+    "name": "similcode",
+    "source_files_sha256": {
+      "metadata.csv": "0aaa4bd4389a61a5b0606e779da4b84985d48755e772b63c28e56b01eefde203",
+      "tipos_clon.csv": "e78b2acb1cce7ce757cebda7b49bd417d5d51e001ed7f8e3dd84193c87778676"
+    },
+    "source_revision": "v2.4.0",
+    "source_url": "https://doi.org/10.5281/zenodo.23949390",
+    "task_type": "code_similarity"
+  },
+  "dataset_sha256": "911150922057020d2066c896de1d5adf6493242b7860501e45f3442aa0e469db",
+  "implementation_sha256": {
+    "datasets.py": "565f7694c3073869d4d6f14ad95d0d697ae6b921e7919ee105a8419b49548ab1",
+    "evaluation.py": "a5ba3bfbdfb69ce496db11302f0be0ba673c46a75151275c987d58d324b9425a",
+    "similarity.py": "42bb390e2ae825d0a047d5aa39ee961a0908e21b85f8296e307aea4cd9792556",
+    "similarity_benchmark.py": "e5b03adbc762b29c7bd93b9a19f57ec9a827ab45c900ce1837109b24fa5e5c2e",
+    "similarity_datasets.py": "865ecd01cf90b185b237ed1b2841c22c0d1fb1257ec93e7d0f5c8010a23af14b"
+  },
+  "matheel_version": "0.8.0",
+  "normalized_fingerprint_schema": "manifest-bytes-and-files-v1",
+  "results": [
+    {
+      "configuration": {
+        "preprocess_mode": "none",
+        "weights": [
+          1,
+          1,
+          1
+        ]
+      },
+      "metrics": {
+        "accuracy": 0.7583333333333333,
+        "f1": 0.8079470198675497,
+        "false_negative": 29,
+        "false_positive": 0,
+        "negative_count": 30,
+        "positive_count": 90,
+        "precision": 1.0,
+        "recall": 0.6777777777777778,
+        "threshold": 0.5,
+        "true_negative": 30,
+        "true_positive": 61
+      },
+      "name": "levenshtein"
+    },
+    {
+      "configuration": {
+        "kgram": 5,
+        "preprocess_mode": "none",
+        "window": 4
+      },
+      "metrics": {
+        "accuracy": 0.5083333333333333,
+        "f1": 0.512396694214876,
+        "false_negative": 59,
+        "false_positive": 0,
+        "negative_count": 30,
+        "positive_count": 90,
+        "precision": 1.0,
+        "recall": 0.34444444444444444,
+        "threshold": 0.5,
+        "true_negative": 30,
+        "true_positive": 31
+      },
+      "name": "winnowing"
+    }
+  ],
+  "runtime": {
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "python": "3.14.2",
+    "rapidfuzz": "3.14.6"
+  },
+  "task_family": "pair"
+}
