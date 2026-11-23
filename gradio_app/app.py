@@ -15,7 +15,6 @@ os.environ.setdefault("MPLCONFIGDIR", mpl_config_dir)
 
 import gradio as gr
 import pandas as pd
-from gradio_huggingfacehub_search import HuggingfaceHubSearch
 
 try:
     from gradio_app.html_utils import escape_html as escape_html
@@ -49,8 +48,10 @@ except ModuleNotFoundError:
     )
 
 try:
+    from gradio_app.model_search import build_model_search
     from gradio_app.result_analysis import build_result_analysis_tab
 except ModuleNotFoundError:
+    from model_search import build_model_search
     from result_analysis import build_result_analysis_tab
 
 try:
@@ -2974,8 +2975,7 @@ _DATASET_JOURNEY_GENERATION_LOCK = Lock()
 
 
 def dataset_admission_js(input_count):
-    # Gradio 5 supplies current output values after the listener inputs. Return
-    # exactly the inputs, preserving every server-State placeholder position.
+    # Return exactly the listener inputs, preserving every server-State slot.
     return """(...values) => {
         window.__matheelDatasetRevision = (window.__matheelDatasetRevision || 0) + 1;
         values[%d] = window.__matheelDatasetRevision;
@@ -3032,7 +3032,7 @@ def run_current_dataset_journey(
     generation_state, stage, callback, *args, progress=None,
     admission_revision=None, output_count=None, invalidate_stages=(),
 ):
-    # Gradio 5 passes the server-owned State object by reference. Reset handlers
+    # Gradio passes the server-owned State object by reference. Reset handlers
     # mutate this per-session object, so work already running can observe changes.
     # A queued request also needs its original browser admission: reading only
     # the current server generation when its worker starts would bless old inputs.
@@ -3745,12 +3745,7 @@ official_benchmark_initial = build_official_benchmark_view()
 
 def build_model_routing_controls():
     with gr.Group(visible=True) as group:
-        model = HuggingfaceHubSearch(
-            value=DEFAULT_MODEL,
-            label="Embedding Model",
-            placeholder="Search Hugging Face models",
-            search_type="model",
-        )
+        model = build_model_search(value=DEFAULT_MODEL, label="Embedding Model")
         status = gr.HTML(value=model_status_html(), padding=False)
         vector_backend = gr.Dropdown(
             choices=list(available_vector_backends()),
@@ -3846,11 +3841,9 @@ def build_code_metric_controls():
                 placeholder="1,1,1",
             )
         with gr.Group(visible=False) as codebertscore_group:
-            codebertscore_model = HuggingfaceHubSearch(
+            codebertscore_model = build_model_search(
                 value=DEFAULT_CODEBERTSCORE_MODEL,
                 label="CodeBERTScore Model",
-                placeholder="Search Hugging Face models",
-                search_type="model",
             )
             codebertscore_max_length = gr.Slider(
                 0,
@@ -3950,8 +3943,8 @@ def build_scoring_controls():
             headers=LEXICAL_WEIGHT_COLUMNS,
             datatype=["str", "number"],
             label="Additional lexical weights",
-            row_count=(0, "fixed"),
-            col_count=(2, "fixed"),
+            row_count=0,
+            column_count=2,
             static_columns=[0],
             interactive=True,
             visible=False,
@@ -4050,7 +4043,7 @@ def wire_scoring_controls(controls):
         update_additional_lexical_weights,
         inputs=[controls.features, controls.lexical_weights],
         outputs=controls.lexical_weights,
-        api_name=False,
+        api_visibility="private",
     )
     controls.metric_preset.change(
         apply_metric_preset_gradio,
@@ -4121,8 +4114,6 @@ def wire_scoring_controls(controls):
 
 with gr.Blocks(
     title="Matheel Framework",
-    css=APP_CSS,
-    js=APP_JS,
     fill_width=True,
 ) as demo:
     gr.HTML(value=app_header_html(), container=False, padding=False)
@@ -4440,12 +4431,7 @@ with gr.Blocks(
                             value="Lexical Only",
                             label="Metric Preset",
                         )
-                        dataset_model = HuggingfaceHubSearch(
-                            value=DEFAULT_MODEL,
-                            label="Embedding Model",
-                            placeholder="Search Hugging Face models",
-                            search_type="model",
-                        )
+                        dataset_model = build_model_search(value=DEFAULT_MODEL, label="Embedding Model")
                         dataset_vector_backend = gr.Dropdown(
                             choices=list(available_vector_backends()),
                             value="auto",
@@ -4726,13 +4712,13 @@ with gr.Blocks(
                     dataset_event_revision,
                 ],
                 outputs=[*dataset_evaluation_outputs, dataset_pending_evaluation],
-                api_name=False,
+                api_visibility="private",
                 js=dataset_admission_js(16),
             ).success(
                 commit_current_dataset_journey,
                 inputs=[dataset_journey_generation, dataset_pending_evaluation],
                 outputs=dataset_evaluation_outputs,
-                api_name=False,
+                api_visibility="private",
                 concurrency_id="dataset-journey-commit",
                 concurrency_limit=1,
             )
@@ -4783,13 +4769,13 @@ with gr.Blocks(
                 inputs=[dataset_journey_generation, dataset_scored_state, dataset_threshold_optimize,
                         dataset_event_revision],
                 outputs=[*dataset_threshold_outputs, dataset_pending_threshold],
-                api_name=False,
+                api_visibility="private",
                 js=dataset_admission_js(4),
             ).success(
                 commit_current_dataset_journey,
                 inputs=[dataset_journey_generation, dataset_pending_threshold],
                 outputs=dataset_threshold_outputs,
-                api_name=False,
+                api_visibility="private",
                 concurrency_id="dataset-journey-commit",
                 concurrency_limit=1,
             )
@@ -4811,13 +4797,13 @@ with gr.Blocks(
                     dataset_event_revision,
                 ],
                 outputs=[*dataset_explanation_outputs, dataset_pending_explanation],
-                api_name=False,
+                api_visibility="private",
                 js=dataset_admission_js(9),
             ).success(
                 commit_current_dataset_journey,
                 inputs=[dataset_journey_generation, dataset_pending_explanation],
                 outputs=dataset_explanation_outputs,
-                api_name=False,
+                api_visibility="private",
                 concurrency_id="dataset-journey-commit",
                 concurrency_limit=1,
             )
@@ -4922,7 +4908,7 @@ with gr.Blocks(
                     values[3] = window.__matheelDatasetRevision;
                     return values.slice(0, 6);
                 }""",
-                api_name=False,
+                api_visibility="private",
                 trigger_mode="multiple",
                 concurrency_id="dataset-journey-commit",
                 concurrency_limit=1,
@@ -4967,7 +4953,7 @@ with gr.Blocks(
                     reset_dataset_results,
                     inputs=[dataset_journey_generation, dataset_event_revision, dataset_validation_state],
                     outputs=dataset_result_reset_outputs,
-                    show_api=False,
+                    api_visibility="undocumented",
                     js=dataset_reset_revision_js(3),
                     concurrency_id="dataset-journey-commit",
                     concurrency_limit=1,
@@ -4983,7 +4969,7 @@ with gr.Blocks(
                     dataset_threshold_artifacts,
                     dataset_journey_status,
                 ],
-                show_api=False,
+                api_visibility="undocumented",
                 js=dataset_reset_revision_js(2),
                 concurrency_id="dataset-journey-commit",
                 concurrency_limit=1,
@@ -5006,7 +4992,7 @@ with gr.Blocks(
                         dataset_pair_explain_artifacts,
                         dataset_journey_status,
                     ],
-                    show_api=False,
+                    api_visibility="undocumented",
                     js=dataset_reset_revision_js(2),
                     concurrency_id="dataset-journey-commit",
                     concurrency_limit=1,
@@ -5256,8 +5242,14 @@ with gr.Blocks(
                         value=official_benchmark_initial["artifact"],
                         label="Official Benchmark Result JSON", interactive=False,
                     )
+                    # Gradio 6 emits dropdown input events on blur. Respond to
+                    # value changes and let the view normalize choices from a
+                    # previous task or edition while the dropdowns update.
                     gr.on(
-                        [official_edition.input, official_task.input, official_metric.input, official_method.input, official_refresh.click],
+                        [
+                            official_edition.change, official_task.change, official_metric.change,
+                            official_method.change, official_refresh.click,
+                        ],
                         update_published_benchmark_gradio,
                         inputs=[official_edition, official_task, official_metric, official_method],
                         outputs=[
@@ -5265,7 +5257,8 @@ with gr.Blocks(
                             official_aggregate, official_per_dataset, official_scope,
                             official_protocol, official_configurations, official_artifact,
                         ],
-                        api_name=False, trigger_mode="always_last", concurrency_limit=1,
+                        api_visibility="private", trigger_mode="always_last", concurrency_limit=1,
+                        preprocess=False,
                     )
                 build_result_analysis_tab()
                 with gr.Tab("Ready-made Leaderboard", id="ready-made-leaderboard"):
@@ -5505,12 +5498,7 @@ with gr.Blocks(
                                     value=list(READY_LEADERBOARD_ALGORITHM_CHOICES),
                                     label="Algorithm Presets",
                                 )
-                                ready_model = HuggingfaceHubSearch(
-                                    value=DEFAULT_MODEL,
-                                    label="Embedding Model",
-                                    placeholder="Search Hugging Face models",
-                                    search_type="model",
-                                )
+                                ready_model = build_model_search(value=DEFAULT_MODEL, label="Embedding Model")
                                 ready_vector_backend = gr.Dropdown(
                                     choices=list(available_vector_backends()),
                                     value="auto",
@@ -5629,14 +5617,19 @@ with gr.Blocks(
         handoff_dataset_to_explain,
         inputs=[dataset_file, dataset_task],
         outputs=[map_dataset_file, map_task, workflow_tabs, explain_tabs],
-        api_name=False,
+        api_visibility="private",
     )
     dataset_continue_reports.click(
         handoff_dataset_to_reports,
         inputs=dataset_artifacts,
         outputs=[leaderboard_file, workflow_tabs, reports_tabs],
-        api_name=False,
+        api_visibility="private",
     )
 
+
+def launch(**kwargs):
+    return demo.launch(css=APP_CSS, js=APP_JS, **kwargs)
+
+
 if __name__ == "__main__":
-    demo.launch(show_error=True, debug=True)
+    launch(show_error=True, debug=True)

@@ -14,7 +14,11 @@ python -m venv .venv
 
 Open the local URL shown in the terminal. The Gradio extra supports the app and lexical workflows. Install `.[all]` when you also need every semantic backend, chunker, code metric, and visualization dependency.
 
-The app targets Gradio 5.50, matching the hosted Space and tested dataframe controls. Its dependencies require `gradio>=5.50,<6` because the Hugging Face model-search component requires Gradio below version 6. The [Gradio migration](https://github.com/FahadEbrahim/matheel/issues/284) and [parser/Chonkie migration](https://github.com/FahadEbrahim/matheel/issues/285) are tracked separately.
+The app requires Gradio 6.32 or later within the Gradio 6 series. The Space configuration pins Gradio 6.32.0 and installs Matheel’s feature extras. To launch from Python with the app’s CSS and navigation behavior, use `gradio_app.app.launch()`.
+
+Enter an exact Hugging Face model ID or a local model path in the model field. To discover public Hub models, open **Search Hugging Face**, enter a query, and choose a result in the model dropdown. Search contacts Hugging Face only when submitted. Manual model entry also works offline.
+
+For Gradio API clients, the last input on the pair, collection, and suite endpoints is the lexical-weights table. Gradio 6 reports its keyword as `lexical_weights`. Use that keyword when updating clients that used the Gradio 5 schema’s `progress` name.
 
 The hosted Space installs a pinned published Matheel package. Synchronization waits until that release's Python package code matches the checkout, so unreleased APIs cannot break the hosted app. Use a local checkout to try new features before their package release.
 

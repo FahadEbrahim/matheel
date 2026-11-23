@@ -8,7 +8,7 @@ import time
 import zipfile
 from pathlib import Path
 from urllib.error import URLError
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import urlsplit
 from urllib.request import urlopen
 
 import pytest
@@ -250,38 +250,8 @@ def gradio_config(gradio_server):
         return json.load(response)
 
 
-def _expected_gradio_queue_close_abort(event, queue_trace):
-    # This exact Gradio 5.50 client closes its SSE reader by aborting it after
-    # close_stream, then reports its own intentional abort through onerror.
-    # Restrict the exception to that stack and a fully successful same-page queue.
-    origin = r"http://(?:127\.0\.0\.1|localhost|\[::1\]):\d+"
-    stack = (
-        r"console\.error: AbortError: signal is aborted without reason\n"
-        rf"    at ye \((?P<origin>{origin})/assets/index-DputZZxm\.js:4:1346\)\n"
-        r"    at Zt\.a\.onmessage \((?P=origin)/assets/index-DputZZxm\.js:4:841\)\n"
-        r"    at (?P=origin)/assets/index-DputZZxm\.js:4:2505"
-    )
-    if not re.fullmatch(stack, event):
-        return False
-    joins = queue_trace.get("joins", [])
-    queue_events = queue_trace.get("events", [])
-    if not joins or not any(item.get("msg") == "close_stream" for item in queue_events):
-        return False
-    completed = [item for item in queue_events if item.get("msg") == "process_completed"]
-    completions = {item.get("event_id"): item.get("success") for item in completed}
-    return all(
-        join.get("event_id") and completions.get(join["event_id"]) is True for join in joins
-    ) and all(item.get("success") is True for item in completed)
-
-
-def _classify_browser_diagnostics(events, console_errors, queue_traces):
-    fatal = [event for event in events if event.startswith("pageerror:")]
-    informational = []
-    for current_page, event in console_errors:
-        if _expected_gradio_queue_close_abort(event, queue_traces.get(current_page, {})):
-            informational.append(f"expected-cleanup: Gradio 5.50 normal queue close; {event}")
-        else:
-            fatal.append(event)
+def _browser_diagnostic_errors(events, queue_traces):
+    fatal = [event for event in events if event.startswith(("pageerror:", "console.error:"))]
     for trace in queue_traces.values():
         completed = [
             item for item in trace.get("events", []) if item.get("msg") == "process_completed"
@@ -296,13 +266,12 @@ def _classify_browser_diagnostics(events, console_errors, queue_traces):
             for join in trace.get("joins", [])
             if not join.get("event_id") or join["event_id"] not in completed_ids
         )
-    return fatal, informational
+    return fatal
 
 
 @pytest.fixture
 def gradio_page(page, request, gradio_server, browser_artifacts_dir):
     events = []
-    console_errors = []
     unexpected_external_traffic = []
     local_hosts = {"127.0.0.1", "localhost", "::1"}
     offline_stubs = {
@@ -333,19 +302,6 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
             record_external("request", route.request.method, request_url)
             route.abort("blockedbyclient")
             return
-        # Gradio 5.50 can mount its progress EventSource before assigning the
-        # upload ID. The file POST is independent, so complete only that broken
-        # local progress stream and keep console errors meaningful.
-        if (
-            parsed.path.endswith("/gradio_api/upload_progress")
-            and parse_qs(parsed.query).get("upload_id") == ["undefined"]
-        ):
-            route.fulfill(
-                status=200,
-                content_type="text/event-stream",
-                body='data: {"msg": "done"}\n\n',
-            )
-            return
         route.continue_()
 
     def route_web_socket(web_socket):
@@ -362,12 +318,6 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
     page.context.add_init_script("""(() => {
         window.__matheelQueueJoins = [];
         window.__matheelQueueEvents = [];
-        window.__matheelGradioTargets = [];
-        const originalListen = EventTarget.prototype.addEventListener;
-        EventTarget.prototype.addEventListener = function(type) {
-            if (type === "gradio") window.__matheelGradioTargets.push(this);
-            return originalListen.apply(this, arguments);
-        };
         const originalFetch = window.fetch;
         window.fetch = async function(input, init) {
             const response = await originalFetch.apply(this, arguments);
@@ -403,8 +353,6 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
         def record_console(message):
             event = f"console.{message.type}: {message.text}"
             events.append(event)
-            if message.type == "error":
-                console_errors.append((current_page, event))
 
         current_page.route("**/*", route_request)
         current_page.route_web_socket("**/*", route_web_socket)
@@ -458,18 +406,14 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
                 queue_traces[current_page] = current_page.evaluate(
                     "({joins: window.__matheelQueueJoins, events: window.__matheelQueueEvents})"
                 )
-        fatal_events, informational = _classify_browser_diagnostics(
-            events, console_errors, queue_traces,
-        )
+        fatal_events = _browser_diagnostic_errors(events, queue_traces)
         fatal_events.extend(observation_errors)
-        events.extend(informational)
         events.extend(observation_errors)
         should_persist = (
             not setup_succeeded
             or report_failed
             or fatal_events
             or unexpected_external_traffic
-            or informational
         )
         if should_persist:
             safe_name = re.sub(r"[^A-Za-z0-9_.-]+", "_", request.node.nodeid).strip("_")

@@ -34,6 +34,10 @@ def main():
         raise RuntimeError(f"Could not load Gradio app from {app_path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    # Gradio 6 emits DOM IDs only for explicit elem_id values.
+    for block in module.demo.blocks.values():
+        if hasattr(block, "elem_id") and not block.elem_id:
+            block.elem_id = f"component-{block._id}"
     if args.dataset_barriers is not None:
         barriers = args.dataset_barriers
         barriers.mkdir(parents=True, exist_ok=True)
@@ -57,7 +61,7 @@ def main():
                 finally:
                     (barriers / f"{_stage}.finished").touch()
             setattr(module, name, held_callback)
-    module.demo.launch(
+    module.launch(
         server_name=args.host,
         server_port=args.port,
         show_error=True,

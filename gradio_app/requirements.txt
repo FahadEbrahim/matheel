@@ -1,1 +1,3 @@
-matheel[all]==0.7.1
+matheel[chunking_code,metrics,semantic,visualization]==0.7.1
+gradio==6.32.0
+huggingface-hub>=1,<2

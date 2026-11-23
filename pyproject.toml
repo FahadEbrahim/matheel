@@ -66,9 +66,8 @@ semantic = [
 gradio = [
     "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3",
-    # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
-    "gradio>=5.50,<6",
-    "gradio-huggingfacehub-search>=0.0.8,<0.1"
+    "gradio>=6.32.0,<7",
+    "huggingface-hub>=1,<2"
 ]
 visualization = [
     "umap-learn>=0.6.0,<0.7"
@@ -85,9 +84,8 @@ all = [
     "sentencepiece>=0.2,<0.3",
     "model2vec>=0.10,<0.11",
     "umap-learn>=0.6.0,<0.7",
-    # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
-    "gradio>=5.50,<6",
-    "gradio-huggingfacehub-search>=0.0.8,<0.1"
+    "gradio>=6.32.0,<7",
+    "huggingface-hub>=1,<2"
 ]
 dev = [
     "pytest>=8,<10",

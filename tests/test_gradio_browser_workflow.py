@@ -99,20 +99,22 @@ def _successful_closed_queue():
     }
 
 
-def test_browser_diagnostics_log_only_proven_normal_queue_close_cleanup():
-    current_page = object()
-    fatal, informational = BROWSER_CONFTEST._classify_browser_diagnostics(
-        [QUEUE_CLOSE_ABORT], [(current_page, QUEUE_CLOSE_ABORT)],
-        {current_page: _successful_closed_queue()},
-    )
-
-    assert fatal == []
-    assert len(informational) == 1
-    assert "expected-cleanup: Gradio 5.50 normal queue close" in informational[0]
-    assert QUEUE_CLOSE_ABORT in informational[0]
+def test_browser_diagnostics_accept_a_clean_queue_close():
+    assert BROWSER_CONFTEST._browser_diagnostic_errors([], {object(): _successful_closed_queue()}) == []
 
 
-def test_browser_fixture_retains_expected_cleanup_diagnostics_on_success(tmp_path):
+@pytest.mark.parametrize("error", [
+    QUEUE_CLOSE_ABORT,
+    "console.error: AbortError: failed unrelated request",
+    "console.error: TypeError: broken application output",
+    "pageerror: browser callback failed",
+])
+def test_browser_diagnostics_reject_errors_even_after_a_successful_queue(error):
+    traces = {object(): _successful_closed_queue()}
+    assert BROWSER_CONFTEST._browser_diagnostic_errors([error], traces) == [error]
+
+
+def test_browser_fixture_retains_console_error_diagnostics_after_queue_completion(tmp_path):
     class CompletedQueuePage(SetupFailingPage):
         def __init__(self):
             self.handlers = {}
@@ -142,67 +144,26 @@ def test_browser_fixture_retains_expected_cleanup_diagnostics_on_success(tmp_pat
     )
 
     assert next(fixture) is page
-    with pytest.raises(StopIteration):
+    with pytest.raises(AssertionError, match="Browser emitted unexpected errors"):
         next(fixture)
 
     logs = list(tmp_path.glob("*-browser.log"))
     assert len(logs) == 1
-    assert "expected-cleanup: Gradio 5.50 normal queue close" in logs[0].read_text()
+    assert QUEUE_CLOSE_ABORT in logs[0].read_text()
     assert len(list(tmp_path.glob("*-queue.json"))) == 1
 
 
-@pytest.mark.parametrize("case", [
-    "other_abort", "changed_client", "no_server_close", "no_admissions",
-    "incomplete_job", "failed_job", "duplicate_completion", "other_page_close",
-    "ordinary_console_error",
-])
-def test_browser_diagnostics_keep_unproven_cleanup_and_other_console_errors_fatal(case):
-    current_page = object()
-    trace = _successful_closed_queue()
-    traces = {current_page: trace}
-    event = QUEUE_CLOSE_ABORT
-    if case == "other_abort":
-        event = "console.error: AbortError: failed unrelated request"
-    elif case == "changed_client":
-        event = event.replace("index-DputZZxm.js", "index-another-client.js")
-    elif case == "no_server_close":
-        trace["events"].pop()
-    elif case == "no_admissions":
-        trace["joins"].clear()
-    elif case == "incomplete_job":
-        trace["joins"].append({"event_id": "unfinished-job"})
-    elif case == "failed_job":
-        trace["events"][0]["success"] = False
-    elif case == "duplicate_completion":
-        trace["events"].insert(0, {
-            "msg": "process_completed", "event_id": "finished-job", "success": False,
-        })
-    elif case == "other_page_close":
-        traces = {object(): trace}
-    elif case == "ordinary_console_error":
-        event = "console.error: TypeError: broken application output"
-
-    fatal, informational = BROWSER_CONFTEST._classify_browser_diagnostics(
-        [event], [(current_page, event)], traces,
-    )
-
-    assert event in fatal
-    assert informational == []
-
-
-def test_browser_diagnostics_keep_page_errors_and_failed_or_incomplete_jobs_fatal():
-    first_page, second_page = object(), object()
-    page_error = QUEUE_CLOSE_ABORT.replace("console.error:", "pageerror:")
+def test_browser_diagnostics_keep_failed_or_incomplete_jobs_fatal():
     failed_trace = {
         "joins": [{"event_id": "failed"}, {"event_id": "unfinished"}],
-        "events": [{"msg": "process_completed", "event_id": "failed", "success": False}],
+        "events": [
+            {"msg": "process_completed", "event_id": "failed", "success": False},
+            {"msg": "process_completed", "event_id": "failed", "success": True},
+        ],
     }
-    fatal, informational = BROWSER_CONFTEST._classify_browser_diagnostics(
-        [QUEUE_CLOSE_ABORT, page_error], [(first_page, QUEUE_CLOSE_ABORT)],
-        {first_page: _successful_closed_queue(), second_page: failed_trace},
+    fatal = BROWSER_CONFTEST._browser_diagnostic_errors(
+        [], {object(): _successful_closed_queue(), object(): failed_trace},
     )
 
-    assert page_error in fatal
     assert any(item.startswith("queue-error:") and '"event_id": "failed"' in item for item in fatal)
     assert "queue-incomplete: unfinished" in fatal
-    assert len(informational) == 1
