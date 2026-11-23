@@ -5,7 +5,7 @@ The release records separate scopes for similarity pairs, functional retrieval, 
 | Scope | Results and reproduction |
 | --- | --- |
 | SimilCode Java and C#, POJ-104, XLCoST directions, and CodeXGLUE BigCloneBench | [Similarity datasets](similarity/README.md) |
-| NiCad, PMD CPD, SourcererCC, Copydetect, and archived MOSS | [Detector evidence](detectors/README.md) |
+| Typed BigCloneBench v2 recall, NiCad, PMD CPD, SourcererCC, Copydetect, and archived MOSS | [Detector evidence](detectors/README.md) |
 | AIGCodeSet Python origin classification on held-out problem groups | [Authorship benchmark](../authorship-v1/README.md) |
 
 The data acquisition steps are part of each result recipe. Source corpora stay in local working directories. Published tables contain metrics, coordinates or opaque IDs, and checksums. Follow the original dataset terms when accessing or sharing data.

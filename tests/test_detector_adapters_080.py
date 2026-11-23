@@ -28,7 +28,7 @@ def test_bigcloneeval_recovers_archived_database_only_in_private_copy(tmp_path, 
 
     monkeypatch.setattr(bigcloneeval, "run_local", fake_run)
     output = staging / "raw.csv"
-    bigcloneeval._export_h2(staging, database, staging / "extract.sql", output, "java", "h2.jar", 512, 30, 2000)
+    bigcloneeval._export_h2(staging, database, staging / "extract.sql", (output,), "java", "h2.jar", 512, 30, 2000)
     assert calls == [f"jdbc:h2:{tmp_path / 'bcb'};IFEXISTS=TRUE;ACCESS_MODE_DATA=r",
                      f"jdbc:h2:{staging / 'bcb'};IFEXISTS=TRUE"]
     assert database.read_bytes() == b"original"

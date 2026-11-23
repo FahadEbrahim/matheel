@@ -24,6 +24,7 @@ on:
           - all
           - models
           - detectors
+          - sourcerercc
 
 permissions:
   contents: read
@@ -151,5 +152,30 @@ jobs:
         with:
           name: local-detector-results-py${{ inputs.python-version || '3.12' }}
           path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  sourcerercc:
+    name: SourcererCC pinned Linux artifact
+    if: github.event_name == 'schedule' || inputs.suite == 'all' || inputs.suite == 'sourcerercc'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install Matheel
+        run: python -m pip install -e .
+      - name: Verify native Java method spans and typed recall
+        run: python scripts/check_sourcerercc_artifact.py --output test-results/sourcerercc
+      - name: Retain SourcererCC evidence
+        if: always()
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: sourcerercc-linux-results
+          path: test-results/sourcerercc/
           if-no-files-found: ignore
           retention-days: 14

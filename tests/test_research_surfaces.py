@@ -58,6 +58,56 @@ def test_authorship_cli_prepares_source_free_replay(sample_benchmarks, tmp_path)
     assert check.exit_code == 0, check.output
 
 
+def test_bigcloneeval_cli_forwards_per_type_limit(tmp_path, monkeypatch):
+    from matheel.external_detectors import bigcloneeval
+
+    database, java, jar = (tmp_path / name for name in ("bcb.h2.db", "java", "h2.jar"))
+    for path in (database, java, jar):
+        path.touch()
+    output = tmp_path / "references.csv"
+
+    def extract(database_arg, output_arg, *, java_path, h2_jar, max_references,
+                max_references_per_type, timeout_seconds):
+        assert (database_arg, output_arg, java_path, h2_jar) == (database, output, java, jar)
+        assert max_references is None
+        assert max_references_per_type == 20
+        assert timeout_seconds == 600
+        output_arg.touch()
+
+    monkeypatch.setattr(bigcloneeval, "extract_references", extract)
+    result = CliRunner().invoke(main, [
+        "extract-bigcloneeval-references", str(database), str(output), "--java", str(java),
+        "--h2-jar", str(jar), "--max-references-per-type", "20",
+    ])
+    assert result.exit_code == 0, result.output
+    assert output.is_file()
+
+
+def test_clone_report_cli_records_sourcerercc_project_block_provenance(tmp_path):
+    report, source_map, output, metadata = (
+        tmp_path / name for name in ("native.csv", "source_map.csv", "out.csv", "report.json")
+    )
+    report.write_text("12,44,13,44\n")
+    source_map.write_text(
+        "native_project_id,native_id,file_id,start_line,end_line\n"
+        "12,44,a/File.java,2,15\n13,44,b/File.java,3,16\n"
+    )
+    checksum = "1" * 64
+    result = CliRunner().invoke(main, [
+        "import-clone-report", str(report), str(output), "--format", "sourcerercc",
+        "--source-map", str(source_map), "--granularity", "function", "--threshold", "0.8",
+        "--minimum-tokens", "20", "--corpus-sha256", checksum, "--detector-version", "fixture",
+        "--metadata-out", str(metadata),
+    ])
+    assert result.exit_code == 0, result.output
+    assert "12:44" in output.read_text()
+    provenance = json.loads(metadata.read_text())
+    assert {key: provenance[key] for key in ("granularity", "minimum_tokens", "threshold", "version", "corpus_sha256")} == {
+        "granularity": "function", "minimum_tokens": 20, "threshold": 0.8,
+        "version": "fixture", "corpus_sha256": checksum,
+    }
+
+
 def test_gradio_clone_panel_exports_source_free_evidence(sample_benchmarks):
     pytest.importorskip("gradio")
     from gradio_app.research_benchmarks import evaluate_clones_gradio

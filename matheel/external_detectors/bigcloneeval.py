@@ -4,6 +4,7 @@ import csv
 import os
 import shutil
 import tempfile
+from itertools import chain
 from pathlib import Path
 
 from ..clone_discovery import CloneReference, SourceSpan, write_clone_references
@@ -22,8 +23,21 @@ _REFERENCE_SQL = """
       JOIN functions a ON c.function_id_one = a.id
       JOIN functions b ON c.function_id_two = b.id
      WHERE c.internal = FALSE AND c.syntactic_type IN (1, 2, 3)
+     {type_filter}
      ORDER BY c.functionality_id, c.function_id_one, c.function_id_two
 """
+_NATIVE_TYPE_FILTERS = (
+    "c.syntactic_type = 1",
+    "c.syntactic_type = 2",
+    "c.syntactic_type = 3 AND LEAST(c.similarity_line, c.similarity_token) >= 1.0",
+    "c.syntactic_type = 3 AND LEAST(c.similarity_line, c.similarity_token) >= 0.9 "
+    "AND LEAST(c.similarity_line, c.similarity_token) < 1.0",
+    "c.syntactic_type = 3 AND LEAST(c.similarity_line, c.similarity_token) >= 0.7 "
+    "AND LEAST(c.similarity_line, c.similarity_token) < 0.9",
+    "c.syntactic_type = 3 AND LEAST(c.similarity_line, c.similarity_token) >= 0.5 "
+    "AND LEAST(c.similarity_line, c.similarity_token) < 0.7",
+    "c.syntactic_type = 3 AND LEAST(c.similarity_line, c.similarity_token) < 0.5",
+)
 
 
 def _clone_type(syntactic, line_similarity, token_similarity):
@@ -64,7 +78,7 @@ def _read_native_references(path):
             )
 
 
-def _export_h2(root, database, script, raw, java, jar, heap_mb, timeout_seconds, max_result_bytes):
+def _export_h2(root, database, script, reports, java, jar, heap_mb, timeout_seconds, max_result_bytes):
     database_name = database.name.removesuffix(".h2.db")
 
     def export(driver_path, *, read_only):
@@ -72,7 +86,7 @@ def _export_h2(root, database, script, raw, java, jar, heap_mb, timeout_seconds,
         run_local(
             [java, f"-Xmx{heap_mb}m", "-cp", jar, "org.h2.tools.RunScript", "-url",
              f"jdbc:h2:{driver_path};IFEXISTS=TRUE{mode}", "-user", "sa", "-password", "", "-script", script],
-            cwd=root, timeout_seconds=timeout_seconds, result_paths=(raw,), max_result_bytes=max_result_bytes,
+            cwd=root, timeout_seconds=timeout_seconds, result_paths=reports, max_result_bytes=max_result_bytes,
         )
 
     try:
@@ -94,7 +108,7 @@ def _export_h2(root, database, script, raw, java, jar, heap_mb, timeout_seconds,
 
 
 def extract_references(
-    database_path, output_path, *, java_path, h2_jar, max_references=None,
+    database_path, output_path, *, java_path, h2_jar, max_references=None, max_references_per_type=None,
     timeout_seconds=600, max_result_bytes=2_000_000_000, heap_mb=2048,
 ):
     """Export known-pair references with BigCloneEval's BOTH strata and native size minima.
@@ -102,7 +116,8 @@ def extract_references(
     The pinned H2 jar comes from the upstream BigCloneEval v1.1 tree. The H2
     database is opened read-only. An archive that needs H2 log recovery is
     recovered in private temporary storage. A limit selects the first
-    references in a defined ID order and describes a separate scope.
+    references in a defined ID order, globally or within each of seven
+    disjoint clone types, and describes a separate scope.
     """
     java = required_file(java_path, "Java executable")
     jar = required_file(h2_jar, "BigCloneEval H2 JAR")
@@ -112,25 +127,35 @@ def extract_references(
     if not database.name.endswith(".h2.db") or ";" in str(database):
         raise DetectorError("BigCloneEval requires a local .h2.db database path without semicolons.")
     heap_mb = positive_number(heap_mb, "heap_mb", integer=True)
-    sql = " ".join(_REFERENCE_SQL.split())
-    if max_references is not None:
-        max_references = positive_number(max_references, "max_references", integer=True)
-        sql += f" LIMIT {max_references}"
+    if max_references_per_type is not None and max_references is not None:
+        raise DetectorError("Use either max_references or max_references_per_type.")
+    filters, limit = (("",), max_references) if max_references_per_type is None else (
+        tuple(f"AND ({value})" for value in _NATIVE_TYPE_FILTERS), max_references_per_type,
+    )
+    if limit is not None:
+        limit = positive_number(limit, "reference limit", integer=True)
     output = Path(output_path)
     if output.resolve() in {database, jar, java}:
         raise DetectorError("BigCloneEval output must be distinct from its supplied inputs.")
     with tempfile.TemporaryDirectory(prefix="matheel-bce-") as directory:
         root = Path(directory)
-        script, raw = root / "extract.sql", root / "raw.csv"
-        script.write_text(f"CALL CSVWRITE('raw.csv', '{sql}');\n", encoding="utf-8")
-        _export_h2(root, database, script, raw, java, jar, heap_mb, timeout_seconds, max_result_bytes)
+        script = root / "extract.sql"
+        reports = tuple(root / f"raw-{index}.csv" for index in range(len(filters)))
+        statements = []
+        for type_filter, report in zip(filters, reports, strict=True):
+            sql = " ".join(_REFERENCE_SQL.format(type_filter=type_filter).split())
+            if limit is not None:
+                sql += f" LIMIT {limit}"
+            statements.append(f"CALL CSVWRITE('{report.name}', '{sql}');\n")
+        script.write_text("".join(statements), encoding="utf-8")
+        _export_h2(root, database, script, reports, java, jar, heap_mb, timeout_seconds, max_result_bytes)
         # Publish only a complete normalized manifest. Staging in the same parent
         # allows the atomic rename on platforms with multiple mounted volumes.
         handle = tempfile.NamedTemporaryFile(dir=output.parent, prefix=".matheel-bce-", delete=False)
         handle.close()
         pending = Path(handle.name)
         try:
-            write_clone_references(pending, _read_native_references(raw))
+            write_clone_references(pending, chain.from_iterable(map(_read_native_references, reports)))
             os.replace(pending, output)
         finally:
             pending.unlink(missing_ok=True)

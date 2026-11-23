@@ -343,10 +343,17 @@ def bce_replay(checkout, java, root):
     )
 
 
-def bcb_subset(args, java, root):
+def bcb_subset(args, java, root, *, stratified, database_sha):
     jar = args.bigcloneeval_root / "libs" / "h2-1.3.176.jar"
+    limits = {"max_references_per_type": 20} if stratified else {"max_references": 100}
+    suffix = "typed-slice" if stratified else "subset"
+    scope = (
+        "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs"
+        if stratified else "First 100 non-internal references ordered by functionality and function IDs"
+    ) + ", with both source files available"
+    root.mkdir()
     normalized = bigcloneeval.extract_references(
-        args.bcb_db, root / "bcb-reference.csv", java_path=java, h2_jar=jar, max_references=100,
+        args.bcb_db, root / "bcb-reference.csv", java_path=java, h2_jar=jar, **limits,
     )
     corpus = root / "bcb-source"
     corpus.mkdir()
@@ -375,9 +382,6 @@ def bcb_subset(args, java, root):
         reports.append(("nicad", nicad.run_detector(corpus, args.nicad, txl_path=args.txl)))
     if args.pmd:
         reports.append(("pmd-cpd", pmd_cpd.run_detector(corpus, args.pmd, java_home=args.java_home, minimum_tokens=50)))
-    database_sha = file_sha256(args.bcb_db)
-    if database_sha != BCE_DATABASE_SHA256:
-        raise ValueError("BigCloneBench H2 database does not match the pinned CloReCo archive.")
     results = []
     for detector, native in reports:
         scored = evaluate_clone_discovery(usable, native.findings, **BCE_FILTERS)
@@ -386,14 +390,13 @@ def bcb_subset(args, java, root):
         output = write_clone_findings(root / f"bcb-{detector}.csv", native.findings)
         provenance = {key: value for key, value in native.metadata.items() if key != "report_sha256"}
         results.append(evidence(
-            f"{detector}-bigclonebench-v2-subset", detector, "BigCloneBench v2 / IJaDataset 2.0",
-            "First 100 non-internal references ordered by official functionality and function IDs; both sources available",
+            f"{detector}-bigclonebench-v2-{suffix}", detector, "BigCloneBench v2 / IJaDataset 2.0", scope,
             {**scored["overall"], "reference_pairs_exported": len(references), "reference_pairs_with_source": len(usable),
              "reported_pairs": len(native.findings), "staged_files": len(copied), "strata": scored["strata"]},
             {**provenance, "cloreco_oci_manifest": BCE_IMAGE, "h2_database_sha256": database_sha,
              "database_oci_layer": BCE_DATABASE_LAYER, "source_oci_layer": BCE_SOURCE_LAYER,
              "typed_references_sha256": file_sha256(normalized), "selected_source_digest": digest_json(copied),
-             "normalized_findings_sha256": file_sha256(output), "protocol": scored["protocol"]},
+             "normalized_findings_sha256": file_sha256(output), "selection": limits, "protocol": scored["protocol"]},
         ))
     return results
 
@@ -408,6 +411,7 @@ def main():
     parser.add_argument("--bigcloneeval-root", type=Path, help="Prebuilt official BigCloneEval v1.1 checkout.")
     parser.add_argument("--bcb-db", type=Path, help="Local BigCloneBench v2 H2 database.")
     parser.add_argument("--ija-root", type=Path, help="Extracted IJaDataset bcb_reduced directory.")
+    parser.add_argument("--bcb-slice", default="both", choices=("both", "prefix", "stratified"))
     parser.add_argument("--similcode-dir", type=Path, help="Local SimilCode v2.4.0 metadata and archived MOSS reports.")
     parser.add_argument("--irplag-dir", type=Path, help="Extracted IRPlag Java dataset directory.")
     parser.add_argument("--irplag-comparison", type=Path, help="Existing Matheel JPlag/Dolos IRPlag scores directory.")
@@ -430,7 +434,13 @@ def main():
             java = args.java_home.resolve() / "bin" / "java"
             results.append(bce_replay(args.bigcloneeval_root.resolve(), java, root))
             if args.bcb_db:
-                results.extend(bcb_subset(args, java, root))
+                database_sha = file_sha256(args.bcb_db)
+                if database_sha != BCE_DATABASE_SHA256:
+                    raise ValueError("BigCloneBench H2 database does not match the pinned CloReCo archive.")
+                if args.bcb_slice in {"both", "prefix"}:
+                    results.extend(bcb_subset(args, java, root / "prefix", stratified=False, database_sha=database_sha))
+                if args.bcb_slice in {"both", "stratified"}:
+                    results.extend(bcb_subset(args, java, root / "typed", stratified=True, database_sha=database_sha))
         if args.irplag_dir:
             results.append(irplag_run(args.irplag_dir, args.irplag_comparison, root))
         report = {

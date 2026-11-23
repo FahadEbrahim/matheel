@@ -151,19 +151,27 @@ def register_research_commands(main):
     @click.argument("output", type=_OUTPUT_FILE)
     @click.option("--format", "report_format", type=click.Choice(["nicad", "pmd-cpd", "sourcerercc"]), required=True)
     @click.option("--source-map", type=_INPUT_FILE, help="JSON path-to-ID map or SourcererCC mapping CSV.")
+    @click.option("--granularity", type=click.Choice(["file", "function", "block"]), help="SourcererCC source granularity.")
+    @click.option("--threshold", type=click.FloatRange(0, 1), help="SourcererCC native similarity threshold.")
+    @click.option("--minimum-tokens", type=click.IntRange(min=1), help="Record the SourcererCC token minimum.")
+    @click.option("--corpus-sha256", help="Record the SHA-256 digest of the SourcererCC input corpus.")
+    @click.option("--detector-version", "version", help="SourcererCC version or pinned revision.")
     @click.option("--metadata-out", type=_OUTPUT_FILE)
-    def import_clone_report_command(report_file, output, report_format, source_map, metadata_out):
+    def import_clone_report_command(report_file, output, report_format, source_map, metadata_out, **report_options):
         """Convert a recorded detector report to Matheel's span-pair CSV."""
         from .clone_discovery import write_clone_findings
         from .external_detectors import nicad, pmd_cpd, sourcerercc
 
         try:
             _check_output_paths((output, metadata_out), (report_file, source_map))
+            report_options = {key: value for key, value in report_options.items() if value is not None}
             if report_format == "sourcerercc":
                 if source_map is None:
                     raise ValueError("SourcererCC reports require a mapping CSV via --source-map.")
-                report = sourcerercc.parse_report(report_file, source_map)
+                report = sourcerercc.parse_report(report_file, source_map, **report_options)
             else:
+                if report_options:
+                    raise ValueError("The supplied report metadata options apply only to SourcererCC.")
                 parser = nicad if report_format == "nicad" else pmd_cpd
                 report = parser.parse_report(report_file, source_map=_read_map(source_map))
             output.parent.mkdir(parents=True, exist_ok=True)
@@ -221,6 +229,8 @@ def register_research_commands(main):
     @click.option("--java", "java_path", type=_INPUT_FILE, required=True)
     @click.option("--h2-jar", type=_INPUT_FILE, required=True)
     @click.option("--max-references", type=click.IntRange(min=1), help="Limit extraction to a bounded reference scope.")
+    @click.option("--max-references-per-type", type=click.IntRange(min=1),
+                  help="Limit extraction separately for each native clone-type stratum.")
     @click.option("--timeout-seconds", type=click.IntRange(min=1), default=600, show_default=True)
     def extract_bigcloneeval_references_command(database, output, java_path, h2_jar, **options):
         """Export typed references from a local BigCloneEval v1.1 H2 database."""

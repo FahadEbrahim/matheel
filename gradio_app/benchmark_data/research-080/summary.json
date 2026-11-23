@@ -334,7 +334,7 @@
     },
     {
       "dataset": "BigCloneBench v2 / IJaDataset 2.0",
-      "scope": "First 100 non-internal references ordered by official functionality and function IDs; both sources available",
+      "scope": "First 100 non-internal references ordered by functionality and function IDs, with both source files available",
       "method": "NiCad v7.0 (4.4.24)",
       "metric": "Clone recall",
       "value": 0.0,
@@ -345,7 +345,7 @@
     },
     {
       "dataset": "BigCloneBench v2 / IJaDataset 2.0",
-      "scope": "First 100 non-internal references ordered by official functionality and function IDs; both sources available · Weak Type 3 / Type 4",
+      "scope": "First 100 non-internal references ordered by functionality and function IDs, with both source files available · Weak Type 3 / Type 4",
       "method": "NiCad v7.0 (4.4.24)",
       "metric": "Clone recall",
       "value": 0.0,
@@ -356,7 +356,7 @@
     },
     {
       "dataset": "BigCloneBench v2 / IJaDataset 2.0",
-      "scope": "First 100 non-internal references ordered by official functionality and function IDs; both sources available",
+      "scope": "First 100 non-internal references ordered by functionality and function IDs, with both source files available",
       "method": "PMD CPD 7.29.0",
       "metric": "Clone recall",
       "value": 0.0,
@@ -367,11 +367,209 @@
     },
     {
       "dataset": "BigCloneBench v2 / IJaDataset 2.0",
-      "scope": "First 100 non-internal references ordered by official functionality and function IDs; both sources available · Weak Type 3 / Type 4",
+      "scope": "First 100 non-internal references ordered by functionality and function IDs, with both source files available · Weak Type 3 / Type 4",
       "method": "PMD CPD 7.29.0",
       "metric": "Clone recall",
       "value": 0.0,
       "evaluated": 100,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.6204379562043796,
+      "evaluated": 137,
+      "coverage_unit": "reference pairs",
+      "matched": 85,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 1",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 20,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.7297297297297297,
+      "evaluated": 37,
+      "coverage_unit": "reference pairs",
+      "matched": 27,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2 consistent",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.631578947368421,
+      "evaluated": 19,
+      "coverage_unit": "reference pairs",
+      "matched": 12,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2 blind",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.8333333333333334,
+      "evaluated": 18,
+      "coverage_unit": "reference pairs",
+      "matched": 15,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 very strong",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.9,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 18,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 strong",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 20,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 moderate",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Weak Type 3 / Type 4",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.291970802919708,
+      "evaluated": 137,
+      "coverage_unit": "reference pairs",
+      "matched": 40,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 1",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 20,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.3783783783783784,
+      "evaluated": 37,
+      "coverage_unit": "reference pairs",
+      "matched": 14,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2 consistent",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.3684210526315789,
+      "evaluated": 19,
+      "coverage_unit": "reference pairs",
+      "matched": 7,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2 blind",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.3888888888888889,
+      "evaluated": 18,
+      "coverage_unit": "reference pairs",
+      "matched": 7,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 very strong",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.3,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 6,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 strong",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 moderate",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Weak Type 3 / Type 4",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
       "coverage_unit": "reference pairs",
       "matched": 0,
       "source": "benchmarks/research-080/detectors/results.json"
@@ -575,8 +773,8 @@
     },
     {
       "path": "benchmarks/research-080/detectors/results.json",
-      "sha256": "8995cad2575d92aecd9156c1009c337cd8d1f26ef6d7bf3a5c6f6e205142a3ed",
-      "rows": 26
+      "sha256": "ab83fff940ad8d096fbf02b44ee7a0b26de964d7dae4342b6532312a91fcb997",
+      "rows": 44
     },
     {
       "path": "benchmarks/research-080/similarity/codexglue-bcb-test/results.json",

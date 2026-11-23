@@ -161,10 +161,11 @@ matheel run-clone-detector nicad ./corpus /tools/nicad/bin/nicad ./runs/nicad.cs
 matheel run-clone-detector pmd-cpd ./corpus /tools/pmd/bin/pmd ./runs/cpd.csv \
   --options ./pmd-options.json
 matheel import-clone-report ./native/results.pairs ./runs/sourcerercc.csv \
-  --format sourcerercc --source-map ./native/source-spans.csv --metadata-out ./runs/sourcerercc.json
+  --format sourcerercc --source-map ./native/source-spans.csv \
+  --granularity function --threshold 0.8 --minimum-tokens 20 --metadata-out ./runs/sourcerercc.json
 ```
 
-Use the [clone discovery evaluator](research_benchmarks.md#clone-discovery) to measure reference recall by type. A file-level SourcererCC mapping defines a file-level result. Function-level recall needs original method spans for both sides of every finding.
+Use the [clone discovery evaluator](research_benchmarks.md#clone-discovery) to measure reference recall by type. A file-level SourcererCC mapping defines a file-level result. Function-level recall needs original method spans for both sides of every finding. Native four-column `project,block,project,block` reports use a mapping CSV with `native_project_id,native_id,file_id,start_line,end_line`. Two-column pair reports use the same mapping without `native_project_id`. Use `--detector-version` and `--corpus-sha256` to retain provenance recorded by the execution pipeline.
 
 Install Copydetect separately and select it through the same local algorithm interface used for JPlag and Dolos. The pinned PyPI wheel passed the short, empty, and identical Java fixture on Python 3.11, 3.12, 3.13, and 3.14.
 
