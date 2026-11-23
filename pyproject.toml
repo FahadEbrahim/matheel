@@ -71,7 +71,7 @@ gradio = [
     "gradio-huggingfacehub-search>=0.0.8,<0.1"
 ]
 visualization = [
-    "umap-learn>=0.5.12,<0.6"
+    "umap-learn>=0.6.0,<0.7"
 ]
 browser = [
     "playwright>=1.61,<2",
@@ -84,14 +84,14 @@ all = [
     "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3",
     "model2vec>=0.10,<0.11",
-    "umap-learn>=0.5.12,<0.6",
+    "umap-learn>=0.6.0,<0.7",
     # gradio-huggingfacehub-search 0.0.x requires Gradio <6.
     "gradio>=5.50,<6",
     "gradio-huggingfacehub-search>=0.0.8,<0.1"
 ]
 dev = [
     "pytest>=8,<10",
-    "ruff>=0.15.22,<0.16",
+    "ruff>=0.17.6,<0.18",
     "build>=1,<2",
     "twine>=7,<8"
 ]
@@ -122,6 +122,9 @@ line-length = 100
 extend-exclude = [
     "*.ipynb",
 ]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
 
 [tool.ruff.lint.per-file-ignores]
 "gradio_app/app.py" = ["E402"]

@@ -942,6 +942,7 @@ def _project_umap(array, seed=7):
         random_state=int(seed),
         n_jobs=1,
         init="random" if array.shape[0] == 3 else "spectral",
+        compatibility_layout=True,
     )
     return np.asarray(reducer.fit_transform(array), dtype=float)
 

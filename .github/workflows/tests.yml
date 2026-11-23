@@ -100,7 +100,7 @@ jobs:
             "rapidfuzz==3.1.0" \
             "bert-score==0.3.13" \
             "sentence-transformers==6.1.0" \
-            "umap-learn==0.5.12"
+            "umap-learn==0.6.0"
           python -m pip install -e ".[dev,metrics,sentence_transformers,visualization]"
           python -m pip check
 
@@ -117,7 +117,7 @@ jobs:
               "rapidfuzz": "3.1.0",
               "bert-score": "0.3.13",
               "sentence-transformers": "6.1.0",
-              "umap-learn": "0.5.12",
+              "umap-learn": "0.6.0",
           }
           installed = {name: version(name) for name in expected}
           assert installed == expected, installed
@@ -229,6 +229,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[${{ matrix.extras }}]"
           python -m pip check
+
+      - name: Run visualization tests with full extras
+        if: matrix.python-version == '3.14'
+        run: |
+          python -c "import umap"
+          python -m pytest -W error::FutureWarning:umap tests/test_visualization.py
 
       - name: Install Chromium and system dependencies
         run: python -m playwright install --with-deps chromium
