@@ -104,20 +104,6 @@ jobs:
             exit 0
           fi
 
-          # Log only the reason category. Authenticated Space logs stay in the runner.
-          build_log=$(mktemp)
-          trap 'rm -f "${build_log}"' EXIT
-          curl --fail --silent --max-time 12 -H "Authorization: Bearer ${HF_TOKEN}" \
-            "${endpoint}/logs/build?tail=150" -o "${build_log}" || true
-          if grep -Fq 'No matching distribution found for matheel' "${build_log}"; then
-            echo "The previous build could not see the pinned Matheel version in the package index."
-          elif grep -Fq 'No space left on device' "${build_log}"; then
-            echo "The previous build ran out of storage."
-          elif grep -Fiq 'permission denied' "${build_log}"; then
-            echo "The previous build encountered a filesystem permission error."
-          else
-            echo "The previous build did not expose a recognized error category."
-          fi
           curl --fail --silent --show-error --max-time 30 --request POST \
             -H "Authorization: Bearer ${HF_TOKEN}" "${endpoint}/restart" \
             | jq -er '"Requested a retry. Space stage is \(.stage)."'

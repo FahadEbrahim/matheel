@@ -18,6 +18,7 @@ from pathlib import Path
 
 
 MATHEEL_REQUIREMENT_RE = re.compile(r"^matheel(?:\[[^\]]+\])?==([^\s;]+)", re.MULTILINE)
+PYPI_INSTALL_INDEX = "https://pypi.org/simple/matheel/"
 
 
 def pinned_matheel_version(requirements_text):
@@ -37,10 +38,22 @@ def pypi_release_url(version):
 
 
 def release_is_available(version, urlopen=urllib.request.urlopen, timeout=10):
+    """Require both the published release metadata and an installable index entry."""
     try:
         with urlopen(pypi_release_url(version), timeout=timeout) as response:
-            return response.status == 200
-    except (TimeoutError, urllib.error.HTTPError, urllib.error.URLError):
+            if response.status != 200:
+                return False
+        request = urllib.request.Request(
+            PYPI_INSTALL_INDEX, headers={"Accept": "application/vnd.pypi.simple.v1+json"},
+        )
+        with urlopen(request, timeout=timeout) as response:
+            index = json.load(response)
+        return any(
+            not entry.get("yanked") and isinstance((filename := entry.get("filename")), str)
+            and filename.startswith(f"matheel-{version}-") and filename.endswith(".whl")
+            for entry in index["files"]
+        )
+    except (TimeoutError, urllib.error.URLError, ValueError, KeyError, TypeError, AttributeError):
         return False
 
 
@@ -111,7 +124,7 @@ def check_pinned_release(
     event = str(event_name or "").strip()
 
     def published_release_result():
-        print(f"matheel {version} is available on PyPI.")
+        print(f"matheel {version} is available on the PyPI install index.")
         matches = True
         if source_check is not None:
             try:

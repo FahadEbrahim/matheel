@@ -7,9 +7,11 @@ from pathlib import Path
 import pytest
 
 from scripts.check_pinned_matheel_release import (
+    PYPI_INSTALL_INDEX,
     check_pinned_release,
     parse_args,
     pinned_matheel_version,
+    release_is_available,
     release_matches_source,
     wheel_package_sources,
 )
@@ -116,6 +118,26 @@ def test_publish_event_fails_when_pin_never_appears(tmp_path):
 
     assert result == 1
     assert read_outputs(output_path)["should_sync_space"] == "false"
+
+
+@pytest.mark.parametrize("filename,yanked,expected", [
+    ("matheel-0.8.0-py3-none-any.whl", False, True),
+    ("matheel-0.8.0-py3-none-any.whl", "withdrawn", False),
+    ("matheel-0.8.0.tar.gz", False, False),
+    ("matheel-0.8.0.post1-py3-none-any.whl", False, False),
+])
+def test_available_release_has_a_wheel_in_the_actual_install_index(filename, yanked, expected):
+    def fake_urlopen(request, timeout):
+        if isinstance(request, str):
+            assert request == "https://pypi.org/pypi/matheel/0.8.0/json"
+            metadata = io.BytesIO()
+            metadata.status = 200
+            return metadata
+        assert request.full_url == PYPI_INSTALL_INDEX
+        assert request.get_header("Accept") == "application/vnd.pypi.simple.v1+json"
+        return io.BytesIO(json.dumps({"files": [{"filename": filename, "yanked": yanked}]}).encode())
+
+    assert release_is_available("0.8.0", urlopen=fake_urlopen) is expected
 
 
 def test_space_sync_updates_the_existing_repository_without_create_api():
