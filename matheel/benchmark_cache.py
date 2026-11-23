@@ -103,12 +103,18 @@ def load_benchmark_cache_result(cache_dir, cache_key):
     }
     results = pd.read_csv(
         paths["results"],
-        converters={column: str for column in text_columns},
         dtype={column: dtype for column, dtype in dtypes.items() if column not in text_columns},
     )
-    for column, dtype in dtypes.items():
-        if column in text_columns and column in results:
-            results[column] = results[column].astype(dtype)
+    text_dtypes = {column: dtypes.get(column, str) for column in results if column in text_columns}
+    if text_dtypes:
+        # Parse text separately so identifiers stay literal and scores retain missing-value handling.
+        text = pd.read_csv(
+            paths["results"],
+            usecols=list(text_dtypes),
+            dtype=text_dtypes,
+            keep_default_na=False,
+        )
+        results[text.columns] = text
     results.attrs.update(metadata.get("result_attrs") or {})
     results.attrs["cache_status"] = "hit"
     results.attrs["cache_key"] = metadata.get("cache_key") or _validate_cache_key(cache_key)
