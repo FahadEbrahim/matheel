@@ -1,5 +1,6 @@
 import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 
 import click
@@ -29,6 +30,7 @@ from .datasets import (
     load_retrieval_dataset,
     load_retrieval_datasets,
     load_retrieval_datasets_from_manifest,
+    registered_datasets,
 )
 from .dataset_validation import write_dataset_validation_report
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
@@ -36,6 +38,7 @@ from .grammars import provision_grammars
 from .leaderboard import load_leaderboard_manifest, run_leaderboard
 from .lexical import available_lexical_metrics, lexical_metric_metadata
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
+from .research_cli import register_research_commands
 from .similarity import (
     DEFAULT_MODEL_NAME,
     available_lexical_tokenizers,
@@ -537,6 +540,22 @@ def datasets_list(task, output_format):
     for preset in payload["presets"]:
         tasks = ", ".join(preset["task_families"])
         click.echo(f"- {preset['name']} ({tasks})")
+
+
+@datasets_cli.command(name="catalog")
+@click.option("--task-type", help="Filter by dataset domain, such as code_clone.")
+@click.option("--format", "output_format", type=click.Choice(("text", "json")), default="text")
+def datasets_catalog(task_type, output_format):
+    """List datasets with their domain, access method, and source."""
+    try:
+        entries = registered_datasets(task_type=task_type)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    if output_format == "json":
+        _echo_json([asdict(entry) for entry in entries])
+        return
+    for entry in entries:
+        click.echo(f"{entry.name}\t{entry.task_type}\t{entry.dataset_kind}\t{entry.access}\t{entry.source_url}")
 
 
 @datasets_cli.command(name="validate")
@@ -1885,6 +1904,8 @@ def evaluate_pairs(
 @click.option("--scores-out", type=click.Path(), default="scored_retrieval.csv", show_default=True)
 @click.option("--metrics-out", type=click.Path(), default="retrieval_metrics.json", show_default=True)
 @click.option("--k", default=10, show_default=True, help="Ranking cutoff for top-k metrics.")
+@click.option("--map-at-r/--without-map-at-r", default=None, help="Evaluate MAP at each query's relevant count.")
+@click.option("--exclude-self-matches/--include-self-matches", default=None, help="Control query-file self matches.")
 @click.option(
     "--algorithm-path", "--algorithm",
     default=None,
@@ -1975,6 +1996,8 @@ def evaluate_retrieval(
     scores_out,
     metrics_out,
     k,
+    map_at_r,
+    exclude_self_matches,
     algorithm_path,
     algorithm_options,
     reproducibility_out,
@@ -2028,6 +2051,15 @@ def evaluate_retrieval(
         resolved_dataset = load_retrieval_datasets(dataset_source)
         if not isinstance(dataset_source, dict):
             dataset_source = {"identifier": dataset_source}
+    if map_at_r is None:
+        map_at_r = resolved_dataset.metadata.get("ranking_metric") == "mean_average_precision_at_r"
+    if exclude_self_matches is None:
+        exclude_self_matches = resolved_dataset.metadata.get("exclude_self_matches") is True
+    ranking_options = {}
+    if map_at_r:
+        ranking_options["include_map_at_r"] = True
+    if exclude_self_matches:
+        ranking_options["exclude_self_matches"] = True
     selected_weights = feature_weights or ("levenshtein=1.0",)
     parsed_algorithm_options = _parse_algorithm_options(algorithm_options)
     similarity_options = {
@@ -2053,6 +2085,7 @@ def evaluate_retrieval(
                 "preprocess_mode": preprocess_mode,
                 "code_language": code_language,
             },
+            **ranking_options,
         )
     else:
         if parsed_algorithm_options:
@@ -2061,6 +2094,7 @@ def evaluate_retrieval(
             resolved_dataset,
             k=k,
             similarity_options=similarity_options,
+            **ranking_options,
         )
     scores_path = Path(scores_out)
     metrics_path = Path(metrics_out)
@@ -2077,12 +2111,15 @@ def evaluate_retrieval(
             "algorithm_options": parsed_algorithm_options,
             "dataset_source": dataset_source,
             "k": k,
+            **ranking_options,
             **similarity_options,
         },
         scored_results,
     )
     click.echo(f"Wrote {len(scored_results)} scored retrieval result(s) to {scores_path}.")
     click.echo(f"Wrote metrics to {metrics_path}.")
+    if map_at_r:
+        click.echo(f"map_at_r={metrics['mean_average_precision_at_r']:.4f}")
     click.echo(
         f"map={metrics['mean_average_precision']:.4f} "
         f"mrr={metrics['mean_reciprocal_rank']:.4f} "
@@ -2116,3 +2153,4 @@ from .experiment_cli import register_experiment_commands  # noqa: E402
 register_experiment_commands(main)
 register_retrieval_commands(main)
 register_analysis_commands(main)
+register_research_commands(main)

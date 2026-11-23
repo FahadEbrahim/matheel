@@ -1,0 +1,4 @@
+native_project_id,native_id,file_id,start_line,end_line
+11,100003000000,selected/Left.java,2,15
+12,100003000001,default/Right.java,3,16
+13,100003000002,sample/Other.java,2,12

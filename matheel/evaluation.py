@@ -556,6 +556,8 @@ def retrieval_ranking_metrics(
     document_column="document_id",
     relevance_column="relevance",
     query_ids=None,
+    *,
+    include_map_at_r=False,
 ):
     if k <= 0:
         raise ValueError("k must be greater than zero.")
@@ -599,6 +601,7 @@ def retrieval_ranking_metrics(
     empty_results = frame.iloc[:0]
 
     average_precisions = []
+    average_precisions_at_r = []
     reciprocal_ranks = []
     precision_at_k_values = []
     recall_at_k_values = []
@@ -616,12 +619,16 @@ def retrieval_ranking_metrics(
         ranked_documents = ranked[document_column].astype(str).tolist()
 
         average_precisions.append(_average_precision(ranked_documents, relevant_by_document))
+        if include_map_at_r:
+            average_precisions_at_r.append(
+                _average_precision(ranked_documents[:len(relevant_by_document)], relevant_by_document)
+            )
         reciprocal_ranks.append(_reciprocal_rank(ranked_documents, relevant_by_document))
         precision_at_k_values.append(_precision_at_k(ranked_documents, relevant_by_document, k))
         recall_at_k_values.append(_recall_at_k(ranked_documents, relevant_by_document, k))
         ndcg_at_k_values.append(_ndcg_at_k(ranked_documents, relevant_by_document, k))
 
-    return {
+    metrics = {
         "query_count": int(len(query_ids)),
         "result_count": int(len(frame)),
         "relevant_count": int(relevant_count),
@@ -632,6 +639,9 @@ def retrieval_ranking_metrics(
         "recall_at_k": _mean(recall_at_k_values),
         "ndcg_at_k": _mean(ndcg_at_k_values),
     }
+    if include_map_at_r:
+        metrics["mean_average_precision_at_r"] = _mean(average_precisions_at_r)
+    return metrics
 
 
 def evaluate_retrieval_dataset(
@@ -644,6 +654,7 @@ def evaluate_retrieval_dataset(
     algorithm=None,
     algorithm_options=None,
     exclude_self_matches=False,
+    include_map_at_r=False,
 ):
     if not isinstance(dataset, RetrievalDataset):
         dataset = load_retrieval_dataset(dataset)
@@ -662,6 +673,7 @@ def evaluate_retrieval_dataset(
         k=k,
         score_column=score_column,
         query_ids=dataset.queries["query_id"],
+        include_map_at_r=include_map_at_r,
     )
     return scored_results, metrics
 

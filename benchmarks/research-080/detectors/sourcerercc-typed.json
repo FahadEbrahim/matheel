@@ -1,0 +1,377 @@
+{
+  "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+  "detector": "sourcerercc",
+  "id": "sourcerercc-bigclonebench-v2-stratified",
+  "metrics": {
+    "corrected_end_lines": 12,
+    "eligible": 137,
+    "excluded_native_pairs": 3,
+    "files_with_tokenizer_statistics": 139,
+    "matched": 45,
+    "native_blocks": 1007,
+    "native_pairs": 694,
+    "recall": 0.3284671532846715,
+    "reported_pairs": 691,
+    "staged_files": 141,
+    "strata": [
+      {
+        "clone_type": "all",
+        "eligible": 67,
+        "matched": 37,
+        "project_scope": "intra_project",
+        "recall": 0.5522388059701493
+      },
+      {
+        "clone_type": "all",
+        "eligible": 70,
+        "matched": 8,
+        "project_scope": "inter_project",
+        "recall": 0.11428571428571428
+      },
+      {
+        "clone_type": "all",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type1",
+        "eligible": 20,
+        "matched": 20,
+        "project_scope": "all",
+        "recall": 1.0
+      },
+      {
+        "clone_type": "type1",
+        "eligible": 20,
+        "matched": 20,
+        "project_scope": "intra_project",
+        "recall": 1.0
+      },
+      {
+        "clone_type": "type1",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type1",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type2",
+        "eligible": 37,
+        "matched": 12,
+        "project_scope": "all",
+        "recall": 0.32432432432432434
+      },
+      {
+        "clone_type": "type2",
+        "eligible": 10,
+        "matched": 5,
+        "project_scope": "intra_project",
+        "recall": 0.5
+      },
+      {
+        "clone_type": "type2",
+        "eligible": 27,
+        "matched": 7,
+        "project_scope": "inter_project",
+        "recall": 0.25925925925925924
+      },
+      {
+        "clone_type": "type2",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_consistent",
+        "eligible": 19,
+        "matched": 5,
+        "project_scope": "all",
+        "recall": 0.2631578947368421
+      },
+      {
+        "clone_type": "type2_consistent",
+        "eligible": 10,
+        "matched": 5,
+        "project_scope": "intra_project",
+        "recall": 0.5
+      },
+      {
+        "clone_type": "type2_consistent",
+        "eligible": 9,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": 0.0
+      },
+      {
+        "clone_type": "type2_consistent",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_blind",
+        "eligible": 18,
+        "matched": 7,
+        "project_scope": "all",
+        "recall": 0.3888888888888889
+      },
+      {
+        "clone_type": "type2_blind",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_blind",
+        "eligible": 18,
+        "matched": 7,
+        "project_scope": "inter_project",
+        "recall": 0.3888888888888889
+      },
+      {
+        "clone_type": "type2_blind",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type3",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type3",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_very_strong",
+        "eligible": 20,
+        "matched": 13,
+        "project_scope": "all",
+        "recall": 0.65
+      },
+      {
+        "clone_type": "type3_very_strong",
+        "eligible": 17,
+        "matched": 12,
+        "project_scope": "intra_project",
+        "recall": 0.7058823529411765
+      },
+      {
+        "clone_type": "type3_very_strong",
+        "eligible": 3,
+        "matched": 1,
+        "project_scope": "inter_project",
+        "recall": 0.3333333333333333
+      },
+      {
+        "clone_type": "type3_very_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_strong",
+        "eligible": 20,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": 0.0
+      },
+      {
+        "clone_type": "type3_strong",
+        "eligible": 20,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": 0.0
+      },
+      {
+        "clone_type": "type3_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_moderate",
+        "eligible": 20,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": 0.0
+      },
+      {
+        "clone_type": "type3_moderate",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_moderate",
+        "eligible": 20,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": 0.0
+      },
+      {
+        "clone_type": "type3_moderate",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "weak_type3_type4",
+        "eligible": 20,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": 0.0
+      },
+      {
+        "clone_type": "weak_type3_type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "weak_type3_type4",
+        "eligible": 20,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": 0.0
+      },
+      {
+        "clone_type": "weak_type3_type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      }
+    ],
+    "verified_blocks": 1004,
+    "verified_native_pairs": 691
+  },
+  "provenance": {
+    "bcb_oci_manifest": "sha256:34171964a86f33798888b40ab3cfa38d1cf6329a34f20b6a1eae1dccb051ed1d",
+    "configuration": {
+      "sharding": false
+    },
+    "corpus_sha256": "e7f8af199c8551d305f8bab09aec481d57ce29d25c672e8a94f9cc6b12ceabaa",
+    "database_oci_layer": "sha256:2350bf0d5f74ceb96bf0a2b2533602946a18ec989b412d505eb59b62b959e237",
+    "detector": "sourcerercc",
+    "duplicate_pair_rows": 0,
+    "format": "native_project_block_ids",
+    "granularity": "function",
+    "h2_database_sha256": "c5453e3a7ce1604c52a35f3b931afa9f70515b17b956a9da472a13e2bcbae43b",
+    "mapped_sources": 1004,
+    "minimum_tokens": 65,
+    "native_findings_sha256": "40db01d414ad1aec42cef64a90965f6218dc527bc8a2d45f4e774738d0610071",
+    "native_runtime": [
+      "Darwin arm64",
+      "java version \"21.0.4\" 2024-07-16 LTS",
+      "Java(TM) SE Runtime Environment (build 21.0.4+8-LTS-274)",
+      "Java HotSpot(TM) 64-Bit Server VM (build 21.0.4+8-LTS-274, mixed mode, sharing)",
+      "Python 3.14.2",
+      "57b75ca65b6c60e4fbdf10ffdeb57416932722b3673e52dfceb3dc41eb755bd2"
+    ],
+    "native_stats_sha256": "d00ed15ee738355467ce2c39dfeac483eda79f16e47d8551b8d92b638c4568e3",
+    "normalized_findings_sha256": "9b26dc70138f39fd2be80cdb3d92cb001d7c9eefb28637d9ad126291c3d98dc1",
+    "protocol": {
+      "coverage_threshold": 0.7,
+      "minimum_lines": 6,
+      "minimum_pretty_lines": 6,
+      "minimum_syntax_similarity": 0.0,
+      "minimum_tokens": 50,
+      "name": "clone_span_recall",
+      "similarity_type": "both"
+    },
+    "report_sha256": "b8da04f576e056d5ecf163498e58e3619954a3edbce992329950decb8e2e760c",
+    "reported_pairs": 691,
+    "selected_source_digest": "94ffb153a1f03ed180b3e255e4fcf5d19df2eac2374843a42cc6eb61fdc80b84",
+    "selection": {
+      "max_references_per_type": 20
+    },
+    "source_mapping_sha256": "0e649a0eeefe5db5f3742927027038cf09323b48240860868a8cee01f3247ae3",
+    "source_oci_layer": "sha256:03aaf2c598806abc5d889c1c5d756cc721da9406a778dfeb1ca4b6350145e547",
+    "threshold": 0.8,
+    "tree_sitter": {
+      "java_grammar": {
+        "libtree_sitter_java.dylib": "ec5bfa191e266c9e28071a9afefcc3ac0bdb9e7d13eae958f6248d5c426e1b60"
+      },
+      "language_pack": "1.25.2",
+      "version": "0.26.1"
+    },
+    "typed_references_sha256": "f2eccde45d6c484aa82b7a6cf6856dcc27bff1b837c2bba3b0e2bf420676da50",
+    "version": "ghcr.io/glopix/cloreco-images/sourcerer-cc@sha256:0c93a073ec9f2eddfff012437370125dfcded1a78bfaffe22e56ba4fc7bda1f2"
+  },
+  "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash",
+  "status": "verified"
+}

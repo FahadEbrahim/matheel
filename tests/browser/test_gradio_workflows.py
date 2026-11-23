@@ -484,6 +484,26 @@ def test_official_benchmark_preserves_failed_methods_and_task_specific_rankings(
     assert payload["metadata"]["benchmark_protocol"]["protocol_id"]
 
 
+def test_research_benchmark_clone_recall_upload_and_download(gradio_page, gradio_config, tmp_path):
+    from examples.evaluation.research_benchmarks_demo import run_research_benchmarks
+
+    sample = run_research_benchmarks(tmp_path / "research")
+    page = gradio_page
+    _open_tab(page, "Reports")
+    _open_tab(page, "Research Benchmarks")
+    page.get_by_text("Evaluate clone discovery", exact=True).click()
+    _upload(page, gradio_config, "Reference Clones CSV", sample / "references.csv")
+    _upload(page, gradio_config, "Detector Findings CSV", sample / "findings.csv")
+    page.get_by_role("button", name="Evaluate Clone Recall", exact=True).click()
+    summary = _action_output(page, gradio_config, "Evaluate Clone Recall")
+    _wait_for_text(summary, "1 / 2")
+    artifact = _visible_component(page, gradio_config, label="Clone Recall JSON", component_type="file")
+    path = _download_file(page, artifact, tmp_path / "clone_recall.json")
+    payload = json.loads(path.read_text())
+    assert payload["overall"]["recall"] == 0.5
+    assert any(row["clone_type"] == "weak_type3_type4" for row in payload["strata"])
+
+
 def test_dataset_exports_and_leaderboard_artifact_inspection(
     gradio_page,
     gradio_config,

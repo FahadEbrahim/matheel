@@ -1,13 +1,15 @@
 # Matheel
 
 [![Tests](https://github.com/FahadEbrahim/matheel/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/FahadEbrahim/matheel/actions/workflows/tests.yml)
-[![PyPI](https://img.shields.io/pypi/v/matheel.svg?cacheSeconds=3600&release=v0.7.2)](https://pypi.org/project/matheel/)
+[![PyPI](https://img.shields.io/pypi/v/matheel.svg?cacheSeconds=3600&release=v0.8.0)](https://pypi.org/project/matheel/)
 [![Python versions](https://img.shields.io/pypi/pyversions/matheel.svg?cacheSeconds=3600)](https://pypi.org/project/matheel/)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue.svg)](https://fahadebrahim.github.io/matheel/)
 [![Latest release](https://img.shields.io/github/v/release/FahadEbrahim/matheel.svg)](https://github.com/FahadEbrahim/matheel/releases)
 [![License](https://img.shields.io/github/license/FahadEbrahim/matheel.svg)](LICENSE)
 
 Matheel is a Python package and CLI for source-code similarity. It combines semantic embeddings, lexical similarity, chunking, preprocessing, and code evaluation metrics in one workflow.
+
+Matheel 0.8.0 also benchmarks functional retrieval, directional cross-language retrieval, typed clone discovery, and single-snippet AI authorship. Codex is credited as author in the 0.8.0 package metadata.
 
 ## Installation
 
@@ -66,6 +68,7 @@ See the [usage guide](https://fahadebrahim.github.io/matheel/usage/) for semanti
 - Documentation: [fahadebrahim.github.io/matheel](https://fahadebrahim.github.io/matheel/)
 - Choosing metrics: [similarity guide](https://fahadebrahim.github.io/matheel/choosing_metrics/)
 - Public plagiarism benchmark: [definition and reproduction recipe](benchmarks/plagiarism-v1/README.md), [results and scope](docs/plagiarism_results.md)
+- Research benchmarks: [code similarity, clone recall, and AI-authorship workflows](docs/research_benchmarks.md), [published evidence](benchmarks/research-080/README.md)
 - Hugging Face Space demo: [buelfhood/matheel-framework](https://huggingface.co/spaces/buelfhood/matheel-framework)
 - Core workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/01_core_workflows.ipynb)
 - Dataset workflows Colab notebook: [Open in Colab](https://colab.research.google.com/github/FahadEbrahim/matheel/blob/main/examples/notebooks/02_datasets_and_reproducibility.ipynb)

@@ -1,0 +1,93 @@
+{
+  "artifacts": {
+    "queries.csv": {
+      "bytes": 23236,
+      "sha256": "23b2011036f4365ae8af1c1fa4133c3316b257433b31d2635149589d7d021bb8"
+    },
+    "scores.csv.gz": {
+      "bytes": 128731,
+      "sha256": "b7c2edf6b06dd7ef09f962df68ae87a09c7d45628188c62e559d24ba8d2635a6"
+    }
+  },
+  "benchmark_schema_version": 1,
+  "dataset": {
+    "adapter": "xlcost_retrieval",
+    "dataset_kind": "retrieval",
+    "direction": "java_to_python",
+    "granularity": "program",
+    "languages": [
+      "java",
+      "python"
+    ],
+    "license": "Review archive and upstream source terms",
+    "name": "xlcost_java_python_test",
+    "problem_overlap_by_partition": {
+      "train": 0,
+      "validation": 0
+    },
+    "ranking_metric": "mean_reciprocal_rank",
+    "source_files_sha256": {
+      "test": "1302cb41812b0d91e4b57b2d6821a52b4c00cb794248e166f00804953391a3c5",
+      "train": "fb51ca92390354719673e0302a0af8daa74ed022e349d846cde635c95caccc83",
+      "validation": "76783818411fa513679aaf9ba8817125602154f396e0ff250523d26f6f26278b"
+    },
+    "source_language": "java",
+    "source_revision": "zip-sha256:2b822d82197c4ca159a383854f8a3d187f24f970e6209e77641e709220bf2f2b",
+    "source_url": "https://github.com/reddy-lab-code-research/XLCoST",
+    "split": "test",
+    "target_language": "python",
+    "task_type": "code_similarity",
+    "text_representation": "space_joined_upstream_tokens"
+  },
+  "dataset_sha256": "7c1b114b2eafaac72077c7b0903977ffcfcee44ae055220e6438d19c039729ae",
+  "implementation_sha256": {
+    "datasets.py": "565f7694c3073869d4d6f14ad95d0d697ae6b921e7919ee105a8419b49548ab1",
+    "evaluation.py": "a5ba3bfbdfb69ce496db11302f0be0ba673c46a75151275c987d58d324b9425a",
+    "similarity.py": "42bb390e2ae825d0a047d5aa39ee961a0908e21b85f8296e307aea4cd9792556",
+    "similarity_benchmark.py": "e5b03adbc762b29c7bd93b9a19f57ec9a827ab45c900ce1837109b24fa5e5c2e",
+    "similarity_datasets.py": "865ecd01cf90b185b237ed1b2841c22c0d1fb1257ec93e7d0f5c8010a23af14b"
+  },
+  "matheel_version": "0.8.0",
+  "normalized_fingerprint_schema": "manifest-bytes-and-files-v1",
+  "results": [
+    {
+      "configuration": {
+        "analyzer": "char",
+        "batch_size": 32,
+        "exclude_self_matches": false,
+        "fit_scope": "fixed unlabeled target corpus",
+        "lowercase": false,
+        "max_features": 50000,
+        "min_df": 1,
+        "ngram_range": [
+          3,
+          5
+        ],
+        "norm": "l2",
+        "sublinear_tf": true,
+        "tie_break": "ascending document ID"
+      },
+      "metrics": {
+        "candidate_count": 882,
+        "k": 10,
+        "mean_average_precision": 0.9918745275888133,
+        "mean_average_precision_at_r": 0.9841269841269841,
+        "mean_reciprocal_rank": 0.9918745275888133,
+        "query_count": 882,
+        "recall_at_k": 1.0,
+        "relevant_count": 882,
+        "retained_score_rows": 8820,
+        "scored_comparisons": 777924
+      },
+      "name": "character_tfidf_cosine"
+    }
+  ],
+  "runtime": {
+    "numpy": "2.5.5",
+    "pandas": "3.1.1",
+    "python": "3.14.2",
+    "scikit-learn": "1.9.1",
+    "scipy": "1.18.1"
+  },
+  "task_family": "retrieval"
+}

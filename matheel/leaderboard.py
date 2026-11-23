@@ -31,6 +31,7 @@ PAIR_LEADERBOARD_METRICS = (
 )
 RETRIEVAL_LEADERBOARD_METRICS = (
     "mean_average_precision",
+    "mean_average_precision_at_r",
     "mean_reciprocal_rank",
     "ndcg_at_k",
     "precision_at_k",
@@ -320,6 +321,8 @@ def _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_conf
     if retrieval_options:
         from .retrieval import evaluate_two_stage_retrieval_dataset
         evaluate = evaluate_two_stage_retrieval_dataset
+    metric_options = ({"include_map_at_r": True}
+                      if "mean_average_precision_at_r" in manifest["retrieval_metrics"] else {})
     scored, metrics = evaluate(
         dataset,
         k=int(_first_not_none(algorithm_config.get("k"), dataset_config.get("k"), 10)),
@@ -327,6 +330,7 @@ def _evaluate_retrieval_leaderboard_run(manifest, dataset_config, algorithm_conf
         similarity_options=_leaderboard_similarity_options(dataset_config, algorithm_config),
         algorithm=algorithm_config.get("algorithm_path"),
         algorithm_options=algorithm_config.get("algorithm_options"),
+        **metric_options,
         **(retrieval_options or {}),
     )
     artifact = _write_score_artifact(scored, dataset_config, algorithm_config, score_artifact_dir)

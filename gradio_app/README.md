@@ -9,12 +9,13 @@ pinned: false
 
 Interactive code-similarity analysis with configurable embedding, lexical, chunking, preprocessing, and code-aware metrics.
 
-The hosted Space installs `matheel==0.7.2`. Checkout features are synchronized to the Space after the matching package code is published. This app includes:
+The hosted Space installs `matheel==0.8.0`. Checkout features are synchronized to the Space after the matching package code is published. This app includes:
 
 - Pair, collection, comparison-suite, normalized-dataset, dataset-validation, threshold-tuning, visualization, scored-pair explanation, versioned plagiarism benchmark, sampled demo leaderboard, custom leaderboard, and leaderboard-inspection workflows
 - Metric presets for balanced, lexical, embedding-only, code-aware, and individual offline baselines
 - Downloadable artifacts for dataset evaluation, validation reports, threshold sweeps, dataset maps, pair explanations, ready leaderboards, leaderboard reports, and leaderboard detail reports
 - Reports → Analyze Results for scored CSV uploads, paired method comparisons, grouped confidence intervals, error tables, language/length slices, and HTML/CSV/JSON downloads
+- Reports → Research Benchmarks for published code similarity results, SimilCode score slices, clone recall by type, and AI-authorship evaluation with downloadable artifacts
 - Official plagiarism leaderboard diagnostics with per-view uncertainty, observed runtime, failure reasons, and speed/quality tradeoffs
 - Raw and parser-derived lexical tokenization for Winnowing and GST
 - All 20 RapidFuzz scalar string metrics, including longest common subsequence (LCS), plus Winnowing and GST

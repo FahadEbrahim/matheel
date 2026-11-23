@@ -39,6 +39,7 @@ nav:
       - Reproducible benchmark: reproducible_benchmark.md
       - Versioned plagiarism benchmarks: benchmark_protocol.md
       - Benchmark workflow recipes: benchmark_workflows.md
+      - Code similarity, clone discovery, and AI authorship: research_benchmarks.md
       - Plagiarism benchmark results: plagiarism_results.md
       - 0.7.1 benchmark editions: plagiarism_release_071.md
       - Leaderboards and run registry: leaderboard.md

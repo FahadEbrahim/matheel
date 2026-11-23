@@ -78,6 +78,8 @@ artifacts inspected elsewhere retain their complete benchmark coverage and ranks
 when detail filters change. Use **Build Leaderboard** for a custom experiment;
 newly registered methods need a new run before their scores can appear.
 
+Open **Research Benchmarks** to see the published result scopes and their downloadable index. Inspect a SimilCode scores CSV by language, similarity category, and clone type. The clone recall form takes normalized reference and findings CSVs and reports matches by clone type and project scope. The AI-authorship form accepts the two source CSVs from the pinned AIGCodeSet release and exports source-free predictions and metrics. Use a local app instance for private files. See [Research benchmarks](research_benchmarks.md) for the expected inputs.
+
 ## Troubleshooting
 
 - **The first semantic run is slow:** model files and ML runtimes may need to initialize or download. Try the lexical preset first to verify the app itself.

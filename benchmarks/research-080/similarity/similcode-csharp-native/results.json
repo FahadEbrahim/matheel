@@ -1,0 +1,89 @@
+{
+  "artifacts": {
+    "scores.csv.gz": {
+      "bytes": 945,
+      "sha256": "9a815e269b5842de7c4d626cd5dff9743d2abc8762c4057aaaba50bbde3a008c"
+    },
+    "slices.csv": {
+      "bytes": 762,
+      "sha256": "8b9cfbebfa1dd82cbacf1023909648e3e78933775f4c0b5e994be7bdc1c221b5"
+    }
+  },
+  "benchmark_schema_version": 1,
+  "dataset": {
+    "adapter": "similcode_pair",
+    "clone_type_source": "tipos_clon.csv (author-derived)",
+    "complete_source_case_count": 120,
+    "dataset_kind": "pair_classification",
+    "label_view": "related",
+    "languages": [
+      "csharp"
+    ],
+    "license": "CC BY 4.0",
+    "name": "similcode",
+    "source_files_sha256": {
+      "metadata.csv": "0aaa4bd4389a61a5b0606e779da4b84985d48755e772b63c28e56b01eefde203",
+      "tipos_clon.csv": "e78b2acb1cce7ce757cebda7b49bd417d5d51e001ed7f8e3dd84193c87778676"
+    },
+    "source_revision": "v2.4.0",
+    "source_url": "https://doi.org/10.5281/zenodo.23949390",
+    "task_type": "code_similarity"
+  },
+  "dataset_sha256": "f59eb4e36bf9a90f6fc115013db4904e9002c878effe45c31754c9dd5cf1f1d9",
+  "implementation_sha256": {
+    "run_similcode_detectors.py": "27274a3d4a1fb96eaa2e3b5b659c799ebc6479a77b07c0d768879f5beaed7d13"
+  },
+  "matheel_version": "0.8.0",
+  "normalized_fingerprint_schema": "manifest-bytes-and-files-v1",
+  "results": [
+    {
+      "configuration": {
+        "adapter_sha256": "31805a5adbfa370169ecef3a3824bff2be324c8346fa8128791739db83fa4fab",
+        "artifact_sha256": "5f2c21e8b88ed77134effcb3a5a3ab13d188f6a3e16d401387f7479e92db9aa2",
+        "configuration": {
+          "heap_mb": 1024,
+          "language": "csharp",
+          "max_comparisons": 125000,
+          "max_files": 500,
+          "max_output_bytes": 2000000,
+          "max_result_bytes": 250000000,
+          "max_source_bytes": 50000000,
+          "min_tokens": 9,
+          "normalize": false,
+          "score_mode": "average",
+          "timeout_seconds": 300.0
+        },
+        "corpus_policy": "all_prepared_files_single_file_submissions",
+        "detector": "jplag",
+        "runtime": {
+          "executable_sha256": "83c9c5310d044e7c4262432854eb1bc5f49763d7c1e9971777a646c91b96c06d",
+          "modules_sha256": "74e8a4881f09f0d56c3e27e0075f60534bc4d9a908f3d179586d6515f89f9825",
+          "release_sha256": "e5e50f3c36e9ce7ac50ccbc499c8299880e8fb8fee57bb3a7a2b890477ce8498",
+          "version": "openjdk version \"25.0.4.1\" 2026-08-18 LTS"
+        },
+        "self_matches": "unsupported",
+        "version": "6.3.0"
+      },
+      "metrics": {
+        "accuracy": 0.7333333333333333,
+        "f1": 0.7837837837837839,
+        "false_negative": 16,
+        "false_positive": 0,
+        "negative_count": 15,
+        "pair_count": 60,
+        "positive_count": 45,
+        "precision": 1.0,
+        "recall": 0.6444444444444445,
+        "threshold": 0.5,
+        "true_negative": 15,
+        "true_positive": 29
+      },
+      "name": "jplag"
+    }
+  ],
+  "runtime": {
+    "pandas": "3.1.1",
+    "python": "3.14.2"
+  },
+  "task_family": "pair"
+}

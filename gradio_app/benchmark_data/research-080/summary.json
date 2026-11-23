@@ -1,0 +1,936 @@
+{
+  "schema_version": 1,
+  "release": "0.8.0",
+  "rows": [
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "Average precision",
+      "value": 0.37524950099800397,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "AUROC",
+      "value": 0.5,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "Macro F1",
+      "value": 0.3845208845208845,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "Recall",
+      "value": 0.0,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "False-positive rate",
+      "value": 0.0,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Runtime repair test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "Recall",
+      "value": 0.0,
+      "evaluated": 478,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Runtime repair test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "False-positive rate",
+      "value": 0.0,
+      "evaluated": 478,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Wrong-answer repair test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "Recall",
+      "value": 0.0,
+      "evaluated": 474,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Wrong-answer repair test · 5% validation FPR ceiling",
+      "method": "Training class prior",
+      "metric": "False-positive rate",
+      "value": 0.0,
+      "evaluated": 474,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "Average precision",
+      "value": 0.9548564279792733,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "AUROC",
+      "value": 0.9702093671402366,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "Macro F1",
+      "value": 0.8884708224027378,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "Recall",
+      "value": 0.8031914893617021,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Scratch test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "False-positive rate",
+      "value": 0.04472843450479233,
+      "evaluated": 501,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Runtime repair test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "Recall",
+      "value": 0.19186046511627908,
+      "evaluated": 478,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Runtime repair test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "False-positive rate",
+      "value": 0.06535947712418301,
+      "evaluated": 478,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Wrong-answer repair test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "Recall",
+      "value": 0.11494252873563218,
+      "evaluated": 474,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "AIGCodeSet",
+      "scope": "Wrong-answer repair test · 5% validation FPR ceiling",
+      "method": "Character TF-IDF + logistic regression",
+      "metric": "False-positive rate",
+      "value": 0.03,
+      "evaluated": 474,
+      "coverage_unit": "snippets",
+      "source": "benchmarks/authorship-v1/results.json"
+    },
+    {
+      "dataset": "Synthetic paired block IDs",
+      "scope": "Native CSV-format import with local source-span mapping and reversed-pair deduplication",
+      "method": "SourcererCC",
+      "metric": "Imported findings",
+      "value": 1,
+      "evaluated": 1,
+      "coverage_unit": "reported pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Synthetic Java duplicate",
+      "scope": "Java functions on a fixed two-file corpus with one authored duplicate",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Reported clone pairs",
+      "value": 1,
+      "evaluated": 1,
+      "coverage_unit": "reported pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Synthetic Java duplicate",
+      "scope": "Java token duplication groups on a fixed two-file corpus with one authored duplicate",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Reported clone pairs",
+      "value": 1,
+      "evaluated": 1,
+      "coverage_unit": "reported pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "SimilCode v2.4.0",
+      "scope": "Offline replay of cohort directory-mode Java and C# HTML reports with sparse case coverage",
+      "method": "MOSS",
+      "metric": "Report coverage",
+      "value": 0.5416666666666666,
+      "evaluated": 120,
+      "coverage_unit": "requested pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · legacy matcher",
+      "method": "BigCloneEval v1.1",
+      "metric": "Clone recall",
+      "value": 0.14285714285714285,
+      "evaluated": 7,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 0.5714285714285714,
+      "evaluated": 7,
+      "coverage_unit": "reference pairs",
+      "matched": 4,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher · Type 1",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher · Type 2",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 0.5,
+      "evaluated": 2,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher · Type 2 consistent",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher · Type 2 blind",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher · Type 3 very strong",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher · Type 3 strong",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher · Type 3 moderate",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Controlled v1.1 H2 fixture",
+      "scope": "Reference extraction and documented fractional coverage, with legacy matcher comparison · fractional matcher · Weak Type 3 / Type 4",
+      "method": "Matheel span matcher",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 100 non-internal references ordered by functionality and function IDs, with both source files available",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 100,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 100 non-internal references ordered by functionality and function IDs, with both source files available · Weak Type 3 / Type 4",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 100,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 100 non-internal references ordered by functionality and function IDs, with both source files available",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 100,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 100 non-internal references ordered by functionality and function IDs, with both source files available · Weak Type 3 / Type 4",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 100,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.6204379562043796,
+      "evaluated": 137,
+      "coverage_unit": "reference pairs",
+      "matched": 85,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 1",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 20,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.7297297297297297,
+      "evaluated": 37,
+      "coverage_unit": "reference pairs",
+      "matched": 27,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2 consistent",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.631578947368421,
+      "evaluated": 19,
+      "coverage_unit": "reference pairs",
+      "matched": 12,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2 blind",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.8333333333333334,
+      "evaluated": 18,
+      "coverage_unit": "reference pairs",
+      "matched": 15,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 very strong",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.9,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 18,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 strong",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 20,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 moderate",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Weak Type 3 / Type 4",
+      "method": "NiCad v7.0 (4.4.24)",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.291970802919708,
+      "evaluated": 137,
+      "coverage_unit": "reference pairs",
+      "matched": 40,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 1",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 20,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.3783783783783784,
+      "evaluated": 37,
+      "coverage_unit": "reference pairs",
+      "matched": 14,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2 consistent",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.3684210526315789,
+      "evaluated": 19,
+      "coverage_unit": "reference pairs",
+      "matched": 7,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 2 blind",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.3888888888888889,
+      "evaluated": 18,
+      "coverage_unit": "reference pairs",
+      "matched": 7,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 very strong",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.3,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 6,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 strong",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Type 3 moderate",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata, ordered by functionality and function IDs, with both source files available · Weak Type 3 / Type 4",
+      "method": "PMD CPD 7.29.0",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "IRPlag Java",
+      "scope": "Full corpus with 460 existing labelled pairs · threshold 0.5",
+      "method": "Copydetect 0.5.0",
+      "metric": "Average precision",
+      "value": 0.8686526840248049,
+      "evaluated": 460,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "IRPlag Java",
+      "scope": "Full corpus with 460 existing labelled pairs · threshold 0.5",
+      "method": "Copydetect 0.5.0",
+      "metric": "Binary F1",
+      "value": 0.7151898734177217,
+      "evaluated": 460,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "IRPlag Java",
+      "scope": "Full corpus with 460 existing labelled pairs · threshold 0.5",
+      "method": "Matheel Winnowing",
+      "metric": "Average precision",
+      "value": 0.8964660152580949,
+      "evaluated": 460,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "IRPlag Java",
+      "scope": "Full corpus with 460 existing labelled pairs · threshold 0.5",
+      "method": "Matheel Winnowing",
+      "metric": "Binary F1",
+      "value": 0.2973621103117506,
+      "evaluated": 460,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "IRPlag Java",
+      "scope": "Full corpus with 460 existing labelled pairs · historical scores replay · threshold 0.5",
+      "method": "JPlag 6.3.0 average",
+      "metric": "Average precision",
+      "value": 0.8161386204803598,
+      "evaluated": 460,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "IRPlag Java",
+      "scope": "Full corpus with 460 existing labelled pairs · historical scores replay · threshold 0.5",
+      "method": "JPlag 6.3.0 average",
+      "metric": "Binary F1",
+      "value": 0.5709219858156029,
+      "evaluated": 460,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "IRPlag Java",
+      "scope": "Full corpus with 460 existing labelled pairs · historical scores replay · threshold 0.5",
+      "method": "Dolos 2.10.0",
+      "metric": "Average precision",
+      "value": 0.8782089962498858,
+      "evaluated": 460,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "IRPlag Java",
+      "scope": "Full corpus with 460 existing labelled pairs · historical scores replay · threshold 0.5",
+      "method": "Dolos 2.10.0",
+      "metric": "Binary F1",
+      "value": 0.7154213036565978,
+      "evaluated": 460,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Synthetic Java method fixture",
+      "scope": "Pinned Linux tokenizer and SearchManager with independently verified original Java line ranges",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Synthetic Java method fixture",
+      "scope": "Pinned Linux tokenizer and SearchManager with independently verified original Java line ranges · Type 1",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.3284671532846715,
+      "evaluated": 137,
+      "coverage_unit": "reference pairs",
+      "matched": 45,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 1",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 20,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 2",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.32432432432432434,
+      "evaluated": 37,
+      "coverage_unit": "reference pairs",
+      "matched": 12,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 2 consistent",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.2631578947368421,
+      "evaluated": 19,
+      "coverage_unit": "reference pairs",
+      "matched": 5,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 2 blind",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.3888888888888889,
+      "evaluated": 18,
+      "coverage_unit": "reference pairs",
+      "matched": 7,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 3 very strong",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.65,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 13,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 3 strong",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 3 moderate",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Weak Type 3 / Type 4",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "CodeXGLUE BigCloneBench",
+      "scope": "Test binary pairs · full split · threshold 0.5",
+      "method": "Levenshtein",
+      "metric": "Binary F1",
+      "value": 0.04421388941374512,
+      "evaluated": 415416,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/similarity/codexglue-bcb-test/results.json"
+    },
+    {
+      "dataset": "POJ-104",
+      "scope": "Test · full partition",
+      "method": "Character TF-IDF cosine",
+      "metric": "MAP@R",
+      "value": 0.4010469338606908,
+      "evaluated": 12000,
+      "coverage_unit": "queries",
+      "source": "benchmarks/research-080/similarity/poj104-test/results.json"
+    },
+    {
+      "dataset": "SimilCode",
+      "scope": "C# · related · threshold 0.5",
+      "method": "JPlag 6.3.0",
+      "metric": "Binary F1",
+      "value": 0.7837837837837839,
+      "evaluated": 60,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/similarity/similcode-csharp-native/results.json"
+    },
+    {
+      "dataset": "SimilCode",
+      "scope": "Java · related · threshold 0.5",
+      "method": "JPlag 6.3.0",
+      "metric": "Binary F1",
+      "value": 0.7837837837837839,
+      "evaluated": 60,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/similarity/similcode-java-native/results.json"
+    },
+    {
+      "dataset": "SimilCode",
+      "scope": "Java · related · threshold 0.5",
+      "method": "Dolos 2.10.0",
+      "metric": "Binary F1",
+      "value": 0.7671232876712328,
+      "evaluated": 60,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/similarity/similcode-java-native/results.json"
+    },
+    {
+      "dataset": "SimilCode",
+      "scope": "C# / Java · related · threshold 0.5",
+      "method": "Levenshtein",
+      "metric": "Binary F1",
+      "value": 0.8079470198675497,
+      "evaluated": 120,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/similarity/similcode/results.json"
+    },
+    {
+      "dataset": "SimilCode",
+      "scope": "C# / Java · related · threshold 0.5",
+      "method": "Winnowing",
+      "metric": "Binary F1",
+      "value": 0.512396694214876,
+      "evaluated": 120,
+      "coverage_unit": "pairs",
+      "source": "benchmarks/research-080/similarity/similcode/results.json"
+    },
+    {
+      "dataset": "XLCoST",
+      "scope": "Java → Python · test program retrieval",
+      "method": "Character TF-IDF cosine",
+      "metric": "MRR",
+      "value": 0.9918745275888133,
+      "evaluated": 882,
+      "coverage_unit": "queries",
+      "source": "benchmarks/research-080/similarity/xlcost-java-python/results.json"
+    },
+    {
+      "dataset": "XLCoST",
+      "scope": "Java → Python · test program retrieval",
+      "method": "Character TF-IDF cosine",
+      "metric": "Recall@10",
+      "value": 1.0,
+      "evaluated": 882,
+      "coverage_unit": "queries",
+      "source": "benchmarks/research-080/similarity/xlcost-java-python/results.json"
+    },
+    {
+      "dataset": "XLCoST",
+      "scope": "Python → Java · test program retrieval",
+      "method": "Character TF-IDF cosine",
+      "metric": "MRR",
+      "value": 0.9885676492819351,
+      "evaluated": 882,
+      "coverage_unit": "queries",
+      "source": "benchmarks/research-080/similarity/xlcost-python-java/results.json"
+    },
+    {
+      "dataset": "XLCoST",
+      "scope": "Python → Java · test program retrieval",
+      "method": "Character TF-IDF cosine",
+      "metric": "Recall@10",
+      "value": 1.0,
+      "evaluated": 882,
+      "coverage_unit": "queries",
+      "source": "benchmarks/research-080/similarity/xlcost-python-java/results.json"
+    }
+  ],
+  "sources": [
+    {
+      "path": "benchmarks/authorship-v1/results.json",
+      "sha256": "f4bab4d0426cff8dddb218695a747405cdbb107434402a99ea64b979123a9de2",
+      "rows": 18
+    },
+    {
+      "path": "benchmarks/research-080/detectors/results.json",
+      "sha256": "bda422cfdfb83cc08a0efb24fdd826d15e9ad0a31a70ca1382604f0e51ac2166",
+      "rows": 55
+    },
+    {
+      "path": "benchmarks/research-080/similarity/codexglue-bcb-test/results.json",
+      "sha256": "c0754806861d2b93c23526b5241807a7d294d1318086a132ef040cd1194dc2f3",
+      "rows": 1
+    },
+    {
+      "path": "benchmarks/research-080/similarity/poj104-test/results.json",
+      "sha256": "b5d92b467591af0084523b530d71d3ca31ed09ea6647b0d99ad24941d28b0b3e",
+      "rows": 1
+    },
+    {
+      "path": "benchmarks/research-080/similarity/similcode-csharp-native/results.json",
+      "sha256": "7afb83bbd46e2353ae7f0a2e9f5266eb637df1b6238da8e572d3e10cee1f9b81",
+      "rows": 1
+    },
+    {
+      "path": "benchmarks/research-080/similarity/similcode-java-native/results.json",
+      "sha256": "bb4bf6f4f98bd1762ff3c653c53f527848e899d93c1073a2f05d212da8057f97",
+      "rows": 2
+    },
+    {
+      "path": "benchmarks/research-080/similarity/similcode/results.json",
+      "sha256": "1564c7c79549341be29d8c6870515aff6ed249fb5cecfbd135bd8f0b88909ba0",
+      "rows": 2
+    },
+    {
+      "path": "benchmarks/research-080/similarity/xlcost-java-python/results.json",
+      "sha256": "4cde0f4a8e8b4d0138b10388c9a10fcc050551b5ecf7c3f0d41913b5cd2e70e0",
+      "rows": 2
+    },
+    {
+      "path": "benchmarks/research-080/similarity/xlcost-python-java/results.json",
+      "sha256": "a0489e1abafc3e2b9deb60b7e1050e7de3b574d662871d5166dec10a255b7a16",
+      "rows": 2
+    }
+  ]
+}
