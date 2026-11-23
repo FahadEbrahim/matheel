@@ -7,6 +7,7 @@ recursive-include examples *
 recursive-include gradio_app *
 recursive-include scripts *.py
 recursive-include benchmarks *.json *.md *.csv *.csv.gz *.txt
+recursive-include benchmarks/research-080/detectors/sourcerercc-linux *.stats
 recursive-include tests *.py
 recursive-include tests/fixtures *.json
 global-exclude __pycache__ *.py[cod] .DS_Store

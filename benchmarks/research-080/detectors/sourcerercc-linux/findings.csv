@@ -1,0 +1,2 @@
+left_file_id,left_start_line,left_end_line,right_file_id,right_start_line,right_end_line,score,matched_tokens,group_id,left_native_id,right_native_id
+default/Right.java,3,16,selected/Left.java,2,15,,,sourcerercc-1,12:100003000001,11:100003000000

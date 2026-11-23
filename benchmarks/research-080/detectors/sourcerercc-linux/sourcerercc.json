@@ -1,0 +1,365 @@
+{
+  "artifact_sha256": {
+    "file-block.stats": "9bc839276a504066c8cc0d1b513bc14d2a5505214a69a2d39e6cd85e0aec98ea",
+    "findings.csv": "e6a6dd05ce3aafad43eaf2807b9e8af490d35428755d1466c4390f177d42e895",
+    "native-findings.csv": "cb872311dc4d2c25ca7e103c41761c995cfbac9e6abdf827ae05a3a6dd672a36",
+    "source-map.csv": "edaf301e9bc52a487e3cdcd0b1d51312d00b54aefffcc33a3eca4f3f5dfb6bdd"
+  },
+  "configuration": {
+    "minimum_tokens": 20,
+    "sharding": false,
+    "similarity_threshold": 0.8
+  },
+  "evaluation": {
+    "overall": {
+      "eligible": 1,
+      "matched": 1,
+      "recall": 1.0
+    },
+    "protocol": {
+      "coverage_threshold": 0.7,
+      "minimum_lines": 1,
+      "minimum_pretty_lines": null,
+      "minimum_syntax_similarity": null,
+      "minimum_tokens": null,
+      "name": "clone_span_recall",
+      "similarity_type": "both"
+    },
+    "reference_pairs": 1,
+    "reported_pairs": 1,
+    "schema_version": 1,
+    "strata": [
+      {
+        "clone_type": "all",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "all",
+        "eligible": 1,
+        "matched": 1,
+        "project_scope": "inter_project",
+        "recall": 1.0
+      },
+      {
+        "clone_type": "all",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type1",
+        "eligible": 1,
+        "matched": 1,
+        "project_scope": "all",
+        "recall": 1.0
+      },
+      {
+        "clone_type": "type1",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type1",
+        "eligible": 1,
+        "matched": 1,
+        "project_scope": "inter_project",
+        "recall": 1.0
+      },
+      {
+        "clone_type": "type1",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type2",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type2",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type2",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type2",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_consistent",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_consistent",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_consistent",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_consistent",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_blind",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_blind",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_blind",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type2_blind",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type3",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type3",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_very_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_very_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_very_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_very_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_strong",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_moderate",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_moderate",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_moderate",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type3_moderate",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "weak_type3_type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "weak_type3_type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "weak_type3_type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "weak_type3_type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      },
+      {
+        "clone_type": "type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "all",
+        "recall": null
+      },
+      {
+        "clone_type": "type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "intra_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "inter_project",
+        "recall": null
+      },
+      {
+        "clone_type": "type4",
+        "eligible": 0,
+        "matched": 0,
+        "project_scope": "unknown",
+        "recall": null
+      }
+    ]
+  },
+  "image": "ghcr.io/glopix/cloreco-images/sourcerer-cc@sha256:0c93a073ec9f2eddfff012437370125dfcded1a78bfaffe22e56ba4fc7bda1f2",
+  "image_platform": "linux/amd64",
+  "native_report": {
+    "corpus_sha256": "6730632da5c126eada905a7af2745be768677fe76335bf766c265ea9ba445be4",
+    "detector": "sourcerercc",
+    "duplicate_pair_rows": 0,
+    "format": "native_project_block_ids",
+    "granularity": "function",
+    "mapped_sources": 3,
+    "minimum_tokens": 20,
+    "report_sha256": "cb872311dc4d2c25ca7e103c41761c995cfbac9e6abdf827ae05a3a6dd672a36",
+    "reported_pairs": 1,
+    "source_mapping_sha256": "56611e82b77df19f6f599353934e9ca9c8508e5d7d6ea1a72034e112661cc4f7",
+    "threshold": 0.8,
+    "version": "ghcr.io/glopix/cloreco-images/sourcerer-cc@sha256:0c93a073ec9f2eddfff012437370125dfcded1a78bfaffe22e56ba4fc7bda1f2"
+  },
+  "native_runtime": [
+    "Linux x86_64",
+    "openjdk version \"17.0.15\" 2025-04-15",
+    "OpenJDK Runtime Environment (build 17.0.15+6-Ubuntu-0ubuntu122.04)",
+    "OpenJDK 64-Bit Server VM (build 17.0.15+6-Ubuntu-0ubuntu122.04, mixed mode, sharing)",
+    "Python 3.10.12",
+    "57b75ca65b6c60e4fbdf10ffdeb57416932722b3673e52dfceb3dc41eb755bd2"
+  ],
+  "scope": "authored Java method fixture with one Type-1 reference and one unrelated method",
+  "source_file_sha256": {
+    "default/Right.java": "bed1947d2bbfd5347c53167a8be3e11006e3496f93d95d3faebf9a2f8a3341ab",
+    "sample/Other.java": "4610149ac7c72158be95e8c17bd9f1adc76b0aa68cb54f322f3fcf2dcf76a9be",
+    "selected/Left.java": "38e27d5e64ec384b8239e607306f3d5b954bf0d0a594cf8c33c1c9cd59469b2e"
+  }
+}

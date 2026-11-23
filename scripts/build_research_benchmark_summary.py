@@ -23,6 +23,7 @@ _METHOD_LABELS = {
     "levenshtein": "Levenshtein",
     "nicad": "NiCad",
     "pmd-cpd": "PMD CPD",
+    "sourcerercc": "SourcererCC",
     "winnowing": "Winnowing",
 }
 _DETECTOR_DATASETS = {
@@ -148,6 +149,8 @@ def _detector_rows(report):
         scope, tool, metrics = case["scope"], case["detector"], case["metrics"]
         provenance = case.get("provenance", {})
         tool_version = provenance.get("version") or provenance.get("configuration", {}).get("version")
+        if isinstance(tool_version, str) and "@sha256:" in tool_version:
+            tool_version = None
         if "recall" in metrics and "eligible" in metrics:
             legacy = metrics.get("official")
             if legacy is not None:

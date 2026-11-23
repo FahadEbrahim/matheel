@@ -9,7 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from matheel.clone_discovery import CloneReference, SourceSpan, evaluate_clone_discovery, write_clone_findings
-from matheel.external_detectors.common import file_sha256, tree_sha256
+from matheel.external_detectors.common import file_sha256, positive_number, tree_sha256
 from matheel.external_detectors.sourcerercc import parse_report
 
 
@@ -68,7 +68,8 @@ cp file_block_stats/files-stats-0.stats /output/file-block.stats
 cat blocks_tokens/* > "$app/clone-detector/input/dataset/blocks.file"
 
 cd "$app/clone-detector"
-sed -i -e 's/^MIN_TOKENS=.*/MIN_TOKENS=20/' -e 's/^IS_SHARDING=.*/IS_SHARDING=false/' sourcerer-cc.properties
+sed -i -e "s/^MIN_TOKENS=.*/MIN_TOKENS=$MATHEEL_MINIMUM_TOKENS/" \
+    -e 's/^IS_SHARDING=.*/IS_SHARDING=false/' sourcerer-cc.properties
 printf '1\\n' > search_metadata.txt
 run_mode() {
   rm -f nodes_completed.txt
@@ -161,22 +162,28 @@ def verify_recorded_fixture(fixture, output):
     (output / "sourcerercc.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def run_linux_native(fixture, output, *, minimum_tokens):
+    minimum_tokens = positive_number(minimum_tokens, "minimum_tokens", integer=True)
+    output.mkdir()
+    # The isolated container keeps no DAC capabilities and may use a different UID.
+    output.chmod(0o777)
+    subprocess.run(["docker", "pull", "--platform", PLATFORM, IMAGE], check=True, timeout=420)
+    subprocess.run([
+        "docker", "run", "--rm", "--platform", PLATFORM, "--pull", "never", "--network", "none",
+        "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
+        "--env", f"MATHEEL_MINIMUM_TOKENS={minimum_tokens}",
+        "--mount", f"type=bind,src={fixture.resolve()},dst=/fixture,readonly",
+        "--mount", f"type=bind,src={output.resolve()},dst=/output",
+        "--entrypoint", "/bin/bash", IMAGE, "-euo", "pipefail", "-c", _NATIVE_RUN,
+    ], check=True, timeout=180)
+
+
 def run(output_dir):
     with TemporaryDirectory(prefix="matheel-sourcerercc-") as directory:
         root = Path(directory)
         fixture, native = root / "fixture", root / "native"
         _write_fixture(fixture)
-        native.mkdir()
-        # The isolated container keeps no DAC capabilities and may use a different UID.
-        native.chmod(0o777)
-        subprocess.run(["docker", "pull", "--platform", PLATFORM, IMAGE], check=True, timeout=420)
-        subprocess.run([
-            "docker", "run", "--rm", "--platform", PLATFORM, "--pull", "never", "--network", "none",
-            "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
-            "--mount", f"type=bind,src={fixture},dst=/fixture,readonly",
-            "--mount", f"type=bind,src={native},dst=/output",
-            "--entrypoint", "/bin/bash", IMAGE, "-euo", "pipefail", "-c", _NATIVE_RUN,
-        ], check=True, timeout=180)
+        run_linux_native(fixture, native, minimum_tokens=MINIMUM_TOKENS)
         verify_recorded_fixture(fixture, native)
         output_dir.mkdir(parents=True, exist_ok=True)
         for path in sorted(native.iterdir()):

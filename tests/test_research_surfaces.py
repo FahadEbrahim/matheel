@@ -108,6 +108,26 @@ def test_clone_report_cli_records_sourcerercc_project_block_provenance(tmp_path)
     }
 
 
+def test_published_sourcerercc_linux_score_replays(tmp_path):
+    from shutil import copyfile
+
+    from scripts.check_sourcerercc_artifact import _write_fixture, verify_recorded_fixture
+
+    root = Path(__file__).resolve().parents[1] / "benchmarks/research-080/detectors/sourcerercc-linux"
+    fixture = tmp_path / "fixture"
+    output = tmp_path / "results"
+    output.mkdir()
+    _write_fixture(fixture)
+    for name in ("file-block.stats", "native-findings.csv", "runtime.txt"):
+        copyfile(root / name, output / name)
+    verify_recorded_fixture(fixture, output)
+    assert (output / "sourcerercc.json").read_bytes() == (root / "sourcerercc.json").read_bytes()
+    cases = {row["id"]: row for row in json.loads((root.parent / "results.json").read_text())["cases"]}
+    assert cases["sourcerercc-linux-artifact"]["metrics"]["matched"] == 1
+    typed = json.loads((root.parent / "sourcerercc-typed.json").read_text())
+    assert cases[typed["id"]] == typed
+
+
 def test_gradio_clone_panel_exports_source_free_evidence(sample_benchmarks):
     pytest.importorskip("gradio")
     from gradio_app.research_benchmarks import evaluate_clones_gradio

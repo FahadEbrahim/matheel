@@ -139,6 +139,25 @@ def sourcerer_replay(root):
     )
 
 
+def sourcerer_linux_evidence(directory):
+    result_path = directory / "sourcerercc.json"
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    artifact_names = ("file-block.stats", "native-findings.csv", "source-map.csv", "findings.csv")
+    expected = {name: file_sha256(directory / name) for name in artifact_names}
+    if expected != result["artifact_sha256"] or result["native_runtime"][0] != "Linux x86_64":
+        raise ValueError("SourcererCC Linux evidence failed its artifact or runtime checks.")
+    evaluated = result["evaluation"]
+    return evidence(
+        "sourcerercc-linux-artifact", "SourcererCC", "Synthetic Java method fixture",
+        "Pinned Linux tokenizer and SearchManager with independently verified original Java line ranges",
+        {**evaluated["overall"], "reported_pairs": evaluated["reported_pairs"], "strata": evaluated["strata"]},
+        {"image": result["image"], "native_runtime": result["native_runtime"],
+         "configuration": result["configuration"], "native_report": result["native_report"],
+         "fixture_source_sha256": result["source_file_sha256"], "artifact_sha256": expected,
+         "evidence_sha256": file_sha256(result_path)},
+    )
+
+
 def moss_replay(directory):
     paths = {name: directory / name for name in ("metadata.csv", "moss_raw.csv", "moss_java.html", "moss_cs.html")}
     manifest = pd.read_csv(paths["metadata.csv"], dtype=str).fillna("")
@@ -415,6 +434,8 @@ def main():
     parser.add_argument("--similcode-dir", type=Path, help="Local SimilCode v2.4.0 metadata and archived MOSS reports.")
     parser.add_argument("--irplag-dir", type=Path, help="Extracted IRPlag Java dataset directory.")
     parser.add_argument("--irplag-comparison", type=Path, help="Existing Matheel JPlag/Dolos IRPlag scores directory.")
+    parser.add_argument("--sourcerercc-linux", type=Path, help="Verified native Linux fixture artifact directory.")
+    parser.add_argument("--sourcerercc-typed", type=Path, help="Generated real stratified SourcererCC evidence JSON.")
     args = parser.parse_args()
     if args.nicad and not args.txl:
         parser.error("--txl must accompany --nicad.")
@@ -443,14 +464,20 @@ def main():
                     results.extend(bcb_subset(args, java, root / "typed", stratified=True, database_sha=database_sha))
         if args.irplag_dir:
             results.append(irplag_run(args.irplag_dir, args.irplag_comparison, root))
+        if args.sourcerercc_linux:
+            results.append(sourcerer_linux_evidence(args.sourcerercc_linux))
+        if args.sourcerercc_typed:
+            recorded = json.loads(args.sourcerercc_typed.read_text(encoding="utf-8"))
+            if recorded.get("id") != "sourcerercc-bigclonebench-v2-stratified" or recorded.get("status") != "verified":
+                raise ValueError("Expected verified real stratified SourcererCC evidence.")
+            results.append(recorded)
         report = {
             "schema_version": 1, "matheel_version": __version__, "cases": results,
             "runtime": {
                 "python": platform.python_version(), "machine": platform.machine(), "os": platform.system(),
                 "pandas": pd.__version__, "scikit_learn": sklearn.__version__,
             },
-            "excluded_scopes": ["Full BigCloneBench database evaluation", "Live MOSS submissions",
-                                "SourcererCC end-to-end tool execution"],
+            "excluded_scopes": ["Full BigCloneBench database evaluation", "Live MOSS submissions"],
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8")

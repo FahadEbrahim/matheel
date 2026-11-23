@@ -56,7 +56,7 @@ Use a JSON object with report paths as keys and stable corpus-relative IDs as va
 
 The evaluator counts a reference pair when a reported pair covers the required proportion of both reference spans. It reports eligible and matched reference counts per type and project scope. Review unmatched discoveries using independently judged data if you need precision. The pinned BigCloneEval v1.1 SQL matcher rejected partial overlaps in the controlled replay that Matheel's fractional coverage accepts. Use the [detector evidence](https://github.com/FahadEbrahim/matheel/tree/main/benchmarks/research-080/detectors) for the native and Matheel results, matching parameters, and corpus provenance.
 
-The release's stratified sample starts with 20 references in each of seven native bins. It has 137 eligible references after applying the recorded filters. NiCad matched 85 and PMD CPD matched 40. Both matched all 20 Type 1 references. These results describe the selected sample of BigCloneBench v2 and IJaDataset 2.0.
+The release's stratified sample starts with 20 references in each of seven native bins. It has 137 eligible references after applying the recorded filters. NiCad matched 85, PMD CPD matched 40, and SourcererCC matched 45 after original-span verification. Each matched all 20 Type 1 references. These results describe the selected sample of BigCloneBench v2 and IJaDataset 2.0.
 
 Export a typed reference CSV from a local BigCloneEval v1.1 H2 database. Use `--max-references-per-type` for a bounded sample across the native strata, or `--max-references` to take a prefix. Record the selected scope in the run record. The extractor preserves the source database. An archive that needs H2 recovery can require temporary disk space for a full private copy.
 

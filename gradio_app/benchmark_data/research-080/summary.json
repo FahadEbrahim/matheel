@@ -655,6 +655,127 @@
       "source": "benchmarks/research-080/detectors/results.json"
     },
     {
+      "dataset": "Synthetic Java method fixture",
+      "scope": "Pinned Linux tokenizer and SearchManager with independently verified original Java line ranges",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "Synthetic Java method fixture",
+      "scope": "Pinned Linux tokenizer and SearchManager with independently verified original Java line ranges · Type 1",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 1,
+      "coverage_unit": "reference pairs",
+      "matched": 1,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.3284671532846715,
+      "evaluated": 137,
+      "coverage_unit": "reference pairs",
+      "matched": 45,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 1",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 1.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 20,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 2",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.32432432432432434,
+      "evaluated": 37,
+      "coverage_unit": "reference pairs",
+      "matched": 12,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 2 consistent",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.2631578947368421,
+      "evaluated": 19,
+      "coverage_unit": "reference pairs",
+      "matched": 5,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 2 blind",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.3888888888888889,
+      "evaluated": 18,
+      "coverage_unit": "reference pairs",
+      "matched": 7,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 3 very strong",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.65,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 13,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 3 strong",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Type 3 moderate",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
+      "dataset": "BigCloneBench v2 / IJaDataset 2.0",
+      "scope": "First 20 non-internal references in each of seven BOTH strata; original endpoints verified by Java syntax and native block hash · Weak Type 3 / Type 4",
+      "method": "SourcererCC",
+      "metric": "Clone recall",
+      "value": 0.0,
+      "evaluated": 20,
+      "coverage_unit": "reference pairs",
+      "matched": 0,
+      "source": "benchmarks/research-080/detectors/results.json"
+    },
+    {
       "dataset": "CodeXGLUE BigCloneBench",
       "scope": "Test binary pairs · full split · threshold 0.5",
       "method": "Levenshtein",
@@ -773,8 +894,8 @@
     },
     {
       "path": "benchmarks/research-080/detectors/results.json",
-      "sha256": "ab83fff940ad8d096fbf02b44ee7a0b26de964d7dae4342b6532312a91fcb997",
-      "rows": 44
+      "sha256": "bda422cfdfb83cc08a0efb24fdd826d15e9ad0a31a70ca1382604f0e51ac2166",
+      "rows": 55
     },
     {
       "path": "benchmarks/research-080/similarity/codexglue-bcb-test/results.json",
