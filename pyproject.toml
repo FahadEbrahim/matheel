@@ -34,18 +34,17 @@ dependencies = [
     "rapidfuzz>=3.1,<4",
     "networkx>=3,<4",
     "tqdm>=4.66.3,<5",
-    # Keep bundled grammars and offline behavior until the parser 1.x migration.
-    "tree-sitter-language-pack>=0.7,<0.8",
+    "tree-sitter>=0.25.2,<0.27",
+    "tree-sitter-language-pack>=1.25,<1.26",
     "func-timeout>=4,<5"
 ]
 
 [project.optional-dependencies]
 chunking = [
-    # Newer code extras require the deferred parser 1.x migration.
-    "chonkie>=1.6.5,<1.6.6"
+    "chonkie>=1.7,<1.8"
 ]
 chunking_code = [
-    "chonkie[code]>=1.6.5,<1.6.6"
+    "chonkie[code]>=1.7,<1.8"
 ]
 metrics = [
     "apted>=1.0,<2",
@@ -77,7 +76,7 @@ browser = [
     "pytest-playwright>=0.10,<0.11"
 ]
 all = [
-    "chonkie[code]>=1.6.5,<1.6.6",
+    "chonkie[code]>=1.7,<1.8",
     "apted>=1.0,<2",
     "bert-score>=0.3.13,<0.4",
     "sentence-transformers>=6.1.0,<7",

@@ -14,7 +14,7 @@ python -m venv .venv
 
 Open the local URL shown in the terminal. The Gradio extra supports the app and lexical workflows. Install `.[all]` when you also need every semantic backend, chunker, code metric, and visualization dependency.
 
-The app requires Gradio 6.32 or later within the Gradio 6 series. The Space configuration pins Gradio 6.32.0 and installs Matheel’s feature extras. To launch from Python with the app’s CSS and navigation behavior, use `gradio_app.app.launch()`.
+The app requires Gradio 6.32 or later within the Gradio 6 series. The Space Docker image pins Gradio 6.32.0 and installs Matheel’s feature extras. It provisions Tree-sitter grammars during the image build. To use code chunking or parser-based metrics in a local installation, [prepare the grammar cache](chunking.md#set-up-grammars-for-offline-use). To launch from Python with the app’s CSS and navigation behavior, use `gradio_app.app.launch()`.
 
 Enter an exact Hugging Face model ID or a local model path in the model field. To discover public Hub models, open **Search Hugging Face**, enter a query, and choose a result in the model dropdown. Search contacts Hugging Face only when submitted. Manual model entry also works offline.
 

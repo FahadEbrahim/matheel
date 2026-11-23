@@ -6,6 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 import matheel.code_metrics as code_metrics_module
+from matheel import grammars
 from matheel.native_codebleu import calc_codebleu as native_calc_codebleu
 from matheel.code_metrics import (
     available_ast_metric_languages,
@@ -16,6 +17,7 @@ from matheel.code_metrics import (
     codebleu_components,
     normalize_code_language,
     parse_component_weights,
+    parser_tokenize_for_code_metrics,
     prepare_codebertscore_context,
     prepare_crystalbleu_context,
     prepare_ruby_context,
@@ -301,6 +303,9 @@ def test_available_codebleu_languages_expose_real_dfg_scope():
 @REQUIRES_CODEBLEU
 @pytest.mark.parametrize("language,snippet", STRICT_CODEBLEU_LANGUAGE_SNIPPETS.items())
 def test_codebleu_supports_real_dfg_languages(language, snippet):
+    tree = grammars.get_parser(language).parse(snippet.encode("utf-8"))
+    assert not tree.root_node.has_error
+    assert parser_tokenize_for_code_metrics(snippet, language)
     components = codebleu_components(snippet, snippet, language=language)
 
     assert components["codebleu"] == pytest.approx(1.0)

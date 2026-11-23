@@ -1,6 +1,7 @@
 import pytest
 
 from matheel import chunking
+from matheel import grammars
 from matheel.chunking import available_chunking_methods, chunk_text, chunker_parameter_names, parse_chunker_options
 
 
@@ -88,3 +89,32 @@ def test_native_chonkie_chunkers_work_when_installed():
     assert len(code_chunks) >= 1
     assert len(fast_chunks) >= 1
     assert "def add" in code_chunks[0]
+
+
+def test_offline_code_chunks_use_utf8_byte_spans_and_token_budget():
+    AutoTokenizer = pytest.importorskip("chonkie").AutoTokenizer
+    text = "def café(x):\n    z = x + 1\n    return z\n\nprint(café(1))\n"
+    data = text.encode("utf-8")
+    tokenizer = AutoTokenizer("character")
+    budget = int(16 * len(data) / tokenizer.count_tokens(text))
+    chunks = grammars.process_code(text, "python", chunk_max_size=budget).chunks
+
+    assert len(chunks) > 1
+    assert chunks[-1].end_byte == len(data) > len(text)
+    assert [data[c.start_byte:c.end_byte].decode() for c in chunks] == [c.content for c in chunks]
+    assert "".join(c.content for c in chunks) == text
+    assert sum(tokenizer.count_tokens(c.content) for c in chunks) == tokenizer.count_tokens(text)
+    expected = [c.content.strip() for c in chunks if c.content.strip()]
+    assert expected == ["def café(x)", ":", "z = x + 1", "return z", "print(café(1))"]
+    assert chunk_text(text, method="code", chunk_size=16, chunk_language="python") == expected
+    assert chunk_text(text, method="code", chunk_size=16, chunk_language="python", max_chunks=1) == expected[:1]
+
+
+def test_code_chunking_auto_detection_respects_shebang():
+    pytest.importorskip("chonkie")
+    text = "#!/usr/bin/env python3\ndef café():\n    return 1\n"
+
+    assert grammars.detect_code_language(text) == "python"
+    assert chunk_text(text, method="code", chunk_size=12) == chunk_text(
+        text, method="code", chunk_size=12, chunk_language="python"
+    )

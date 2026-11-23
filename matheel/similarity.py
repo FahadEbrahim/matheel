@@ -1442,6 +1442,7 @@ def get_sim_list(
             tree_max_depth=ruby_tree_max_depth,
             tree_max_children=ruby_tree_max_children,
             graph_include_leaf_edges=ruby_graph_include_leaf_edges,
+            mode=ruby_mode,
         )
     if use_code_metric and code_metric_name == "tsed":
         tsed_context = prepare_tsed_context(

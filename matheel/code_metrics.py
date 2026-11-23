@@ -6,6 +6,8 @@ from collections import Counter
 from pathlib import Path
 from threading import RLock
 
+from .grammars import GrammarUnavailableError
+from .grammars import get_parser as get_tree_sitter_parser
 from .native_codebleu import AVAILABLE_LANGUAGES as NATIVE_CODEBLEU_LANGUAGES
 from .native_codebleu import calc_codebleu as native_calc_codebleu
 from .native_codebleu import native_runtime_available as native_codebleu_runtime_available
@@ -45,13 +47,6 @@ except ImportError:  # pragma: no cover - optional dependency
     TreeSitterParser = None
 
 try:
-    from tree_sitter_language_pack import get_parser as get_tree_sitter_parser
-    from tree_sitter_language_pack import get_language as get_tree_sitter_language_pack
-except ImportError:  # pragma: no cover - optional dependency
-    get_tree_sitter_parser = None
-    get_tree_sitter_language_pack = None
-
-try:
     import networkx as nx
     from networkx.algorithms.similarity import optimize_graph_edit_distance
 except ImportError:  # pragma: no cover - optional dependency
@@ -68,28 +63,7 @@ except ImportError:  # pragma: no cover - optional dependency
 _TOKEN_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*|\d+|[^\w\s]")
 _RUBY_TRANX_SPLIT_RE = re.compile(r"([^A-Za-z0-9_])")
 _RUBY_TRANX_CAMEL_RE = re.compile(r"([a-z])([A-Z])")
-_SUPPORTED_CODE_LANGUAGES = (
-    "java",
-    "python",
-    "c",
-    "cpp",
-    "go",
-    "javascript",
-    "typescript",
-    "kotlin",
-    "scala",
-    "swift",
-    "solidity",
-    "dart",
-    "php",
-    "ruby",
-    "rust",
-    "csharp",
-    "lua",
-    "julia",
-    "r",
-    "objc",
-)
+_SUPPORTED_CODE_LANGUAGES = NATIVE_CODEBLEU_LANGUAGES
 _SUPPORTED_REAL_CODEBLEU_LANGUAGES = NATIVE_CODEBLEU_LANGUAGES
 _CODE_LANGUAGE_ALIASES = {
     "py": "python",
@@ -418,7 +392,8 @@ def parser_tokenize_for_code_metrics(text, language):
         raise ValueError(f"Parser-derived tokenization is unavailable for language: {language}")
 
     try:
-        tree = parser.parse(bytes(text or "", encoding="utf-8"))
+        with _TREE_SITTER_PARSE_LOCK:
+            tree = parser.parse(bytes(text or "", encoding="utf-8"))
     except Exception as exc:
         raise ValueError(f"Could not parse code for language: {language}") from exc
 
@@ -831,6 +806,7 @@ def prepare_ruby_context(
     tree_max_depth=10,
     tree_max_children=8,
     graph_include_leaf_edges=True,
+    mode="auto",
 ):
     order_limit = max(1, min(int(max_order), 8))
     tokenizer_name = _ruby_normalize_tokenizer(tokenizer)
@@ -843,6 +819,7 @@ def prepare_ruby_context(
     ngram_counts_by_order = {}
     for n in range(1, order_limit + 1):
         ngram_counts_by_order[n] = [Counter(ngram_tuples(tokens, n)) for tokens in tokens_by_doc]
+    resolved_mode = _ruby_normalize_mode(mode)
     trees = [
         _tsed_get_tree(
             normalized_language,
@@ -850,9 +827,10 @@ def prepare_ruby_context(
             max_nodes=tree_max_nodes,
             max_depth=tree_max_depth,
             max_children=tree_max_children,
+            allow_missing_grammar=resolved_mode == "auto",
         )
         for code in codes
-    ]
+    ] if resolved_mode not in {"string", "ngram"} else []
     return {
         "language": normalized_language,
         "tokens_by_doc": tokens_by_doc,
@@ -884,9 +862,12 @@ def _resolve_tsed_parser(language):
             return _TREE_SITTER_PARSER_CACHE[normalized_language]
 
         parser = None
+        missing_grammar = None
         if get_tree_sitter_parser is not None:
             try:
                 parser = get_tree_sitter_parser(normalized_language)
+            except GrammarUnavailableError as exc:
+                missing_grammar = exc
             except Exception:
                 parser = None
 
@@ -903,6 +884,8 @@ def _resolve_tsed_parser(language):
             except Exception:
                 parser = None
 
+        if parser is None and missing_grammar is not None:
+            raise missing_grammar
         _TREE_SITTER_PARSER_CACHE[normalized_language] = parser
         return parser
 
@@ -935,8 +918,13 @@ def _tsed_from_tree_sitter_node(ts_node, depth, path, remaining_budget, max_dept
     return out, total
 
 
-def _tsed_get_tree(language, code, max_nodes=180, max_depth=10, max_children=8):
-    parser = _resolve_tsed_parser(language)
+def _tsed_get_tree(language, code, max_nodes=180, max_depth=10, max_children=8, *, allow_missing_grammar=False):
+    try:
+        parser = _resolve_tsed_parser(language)
+    except GrammarUnavailableError:
+        if allow_missing_grammar:
+            return None
+        raise
     if parser is None:
         return None
     try:
@@ -1639,13 +1627,14 @@ def score_code_metric_pair(
             if right_index < len(trees):
                 right_tree = trees[right_index]
 
-        if left_tree is None or right_tree is None:
+        if resolved_mode != "string" and (left_tree is None or right_tree is None):
             left_tree = _tsed_get_tree(
                 normalized_language,
                 reference,
                 max_nodes=ruby_tree_max_nodes,
                 max_depth=ruby_tree_max_depth,
                 max_children=ruby_tree_max_children,
+                allow_missing_grammar=resolved_mode == "auto",
             )
             right_tree = _tsed_get_tree(
                 normalized_language,
@@ -1653,6 +1642,7 @@ def score_code_metric_pair(
                 max_nodes=ruby_tree_max_nodes,
                 max_depth=ruby_tree_max_depth,
                 max_children=ruby_tree_max_children,
+                allow_missing_grammar=resolved_mode == "auto",
             )
 
         resolved_score = None
