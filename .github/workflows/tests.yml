@@ -43,8 +43,66 @@ jobs:
       - name: Run Ruff
         run: python -m ruff check .
 
+      - name: Provision code grammars
+        run: matheel grammars
+
       - name: Run tests
         run: python -m pytest
+
+  parser-chunking:
+    name: Parser and chunking (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: "3.12"
+          - os: macos-15
+            python-version: "3.14"
+          - os: windows-latest
+            python-version: "3.14"
+    env:
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-python@v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install chunking and parser test dependencies
+        run: python -m pip install -e ".[dev,chunking_code]" "apted>=1,<2"
+      - name: Set the grammar cache location
+        shell: bash
+        run: echo "TREE_SITTER_LANGUAGE_PACK_CACHE_DIR=$RUNNER_TEMP/matheel-grammars" >> "$GITHUB_ENV"
+      - name: Check clean-cache offline startup (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo env "TREE_SITTER_LANGUAGE_PACK_CACHE_DIR=$TREE_SITTER_LANGUAGE_PACK_CACHE_DIR" \
+            unshare --net --setuid="$(id -u)" --setgid="$(id -g)" \
+            "$(command -v python)" -m pytest tests/test_grammars.py -k clean_cache
+      - name: Verify code chunking with only the Python grammar (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          matheel grammars python
+          sudo env "TREE_SITTER_LANGUAGE_PACK_CACHE_DIR=$TREE_SITTER_LANGUAGE_PACK_CACHE_DIR" \
+            HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+            unshare --net --setuid="$(id -u)" --setgid="$(id -g)" \
+            "$(command -v python)" -m pytest tests/test_chunking.py
+      - name: Provision Matheel grammars
+        run: matheel grammars
+      - name: Run parser and chunking tests with network blocked (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo env "TREE_SITTER_LANGUAGE_PACK_CACHE_DIR=$TREE_SITTER_LANGUAGE_PACK_CACHE_DIR" \
+            HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1 \
+            unshare --net --setuid="$(id -u)" --setgid="$(id -g)" "$(command -v python)" \
+            -m pytest tests/test_grammars.py tests/test_chunking.py tests/test_code_metrics.py tests/test_similarity.py
+      - name: Run parser and chunking tests
+        if: runner.os != 'Linux'
+        run: python -m pytest tests/test_grammars.py tests/test_chunking.py tests/test_code_metrics.py tests/test_similarity.py
 
   benchmark-regression:
     name: Offline benchmark regression
@@ -158,11 +216,13 @@ jobs:
           python -m pip install --no-deps "codebleu==0.7.0"
           python -m pip install \
             "tree-sitter-c==0.24.2" \
+            "tree-sitter-c-sharp==0.24.0" \
             "tree-sitter-java==0.23.5" \
             "tree-sitter-php==0.24.1"
 
       - name: Run native-to-pip compatibility tests
         run: |
+          matheel grammars c java php csharp
           python -m pytest tests/test_code_metrics.py \
             -k native_codebleu_matches_pip_selected_exact_examples
 
@@ -231,6 +291,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[${{ matrix.extras }}]"
           python -m pip check
+
+      - name: Provision code grammars
+        run: matheel grammars
 
       - name: Run visualization tests with full extras
         if: matrix.python-version == '3.14'

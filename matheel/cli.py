@@ -32,6 +32,7 @@ from .datasets import (
 )
 from .dataset_validation import write_dataset_validation_report
 from .evaluation import evaluate_pair_dataset, evaluate_retrieval_dataset
+from .grammars import provision_grammars
 from .leaderboard import load_leaderboard_manifest, run_leaderboard
 from .lexical import available_lexical_metrics, lexical_metric_metadata
 from .reproducibility import collect_reproducibility_snapshot, write_reproducibility_snapshot
@@ -63,6 +64,17 @@ from .visualization import (
 def main():
     """Matheel CLI - Compute Code Similarity"""
     pass
+
+
+@main.command(name="grammars")
+@click.argument("languages", nargs=-1)
+def grammars_command(languages):
+    """Download grammars for offline use (defaults to all Matheel metric languages)."""
+    try:
+        selected, path = provision_grammars(languages)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"Prepared {', '.join(selected)} in {path}")
 
 
 @main.command(name="metrics")

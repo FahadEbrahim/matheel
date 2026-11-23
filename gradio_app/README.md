@@ -1,9 +1,7 @@
 ---
 title: Matheel Framework
-sdk: gradio
-python_version: 3.12.8
-sdk_version: 6.32.0
-app_file: app.py
+sdk: docker
+app_port: 7860
 pinned: false
 ---
 
@@ -33,3 +31,5 @@ The hosted Space installs `matheel==0.7.1`. Checkout features are synchronized t
   - `chonkie_fast`
 
 Default embedding model: `huggingface/CodeBERTa-small-v1`.
+
+The Space image uses Python 3.12 and provisions its Tree-sitter grammars during the Docker build. Requests load those grammars locally.

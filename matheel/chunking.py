@@ -1,4 +1,7 @@
 import inspect
+from functools import partial
+
+from .grammars import detect_code_language, process_code
 
 
 _BASE_METHODS = ("none",)
@@ -10,7 +13,6 @@ _CHONKIE_METHODS = (
     "chonkie_fast",
 )
 _CHONKIE_CLASS_NAMES = {
-    "code": "CodeChunker",
     "chonkie_token": "TokenChunker",
     "chonkie_sentence": "SentenceChunker",
     "chonkie_recursive": "RecursiveChunker",
@@ -148,8 +150,20 @@ def _call_chunker(chunker, text):
     raise ValueError("Unsupported Chonkie chunker instance.")
 
 
+def _chunk_code(text, *, chunk_size, language, tokenizer):
+    if not text.strip():
+        return []
+    if language in {"auto", "text"}:
+        language = detect_code_language(text)
+    byte_length = len(text.encode("utf-8"))
+    token_count = tokenizer.count_tokens(text)
+    max_bytes = max(1, int(chunk_size * byte_length / token_count)) if token_count else byte_length
+    chunks = process_code(text, language, chunk_max_size=max_bytes).chunks
+    return [chunk.content for chunk in chunks] or [text]
+
+
 def _build_chonkie_chunker(method, chunk_size, chunk_overlap, chunk_language="text", chunker_options=None):
-    class_name = _CHONKIE_CLASS_NAMES.get(method)
+    class_name = "AutoTokenizer" if method == "code" else _CHONKIE_CLASS_NAMES.get(method)
     if class_name is None:
         return None
     chunker_class = _load_chonkie_class(class_name)
@@ -162,8 +176,17 @@ def _build_chonkie_chunker(method, chunk_size, chunk_overlap, chunk_language="te
         "language": chunk_language or "text",
     }
     options.update(parse_chunker_options(chunker_options))
-    filtered = _filter_callable_kwargs(chunker_class, options)
     try:
+        if method == "code":
+            # Chonkie's CodeChunker constructor bulk-downloads grammars.
+            # Use its tokenizer with the local Tree-sitter registry instead.
+            return partial(
+                _chunk_code,
+                chunk_size=int(options["chunk_size"]),
+                language=options["language"].strip().lower(),
+                tokenizer=chunker_class(options.get("tokenizer", "character")),
+            )
+        filtered = _filter_callable_kwargs(chunker_class, options)
         return chunker_class(**filtered)
     except Exception as exc:
         raise ValueError(

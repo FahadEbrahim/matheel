@@ -12,9 +12,10 @@ python -m pip install -e ".[dev]"
 
 ## Local Checks
 
-Run the default offline-friendly test suite:
+Provision the parser fixtures once while connected, then run the default suite offline:
 
 ```bash
+matheel grammars
 python -m pytest
 ```
 
@@ -109,9 +110,17 @@ python -m build
 python -m twine check dist/*
 ```
 
-## Deferred Dependency Migrations
+## Parser and chunking tests
 
-The [parser/Chonkie migration](https://github.com/FahadEbrahim/matheel/issues/285) changes parser loading and first-use downloads. Keep it separate from routine compatible dependency upgrades.
+Install the optional chunkers and run the explicit grammar setup before testing parser-backed workflows. The setup command prints the cache path.
+
+```bash
+python -m pip install -e ".[dev,chunking_code]" "apted>=1,<2"
+matheel grammars
+python -m pytest tests/test_grammars.py tests/test_chunking.py tests/test_code_metrics.py tests/test_similarity.py
+```
+
+The Ubuntu parser and chunking job runs the suite in a network namespace after provisioning. It also checks startup and missing-grammar errors in an empty cache with networking blocked. See [offline grammar setup](chunking.md#set-up-grammars-for-offline-use).
 
 ## Cache Safety
 

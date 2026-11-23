@@ -4,40 +4,13 @@ import tokenize
 from collections import Counter
 from io import StringIO
 
+from .grammars import SUPPORTED_GRAMMARS as AVAILABLE_LANGUAGES
+from .grammars import get_language as get_tree_sitter_language
 
 try:
     from tree_sitter import Parser
 except ImportError:  # pragma: no cover - optional dependency
     Parser = None
-
-try:
-    from tree_sitter_language_pack import get_language as get_tree_sitter_language
-except ImportError:  # pragma: no cover - optional dependency
-    get_tree_sitter_language = None
-
-
-AVAILABLE_LANGUAGES = (
-    "java",
-    "python",
-    "c",
-    "cpp",
-    "go",
-    "javascript",
-    "typescript",
-    "kotlin",
-    "scala",
-    "swift",
-    "solidity",
-    "dart",
-    "php",
-    "ruby",
-    "rust",
-    "csharp",
-    "lua",
-    "julia",
-    "r",
-    "objc",
-)
 
 _ASSIGNMENT_OPERATORS = {
     "=",
