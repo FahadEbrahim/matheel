@@ -46,16 +46,16 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v6.2.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: ${{ inputs.python-version || '3.12' }}
           cache: pip
 
       - name: Cache Hugging Face models
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/huggingface
           key: hf-models-${{ runner.os }}-py${{ inputs.python-version || '3.12' }}-${{ hashFiles('scripts/ci/prepare_real_models.py') }}
@@ -94,7 +94,7 @@ jobs:
 
       - name: Retain model test results
         if: always()
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: real-model-results-py${{ inputs.python-version || '3.12' }}
           path: test-results/
@@ -111,10 +111,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
 
       - name: Set up Python
-        uses: actions/setup-python@v6.2.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: ${{ inputs.python-version || '3.12' }}
           cache: pip
@@ -141,7 +141,7 @@ jobs:
 
       - name: Retain detector test results
         if: always()
-        uses: actions/upload-artifact@v6.0.0
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: local-detector-results-py${{ inputs.python-version || '3.12' }}
           path: test-results/
