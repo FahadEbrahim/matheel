@@ -6,12 +6,8 @@ from __future__ import annotations
 import argparse
 import re
 import sys
+import tomllib
 from pathlib import Path
-
-try:
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback
-    tomllib = None
 
 
 GRADIO_README_VERSION_RE = re.compile(r"`matheel==[^`]+`")
@@ -20,7 +16,6 @@ PYPI_BADGE_RE = re.compile(
     r"(?:&release=v?[^)\s]+)?"
 )
 REQUIREMENTS_VERSION_RE = re.compile(r"(?m)^matheel\[all\]==[^\s]+$")
-PROJECT_VERSION_RE = re.compile(r'(?m)^version\s*=\s*"([^"]+)"\s*$')
 NOTEBOOK_REF_RE = re.compile(r'(MATHEEL_REF\s*=\s*\\"v)([^\\"]+)(\\")')
 RELEASE_NOTEBOOKS = (
     "01_core_workflows.ipynb",
@@ -32,26 +27,8 @@ RELEASE_NOTEBOOKS = (
 
 
 def project_version(root):
-    pyproject_path = root / "pyproject.toml"
-    if tomllib is not None:
-        with pyproject_path.open("rb") as pyproject:
-            return tomllib.load(pyproject)["project"]["version"]
-
-    project_lines = []
-    in_project_section = False
-    for line in pyproject_path.read_text(encoding="utf-8").splitlines():
-        if line == "[project]":
-            in_project_section = True
-            continue
-        if in_project_section and line.startswith("["):
-            break
-        if in_project_section:
-            project_lines.append(line)
-
-    match = PROJECT_VERSION_RE.search("\n".join(project_lines))
-    if not match:
-        raise ValueError("Could not find project.version in pyproject.toml.")
-    return match.group(1)
+    with (root / "pyproject.toml").open("rb") as pyproject:
+        return tomllib.load(pyproject)["project"]["version"]
 
 
 def replace_single(path, pattern, replacement):
