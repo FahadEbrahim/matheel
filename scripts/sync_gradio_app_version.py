@@ -15,7 +15,7 @@ PYPI_BADGE_RE = re.compile(
     r"https://img\.shields\.io/pypi/v/matheel\.svg\?cacheSeconds=3600"
     r"(?:&release=v?[^)\s]+)?"
 )
-REQUIREMENTS_VERSION_RE = re.compile(r"(?m)^matheel\[all\]==[^\s]+$")
+REQUIREMENTS_VERSION_RE = re.compile(r"(?m)^(matheel\[[^\]\r\n]+\]==)[^\s]+$")
 NOTEBOOK_REF_RE = re.compile(r'(MATHEEL_REF\s*=\s*\\"v)([^\\"]+)(\\")')
 RELEASE_NOTEBOOKS = (
     "01_core_workflows.ipynb",
@@ -56,7 +56,7 @@ def planned_updates(root):
         (
             root / "gradio_app" / "requirements.txt",
             REQUIREMENTS_VERSION_RE,
-            f"matheel[all]=={version}",
+            rf"\g<1>{version}",
         ),
     ]
     targets.extend(

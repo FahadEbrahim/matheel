@@ -93,11 +93,11 @@ def build_result_analysis_tab():
         # Inputs remain fixed during an analysis so its result cannot overwrite
         # a newer input selection. User changes after completion clear the view.
         button.click(lambda: [gr.update(interactive=False) for _ in controls],
-                     outputs=controls, queue=False, api_name=False).then(
+                     outputs=controls, queue=False, api_visibility="private").then(
             run, inputs=inputs, outputs=outputs + controls,
-            concurrency_limit=1, trigger_mode="once", api_name=False,
+            concurrency_limit=1, trigger_mode="once", api_visibility="private",
         )
         gr.on([scores.upload, scores.clear, reference.upload, reference.clear,
                task.input, threshold.input, k.input, group.input, rounds.input],
               lambda: ("", pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), None),
-              outputs=outputs, queue=False, api_name=False)
+              outputs=outputs, queue=False, api_visibility="private")

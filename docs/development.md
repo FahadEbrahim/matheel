@@ -111,7 +111,7 @@ python -m twine check dist/*
 
 ## Deferred Dependency Migrations
 
-Some upper bounds are deliberate: [Gradio 6 support](https://github.com/FahadEbrahim/matheel/issues/284) requires replacing or upgrading the model-search component, and the [parser/Chonkie migration](https://github.com/FahadEbrahim/matheel/issues/285) changes parser loading and first-use downloads. Keep these migrations separate from routine compatible dependency upgrades.
+The [parser/Chonkie migration](https://github.com/FahadEbrahim/matheel/issues/285) changes parser loading and first-use downloads. Keep it separate from routine compatible dependency upgrades.
 
 ## Cache Safety
 

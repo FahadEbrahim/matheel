@@ -1,6 +1,7 @@
 __pycache__/
 .pytest_cache/
 *.py[cod]
+/gradio_app/model_search.pyi
 .DS_Store
 .venv*/
 *.egg-info/

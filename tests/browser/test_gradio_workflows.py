@@ -13,6 +13,11 @@ import pytest
 pytestmark = pytest.mark.browser
 
 
+def _component_root(page, config, component_id):
+    component = next(item for item in config["components"] if item["id"] == component_id)
+    return page.locator(f"#{component['props']['elem_id']}")
+
+
 def _component_roots(page, config, *, label=None, component_type=None):
     roots = []
     for component in config["components"]:
@@ -21,7 +26,7 @@ def _component_roots(page, config, *, label=None, component_type=None):
             continue
         if component_type is not None and component.get("type") != component_type:
             continue
-        roots.append(page.locator(f"#component-{component['id']}"))
+        roots.append(_component_root(page, config, component["id"]))
     return roots
 
 
@@ -57,13 +62,13 @@ def _action_output(page, config, button_name, output_index=0):
     ]
     assert len(dependencies) == 1, f"Expected one click dependency for {button_name!r}"
     output_id = dependencies[0]["outputs"][output_index]
-    root = page.locator(f"#component-{output_id}")
+    root = _component_root(page, config, output_id)
     _wait_until(root.is_visible)
     return root
 
 
 def _rendered_dataframe_record(page, root, identity):
-    """Read the displayed Gradio 5 table rather than its hidden sizing copy."""
+    """Read the displayed table rather than its hidden sizing copy."""
     table = root.locator('table:not([aria-hidden="true"])')
     headers = table.locator("thead th[title]").evaluate_all(
         "headers => headers.map(header => header.getAttribute('title'))"
@@ -92,15 +97,13 @@ def _wait_until(predicate, *, timeout=30, interval=0.1):
 
 
 def _wait_for_text(root, text, *, timeout=30):
-    root.get_by_text(re.compile(re.escape(text), re.IGNORECASE), exact=False).first.wait_for(
-        state="visible",
-        timeout=timeout * 1000,
-    )
+    matches = root.get_by_text(re.compile(re.escape(text), re.IGNORECASE), exact=False)
+    matches.filter(visible=True).first.wait_for(state="visible", timeout=timeout * 1000)
 
 
 def _select_dropdown(page, config, label, value):
     root = _visible_component(page, config, label=label, component_type="dropdown")
-    listbox = root.get_by_role("listbox", name=label, exact=True)
+    listbox = root.get_by_role("combobox", name=label, exact=True)
     listbox.click()
     page.get_by_role("option", name=value, exact=True).last.click()
     _wait_until(lambda: listbox.input_value() == value)
@@ -108,7 +111,7 @@ def _select_dropdown(page, config, label, value):
 
 def _select_dropdown_with_keyboard(page, config, label, value):
     root = _visible_component(page, config, label=label, component_type="dropdown")
-    listbox = root.get_by_role("listbox", name=label, exact=True)
+    listbox = root.get_by_role("combobox", name=label, exact=True)
     listbox.click()
     listbox.fill(value)
     listbox.press("Enter")
@@ -154,6 +157,18 @@ def _open_tab(page, name):
     tab = page.get_by_role("tab", name=name, exact=True)
     tab.click()
     _wait_until(lambda: tab.get_attribute("aria-selected") == "true")
+
+
+def test_model_search_keeps_manual_model_entry_available_offline(gradio_page, gradio_config):
+    page = gradio_page
+    _open_tab(page, "Datasets")
+    _select_dropdown_with_keyboard(page, gradio_config, "Embedding Model", "example/local-model")
+    page.get_by_role("button", name=re.compile(r"^Search Hugging Face\b")).click()
+    page.get_by_role("textbox", name="Model search query", exact=True).fill("MiniLM")
+    page.get_by_role("button", name="Search models", exact=True).click()
+    _wait_for_text(page, "Hugging Face search is offline")
+    model = page.get_by_role("combobox", name="Embedding Model", exact=True)
+    assert model.input_value() == "example/local-model"
 
 
 @contextmanager
@@ -647,7 +662,7 @@ def _wait_for_dataset_action_completion(page, config, action, previous_joins):
 
 def _dispatch_component_event_and_wait(page, config, component_id, event):
     dependency = next(item for item in config["dependencies"] if [component_id, event] in item["targets"])
-    page.locator(f"#component-{component_id}").wait_for(state="visible")
+    _component_root(page, config, component_id).wait_for(state="visible")
     page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
     # A mounting slider can already have an input request pending. Gradio's
     # trigger_once drops another dispatch until that request is fully applied.
@@ -704,7 +719,7 @@ def test_completed_old_evaluation_cannot_restore_results_after_dataset_reset(
         else:
             _select_dropdown(page, gradio_config, "Metric Preset", "Jaro-Winkler")
         status_id = _button_dependency(gradio_config, "Run Dataset Evaluation")["outputs"][7]
-        status = page.locator(f"#component-{status_id}")
+        status = _component_root(page, gradio_config, status_id)
         if reset == "metric":
             _wait_for_text(status, "Settings changed")
         else:
@@ -712,7 +727,7 @@ def test_completed_old_evaluation_cannot_restore_results_after_dataset_reset(
         held["release"].touch()
         _wait_for_dataset_action_completion(page, gradio_config, "Run Dataset Evaluation", before)
     summary_id = _button_dependency(gradio_config, "Run Dataset Evaluation")["outputs"][0]
-    assert not page.locator(f"#component-{summary_id}").is_visible()
+    assert not _component_root(page, gradio_config, summary_id).is_visible()
     assert not page.locator("#dataset-next-actions").is_visible()
     assert not page.get_by_role("button", name="Tune Pair Threshold", exact=True).is_visible()
     artifacts = _visible_component(page, gradio_config, label="Leaderboard Artifacts", component_type="file")
@@ -725,7 +740,7 @@ def test_completed_old_evaluation_cannot_restore_results_after_dataset_reset(
         assert run.is_disabled()
     else:
         selected = _visible_component(page, gradio_config, label="Metric Preset", component_type="dropdown")
-        assert selected.get_by_role("listbox", name="Metric Preset", exact=True).input_value() == "Jaro-Winkler"
+        assert selected.get_by_role("combobox", name="Metric Preset", exact=True).input_value() == "Jaro-Winkler"
         assert run.is_enabled()
 
 
@@ -763,12 +778,12 @@ def test_old_queued_evaluation_cannot_start_after_settings_reset(
             event => event.event_id === id && event.msg === 'process_starts')
         """, queued["event_id"])
         _select_dropdown(second, gradio_config, "Metric Preset", "Jaro-Winkler")
-        _wait_for_text(second.locator(f"#component-{dependency['outputs'][7]}"), "Settings changed")
+        _wait_for_text(_component_root(second, gradio_config, dependency["outputs"][7]), "Settings changed")
         held["release"].touch()
         _wait_for_dataset_action_completion(first, gradio_config, "Run Dataset Evaluation", first_before)
         _wait_for_dataset_action_completion(second, gradio_config, "Run Dataset Evaluation", second_before)
 
-    assert not second.locator(f"#component-{dependency['outputs'][0]}").is_visible()
+    assert not _component_root(second, gradio_config, dependency["outputs"][0]).is_visible()
     assert not second.locator("#dataset-next-actions").is_visible()
     assert not second.get_by_role("button", name="Tune Pair Threshold", exact=True).is_visible()
     artifacts = _visible_component(second, gradio_config, label="Leaderboard Artifacts", component_type="file")
@@ -807,11 +822,11 @@ def test_completed_old_dataset_stage_cannot_restore_results_after_option_reset(
         else:
             _select_dropdown_with_keyboard(page, gradio_config, "Segment Mode", "token")
         status_id = _button_dependency(gradio_config, "Run Dataset Evaluation")["outputs"][7]
-        _wait_for_text(page.locator(f"#component-{status_id}"), "options changed")
+        _wait_for_text(_component_root(page, gradio_config, status_id), "options changed")
         held["release"].touch()
         _wait_for_dataset_action_completion(page, gradio_config, action, before)
     stage_summary_id = _button_dependency(gradio_config, action)["outputs"][0]
-    assert not page.locator(f"#component-{stage_summary_id}").is_visible()
+    assert not _component_root(page, gradio_config, stage_summary_id).is_visible()
     artifacts = _visible_component(page, gradio_config, label=artifact_label, component_type="file")
     assert artifacts.locator("a[download]").count() == 0
     assert summary.is_visible()
@@ -844,7 +859,7 @@ def test_canonical_official_benchmark_preserves_published_rankings(
     assert set(labels) == set(methods)
     selector = _visible_component(
         page, gradio_config, label="Official Method Configuration", component_type="dropdown"
-    ).get_by_role("listbox", name="Official Method Configuration", exact=True)
+    ).get_by_role("combobox", name="Official Method Configuration", exact=True)
     selector.click()
     _wait_until(lambda: page.get_by_role("option").count() == 30)  # 29 methods plus All methods.
     selector.press("Escape")

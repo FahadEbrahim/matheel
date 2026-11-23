@@ -189,7 +189,9 @@ jobs:
           python -m pip install -e ".[dev,gradio]"
 
       - name: Run Gradio structure and launch checks
-        run: python -m pytest tests/test_gradio_app.py tests/test_gradio_html_utils.py
+        run: >-
+          python -m pytest tests/test_gradio_app.py tests/test_gradio_html_utils.py
+          tests/test_gradio_result_analysis.py
 
   gradio-browser:
     name: ${{ matrix.job-name }}

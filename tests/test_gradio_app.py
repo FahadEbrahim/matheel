@@ -8,6 +8,7 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+from types import SimpleNamespace
 from urllib.request import urlopen
 
 import pandas as pd
@@ -18,7 +19,6 @@ from matheel.lexical import available_lexical_metrics, lexical_metric_metadata
 
 
 pytest.importorskip("gradio")
-pytest.importorskip("gradio_huggingfacehub_search")
 
 
 APP_PATH = Path(__file__).resolve().parents[1] / "gradio_app" / "app.py"
@@ -47,8 +47,8 @@ EXPECTED_PRIMARY_ACTIONS = {
     "Run Pair": "calculate_similarity_gradio",
     "Run Collection": "get_sim_list_gradio",
     "Run Suite": "run_suite_gradio",
-    "Validate Dataset": False,
-    "Run Dataset Evaluation": False,
+    "Validate Dataset": None,
+    "Run Dataset Evaluation": None,
     "Generate Map": "generate_dataset_map_gradio",
     "Generate Explanation": "generate_pair_explanation_gradio",
     "Run Custom Leaderboard": "run_ready_leaderboard_gradio",
@@ -95,7 +95,11 @@ def test_gradio_ui_keeps_core_workflow_tabs_and_primary_actions_wired():
 
         assert len(click_dependencies) == 1
         assert click_dependencies[0]["backend_fn"] is True
-        assert click_dependencies[0]["api_name"] == api_name
+        if api_name is None:
+            assert click_dependencies[0]["api_visibility"] == "private"
+        else:
+            assert click_dependencies[0]["api_name"] == api_name
+            assert click_dependencies[0]["api_visibility"] == "public"
 
 
 def test_dataset_public_api_contracts_preserve_legacy_shape_and_order():
@@ -134,7 +138,7 @@ def test_dataset_public_api_contracts_preserve_legacy_shape_and_order():
         ]
         assert len(dependencies) == 1
         dependency = dependencies[0]
-        assert dependency["show_api"] is True
+        assert dependency["api_visibility"] == "public"
         assert [
             components[component_id]["props"].get("label")
             for component_id in dependency["inputs"]
@@ -197,7 +201,7 @@ def test_dataset_public_api_direct_empty_calls_keep_output_types_without_validat
 
 
 def test_gradio_overflow_tabs_have_live_accessibility_metadata():
-    app_js = gradio_app.demo.get_config_file()["js"]
+    app_js = gradio_app.APP_JS
 
     assert 'querySelectorAll(".overflow-menu")' in app_js
     assert '"aria-label", "More workflow tabs"' in app_js
@@ -258,7 +262,7 @@ def test_dataset_upstream_events_clear_stale_dependent_state():
         if "reset_dataset" in str(dependency.get("api_name"))
     ]
     assert reset_dependencies
-    assert all(dependency["show_api"] is False for dependency in reset_dependencies)
+    assert all(dependency["api_visibility"] == "undocumented" for dependency in reset_dependencies)
 
     for component in (
         gradio_app.dataset_metric_preset,
@@ -451,7 +455,7 @@ def test_dataset_next_actions_share_inputs_and_select_destination_tabs():
             if (button_id, "click") in dependency["targets"]
         ]
         assert len(dependencies) == 1
-        assert dependencies[0]["api_name"] is False
+        assert dependencies[0]["api_visibility"] == "private"
         assert dependencies[0]["outputs"] == output_ids
 
 
@@ -460,7 +464,7 @@ def test_gradio_app_launches_and_serves_root_and_config():
         port_socket.bind(("127.0.0.1", 0))
         server_port = port_socket.getsockname()[1]
 
-    _, local_url, _ = gradio_app.demo.launch(
+    _, local_url, _ = gradio_app.launch(
         server_name="127.0.0.1",
         server_port=server_port,
         prevent_thread_lock=True,
@@ -480,7 +484,46 @@ def test_gradio_app_launches_and_serves_root_and_config():
     assert "<gradio-app" in root_html
     assert "Matheel Framework" in root_html
     assert live_config["title"] == "Matheel Framework"
+    assert live_config["css"] == gradio_app.APP_CSS
+    assert live_config["js"] == gradio_app.APP_JS
     assert len(live_config["components"]) == len(gradio_app.demo.get_config_file()["components"])
+
+
+def test_hub_search_preserves_the_selected_model_and_searches_public_models(monkeypatch):
+    from gradio_app import model_search
+
+    def list_models(_self, **options):
+        assert options == {"search": "MiniLM", "limit": 12, "token": False}
+        return iter([SimpleNamespace(id="org/MiniLM"), SimpleNamespace(id="org/MiniLM")])
+
+    monkeypatch.setattr(model_search.HfApi, "list_models", list_models)
+    models, status = model_search.search_model_choices("  MiniLM ", "/local/model")
+    assert models["choices"] == ["/local/model", "org/MiniLM"]
+    assert "value" not in models
+    assert status["visible"] is True
+
+
+def test_hub_search_gives_offline_feedback_and_keeps_manual_model_entry(monkeypatch):
+    from gradio_app import model_search
+
+    def list_models(_self, **_options):
+        raise model_search.OfflineModeIsEnabled("offline test")
+
+    monkeypatch.setattr(model_search.HfApi, "list_models", list_models)
+    models, status = model_search.search_model_choices("MiniLM", "org/manual-model")
+    assert models == gradio_app.gr.skip()
+    assert "offline" in status["value"]
+    assert gradio_app.dataset_model.allow_custom_value is True
+
+
+def test_public_scoring_apis_accept_arbitrary_model_ids():
+    endpoints = gradio_app.demo.get_api_info()["named_endpoints"]
+    for name in ("calculate_similarity_gradio", "get_sim_list_gradio", "run_suite_gradio"):
+        parameters = endpoints[f"/{name}"]["parameters"]
+        by_name = {parameter["parameter_name"]: parameter for parameter in parameters}
+        assert by_name["model_name"]["type"] == {"type": "string"}
+        assert by_name["codebertscore_model"]["type"] == {"type": "string"}
+        assert parameters[-1]["parameter_name"] == "lexical_weights"
 
 
 def test_gradio_temp_workspace_cleanup_removes_only_stale_known_prefixes(tmp_path):
@@ -914,7 +957,10 @@ def test_scoring_actions_append_weight_table_without_changing_existing_control_o
 
 
 def test_flat_space_checkout_imports_extracted_helpers(tmp_path):
-    for name in ("app.py", "html_utils.py", "presentation.py", "theme.py", "control_types.py", "official_benchmark.py", "result_analysis.py"):
+    for name in (
+        "app.py", "html_utils.py", "presentation.py", "theme.py", "control_types.py",
+        "model_search.py", "official_benchmark.py", "result_analysis.py",
+    ):
         shutil.copyfile(APP_PATH.parent / name, tmp_path / name)
     (tmp_path / "assets").mkdir()
     shutil.copyfile(
