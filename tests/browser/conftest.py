@@ -318,12 +318,6 @@ def gradio_page(page, request, gradio_server, browser_artifacts_dir):
     page.context.add_init_script("""(() => {
         window.__matheelQueueJoins = [];
         window.__matheelQueueEvents = [];
-        window.__matheelGradioTargets = [];
-        const originalListen = EventTarget.prototype.addEventListener;
-        EventTarget.prototype.addEventListener = function(type) {
-            if (type === "gradio") window.__matheelGradioTargets.push(this);
-            return originalListen.apply(this, arguments);
-        };
         const originalFetch = window.fetch;
         window.fetch = async function(input, init) {
             const response = await originalFetch.apply(this, arguments);

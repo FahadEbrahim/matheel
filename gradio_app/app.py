@@ -2975,8 +2975,7 @@ _DATASET_JOURNEY_GENERATION_LOCK = Lock()
 
 
 def dataset_admission_js(input_count):
-    # Gradio 5 supplies current output values after the listener inputs. Return
-    # exactly the inputs, preserving every server-State placeholder position.
+    # Return exactly the listener inputs, preserving every server-State slot.
     return """(...values) => {
         window.__matheelDatasetRevision = (window.__matheelDatasetRevision || 0) + 1;
         values[%d] = window.__matheelDatasetRevision;
@@ -3033,7 +3032,7 @@ def run_current_dataset_journey(
     generation_state, stage, callback, *args, progress=None,
     admission_revision=None, output_count=None, invalidate_stages=(),
 ):
-    # Gradio 5 passes the server-owned State object by reference. Reset handlers
+    # Gradio passes the server-owned State object by reference. Reset handlers
     # mutate this per-session object, so work already running can observe changes.
     # A queued request also needs its original browser admission: reading only
     # the current server generation when its worker starts would bless old inputs.
@@ -5243,8 +5242,14 @@ with gr.Blocks(
                         value=official_benchmark_initial["artifact"],
                         label="Official Benchmark Result JSON", interactive=False,
                     )
+                    # Gradio 6 emits dropdown input events on blur. Respond to
+                    # value changes and let the view normalize choices from a
+                    # previous task or edition while the dropdowns update.
                     gr.on(
-                        [official_edition.input, official_task.input, official_metric.input, official_method.input, official_refresh.click],
+                        [
+                            official_edition.change, official_task.change, official_metric.change,
+                            official_method.change, official_refresh.click,
+                        ],
                         update_published_benchmark_gradio,
                         inputs=[official_edition, official_task, official_metric, official_method],
                         outputs=[
@@ -5253,6 +5258,7 @@ with gr.Blocks(
                             official_protocol, official_configurations, official_artifact,
                         ],
                         api_visibility="private", trigger_mode="always_last", concurrency_limit=1,
+                        preprocess=False,
                     )
                 build_result_analysis_tab()
                 with gr.Tab("Ready-made Leaderboard", id="ready-made-leaderboard"):

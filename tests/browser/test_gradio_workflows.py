@@ -68,18 +68,18 @@ def _action_output(page, config, button_name, output_index=0):
 
 
 def _rendered_dataframe_record(page, root, identity):
-    """Read the displayed table rather than its hidden sizing copy."""
-    table = root.locator('table:not([aria-hidden="true"])')
-    headers = table.locator("thead th[title]").evaluate_all(
+    """Read the cells Gradio renders in its accessible grid."""
+    grid = root.get_by_role("grid")
+    headers = grid.get_by_role("columnheader").evaluate_all(
         "headers => headers.map(header => header.getAttribute('title'))"
     )
     identity_column = headers.index("algorithm_id")
-    row = table.locator("tbody tr").filter(
-        has=page.locator(f'td[data-col="{identity_column}"]', has_text=identity)
+    row = grid.get_by_role("row").filter(
+        has=page.locator(f'[role="gridcell"][data-col="{identity_column}"]', has_text=identity)
     )
     _wait_until(lambda: row.count() == 1)
     return {
-        name: row.locator(f'td[data-col="{index}"]').inner_text().strip()
+        name: row.locator(f'[role="gridcell"][data-col="{index}"]').inner_text().strip()
         for index, name in enumerate(headers)
     }
 
@@ -269,38 +269,21 @@ def test_late_upload_change_cannot_erase_completed_validation(
 ):
     page = gradio_page
     _open_tab(page, "Datasets")
-    _upload(page, gradio_config, "Normalized Dataset ZIP", normalized_dataset_zip)
-    page.get_by_role("button", name="Validate Dataset", exact=True).click()
-    summary = _action_output(page, gradio_config, "Validate Dataset")
-    _wait_for_text(summary, "browser_pair_dataset")
     run = page.get_by_role("button", name="Run Dataset Evaluation", exact=True)
-    _wait_until(run.is_enabled)
-    file_id = next(
-        component["id"] for component in gradio_config["components"]
-        if component.get("type") == "file"
-        and component["props"].get("label") == "Normalized Dataset ZIP"
-    )
-    before = page.evaluate("window.__matheelQueueJoins.length")
-    # Replay the real Gradio component event after validation, making the stale
-    # reset ordering from #281 deterministic without changing the file value.
-    page.evaluate(
-        """id => window.__matheelGradioTargets.at(-1).dispatchEvent(new CustomEvent("gradio", {
-            detail: {id, event: "change", data: null}, bubbles: true
-        }))""", file_id,
-    )
-    page.wait_for_function(
-        "count => window.__matheelQueueJoins.length > count", arg=before,
-    )
-    event_id = page.evaluate("window.__matheelQueueJoins.at(-1).event_id")
-    page.wait_for_function(
-        "id => window.__matheelQueueEvents.some(event => event.event_id === id && event.msg === 'process_completed')",
-        arg=event_id,
-    )
-    assert page.evaluate(
-        "id => window.__matheelQueueEvents.find(event => event.event_id === id && event.msg === 'process_completed').success",
-        event_id,
-    ) is True
-    page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
+    # Withhold the browser's real file change until the same upload has been
+    # validated and the visible controls have updated.
+    with _hold_dataset_events(page, gradio_config, trigger="change") as (held, _):
+        _upload(page, gradio_config, "Normalized Dataset ZIP", normalized_dataset_zip)
+        _wait_until(lambda: page.evaluate("true") and bool(held))
+        change = held[0].request.post_data_json
+        assert change["data"][0]["orig_name"] == normalized_dataset_zip.name
+        page.get_by_role("button", name="Validate Dataset", exact=True).click()
+        summary = _action_output(page, gradio_config, "Validate Dataset")
+        _wait_for_text(summary, "browser_pair_dataset")
+        _wait_until(run.is_enabled)
+        before = page.evaluate("window.__matheelQueueJoins.length")
+
+    _wait_for_component_event(page, change["fn_index"], change["trigger_id"], before)
     assert "browser_pair_dataset" in summary.inner_text()
     assert run.is_enabled()
 
@@ -480,7 +463,7 @@ def test_official_benchmark_preserves_failed_methods_and_task_specific_rankings(
         for label, _ in component["props"]["choices"] if label.startswith("Unsupported")
     )
     _select_dropdown(page, gradio_config, "Official Method Configuration", method)
-    _wait_until(lambda: ranking.get_by_text("Levenshtein", exact=True).count() == 0)
+    _wait_until(lambda: ranking.get_by_role("gridcell", name="Levenshtein", exact=True).count() == 0)
     _wait_for_text(ranking, "Unsupported")
     identity = next(
         identity for component in gradio_config["components"]
@@ -556,8 +539,8 @@ def test_dataset_exports_and_leaderboard_artifact_inspection(
         label="Scored Rows",
         component_type="dataframe",
     )
-    scored_rows.get_by_text("a", exact=True).first.wait_for(state="visible", timeout=30_000)
-    scored_rows.get_by_text("b", exact=True).first.wait_for(state="visible", timeout=30_000)
+    scored_rows.get_by_text("a", exact=True).filter(visible=True).first.wait_for(timeout=30_000)
+    scored_rows.get_by_text("b", exact=True).filter(visible=True).first.wait_for(timeout=30_000)
     evaluation_artifacts = _visible_component(
         page,
         gradio_config,
@@ -660,29 +643,12 @@ def _wait_for_dataset_action_completion(page, config, action, previous_joins):
     }""", arg={"ids": list(chain_ids), "start": previous_joins}, timeout=30_000)
 
 
-def _dispatch_component_event_and_wait(page, config, component_id, event):
-    dependency = next(item for item in config["dependencies"] if [component_id, event] in item["targets"])
-    _component_root(page, config, component_id).wait_for(state="visible")
-    page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
-    # A mounting slider can already have an input request pending. Gradio's
-    # trigger_once drops another dispatch until that request is fully applied.
-    # Drain it before requiring a distinct new admission from our forced event.
-    page.wait_for_function("""index => {
-        const handler = window.gradio_config.dependencies.find(item => item.id === index);
-        return handler && !handler.pending_request && window.__matheelQueueJoins
-            .filter(join => join.fn_index === index).every(join => window.__matheelQueueEvents.some(
-                event => event.event_id === join.event_id && event.msg === 'process_completed' && event.success
-            ));
-    }""", arg=dependency["id"], timeout=30_000)
-    before = page.evaluate("window.__matheelQueueJoins.length")
-    page.evaluate("""({id, event}) => window.__matheelGradioTargets.at(-1).dispatchEvent(new CustomEvent("gradio", {
-        detail: {id, event, data: null}, bubbles: true
-    }))""", {"id": component_id, "event": event})
-    page.wait_for_function("""({index, start}) => window.__matheelQueueJoins.slice(start).some(
-        join => join.fn_index === index && window.__matheelQueueEvents.some(
+def _wait_for_component_event(page, dependency_id, component_id, previous_joins):
+    page.wait_for_function("""({index, target, start}) => window.__matheelQueueJoins.slice(start).some(
+        join => join.fn_index === index && join.trigger_id === target && window.__matheelQueueEvents.some(
             event => event.event_id === join.event_id && event.msg === 'process_completed' && event.success
         )
-    )""", arg={"index": dependency["id"], "start": before})
+    )""", arg={"index": dependency_id, "target": component_id, "start": previous_joins})
     page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
 
 
@@ -710,12 +676,15 @@ def test_completed_old_evaluation_cannot_restore_results_after_dataset_reset(
             task = _visible_component(page, gradio_config, label="Task", component_type="radio")
             task.get_by_role("radio", name="Retrieval", exact=True).check()
             _wait_until(lambda: run.is_disabled())
-            # Gradio can emit input when the previously hidden retrieval
-            # slider mounts. Force that event after reset instead of relying
-            # on platform-specific mounting timing observed in CI.
             slider_id = next(component["id"] for component in gradio_config["components"]
                              if component.get("props", {}).get("label") == "Retrieval k")
-            _dispatch_component_event_and_wait(page, gradio_config, slider_id, "input")
+            slider = _component_root(page, gradio_config, slider_id).get_by_role("slider")
+            dependency = next(item for item in gradio_config["dependencies"]
+                              if [slider_id, "input"] in item["targets"])
+            _wait_until(slider.is_visible)
+            slider_before = page.evaluate("window.__matheelQueueJoins.length")
+            slider.press("ArrowRight")
+            _wait_for_component_event(page, dependency["id"], slider_id, slider_before)
         else:
             _select_dropdown(page, gradio_config, "Metric Preset", "Jaro-Winkler")
         status_id = _button_dependency(gradio_config, "Run Dataset Evaluation")["outputs"][7]
@@ -882,7 +851,7 @@ def test_canonical_official_benchmark_preserves_published_rankings(
     _select_dropdown(
         page, gradio_config, "Official Method Configuration", labels[selected["algorithm_id"]]
     )
-    _wait_until(lambda: ranking.locator('table:not([aria-hidden="true"]) tbody tr').count() == 1)
+    _wait_until(lambda: ranking.get_by_role("grid").get_attribute("aria-rowcount") == "2")
     rendered = _rendered_dataframe_record(page, ranking, selected["algorithm_id"])
     assert int(float(rendered["rank"])) == selected["rank"]
     assert float(rendered["coverage"]) == pytest.approx(selected["coverage"])
@@ -927,7 +896,7 @@ def test_published_edition_switch_replaces_scope_rankings_and_download(
         page, gradio_config, label="Official Aggregate Ranking", component_type="dataframe"
     )
     _wait_for_text(ranking, "JPlag 6.3.0 average")
-    _wait_until(lambda: ranking.locator('table:not([aria-hidden="true"]) tbody tr').count() == 4)
+    _wait_until(lambda: ranking.get_by_role("grid").get_attribute("aria-rowcount") == "5")
     artifact = _visible_component(
         page, gradio_config, label="Official Benchmark Result JSON", component_type="file"
     )
