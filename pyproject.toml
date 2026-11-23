@@ -74,7 +74,7 @@ gradio = [
     "sentence-transformers>=6.1.0,<7",
     "sentencepiece>=0.2,<0.3",
     "gradio>=6.32.0,<7",
-    "huggingface-hub>=1,<2"
+    "huggingface-hub>=1,<3"
 ]
 visualization = [
     "umap-learn>=0.6.0,<0.7"
@@ -94,7 +94,7 @@ all = [
     "model2vec>=0.10,<0.11",
     "umap-learn>=0.6.0,<0.7",
     "gradio>=6.32.0,<7",
-    "huggingface-hub>=1,<2"
+    "huggingface-hub>=1,<3"
 ]
 dev = [
     "pytest>=8,<10",
