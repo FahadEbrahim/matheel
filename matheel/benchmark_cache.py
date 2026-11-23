@@ -3,6 +3,7 @@ import shutil
 from datetime import datetime, timezone
 from hashlib import sha256
 from importlib.metadata import PackageNotFoundError, version as package_version
+from io import BytesIO
 from pathlib import Path
 
 import pandas as pd
@@ -101,15 +102,17 @@ def load_benchmark_cache_result(cache_dir, cache_key):
     text_columns = _RESULT_TEXT_COLUMNS | {
         column for column, dtype in dtypes.items() if dtype in {"object", "str", "string"}
     }
+    source = BytesIO(paths["results"].read_bytes())
     results = pd.read_csv(
-        paths["results"],
+        source,
         dtype={column: dtype for column, dtype in dtypes.items() if column not in text_columns},
     )
     text_dtypes = {column: dtypes.get(column, str) for column in results if column in text_columns}
     if text_dtypes:
         # Parse text separately so identifiers stay literal and scores retain missing-value handling.
+        source.seek(0)
         text = pd.read_csv(
-            paths["results"],
+            source,
             usecols=list(text_dtypes),
             dtype=text_dtypes,
             keep_default_na=False,
