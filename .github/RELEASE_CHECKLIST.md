@@ -70,7 +70,7 @@ python -m build
 python -m twine check dist/*
 ```
 
-- Confirm package metadata includes Python classifiers for `3.10`, `3.11`, `3.12`, and `3.13`.
+- Confirm package metadata includes Python classifiers for `3.11`, `3.12`, and `3.13`.
 
 ## Documentation
 
