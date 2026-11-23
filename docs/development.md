@@ -110,6 +110,12 @@ python -m build
 python -m twine check dist/*
 ```
 
+## Dependency updates
+
+Dependabot checks GitHub Actions and the root, documentation, and Gradio Python manifests weekly. Review its pull requests through the regular CI checks. For parser or Chonkie updates, inspect the offline parser and chunking jobs together. For Gradio or Hugging Face Hub updates, inspect the Ubuntu app smoke and Chromium workflow tests and verify the Space's Gradio pin. If a check fails, rerun the failing workflow against the proposed versions and adjust or split the update before merging.
+
+Use `scripts/sync_gradio_app_version.py` for the Space's Matheel pin. Update external detector lockfiles alongside the corresponding versioned benchmark and run the pinned detector integration tests. GitHub repository settings handle Dependabot security updates.
+
 ## Parser and chunking tests
 
 Install the optional chunkers and run the explicit grammar setup before testing parser-backed workflows. The setup command prints the cache path.

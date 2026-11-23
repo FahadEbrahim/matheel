@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directories: ["/", "/docs", "/gradio_app"]
+    schedule:
+      interval: weekly
+      day: monday
+    ignore:
+      - dependency-name: matheel
+    groups:
+      documentation-and-development:
+        patterns: ["mkdocs*", "pytest*", "ruff", "build", "twine", "playwright"]
+      parsers-and-chunking:
+        patterns: ["tree-sitter*", "chonkie*"]
+      gradio-and-hub:
+        patterns: ["gradio", "huggingface-hub"]
