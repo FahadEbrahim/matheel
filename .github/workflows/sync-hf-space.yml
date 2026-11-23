@@ -13,6 +13,11 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      retry_failed_build:
+        description: Retry an existing failed Space build after verifying the published package.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -83,3 +88,22 @@ jobs:
           git -C "${space_dir}" push \
             "https://${hf_username}:${HF_TOKEN}@huggingface.co/spaces/${HF_REPO_ID}" \
             HEAD:main
+
+      - name: Retry a failed Space build
+        if: github.event_name == 'workflow_dispatch' && inputs.retry_failed_build && steps.pinned-release.outputs.should_sync_space == 'true'
+        env:
+          HF_REPO_ID: ${{ vars.HF_SPACE_REPO || 'buelfhood/matheel-framework' }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          set -euo pipefail
+          endpoint="https://huggingface.co/api/spaces/${HF_REPO_ID}"
+          stage=$(curl --fail --silent --show-error --max-time 15 \
+            -H "Authorization: Bearer ${HF_TOKEN}" "${endpoint}/runtime" | jq -er '.stage')
+          if [[ "${stage}" != BUILD_ERROR ]]; then
+            echo "Space stage is ${stage}. No build retry was needed."
+            exit 0
+          fi
+
+          curl --fail --silent --show-error --max-time 30 --request POST \
+            -H "Authorization: Bearer ${HF_TOKEN}" "${endpoint}/restart" \
+            | jq -er '"Requested a retry. Space stage is \(.stage)."'
